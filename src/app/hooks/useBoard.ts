@@ -28,6 +28,13 @@ export const useBoard = (boardId: string) => {
   }, [boardId]);
 
   /**
+   * Updates the entire board state.
+   */
+  const updateBoard = (updatedBoard: any) => {
+    setBoard(updatedBoard);
+  };
+
+  /**
    * Updates the board title.
    */
   const handleUpdateBoardTitle = async (newTitle: string) => {
@@ -180,6 +187,7 @@ export const useBoard = (boardId: string) => {
     board,
     loading,
     error,
+    updateBoard, // Dodano funkcję do ogólnej aktualizacji stanu tablicy
     handleUpdateBoardTitle,
     handleAddColumn,
     handleRemoveColumn,

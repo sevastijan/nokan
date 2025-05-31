@@ -42,7 +42,9 @@ const BoardList = () => {
     if (!newTitle.trim()) return;
 
     try {
-      const newBoard = await addBoard({ title: newTitle.trim() });
+      const newBoard = await addBoard({
+        title: newTitle.trim(),
+      });
       setBoards((prev) => [...prev, newBoard]);
       setNewTitle("");
     } catch (err: any) {
@@ -55,7 +57,6 @@ const BoardList = () => {
       }
     }
   };
-
   /**
    * Handles deleting a board.
    * Sends the delete request to the API and updates the state.
@@ -76,21 +77,24 @@ const BoardList = () => {
   if (error) return <p className="text-red-600">{error}</p>;
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-4">Your Boards</h2>
+    <div className="p-6 max-w-2xl mx-auto bg-gray-900 text-gray-100 rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-6 text-center">Your Boards</h2>
 
-      <ul>
+      <ul className="space-y-4 text-red">
         {boards.map((board) => (
-          <li key={board.id} className="mb-2 flex justify-between items-center">
+          <li
+            key={board.id}
+            className="p-4 bg-gray-800 rounded-lg flex justify-between items-center shadow-md"
+          >
             <Link
               href={`/board/${board.id}`}
-              className="text-blue-600 underline"
+              className="text-blue-400 hover:text-blue-300 underline"
             >
               {board.title}
             </Link>
             <button
               onClick={() => handleDeleteBoard(board.id)}
-              className="text-red-600 ml-4"
+              className="text-red-500 hover:text-red-400 ml-4"
               aria-label={`Delete board ${board.title}`}
             >
               Delete
@@ -99,17 +103,17 @@ const BoardList = () => {
         ))}
       </ul>
 
-      <div className="mt-6 flex gap-2">
+      <div className="mt-8 flex gap-3">
         <input
           type="text"
           placeholder="New board"
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
-          className="flex-grow border border-gray-300 rounded px-3 py-1"
+          className="flex-grow bg-gray-800 text-gray-100 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
           onClick={handleAddBoard}
-          className="bg-blue-600 text-white px-4 rounded"
+          className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded shadow-md"
           aria-label="Add new board"
         >
           Add

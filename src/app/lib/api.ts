@@ -66,7 +66,7 @@ export async function getBoards() {
 export const addBoard = async ({ title }: { title: string }) => {
   const { data, error } = await supabase
     .from("boards")
-    .insert([{ title, user_id: null }])
+    .insert([{ title }]) 
     .select();
 
   if (error) {
@@ -80,7 +80,6 @@ export const addBoard = async ({ title }: { title: string }) => {
 
   return data[0];
 };
-
 /**
  * Adds a new column to a board.
  *
@@ -111,18 +110,22 @@ export async function addColumn(boardId: string, title: string, order: number) {
  * @param {number} order - The order of the task.
  * @returns {Promise<Object>} The created task.
  */
-export async function addTask(columnId: string, title: string, order: number) {
+export async function addTask(columnId: string, title: string, order: number): Promise<{ id: string; title: string }> {
   const { data, error } = await supabase
     .from("tasks")
     .insert([{ column_id: columnId, title, order }])
     .select();
 
   if (error) {
-    console.error("Error adding task:", error.message);
+    console.error("Error adding task to DB:", error.message);
     throw error;
   }
 
-  return data[0];
+  if (!data || data.length === 0) {
+    throw new Error("No data returned from the database");
+  }
+
+  return { id: data[0].id, title: data[0].title };
 }
 
 /**

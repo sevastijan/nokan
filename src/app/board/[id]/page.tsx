@@ -4,19 +4,19 @@ import { DragDropContext, Droppable } from "@hello-pangea/dnd";
 import { useParams } from "next/navigation";
 import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
-import { useState } from "react";
+import { JSX, useState, useEffect } from "react";
 
 /**
  * Component representing the board page.
  *
  * @returns {JSX.Element} The rendered BoardPage component.
  */
-const BoardPage = () => {
+const BoardPage = (): JSX.Element => {
   const { id } = useParams();
   const {
     board,
-    loading,
     error,
+    updateBoard,
     handleUpdateBoardTitle,
     handleAddColumn,
     handleRemoveColumn,
@@ -26,6 +26,24 @@ const BoardPage = () => {
   } = useBoard(id as string);
 
   const [newColumnTitle, setNewColumnTitle] = useState("");
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [localBoardTitle, setLocalBoardTitle] = useState(board?.title || "");
+
+  useEffect(() => {
+    if (board?.title && board.title !== localBoardTitle) {
+      setLocalBoardTitle(board.title);
+    }
+  }, [board?.title]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localBoardTitle !== board?.title) {
+        handleUpdateBoardTitle(localBoardTitle);
+      }
+    }, 300); // 300ms opóźnienia
+
+    return () => clearTimeout(timeoutId);
+  }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
 
   /**
    * Handles drag-and-drop events for tasks and columns.
@@ -53,12 +71,12 @@ const BoardPage = () => {
         newTasks.splice(source.index, 1);
         newTasks.splice(destination.index, 0, taskToMove);
 
-        setBoard((prev: any) => ({
-          ...prev,
-          columns: prev.columns.map((col: any) =>
+        updateBoard({
+          ...board,
+          columns: board.columns.map((col: any) =>
             col.id === sourceCol.id ? { ...col, tasks: newTasks } : col
           ),
-        }));
+        });
       } else {
         const sourceTasks = [...sourceCol.tasks];
         const destTasks = [...destCol.tasks];
@@ -66,16 +84,16 @@ const BoardPage = () => {
         sourceTasks.splice(source.index, 1);
         destTasks.splice(destination.index, 0, taskToMove);
 
-        setBoard((prev: any) => ({
-          ...prev,
-          columns: prev.columns.map((col: any) =>
+        updateBoard({
+          ...board,
+          columns: board.columns.map((col: any) =>
             col.id === sourceCol.id
               ? { ...col, tasks: sourceTasks }
               : col.id === destCol.id
               ? { ...col, tasks: destTasks }
               : col
           ),
-        }));
+        });
       }
     }
   };
@@ -83,10 +101,15 @@ const BoardPage = () => {
   /**
    * Handles adding a new column to the board.
    */
-  const addColumn = () => {
+  const addColumn = async () => {
     if (!newColumnTitle.trim()) return;
-    handleAddColumn(newColumnTitle);
-    setNewColumnTitle("");
+    setIsAddingColumn(true);
+    try {
+      await handleAddColumn(newColumnTitle);
+      setNewColumnTitle("");
+    } finally {
+      setIsAddingColumn(false);
+    }
   };
 
   if (!board) return <p className="p-4">Loading...</p>;
@@ -96,8 +119,8 @@ const BoardPage = () => {
       <div className="p-6">
         <input
           type="text"
-          value={board.title}
-          onChange={(e) => handleUpdateBoardTitle(e.target.value)}
+          value={localBoardTitle}
+          onChange={(e) => setLocalBoardTitle(e.target.value)}
           className="text-2xl font-bold mb-4 w-full border-b-2 focus:outline-none"
         />
 
@@ -115,7 +138,16 @@ const BoardPage = () => {
                   colIndex={colIndex}
                   onUpdateColumnTitle={handleUpdateColumnTitle}
                   onRemoveColumn={handleRemoveColumn}
-                  onTaskAdded={(newTask: any) => handleAddColumn(newTask.title)}
+                  onTaskAdded={(newTask: any) =>
+                    updateBoard({
+                      ...board,
+                      columns: board.columns.map((col: any) =>
+                        col.id === column.id
+                          ? { ...col, tasks: [...col.tasks, newTask] }
+                          : col
+                      ),
+                    })
+                  }
                   onUpdateTaskTitle={handleUpdateTaskTitle}
                   onRemoveTask={handleRemoveTask}
                 />
@@ -136,9 +168,9 @@ const BoardPage = () => {
           <button
             onClick={addColumn}
             className="bg-blue-600 text-white w-full py-1 rounded"
-            disabled={loading || !newColumnTitle.trim()}
+            disabled={isAddingColumn || !newColumnTitle.trim()}
           >
-            {loading ? "Adding..." : "Add Column"}
+            {isAddingColumn ? "Adding..." : "Add Column"}
           </button>
           {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
