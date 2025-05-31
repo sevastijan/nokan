@@ -6,6 +6,11 @@ import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
 import { useState } from "react";
 
+/**
+ * Component representing the board page.
+ *
+ * @returns {JSX.Element} The rendered BoardPage component.
+ */
 const BoardPage = () => {
   const { id } = useParams();
   const {
@@ -22,6 +27,11 @@ const BoardPage = () => {
 
   const [newColumnTitle, setNewColumnTitle] = useState("");
 
+  /**
+   * Handles drag-and-drop events for tasks and columns.
+   *
+   * @param {Object} result - The result of the drag-and-drop action.
+   */
   const onDragEnd = (result: any) => {
     const { source, destination, type } = result;
     if (!destination) return;
@@ -70,10 +80,13 @@ const BoardPage = () => {
     }
   };
 
+  /**
+   * Handles adding a new column to the board.
+   */
   const addColumn = () => {
     if (!newColumnTitle.trim()) return;
     handleAddColumn(newColumnTitle);
-    setNewColumnTitle(""); // Resetuj pole tekstowe po dodaniu kolumny
+    setNewColumnTitle("");
   };
 
   if (!board) return <p className="p-4">Loading...</p>;

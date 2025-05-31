@@ -4,12 +4,20 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getBoards, addBoard, deleteBoard } from "../lib/api";
 
+/**
+ * Component for displaying and managing a list of boards.
+ *
+ * @returns {JSX.Element} The rendered BoardList component.
+ */
 const BoardList = () => {
   const [boards, setBoards] = useState<any[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Fetches the list of boards from the API on component mount.
+   */
   useEffect(() => {
     const fetchBoards = async () => {
       try {
@@ -26,13 +34,15 @@ const BoardList = () => {
     fetchBoards();
   }, []);
 
+  /**
+   * Handles adding a new board.
+   * Validates the input, sends the request to the API, and updates the state.
+   */
   const handleAddBoard = async () => {
     if (!newTitle.trim()) return;
 
     try {
-      console.log("Adding board with title:", newTitle.trim()); // Debugowanie
       const newBoard = await addBoard({ title: newTitle.trim() });
-      console.log("Board added successfully:", newBoard); // Debugowanie
       setBoards((prev) => [...prev, newBoard]);
       setNewTitle("");
     } catch (err: any) {
@@ -46,6 +56,12 @@ const BoardList = () => {
     }
   };
 
+  /**
+   * Handles deleting a board.
+   * Sends the delete request to the API and updates the state.
+   *
+   * @param {string} boardId - The ID of the board to delete.
+   */
   const handleDeleteBoard = async (boardId: string) => {
     try {
       await deleteBoard(boardId);

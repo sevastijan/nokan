@@ -2,6 +2,19 @@ import { Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskForm from "./AddTaskForm";
 import Task from "./Task";
 
+/**
+ * Component representing a single column in the task board.
+ *
+ * @param {Object} props - The component props.
+ * @param {Object} props.column - The column data, including its ID, title, and tasks.
+ * @param {number} props.colIndex - The index of the column in the board.
+ * @param {Function} props.onUpdateColumnTitle - Callback to update the column title.
+ * @param {Function} props.onRemoveColumn - Callback to remove the column.
+ * @param {Function} props.onTaskAdded - Callback triggered when a new task is added to the column.
+ * @param {Function} props.onUpdateTaskTitle - Callback to update the title of a task.
+ * @param {Function} props.onRemoveTask - Callback to remove a task from the column.
+ * @returns {JSX.Element} The rendered Column component.
+ */
 const Column = ({
   column,
   colIndex,

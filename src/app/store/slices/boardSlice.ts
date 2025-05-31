@@ -10,10 +10,16 @@ const initialState: BoardsState = {
   boards: [],
 };
 
+/**
+ * Redux slice for managing boards, columns, and tasks.
+ */
 const boardSlice = createSlice({
   name: "boards",
   initialState,
   reducers: {
+    /**
+     * Adds a new board.
+     */
     addBoard: (state, action: PayloadAction<string>) => {
       state.boards.push({
         id: uuidv4(),
@@ -21,10 +27,17 @@ const boardSlice = createSlice({
         columns: [],
       });
     },
+
+    /**
+     * Removes a board by its ID.
+     */
     removeBoard: (state, action: PayloadAction<string>) => {
       state.boards = state.boards.filter((b) => b.id !== action.payload);
     },
 
+    /**
+     * Adds a new column to a board.
+     */
     addColumn: (
       state,
       action: PayloadAction<{ boardId: string; columnTitle: string }>
@@ -38,6 +51,10 @@ const boardSlice = createSlice({
         });
       }
     },
+
+    /**
+     * Removes a column from a board.
+     */
     removeColumn: (
       state,
       action: PayloadAction<{ boardId: string; columnId: string }>
@@ -50,6 +67,9 @@ const boardSlice = createSlice({
       }
     },
 
+    /**
+     * Reorders columns within a board.
+     */
     reorderColumns: (
       state,
       action: PayloadAction<{
@@ -65,6 +85,9 @@ const boardSlice = createSlice({
       board.columns.splice(destinationIndex, 0, removed);
     },
 
+    /**
+     * Reorders tasks within a column.
+     */
     reorderTasks: (
       state,
       action: PayloadAction<{
@@ -83,6 +106,9 @@ const boardSlice = createSlice({
       column.tasks.splice(destinationIndex, 0, removed);
     },
 
+    /**
+     * Moves a task between columns.
+     */
     moveTaskBetweenColumns: (
       state,
       action: PayloadAction<{
@@ -110,6 +136,9 @@ const boardSlice = createSlice({
       destColumn.tasks.splice(destinationIndex, 0, movedTask);
     },
 
+    /**
+     * Moves a task between columns with specific task ID.
+     */
     moveTask: (
       state,
       action: PayloadAction<{
@@ -135,6 +164,9 @@ const boardSlice = createSlice({
       destinationColumn.tasks.splice(destinationIndex, 0, movedTask);
     },
 
+    /**
+     * Adds a new task to a column.
+     */
     addTask: (
       state,
       action: PayloadAction<{
@@ -153,6 +185,9 @@ const boardSlice = createSlice({
       }
     },
 
+    /**
+     * Edits the title of a task.
+     */
     editTask: (
       state,
       action: PayloadAction<{
@@ -170,6 +205,9 @@ const boardSlice = createSlice({
       }
     },
 
+    /**
+     * Removes a task from a column.
+     */
     removeTask: (
       state,
       action: PayloadAction<{

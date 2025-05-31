@@ -1,5 +1,16 @@
 import { Draggable } from "@hello-pangea/dnd";
 
+/**
+ * Component representing a single task in a column.
+ *
+ * @param {Object} props - The component props.
+ * @param {Object} props.task - The task data.
+ * @param {number} props.taskIndex - The index of the task in the column.
+ * @param {string} props.columnId - The ID of the column containing the task.
+ * @param {Function} props.onUpdateTaskTitle - Callback to update the task title.
+ * @param {Function} props.onRemoveTask - Callback to remove the task.
+ * @returns {JSX.Element} The rendered Task component.
+ */
 const Task = ({
   task,
   taskIndex,
