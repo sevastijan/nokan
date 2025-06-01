@@ -10,7 +10,6 @@ interface TaskProps {
   columnId: string;
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskModal: (task: TaskType) => void;
-  onUpdateTask: (updatedTask: TaskType) => void;
 }
 
 const Task = ({
@@ -19,7 +18,6 @@ const Task = ({
   columnId,
   onRemoveTask,
   onOpenTaskModal,
-  onUpdateTask,
 }: TaskProps): JSX.Element => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });

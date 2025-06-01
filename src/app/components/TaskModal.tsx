@@ -5,24 +5,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import PrioritySelector from "./PrioritySelector";
 import Image from "next/image";
 
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  priority?: string;
+  images?: string[];
+}
+
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   mode: "add" | "edit";
-  task?: {
-    id: string;
-    title: string;
-    description?: string;
-    priority?: string;
-    images?: string[];
-  };
-  onAddTask?: (newTask: {
-    title: string;
-    description: string;
-    priority: string;
-    images: string[];
-  }) => void;
-  onUpdateTask?: (updatedTask: any) => void;
+  task?: Task;
+  onAddTask?: (newTask: Task) => void;
+  onUpdateTask?: (updatedTask: Task) => void;
 }
 
 const TaskModal = ({
@@ -64,9 +61,9 @@ const TaskModal = ({
 
   const handleSave = () => {
     if (mode === "add" && onAddTask) {
-      onAddTask({ title, description, priority, images });
+      onAddTask({ id: "", title, description, priority, images });
     } else if (mode === "edit" && onUpdateTask) {
-      onUpdateTask({ ...task, title, description, priority, images });
+      onUpdateTask({ ...task, title, description, priority, images } as Task);
     }
     triggerClose();
   };

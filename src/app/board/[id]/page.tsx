@@ -1,6 +1,6 @@
 "use client";
 
-import { DragDropContext, Droppable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { useParams } from "next/navigation";
 import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
@@ -62,7 +62,7 @@ const BoardPage = (): JSX.Element => {
     });
   };
 
-  const onDragEnd = (result: any) => {
+  const onDragEnd = (result: DropResult) => {
     if (!board) return;
 
     const { source, destination, type } = result;
