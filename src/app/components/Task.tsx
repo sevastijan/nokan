@@ -1,7 +1,7 @@
 import { Draggable } from "@hello-pangea/dnd";
 import { FaEllipsisV } from "react-icons/fa";
 import { Task as TaskType } from "../types/useBoardTypes";
-import { JSX, useState } from "react";
+import { JSX, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface TaskProps {
@@ -39,6 +39,7 @@ const Task = ({
     top: 0,
     left: 0,
   });
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Toggle context menu and calculate its position with mobile-friendly positioning
@@ -84,11 +85,33 @@ const Task = ({
   };
 
   /**
+   * Handle menu close with debounce for mobile
+   */
+  const handleMenuClose = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsMenuOpen(false);
+    }, 150);
+  };
+
+  /**
+   * Handle menu action and close menu immediately
+   */
+  const handleMenuAction = (action: () => void) => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    action();
+    setIsMenuOpen(false);
+  };
+
+  /**
    * Handle task edit action
    */
   const handleEdit = () => {
     onOpenTaskModal(task);
-    setIsMenuOpen(false);
   };
 
   /**
@@ -96,7 +119,6 @@ const Task = ({
    */
   const handleDelete = () => {
     onRemoveTask(columnId, task.id);
-    setIsMenuOpen(false);
   };
 
   return (
@@ -133,7 +155,8 @@ const Task = ({
                 {/* Backdrop to close menu when clicking outside */}
                 <div
                   className="fixed inset-0 z-40"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={handleMenuClose}
+                  onTouchStart={handleMenuClose}
                 />
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -148,15 +171,27 @@ const Task = ({
                     zIndex: 1000,
                   }}
                   className="bg-gray-800 text-white rounded-lg shadow-lg p-1 min-w-[120px] max-w-[150px]"
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                 >
                   <button
-                    onClick={handleEdit}
+                    onClick={() => handleMenuAction(handleEdit)}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleMenuAction(handleEdit);
+                    }}
                     className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-700 rounded-md transition-colors duration-200"
                   >
                     Edit
                   </button>
                   <button
-                    onClick={handleDelete}
+                    onClick={() => handleMenuAction(handleDelete)}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleMenuAction(handleDelete);
+                    }}
                     className="block w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md transition-colors duration-200"
                   >
                     Delete
