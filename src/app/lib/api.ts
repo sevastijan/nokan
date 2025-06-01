@@ -25,7 +25,10 @@ export async function getBoardById(id: string) {
         tasks (
           id,
           title,
-          order
+          order,
+          description,
+          priority,
+          images
         )
       )
     `)
@@ -220,6 +223,82 @@ export async function deleteBoard(boardId: string) {
 
   if (error) {
     console.error("Error deleting board:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Updates the details of a task.
+ *
+ * @param {string} taskId - The ID of the task.
+ * @param {Object} updates - The updates to apply.
+ * @param {string} [updates.title] - The new title of the task.
+ * @param {string} [updates.description] - The new description of the task.
+ * @param {string} [updates.priority] - The new priority of the task.
+ * @param {Array<string>} [updates.images] - The new list of image URLs.
+ */
+export async function updateTaskDetails(
+  taskId: string,
+  updates: { title?: string; description?: string; priority?: string; images?: string[] }
+) {
+  const { error } = await supabase
+    .from("tasks")
+    .update(updates)
+    .eq("id", taskId);
+
+  if (error) {
+    console.error("Error updating task details:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Fetches all priorities.
+ *
+ * @returns {Promise<Array>} The list of priorities.
+ */
+export async function getPriorities() {
+  const { data, error } = await supabase.from("priorities").select("*");
+
+  if (error) {
+    console.error("Error fetching priorities:", error.message);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Adds a new priority.
+ *
+ * @param {string} label - The label of the priority.
+ * @param {string} color - The color of the priority.
+ * @returns {Promise<Object>} The created priority.
+ */
+export async function addPriority(label: string, color: string) {
+  const { data, error } = await supabase
+    .from("priorities")
+    .insert([{ label, color }])
+    .select();
+
+  if (error) {
+    console.error("Error adding priority:", error.message);
+    throw error;
+  }
+
+  return data[0];
+}
+
+/**
+ * Deletes a priority by its ID.
+ *
+ * @param {string} id - The ID of the priority to delete.
+ */
+export async function deletePriority(id: string) {
+  const { error } = await supabase.from("priorities").delete().eq("id", id);
+
+  if (error) {
+    console.error("Error deleting priority:", error.message);
     throw error;
   }
 }

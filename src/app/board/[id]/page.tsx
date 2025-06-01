@@ -8,16 +8,10 @@ import AddColumnPopup from "../../components/AddColumnPopup";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-/**
- * Component representing the board page.
- *
- * @returns {JSX.Element} The rendered BoardPage component.
- */
 const BoardPage = (): JSX.Element => {
   const { id } = useParams();
   const {
     board,
-    error,
     updateBoard,
     handleUpdateBoardTitle,
     handleAddColumn,
@@ -48,11 +42,21 @@ const BoardPage = (): JSX.Element => {
     return () => clearTimeout(timeoutId);
   }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
 
-  /**
-   * Handles drag-and-drop events for tasks and columns.
-   *
-   * @param {Object} result - The result of the drag-and-drop action.
-   */
+  const handleUpdateTask = (columnId: string, updatedTask: any) => {
+    updateBoard({
+      ...board,
+      columns: board.columns.map((col: any) =>
+        col.id === columnId
+          ? {
+              ...col,
+              tasks: col.tasks.map((task: any) =>
+                task.id === updatedTask.id ? updatedTask : task
+              ),
+            }
+          : col
+      ),
+    });
+  };
   const onDragEnd = (result: any) => {
     const { source, destination, type } = result;
     if (!destination) return;
@@ -110,9 +114,6 @@ const BoardPage = (): JSX.Element => {
     }
   };
 
-  /**
-   * Handles adding a new column to the board.
-   */
   const addColumn = async () => {
     if (!newColumnTitle.trim()) return;
     setIsAddingColumn(true);
@@ -129,12 +130,12 @@ const BoardPage = (): JSX.Element => {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="p-6 bg-gray-900 min-h-screen">
+      <div className="p-4 sm:p-6 bg-gray-900 min-h-screen">
         <input
           type="text"
           value={localBoardTitle}
           onChange={(e) => setLocalBoardTitle(e.target.value)}
-          className="text-3xl font-bold mb-6 w-full bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
+          className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 w-full bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
           placeholder="Board Title"
         />
         <Droppable droppableId="board" type="COLUMN" direction="horizontal">
@@ -142,7 +143,7 @@ const BoardPage = (): JSX.Element => {
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="flex gap-6 overflow-x-auto pb-4"
+              className="flex flex-wrap gap-4 sm:gap-6 overflow-x-auto pb-4 justify-center sm:justify-start"
             >
               <AnimatePresence>
                 {board.columns.map((column: any, colIndex: number) => (
@@ -152,12 +153,14 @@ const BoardPage = (): JSX.Element => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.3 }}
+                    className="w-full sm:w-auto min-w-[250px] sm:min-w-[300px]"
                   >
                     <Column
                       column={column}
                       colIndex={colIndex}
                       onUpdateColumnTitle={handleUpdateColumnTitle}
                       onRemoveColumn={handleRemoveColumn}
+                      onUpdateTask={handleUpdateTask}
                       onTaskAdded={(newTask: any) =>
                         updateBoard({
                           ...board,
@@ -168,7 +171,6 @@ const BoardPage = (): JSX.Element => {
                           ),
                         })
                       }
-                      onUpdateTaskTitle={handleUpdateTaskTitle}
                       onRemoveTask={handleRemoveTask}
                     />
                   </motion.div>
@@ -180,7 +182,7 @@ const BoardPage = (): JSX.Element => {
         </Droppable>
         <button
           onClick={() => setIsPopupOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md mt-4 transition-all duration-200"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md mt-4 transition-all duration-200 w-full sm:w-auto"
         >
           Add Column
         </button>

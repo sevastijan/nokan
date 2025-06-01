@@ -9,12 +9,6 @@ import {
   updateColumnTitle,
 } from "../lib/api";
 
-/**
- * Custom hook for managing board data and operations.
- *
- * @param {string} boardId - The ID of the board to manage.
- * @returns {Object} The board data and related handlers.
- */
 export const useBoard = (boardId: string) => {
   const [board, setBoard] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -27,16 +21,10 @@ export const useBoard = (boardId: string) => {
       .catch((err) => console.error("Error loading board:", err));
   }, [boardId]);
 
-  /**
-   * Updates the entire board state.
-   */
   const updateBoard = (updatedBoard: any) => {
     setBoard(updatedBoard);
   };
 
-  /**
-   * Updates the board title.
-   */
   const handleUpdateBoardTitle = async (newTitle: string) => {
     if (!newTitle.trim() || newTitle === board.title) return;
 
@@ -54,9 +42,6 @@ export const useBoard = (boardId: string) => {
     }
   };
 
-  /**
-   * Adds a new column to the board.
-   */
   const handleAddColumn = async (title: string) => {
     if (!title.trim()) return;
 
@@ -77,9 +62,6 @@ export const useBoard = (boardId: string) => {
     }
   };
 
-  /**
-   * Removes a column from the board.
-   */
   const handleRemoveColumn = async (columnId: string) => {
     setLoading(true);
     setError(null);
@@ -98,9 +80,6 @@ export const useBoard = (boardId: string) => {
     }
   };
 
-  /**
-   * Updates the title of a column.
-   */
   const handleUpdateColumnTitle = async (columnId: string, newTitle: string) => {
     if (!newTitle.trim()) return;
 
@@ -123,9 +102,6 @@ export const useBoard = (boardId: string) => {
     }
   };
 
-  /**
-   * Updates the title of a task.
-   */
   const handleUpdateTaskTitle = async (columnId: string, taskId: string, newTitle: string) => {
     if (!newTitle.trim()) return;
 
@@ -155,9 +131,32 @@ export const useBoard = (boardId: string) => {
     }
   };
 
-  /**
-   * Removes a task from a column.
-   */
+  const handleUpdateTask = async (columnId: string, updatedTask: any) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      setBoard((prev: any) => ({
+        ...prev,
+        columns: prev.columns.map((col: any) =>
+          col.id === columnId
+            ? {
+                ...col,
+                tasks: col.tasks.map((task: any) =>
+                  task.id === updatedTask.id ? { ...task, ...updatedTask } : task
+                ),
+              }
+            : col
+        ),
+      }));
+    } catch (err) {
+      console.error("Error updating task:", err);
+      setError("Failed to update task. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRemoveTask = async (columnId: string, taskId: string) => {
     setLoading(true);
     setError(null);
@@ -187,12 +186,13 @@ export const useBoard = (boardId: string) => {
     board,
     loading,
     error,
-    updateBoard, // Dodano funkcję do ogólnej aktualizacji stanu tablicy
+    updateBoard,
     handleUpdateBoardTitle,
     handleAddColumn,
     handleRemoveColumn,
     handleUpdateColumnTitle,
     handleUpdateTaskTitle,
+    handleUpdateTask,
     handleRemoveTask,
   };
 };

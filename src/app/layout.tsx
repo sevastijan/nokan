@@ -13,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body className="bg-gray-900 text-red">
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>
