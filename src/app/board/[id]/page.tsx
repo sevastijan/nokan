@@ -1,16 +1,23 @@
 "use client";
 
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
 import AddColumnPopup from "../../components/AddColumnPopup";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Column as ColumnType, Task } from "../../types/useBoardTypes";
+import { useSession } from "next-auth/react";
 
+/**
+ * Board page component that displays a Kanban board with drag-and-drop functionality
+ * @returns JSX element containing the board interface
+ */
 const Page = (): JSX.Element => {
   const { id } = useParams();
+  const router = useRouter();
+  const { status } = useSession();
   const {
     board,
     updateBoard,
@@ -28,12 +35,27 @@ const Page = (): JSX.Element => {
   );
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
 
+  /**
+   * Redirect unauthenticated users to sign-in page
+   */
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
+  /**
+   * Update local board title when board data changes
+   */
   useEffect(() => {
     if (board?.title && board.title !== localBoardTitle) {
       setLocalBoardTitle(board.title);
     }
   }, [board?.title, localBoardTitle]);
 
+  /**
+   * Debounced board title update to reduce API calls
+   */
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (localBoardTitle !== board?.title) {
@@ -44,6 +66,10 @@ const Page = (): JSX.Element => {
     return () => clearTimeout(timeoutId);
   }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
 
+  /**
+   * Handle drag and drop operations for tasks and columns
+   * @param result - The drag and drop result from react-beautiful-dnd
+   */
   const onDragEnd = (result: DropResult) => {
     if (!board) return;
 
@@ -103,6 +129,9 @@ const Page = (): JSX.Element => {
     }
   };
 
+  /**
+   * Add a new column to the board
+   */
   const addColumn = async () => {
     if (!newColumnTitle.trim()) return;
     setIsAddingColumn(true);
@@ -115,18 +144,30 @@ const Page = (): JSX.Element => {
     }
   };
 
-  if (!board) return <p className="p-4">Loading...</p>;
+  if (status === "loading" || !board) {
+    return <p className="p-4">Loading...</p>;
+  }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="p-4 sm:p-6 bg-gray-900 min-h-screen">
-        <input
-          type="text"
-          value={localBoardTitle}
-          onChange={(e) => setLocalBoardTitle(e.target.value)}
-          className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 w-full bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
-          placeholder="Board Title"
-        />
+        <div className="mb-4">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+        <div className="mb-4 sm:mb-6">
+          <input
+            type="text"
+            value={localBoardTitle}
+            onChange={(e) => setLocalBoardTitle(e.target.value)}
+            className="text-2xl sm:text-3xl font-bold bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
+            placeholder="Board Title"
+          />
+        </div>
         <Droppable droppableId="board" type="COLUMN" direction="horizontal">
           {(provided) => (
             <div

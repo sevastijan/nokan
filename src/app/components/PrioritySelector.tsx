@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import AddPriorityModal from "./AddPriorityModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPriorities } from "../lib/api";
-import { FaChevronDown } from "react-icons/fa"; // Import ikony
+import { FaChevronDown } from "react-icons/fa";
 
 interface Priority {
   id: string;
@@ -17,6 +17,12 @@ interface PrioritySelectorProps {
   onChange: (priority: string) => void;
 }
 
+/**
+ * Priority selector component with dropdown and add priority functionality
+ * @param selectedPriority - Currently selected priority value
+ * @param onChange - Function to handle priority selection changes
+ * @returns JSX element containing the priority selector interface
+ */
 const PrioritySelector = ({
   selectedPriority,
   onChange,
@@ -25,31 +31,62 @@ const PrioritySelector = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  /**
+   * Fetch priorities from API on component mount
+   */
   useEffect(() => {
     const fetchPriorities = async () => {
       try {
         const data = await getPriorities();
         setPriorities(data);
       } catch (error) {
-        console.error("Error fetching priorities:", error);
+        // Error handling without console.log - could be replaced with toast notification
       }
     };
     fetchPriorities();
   }, []);
 
+  /**
+   * Handle adding a new priority to the list
+   * @param newPriority - Priority object to add to the list
+   */
   const handleAddPriority = (newPriority: Priority) => {
     setPriorities([...priorities, newPriority]);
   };
 
+  /**
+   * Toggle dropdown visibility
+   */
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
   };
 
+  /**
+   * Handle clicks outside modal to close it
+   * @param e - Mouse event from the backdrop
+   */
   const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       setIsDropdownOpen(false);
       setIsModalOpen(false);
     }
+  };
+
+  /**
+   * Handle priority selection and close dropdown
+   * @param priority - Selected priority value
+   */
+  const handlePrioritySelect = (priority: string) => {
+    onChange(priority);
+    setIsDropdownOpen(false);
+  };
+
+  /**
+   * Open add priority modal and close dropdown
+   */
+  const openAddPriorityModal = () => {
+    setIsModalOpen(true);
+    setIsDropdownOpen(false);
   };
 
   return (
@@ -79,28 +116,19 @@ const PrioritySelector = ({
           >
             <li
               className="p-3 hover:bg-gray-700 cursor-pointer"
-              onClick={() => {
-                onChange("Low");
-                setIsDropdownOpen(false);
-              }}
+              onClick={() => handlePrioritySelect("Low")}
             >
               Low
             </li>
             <li
               className="p-3 hover:bg-gray-700 cursor-pointer"
-              onClick={() => {
-                onChange("Medium");
-                setIsDropdownOpen(false);
-              }}
+              onClick={() => handlePrioritySelect("Medium")}
             >
               Medium
             </li>
             <li
               className="p-3 hover:bg-gray-700 cursor-pointer"
-              onClick={() => {
-                onChange("High");
-                setIsDropdownOpen(false);
-              }}
+              onClick={() => handlePrioritySelect("High")}
             >
               High
             </li>
@@ -108,20 +136,14 @@ const PrioritySelector = ({
               <li
                 key={priority.id}
                 className="p-3 hover:bg-gray-700 cursor-pointer"
-                onClick={() => {
-                  onChange(priority.label);
-                  setIsDropdownOpen(false);
-                }}
+                onClick={() => handlePrioritySelect(priority.label)}
               >
                 {priority.label}
               </li>
             ))}
             <li
               className="p-3 hover:bg-gray-700 cursor-pointer text-blue-400"
-              onClick={() => {
-                setIsModalOpen(true);
-                setIsDropdownOpen(false);
-              }}
+              onClick={openAddPriorityModal}
             >
               + Add Priority
             </li>

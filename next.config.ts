@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
-const nextConfig: import('next').NextConfig = {
-  experimental: {
+const nextConfig = {
+  images: {
+    domains: ['lh3.googleusercontent.com'],
   },
 };
 

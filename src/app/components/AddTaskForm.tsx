@@ -1,26 +1,38 @@
 "use client";
 
 import { JSX, useState } from "react";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "../store/index";
+import { useAppDispatch } from "../store/hooks";
 import { addTask as addTaskToRedux } from "../store/slices/boardSlice";
 import { addTask as addTaskToDB } from "../lib/api";
 import TaskModal from "./TaskModal";
 
+interface AddTaskFormProps {
+  boardId: string;
+  columnId: string;
+  onTaskAdded?: (newTask: { id: string; title: string }) => void;
+}
+
+/**
+ * Add task form component that handles adding new tasks to columns
+ * @param boardId - The ID of the board containing the column
+ * @param columnId - The ID of the column to add the task to
+ * @param onTaskAdded - Optional callback function called when a task is successfully added
+ * @returns JSX element containing the add task form interface
+ */
 const AddTaskForm = ({
   boardId,
   columnId,
   onTaskAdded,
-}: {
-  boardId: string;
-  columnId: string;
-  onTaskAdded?: (newTask: { id: string; title: string }) => void;
-}): JSX.Element => {
-  const dispatch = useDispatch<AppDispatch>();
+}: AddTaskFormProps): JSX.Element => {
+  const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Handle adding a new task
+   * @param taskData - The task data including title, description, and priority
+   */
   const handleAdd = async (taskData: {
     title: string;
     description?: string;
@@ -34,11 +46,7 @@ const AddTaskForm = ({
     try {
       const newTask = await addTaskToDB(columnId, taskData.title.trim(), 0);
 
-      if (
-        !newTask ||
-        typeof newTask.id !== "string" ||
-        typeof newTask.title !== "string"
-      ) {
+      if (!newTask || !newTask.id || !newTask.title) {
         throw new Error("Invalid task data returned from the database");
       }
 
@@ -50,7 +58,6 @@ const AddTaskForm = ({
 
       setIsModalOpen(false);
     } catch (err) {
-      console.error("Error adding task:", err);
       setError("Failed to add task. Please try again.");
     } finally {
       setLoading(false);

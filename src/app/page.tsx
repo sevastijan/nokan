@@ -1,6 +1,34 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default function Home() {
-  redirect("/dashboard");
-  return null;
-}
+import { useSession } from "next-auth/react";
+import AuthButton from "./components/AuthButton";
+
+/**
+ * Home page component that displays the landing page with authentication
+ * @returns JSX element containing the home page interface
+ */
+const Home = () => {
+  const { status } = useSession();
+
+  if (status === "loading") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900">
+      <div className="text-center space-y-8">
+        <h1 className="text-6xl font-bold text-white mb-4">NOKAN</h1>
+        <p className="text-xl text-gray-300 mb-8">
+          Organize your tasks with simple and powerful boards
+        </p>
+        <AuthButton />
+      </div>
+    </div>
+  );
+};
+
+export default Home;

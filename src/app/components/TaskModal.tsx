@@ -22,6 +22,16 @@ interface TaskModalProps {
   onUpdateTask?: (updatedTask: Task) => void;
 }
 
+/**
+ * Modal component for adding or editing tasks with image upload functionality
+ * @param isOpen - Whether the modal is visible
+ * @param onClose - Function to close the modal
+ * @param mode - Modal mode (add or edit)
+ * @param task - Task data when in edit mode
+ * @param onAddTask - Function to handle new task creation
+ * @param onUpdateTask - Function to handle task updates
+ * @returns JSX element containing the task modal interface
+ */
 const TaskModal = ({
   isOpen,
   onClose,
@@ -36,6 +46,9 @@ const TaskModal = ({
   const [images, setImages] = useState<string[]>(task?.images || []);
   const [isClosing, setIsClosing] = useState(false);
 
+  /**
+   * Update form fields when mode or task changes
+   */
   useEffect(() => {
     if (mode === "add") {
       setTitle("");
@@ -50,6 +63,10 @@ const TaskModal = ({
     }
   }, [mode, task]);
 
+  /**
+   * Handle image upload and create object URLs for preview
+   * @param event - File input change event
+   */
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const uploadedImages = Array.from(event.target.files).map((file) =>
@@ -59,6 +76,9 @@ const TaskModal = ({
     }
   };
 
+  /**
+   * Handle saving task (add or update based on mode)
+   */
   const handleSave = () => {
     if (mode === "add" && onAddTask) {
       onAddTask({ id: "", title, description, priority, images });
@@ -68,6 +88,9 @@ const TaskModal = ({
     triggerClose();
   };
 
+  /**
+   * Trigger modal close with animation
+   */
   const triggerClose = () => {
     setIsClosing(true);
     setTimeout(() => {
@@ -76,6 +99,10 @@ const TaskModal = ({
     }, 300);
   };
 
+  /**
+   * Handle clicks outside the modal to close it
+   * @param e - Mouse event from the backdrop
+   */
   const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       triggerClose();
@@ -112,6 +139,7 @@ const TaskModal = ({
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-3 focus:outline-none focus:border-blue-500"
                   placeholder="Task Title"
+                  autoFocus
                 />
               </div>
               <div>
@@ -123,6 +151,7 @@ const TaskModal = ({
                   placeholder="Add a description..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
                 />
               </div>
               <PrioritySelector
@@ -136,6 +165,7 @@ const TaskModal = ({
                 <input
                   type="file"
                   multiple
+                  accept="image/*"
                   onChange={handleImageUpload}
                   className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600"
                 />
@@ -156,13 +186,14 @@ const TaskModal = ({
             <div className="mt-6 flex justify-end space-x-4">
               <button
                 onClick={triggerClose}
-                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!title.trim()}
               >
                 Save
               </button>

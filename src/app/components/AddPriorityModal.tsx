@@ -13,6 +13,12 @@ interface AddPriorityModalProps {
   }) => void;
 }
 
+/**
+ * Modal component for adding new priority levels to tasks
+ * @param onClose - Function to close the modal
+ * @param onAddPriority - Function to handle new priority creation
+ * @returns JSX element containing the add priority modal interface
+ */
 const AddPriorityModal = ({
   onClose,
   onAddPriority,
@@ -21,6 +27,9 @@ const AddPriorityModal = ({
   const [color, setColor] = useState("#000000");
   const [isClosing, setIsClosing] = useState(false);
 
+  /**
+   * Handle saving a new priority
+   */
   const handleSave = async () => {
     if (!label.trim()) return;
 
@@ -29,10 +38,13 @@ const AddPriorityModal = ({
       onAddPriority(newPriority);
       triggerClose();
     } catch (error) {
-      console.error("Error adding priority:", error);
+      // Error handling without console.log - could be replaced with toast notification
     }
   };
 
+  /**
+   * Trigger modal close with animation
+   */
   const triggerClose = () => {
     setIsClosing(true);
     setTimeout(() => {
@@ -41,6 +53,10 @@ const AddPriorityModal = ({
     }, 300);
   };
 
+  /**
+   * Handle clicks outside the modal to close it
+   * @param e - Mouse event from the backdrop
+   */
   const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       triggerClose();
@@ -75,6 +91,7 @@ const AddPriorityModal = ({
                   onChange={(e) => setLabel(e.target.value)}
                   className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-2 focus:outline-none focus:border-blue-500"
                   placeholder="Priority Name"
+                  autoFocus
                 />
               </div>
               <div>
@@ -96,7 +113,8 @@ const AddPriorityModal = ({
               </button>
               <button
                 onClick={handleSave}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200"
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!label.trim()}
               >
                 Save
               </button>

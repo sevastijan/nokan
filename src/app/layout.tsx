@@ -1,9 +1,10 @@
 import "./styles/globals.css";
 import { Providers } from "./providers";
+import Navbar from "./components/Navbar";
 
 export const metadata = {
-  title: "NOKODE Task Board",
-  description: "Task board application built with Next.js and Redux",
+  title: "Nokan Taskboard",
+  description: "Taskboard application",
 };
 
 export default function RootLayout({
@@ -12,9 +13,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pl">
+    <html lang="en">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <Navbar />
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   );
