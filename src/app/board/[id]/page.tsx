@@ -9,7 +9,7 @@ import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Column as ColumnType, Task } from "../../types/useBoardTypes";
 
-const BoardPage = (): JSX.Element => {
+const Page = (): JSX.Element => {
   const { id } = useParams();
   const {
     board,
@@ -32,7 +32,7 @@ const BoardPage = (): JSX.Element => {
     if (board?.title && board.title !== localBoardTitle) {
       setLocalBoardTitle(board.title);
     }
-  }, [board?.title]);
+  }, [board?.title, localBoardTitle]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -43,24 +43,6 @@ const BoardPage = (): JSX.Element => {
 
     return () => clearTimeout(timeoutId);
   }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
-
-  const handleUpdateTask = (columnId: string, updatedTask: Task) => {
-    if (!board) return;
-
-    updateBoard({
-      ...board,
-      columns: board.columns.map((col: ColumnType) =>
-        col.id === columnId
-          ? {
-              ...col,
-              tasks: col.tasks.map((task: Task) =>
-                task.id === updatedTask.id ? updatedTask : task
-              ),
-            }
-          : col
-      ),
-    });
-  };
 
   const onDragEnd = (result: DropResult) => {
     if (!board) return;
@@ -205,4 +187,4 @@ const BoardPage = (): JSX.Element => {
   );
 };
 
-export default BoardPage;
+export default Page;
