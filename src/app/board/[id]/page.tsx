@@ -167,7 +167,6 @@ const BoardPage = (): JSX.Element => {
                       colIndex={colIndex}
                       onUpdateColumnTitle={handleUpdateColumnTitle}
                       onRemoveColumn={handleRemoveColumn}
-                      onUpdateTask={handleUpdateTask}
                       onTaskAdded={(newTask: Task) =>
                         updateBoard({
                           ...board,

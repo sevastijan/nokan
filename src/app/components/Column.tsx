@@ -12,7 +12,6 @@ interface ColumnProps {
   onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
   onRemoveColumn: (columnId: string) => void;
   onTaskAdded: (newTask: TaskType) => void;
-  onUpdateTask: (columnId: string, updatedTask: TaskType) => void;
   onRemoveTask: (columnId: string, taskId: string) => void;
 }
 
@@ -22,7 +21,6 @@ const Column = ({
   onUpdateColumnTitle,
   onRemoveColumn,
   onTaskAdded,
-  onUpdateTask,
   onRemoveTask,
 }: ColumnProps): JSX.Element => {
   const [selectedTask, setSelectedTask] = useState<TaskType | null>(null);
@@ -94,9 +92,6 @@ const Column = ({
                         task={task}
                         taskIndex={taskIndex}
                         columnId={column.id}
-                        onUpdateTask={(updatedTask) =>
-                          onUpdateTask(column.id, updatedTask)
-                        }
                         onRemoveTask={onRemoveTask}
                         onOpenTaskModal={openTaskModal}
                       />
@@ -119,9 +114,6 @@ const Column = ({
               mode="edit"
               task={selectedTask}
               onClose={closeTaskModal}
-              onUpdateTask={(updatedTask) =>
-                onUpdateTask(column.id, updatedTask)
-              }
             />
           )}
         </div>
