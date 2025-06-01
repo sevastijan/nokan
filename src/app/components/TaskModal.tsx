@@ -36,6 +36,7 @@ const TaskModal = ({
   const [description, setDescription] = useState(task?.description || "");
   const [priority, setPriority] = useState(task?.priority || "Medium");
   const [images, setImages] = useState<string[]>(task?.images || []);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     if (mode === "add") {
@@ -66,18 +67,26 @@ const TaskModal = ({
     } else if (mode === "edit" && onUpdateTask) {
       onUpdateTask({ ...task, title, description, priority, images });
     }
-    onClose();
+    triggerClose();
+  };
+
+  const triggerClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 300);
   };
 
   const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
-      onClose();
+      triggerClose();
     }
   };
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      {isOpen && !isClosing && (
         <motion.div
           className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center z-50"
           onClick={handleOutsideClick}
@@ -146,7 +155,7 @@ const TaskModal = ({
             </div>
             <div className="mt-6 flex justify-end space-x-4">
               <button
-                onClick={onClose}
+                onClick={triggerClose}
                 className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
               >
                 Cancel

@@ -1,12 +1,21 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskForm from "./AddTaskForm";
-import Task from "./Task";
+import TaskComponent from "./Task";
 import { FaGripVertical, FaTrash } from "react-icons/fa";
-import { JSX } from "react";
+import { JSX, useState } from "react";
+import { Column as ColumnType, Task as TaskType } from "../types/useBoardTypes";
+import TaskModal from "./TaskModal";
 
-/**
- * Component representing a single column in the task board.
- */
+interface ColumnProps {
+  column: ColumnType;
+  colIndex: number;
+  onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
+  onRemoveColumn: (columnId: string) => void;
+  onTaskAdded: (newTask: TaskType) => void;
+  onUpdateTask: (columnId: string, updatedTask: TaskType) => void;
+  onRemoveTask: (columnId: string, taskId: string) => void;
+}
+
 const Column = ({
   column,
   colIndex,
@@ -15,7 +24,17 @@ const Column = ({
   onTaskAdded,
   onUpdateTask,
   onRemoveTask,
-}: any): JSX.Element => {
+}: ColumnProps): JSX.Element => {
+  const [selectedTask, setSelectedTask] = useState<TaskType | null>(null);
+
+  const openTaskModal = (task: TaskType) => {
+    setSelectedTask(task);
+  };
+
+  const closeTaskModal = () => {
+    setSelectedTask(null);
+  };
+
   return (
     <Draggable key={column.id} draggableId={column.id} index={colIndex}>
       {(provided, snapshot) => (
@@ -28,14 +47,14 @@ const Column = ({
               ? "0 4px 8px rgba(0, 0, 0, 0.2)"
               : "none",
           }}
-          className={`bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] flex flex-col gap-4 transition-transform duration-200 ${
+          className={`bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] h-[500px] flex flex-col gap-4 transition-transform duration-200 ${
             snapshot.isDragging ? "transform scale-105" : ""
           }`}
         >
-          <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-600 ">
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
             <div
               {...provided.dragHandleProps}
-              className="cursor-move text-gray-400 hover:text-gray-200 "
+              className="cursor-move text-gray-400 hover:text-gray-200"
               role="button"
               tabIndex={0}
               aria-label="Drag handle"
@@ -49,7 +68,6 @@ const Column = ({
               className="bg-transparent text-lg font-semibold w-full focus:outline-none focus:border-blue-500 ml-2"
               placeholder="Column Title"
             />
-
             <button
               onClick={() => onRemoveColumn(column.id)}
               className="text-red-500 hover:text-red-700 transition-colors duration-200 cursor-pointer"
@@ -69,15 +87,18 @@ const Column = ({
               >
                 {column.tasks && column.tasks.length > 0 ? (
                   column.tasks
-                    .filter((task: any) => task && task.id)
-                    .map((task: any, taskIndex: number) => (
-                      <Task
+                    .filter((task) => task && task.id)
+                    .map((task, taskIndex) => (
+                      <TaskComponent
                         key={task.id}
                         task={task}
                         taskIndex={taskIndex}
                         columnId={column.id}
-                        onUpdateTask={onUpdateTask}
+                        onUpdateTask={(updatedTask) =>
+                          onUpdateTask(column.id, updatedTask)
+                        }
                         onRemoveTask={onRemoveTask}
+                        onOpenTaskModal={openTaskModal}
                       />
                     ))
                 ) : (
@@ -92,6 +113,17 @@ const Column = ({
             columnId={column.id}
             onTaskAdded={onTaskAdded}
           />
+          {selectedTask && (
+            <TaskModal
+              isOpen={!!selectedTask}
+              mode="edit"
+              task={selectedTask}
+              onClose={closeTaskModal}
+              onUpdateTask={(updatedTask) =>
+                onUpdateTask(column.id, updatedTask)
+              }
+            />
+          )}
         </div>
       )}
     </Draggable>

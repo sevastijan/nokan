@@ -7,6 +7,7 @@ import Column from "../../components/Column";
 import AddColumnPopup from "../../components/AddColumnPopup";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Board, Column as ColumnType, Task } from "../../types/useBoardTypes";
 
 const BoardPage = (): JSX.Element => {
   const { id } = useParams();
@@ -17,14 +18,15 @@ const BoardPage = (): JSX.Element => {
     handleAddColumn,
     handleRemoveColumn,
     handleUpdateColumnTitle,
-    handleUpdateTaskTitle,
     handleRemoveTask,
   } = useBoard(id as string);
 
-  const [newColumnTitle, setNewColumnTitle] = useState("");
-  const [isAddingColumn, setIsAddingColumn] = useState(false);
-  const [localBoardTitle, setLocalBoardTitle] = useState(board?.title || "");
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState<string>("");
+  const [isAddingColumn, setIsAddingColumn] = useState<boolean>(false);
+  const [localBoardTitle, setLocalBoardTitle] = useState<string>(
+    board?.title || ""
+  );
+  const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (board?.title && board.title !== localBoardTitle) {
@@ -42,14 +44,16 @@ const BoardPage = (): JSX.Element => {
     return () => clearTimeout(timeoutId);
   }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
 
-  const handleUpdateTask = (columnId: string, updatedTask: any) => {
+  const handleUpdateTask = (columnId: string, updatedTask: Task) => {
+    if (!board) return;
+
     updateBoard({
       ...board,
-      columns: board.columns.map((col: any) =>
+      columns: board.columns.map((col: ColumnType) =>
         col.id === columnId
           ? {
               ...col,
-              tasks: col.tasks.map((task: any) =>
+              tasks: col.tasks.map((task: Task) =>
                 task.id === updatedTask.id ? updatedTask : task
               ),
             }
@@ -57,16 +61,19 @@ const BoardPage = (): JSX.Element => {
       ),
     });
   };
+
   const onDragEnd = (result: any) => {
+    if (!board) return;
+
     const { source, destination, type } = result;
     if (!destination) return;
 
     if (type === "TASK") {
       const sourceCol = board.columns.find(
-        (col: any) => col.id === source.droppableId
+        (col) => col.id === source.droppableId
       );
       const destCol = board.columns.find(
-        (col: any) => col.id === destination.droppableId
+        (col) => col.id === destination.droppableId
       );
 
       if (!sourceCol || !destCol) return;
@@ -80,7 +87,7 @@ const BoardPage = (): JSX.Element => {
 
         updateBoard({
           ...board,
-          columns: board.columns.map((col: any) =>
+          columns: board.columns.map((col) =>
             col.id === sourceCol.id ? { ...col, tasks: newTasks } : col
           ),
         });
@@ -93,7 +100,7 @@ const BoardPage = (): JSX.Element => {
 
         updateBoard({
           ...board,
-          columns: board.columns.map((col: any) =>
+          columns: board.columns.map((col) =>
             col.id === sourceCol.id
               ? { ...col, tasks: sourceTasks }
               : col.id === destCol.id
@@ -146,7 +153,7 @@ const BoardPage = (): JSX.Element => {
               className="flex flex-wrap gap-4 sm:gap-6 overflow-x-auto pb-4 justify-center sm:justify-start"
             >
               <AnimatePresence>
-                {board.columns.map((column: any, colIndex: number) => (
+                {board.columns.map((column: ColumnType, colIndex: number) => (
                   <motion.div
                     key={column.id}
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -161,10 +168,10 @@ const BoardPage = (): JSX.Element => {
                       onUpdateColumnTitle={handleUpdateColumnTitle}
                       onRemoveColumn={handleRemoveColumn}
                       onUpdateTask={handleUpdateTask}
-                      onTaskAdded={(newTask: any) =>
+                      onTaskAdded={(newTask: Task) =>
                         updateBoard({
                           ...board,
-                          columns: board.columns.map((col: any) =>
+                          columns: board.columns.map((col) =>
                             col.id === column.id
                               ? { ...col, tasks: [...col.tasks, newTask] }
                               : col
