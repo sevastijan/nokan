@@ -6,16 +6,6 @@ import { JSX } from "react";
 
 /**
  * Component representing a single column in the task board.
- *
- * @param {Object} props - The component props.
- * @param {Object} props.column - The column data, including its ID, title, and tasks.
- * @param {number} props.colIndex - The index of the column in the board.
- * @param {Function} props.onUpdateColumnTitle - Callback to update the column title.
- * @param {Function} props.onRemoveColumn - Callback to remove the column.
- * @param {Function} props.onTaskAdded - Callback triggered when a new task is added to the column.
- * @param {Function} props.onUpdateTaskTitle - Callback to update the title of a task.
- * @param {Function} props.onRemoveTask - Callback to remove a task from the column.
- * @returns {JSX.Element} The rendered Column component.
  */
 const Column = ({
   column,
@@ -28,16 +18,25 @@ const Column = ({
 }: any): JSX.Element => {
   return (
     <Draggable key={column.id} draggableId={column.id} index={colIndex}>
-      {(provided) => (
+      {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="bg-gray-100 rounded p-4 min-w-[250px]"
+          style={{
+            ...provided.draggableProps.style,
+            boxShadow: snapshot.isDragging
+              ? "0 4px 8px rgba(0, 0, 0, 0.2)"
+              : "none",
+          }}
+          className={`bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] flex flex-col gap-4 transition-transform duration-200 ${
+            snapshot.isDragging ? "transform scale-105" : ""
+          }`}
         >
-          <div className="flex justify-between items-center mb-2">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4">
             <div
               {...provided.dragHandleProps}
-              className="cursor-move text-gray-500"
+              className="cursor-move text-gray-400 hover:text-gray-200"
               role="button"
               tabIndex={0}
               aria-label="Drag handle"
@@ -49,23 +48,26 @@ const Column = ({
               type="text"
               defaultValue={column.title}
               onBlur={(e) => onUpdateColumnTitle(column.id, e.target.value)}
-              className="font-semibold w-full border-b focus:outline-none ml-2"
+              className="bg-transparent text-lg font-semibold w-full border-b border-gray-600 focus:outline-none focus:border-blue-500 ml-2"
+              placeholder="Column Title"
             />
 
             <button
               onClick={() => onRemoveColumn(column.id)}
-              className="text-sm text-red-600"
+              className="text-red-500 hover:text-red-700 transition-colors duration-200"
+              aria-label="Remove column"
             >
               ✕
             </button>
           </div>
 
+          {/* Tasks */}
           <Droppable droppableId={column.id} type="TASK">
             {(provided) => (
               <ul
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="space-y-2 min-h-[50px]"
+                className="space-y-2 min-h-[50px] flex-1 overflow-y-auto"
               >
                 {column.tasks.map((task: any, taskIndex: number) => (
                   <Task
@@ -82,6 +84,7 @@ const Column = ({
             )}
           </Droppable>
 
+          {/* Add Task Form */}
           <AddTaskForm
             boardId={column.boardId}
             columnId={column.id}
