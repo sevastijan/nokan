@@ -8,7 +8,7 @@ import {
   updateTaskTitle,
   updateColumnTitle,
 } from "../lib/api";
-import { Task, Column, Board } from "../types/useBoardTypes"; // Import typów
+import { Task, Column, Board } from "../types/useBoardTypes";
 
 export const useBoard = (boardId: string) => {
   const [board, setBoard] = useState<Board | null>(null);
@@ -17,18 +17,17 @@ export const useBoard = (boardId: string) => {
 
   useEffect(() => {
     if (!boardId) return;
-  
+
     getBoardById(boardId)
       .then((data) => {
-        // Dodaj boardId do każdej kolumny
         const updatedData: Board = {
           ...data,
           columns: data.columns.map((col) => ({
             ...col,
-            boardId: data.id, // Dodano boardId do każdej kolumny
+            boardId: data.id,
           })),
         };
-  
+
         setBoard(updatedData);
       })
       .catch((err) => console.error("Error loading board:", err));
@@ -36,6 +35,10 @@ export const useBoard = (boardId: string) => {
 
   const updateBoard = (updatedBoard: Board) => {
     setBoard(updatedBoard);
+  };
+
+  const getColumnById = (columnId: string): Column | undefined => {
+    return board?.columns.find((col) => col.id === columnId);
   };
 
   const handleUpdateBoardTitle = async (newTitle: string) => {
@@ -127,6 +130,39 @@ export const useBoard = (boardId: string) => {
     }
   };
 
+  const handleUpdateTaskTitle = async (columnId: string, taskId: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await updateTaskTitle(taskId, newTitle.trim());
+      setBoard((prev) =>
+        prev
+          ? {
+              ...prev,
+              columns: prev.columns.map((col) =>
+                col.id === columnId
+                  ? {
+                      ...col,
+                      tasks: col.tasks.map((task) =>
+                        task.id === taskId ? { ...task, title: newTitle.trim() } : task
+                      ),
+                    }
+                  : col
+              ),
+            }
+          : prev
+      );
+    } catch (err) {
+      console.error("Error updating task title:", err);
+      setError("Failed to update task title. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpdateTask = async (columnId: string, updatedTask: Task) => {
     setLoading(true);
     setError(null);
@@ -191,10 +227,12 @@ export const useBoard = (boardId: string) => {
     loading,
     error,
     updateBoard,
+    getColumnById,
     handleUpdateBoardTitle,
     handleAddColumn,
     handleRemoveColumn,
     handleUpdateColumnTitle,
+    handleUpdateTaskTitle,
     handleUpdateTask,
     handleRemoveTask,
   };

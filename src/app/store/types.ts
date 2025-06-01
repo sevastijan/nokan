@@ -14,7 +14,3 @@ export interface Task {
     title: string;
     columns: Column[];
   }
-  
-  interface BoardsState {
-    boards: Board[];
-  }

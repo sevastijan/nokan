@@ -7,7 +7,7 @@ import Column from "../../components/Column";
 import AddColumnPopup from "../../components/AddColumnPopup";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Board, Column as ColumnType, Task } from "../../types/useBoardTypes";
+import { Column as ColumnType, Task } from "../../types/useBoardTypes";
 
 const BoardPage = (): JSX.Element => {
   const { id } = useParams();

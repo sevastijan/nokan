@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PrioritySelector from "./PrioritySelector";
+import Image from "next/image";
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -143,11 +144,13 @@ const TaskModal = ({
                 />
                 <div className="mt-4 flex flex-wrap gap-4">
                   {images.map((image, index) => (
-                    <img
+                    <Image
                       key={index}
                       src={image}
                       alt={`Uploaded ${index}`}
-                      className="w-32 h-32 object-cover rounded-lg border border-gray-600"
+                      width={128}
+                      height={128}
+                      className="object-cover rounded-lg border border-gray-600"
                     />
                   ))}
                 </div>

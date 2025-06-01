@@ -21,9 +21,6 @@ const AddTaskForm = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Handles the addition of a new task.
-   */
   const handleAdd = async (taskData: {
     title: string;
     description?: string;
@@ -64,9 +61,12 @@ const AddTaskForm = ({
     <div className="mt-4">
       <button
         onClick={() => setIsModalOpen(true)}
-        className="w-full bg-green-600 text-white py-1 rounded"
+        className={`w-full py-1 rounded ${
+          loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 text-white"
+        }`}
+        disabled={loading}
       >
-        Add Task
+        {loading ? "Adding..." : "Add Task"}
       </button>
       {error && <p className="text-red-500 mt-2">{error}</p>}
 

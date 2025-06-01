@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getBoards, addBoard, deleteBoard } from "../lib/api";
+import { Board } from "../types/useBoardTypes"; // Import typu Board
 
 /**
  * Component for displaying and managing a list of boards.
@@ -10,7 +11,7 @@ import { getBoards, addBoard, deleteBoard } from "../lib/api";
  * @returns {JSX.Element} The rendered BoardList component.
  */
 const BoardList = () => {
-  const [boards, setBoards] = useState<any[]>([]);
+  const [boards, setBoards] = useState<Board[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,21 +43,22 @@ const BoardList = () => {
     if (!newTitle.trim()) return;
 
     try {
-      const newBoard = await addBoard({
+      const newBoard: Board = await addBoard({
         title: newTitle.trim(),
       });
       setBoards((prev) => [...prev, newBoard]);
       setNewTitle("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error adding board:", err);
 
-      if (err.message?.includes("row-level security")) {
+      if (err instanceof Error && err.message.includes("row-level security")) {
         setError("You do not have permission to add a board.");
       } else {
         setError("Failed to add board.");
       }
     }
   };
+
   /**
    * Handles deleting a board.
    * Sends the delete request to the API and updates the state.

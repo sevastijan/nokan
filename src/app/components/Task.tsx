@@ -8,18 +8,18 @@ interface TaskProps {
   task: TaskType;
   taskIndex: number;
   columnId: string;
-  onUpdateTask: (updatedTask: TaskType) => void;
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskModal: (task: TaskType) => void;
+  onUpdateTask: (updatedTask: TaskType) => void;
 }
 
 const Task = ({
   task,
   taskIndex,
   columnId,
-  onUpdateTask,
   onRemoveTask,
   onOpenTaskModal,
+  onUpdateTask,
 }: TaskProps): JSX.Element => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -27,8 +27,8 @@ const Task = ({
   const toggleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     setMenuPosition({
-      top: rect.top + window.scrollY - 10, // Przesunięcie w górę
-      left: rect.right + window.scrollX + 10, // Przesunięcie w prawo
+      top: rect.top + window.scrollY - 10,
+      left: rect.right + window.scrollX + 10,
     });
     setIsMenuOpen((prev) => !prev);
   };
