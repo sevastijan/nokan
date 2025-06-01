@@ -1,8 +1,7 @@
 "use client";
 
 import { JSX, useState } from "react";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "../store/index";
+import { useAppDispatch } from "../store/hooks";
 import { addTask as addTaskToRedux } from "../store/slices/boardSlice";
 import { addTask as addTaskToDB } from "../lib/api";
 import TaskModal from "./TaskModal";
@@ -16,7 +15,7 @@ const AddTaskForm = ({
   columnId: string;
   onTaskAdded?: (newTask: { id: string; title: string }) => void;
 }): JSX.Element => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,18 +31,17 @@ const AddTaskForm = ({
     setError(null);
 
     try {
+      // Dodaj zadanie do bazy danych
       const newTask = await addTaskToDB(columnId, taskData.title.trim(), 0);
 
-      if (
-        !newTask ||
-        typeof newTask.id !== "string" ||
-        typeof newTask.title !== "string"
-      ) {
+      if (!newTask || !newTask.id || !newTask.title) {
         throw new Error("Invalid task data returned from the database");
       }
 
+      // Dodaj zadanie do Redux Store
       dispatch(addTaskToRedux({ boardId, columnId, taskTitle: newTask.title }));
 
+      // Wywołaj callback, jeśli istnieje
       if (onTaskAdded) {
         onTaskAdded(newTask);
       }

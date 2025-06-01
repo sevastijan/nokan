@@ -1,6 +1,9 @@
-import { redirect } from "next/navigation";
+import AuthButton from "./components/AuthButton";
 
 export default function Home() {
-  redirect("/dashboard");
-  return null;
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <AuthButton />
+    </div>
+  );
 }

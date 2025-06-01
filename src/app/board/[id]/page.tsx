@@ -1,16 +1,19 @@
 "use client";
 
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
 import AddColumnPopup from "../../components/AddColumnPopup";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Column as ColumnType, Task } from "../../types/useBoardTypes";
+import { useSession, signOut } from "next-auth/react";
 
 const Page = (): JSX.Element => {
   const { id } = useParams();
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const {
     board,
     updateBoard,
@@ -27,6 +30,12 @@ const Page = (): JSX.Element => {
     board?.title || ""
   );
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     if (board?.title && board.title !== localBoardTitle) {
@@ -115,18 +124,48 @@ const Page = (): JSX.Element => {
     }
   };
 
-  if (!board) return <p className="p-4">Loading...</p>;
+  if (status === "loading" || !board) {
+    return <p className="p-4">Loading...</p>;
+  }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="p-4 sm:p-6 bg-gray-900 min-h-screen">
-        <input
-          type="text"
-          value={localBoardTitle}
-          onChange={(e) => setLocalBoardTitle(e.target.value)}
-          className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 w-full bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
-          placeholder="Board Title"
-        />
+        {/* Dodaj przycisk powrotu na górze */}
+        <div className="mb-4">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <input
+            type="text"
+            value={localBoardTitle}
+            onChange={(e) => setLocalBoardTitle(e.target.value)}
+            className="text-2xl sm:text-3xl font-bold bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
+            placeholder="Board Title"
+          />
+          {session && (
+            <div className="flex items-center gap-4">
+              <img
+                src={session.user?.image || ""}
+                alt={session.user?.name || "User Avatar"}
+                className="w-10 h-10 rounded-full"
+              />
+              <button
+                onClick={() => signOut()}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-md transition-all duration-200"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
+
         <Droppable droppableId="board" type="COLUMN" direction="horizontal">
           {(provided) => (
             <div
@@ -168,12 +207,14 @@ const Page = (): JSX.Element => {
             </div>
           )}
         </Droppable>
+
         <button
           onClick={() => setIsPopupOpen(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md mt-4 transition-all duration-200 w-full sm:w-auto"
         >
           Add Column
         </button>
+
         <AddColumnPopup
           isOpen={isPopupOpen}
           onClose={() => setIsPopupOpen(false)}

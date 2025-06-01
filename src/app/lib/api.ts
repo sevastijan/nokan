@@ -13,6 +13,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * @returns {Promise<Object>} The board data.
  */
 export async function getBoardById(id: string) {
+  console.log("Fetching board with ID:", id);
+  
   const { data, error } = await supabase
     .from("boards")
     .select(`
@@ -32,15 +34,22 @@ export async function getBoardById(id: string) {
         )
       )
     `)
-    .eq("id", id)
-    .single();
+    .eq("id", id);
+
+  console.log("Supabase response:", { data, error });
 
   if (error) {
     console.error("Error fetching board:", error.message);
     throw error;
   }
 
-  return data;
+  if (!data || data.length === 0) {
+    console.log("No board found for ID:", id);
+    throw new Error(`Board with id ${id} not found`);
+  }
+
+  console.log("Found board:", data[0]);
+  return data[0];
 }
 
 /**
