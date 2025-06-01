@@ -15,6 +15,16 @@ interface ColumnProps {
   onRemoveTask: (columnId: string, taskId: string) => void;
 }
 
+/**
+ * Column component that displays a draggable column with tasks in a Kanban board
+ * @param column - Column data including id, title, and tasks
+ * @param colIndex - Index of the column for drag and drop ordering
+ * @param onUpdateColumnTitle - Function to handle column title updates
+ * @param onRemoveColumn - Function to handle column removal
+ * @param onTaskAdded - Function to handle new task additions
+ * @param onRemoveTask - Function to handle task removal
+ * @returns JSX element containing the column interface
+ */
 const Column = ({
   column,
   colIndex,
@@ -25,10 +35,17 @@ const Column = ({
 }: ColumnProps): JSX.Element => {
   const [selectedTask, setSelectedTask] = useState<TaskType | null>(null);
 
+  /**
+   * Open task modal for editing
+   * @param task - Task to be edited
+   */
   const openTaskModal = (task: TaskType) => {
     setSelectedTask(task);
   };
 
+  /**
+   * Close task modal
+   */
   const closeTaskModal = () => {
     setSelectedTask(null);
   };

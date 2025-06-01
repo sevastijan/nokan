@@ -7,6 +7,9 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+/**
+ * NextAuth configuration options
+ */
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -16,14 +19,15 @@ export const authOptions: NextAuthOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
+    /**
+     * Handle user sign in and create user in database if not exists
+     * @param user - User object from authentication provider
+     * @param account - Account object from authentication provider
+     * @param profile - Profile object from authentication provider
+     * @returns Promise<boolean> - Whether to allow sign in
+     */
     async signIn({ user, account, profile }) {
-      console.log("=== SIGNIN CALLBACK START ===");
-      console.log("User:", user);
-      console.log("Account:", account);
-      console.log("Profile:", profile);
-      
       try {
-        // Sprawdź czy użytkownik już istnieje
         const { data: existingUser, error: selectError } = await supabase
           .from("users")
           .select("*")
@@ -31,12 +35,10 @@ export const authOptions: NextAuthOptions = {
           .single();
 
         if (selectError && selectError.code !== "PGRST116") {
-          console.error("Error checking existing user:", selectError);
-          return true; // Nie blokuj logowania
+          return true;
         }
 
         if (!existingUser) {
-          console.log("Creating new user...");
           const { error: insertError } = await supabase
             .from("users")
             .insert({
@@ -47,52 +49,82 @@ export const authOptions: NextAuthOptions = {
             });
 
           if (insertError) {
-            console.error("Error creating user:", insertError);
-          } else {
-            console.log("User created successfully");
+            return true;
           }
-        } else {
-          console.log("User already exists");
         }
 
-        console.log("=== SIGNIN CALLBACK END - SUCCESS ===");
         return true;
       } catch (error) {
-        console.error("=== SIGNIN CALLBACK ERROR ===", error);
-        return true; // Nie blokuj logowania
+        return true;
       }
     },
+    /**
+     * Handle redirect after authentication
+     * @param url - Current URL
+     * @param baseUrl - Base URL of the application
+     * @returns Promise<string> - URL to redirect to
+     */
     async redirect({ url, baseUrl }) {
-      console.log("=== REDIRECT CALLBACK ===");
-      console.log("URL:", url);
-      console.log("BaseURL:", baseUrl);
+      // If signing out, redirect to home page
+      if (url.includes('signout') || url === baseUrl) {
+        return baseUrl;
+      }
       
-      const redirectUrl = `${baseUrl}/dashboard`;
-      console.log("Redirecting to:", redirectUrl);
-      return redirectUrl;
+      // If callback URL is provided and valid, use it
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      
+      // If relative URL, prepend base URL
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      
+      // Default redirect to dashboard for sign in
+      return `${baseUrl}/dashboard`;
     },
+    /**
+     * Handle session creation
+     * @param session - Session object
+     * @param token - JWT token
+     * @returns Promise<Session> - Modified session object
+     */
     async session({ session, token }) {
-      console.log("=== SESSION CALLBACK ===");
-      console.log("Session:", session);
       return session;
     },
+    /**
+     * Handle JWT token creation
+     * @param token - JWT token
+     * @param account - Account object
+     * @param user - User object
+     * @returns Promise<JWT> - Modified JWT token
+     */
     async jwt({ token, account, user }) {
-      console.log("=== JWT CALLBACK ===");
-      console.log("Token:", token);
       return token;
     },
   },
   events: {
+    /**
+     * Handle sign in event
+     * @param message - Sign in event message
+     */
     async signIn(message) {
-      console.log("=== SIGNIN EVENT ===", message);
+      // Sign in event handling can be added here
     },
+    /**
+     * Handle sign out event
+     * @param message - Sign out event message
+     */
     async signOut(message) {
-      console.log("=== SIGNOUT EVENT ===", message);
+      // Sign out event handling can be added here
     },
   },
   debug: process.env.NODE_ENV === "development",
 };
 
+/**
+ * NextAuth handler for API routes
+ */
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

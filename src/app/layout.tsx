@@ -1,5 +1,6 @@
 import "./styles/globals.css";
 import { Providers } from "./providers";
+import Navbar from "./components/Navbar";
 
 export const metadata = {
   title: "Nokan Taskboard",
@@ -14,7 +15,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <Navbar />
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   );

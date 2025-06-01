@@ -2,13 +2,18 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import BoardList from "../components/BoardList"; // Import komponentu BoardList
+import BoardList from "../components/BoardList";
 
-export default function DashboardPage() {
+/**
+ * Dashboard page component that displays user's boards
+ * Requires authentication to access
+ * @returns JSX element containing the dashboard interface
+ */
+const DashboardPage = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Sprawdź status sesji - loading, authenticated, unauthenticated
+  // Check session status - loading, authenticated, unauthenticated
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
@@ -17,7 +22,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Jeśli użytkownik nie jest zalogowany, przekieruj na stronę logowania
+  // If user is not authenticated, redirect to sign in page
   if (status === "unauthenticated") {
     router.push("/api/auth/signin");
     return null;
@@ -25,8 +30,10 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 bg-gray-900 min-h-screen text-white">
-      <h1 className="text-3xl font-bold mb-6">Your Dashboards</h1>
+      <h1 className="text-3xl font-bold mb-6">Your Dashboard</h1>
       <BoardList />
     </div>
   );
-}
+};
+
+export default DashboardPage;

@@ -12,6 +12,15 @@ interface TaskProps {
   onOpenTaskModal: (task: TaskType) => void;
 }
 
+/**
+ * Task component that displays a draggable task card with edit/delete menu
+ * @param task - Task data including id, title, and description
+ * @param taskIndex - Index of the task for drag and drop ordering
+ * @param columnId - ID of the column containing this task
+ * @param onRemoveTask - Function to handle task removal
+ * @param onOpenTaskModal - Function to open task edit modal
+ * @returns JSX element containing the task card interface
+ */
 const Task = ({
   task,
   taskIndex,
@@ -22,6 +31,10 @@ const Task = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
+  /**
+   * Toggle context menu and calculate its position
+   * @param event - Mouse event from the menu button
+   */
   const toggleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     setMenuPosition({
@@ -31,6 +44,22 @@ const Task = ({
     setIsMenuOpen((prev) => !prev);
   };
 
+  /**
+   * Handle task edit action
+   */
+  const handleEdit = () => {
+    onOpenTaskModal(task);
+    setIsMenuOpen(false);
+  };
+
+  /**
+   * Handle task delete action
+   */
+  const handleDelete = () => {
+    onRemoveTask(columnId, task.id);
+    setIsMenuOpen(false);
+  };
+
   return (
     <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
       {(provided, snapshot) => (
@@ -38,7 +67,7 @@ const Task = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`bg-gray-700 text-white rounded-lg shadow-md p-3 flex justify-between items-center ${
+          className={`bg-gray-700 text-white rounded-lg shadow-md p-3 flex justify-between items-center transition-transform duration-200 ${
             snapshot.isDragging ? "transform scale-105" : ""
           }`}
         >
@@ -73,20 +102,14 @@ const Task = ({
                 className="bg-gray-800 text-white rounded-lg shadow-lg p-2"
               >
                 <button
-                  onClick={() => {
-                    onOpenTaskModal(task);
-                    setIsMenuOpen(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-700 rounded-md"
+                  onClick={handleEdit}
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-700 rounded-md transition-colors duration-200"
                 >
                   Edit
                 </button>
                 <button
-                  onClick={() => {
-                    onRemoveTask(columnId, task.id);
-                    setIsMenuOpen(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-700 rounded-md"
+                  onClick={handleDelete}
+                  className="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-700 rounded-md transition-colors duration-200"
                 >
                   Delete
                 </button>

@@ -1,34 +1,58 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
-const handleSignIn = () => {
-  signIn("google"); // Usuń callbackUrl
-};
+/**
+ * Authentication button component that handles user sign-in and navigation to dashboard
+ * @returns JSX element with conditional authentication UI
+ */
+const AuthButton = () => {
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-export default function AuthButton() {
-  const { data: session } = useSession();
+  /**
+   * Handle Google sign-in process
+   */
+  const handleSignIn = () => {
+    signIn("google");
+  };
+
+  /**
+   * Navigate to user dashboard
+   */
+  const goToDashboard = () => {
+    router.push("/dashboard");
+  };
+
+  if (status === "loading") {
+    return <div className="text-gray-400">Loading...</div>;
+  }
 
   return (
-    <div>
+    <div className="space-y-4">
       {!session ? (
         <button
           onClick={handleSignIn}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer"
         >
-          Log in with Google
+          Sign in with Google
         </button>
       ) : (
-        <div className="flex flex-col items-center">
-          <p className="mb-2">Welcome, {session.user?.name}!</p>
+        <div className="text-center space-y-4">
+          <p className="text-xl text-white">
+            Welcome back, {session.user?.name}!
+          </p>
           <button
-            onClick={() => signOut()}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            onClick={goToDashboard}
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer"
           >
-            Log out
+            Go to Dashboard
           </button>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default AuthButton;

@@ -8,6 +8,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+/**
+ * Get board data by ID
+ * @param request - Next.js request object
+ * @param params - Route parameters containing board ID
+ * @returns Promise<NextResponse> - Board data or error response
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -20,9 +26,7 @@ export async function GET(
     }
 
     const boardId = params.id;
-    console.log("Fetching board:", boardId, "for user:", session.user.email);
 
-    // Pobierz board z dashboards table
     const { data: dashboardData, error } = await supabase
       .from("dashboards")
       .select("*")
@@ -31,14 +35,15 @@ export async function GET(
       .single();
 
     if (error) {
-      console.error("Supabase error:", error);
       if (error.code === "PGRST116") {
         return NextResponse.json({ error: "Board not found" }, { status: 404 });
       }
       return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
-    // Przekształć dashboard data na board format
+    /**
+     * Transform dashboard data to board format with default columns
+     */
     const boardData = {
       id: dashboardData.id,
       title: dashboardData.title,
@@ -66,10 +71,88 @@ export async function GET(
       ]
     };
 
-    console.log("Returning board data:", boardData);
     return NextResponse.json(boardData);
   } catch (error) {
-    console.error("API error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+/**
+ * Update board data by ID
+ * @param request - Next.js request object
+ * @param params - Route parameters containing board ID
+ * @returns Promise<NextResponse> - Updated board data or error response
+ */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const boardId = params.id;
+    const { title } = await request.json();
+
+    if (!title || !title.trim()) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("dashboards")
+      .update({ title: title.trim() })
+      .eq("id", boardId)
+      .eq("owner", session.user.email)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return NextResponse.json({ error: "Board not found" }, { status: 404 });
+      }
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+/**
+ * Delete board by ID
+ * @param request - Next.js request object
+ * @param params - Route parameters containing board ID
+ * @returns Promise<NextResponse> - Success message or error response
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const boardId = params.id;
+
+    const { error } = await supabase
+      .from("dashboards")
+      .delete()
+      .eq("id", boardId)
+      .eq("owner", session.user.email);
+
+    if (error) {
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: "Board deleted successfully" });
+  } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
