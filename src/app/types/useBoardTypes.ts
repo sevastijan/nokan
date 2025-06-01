@@ -9,6 +9,7 @@ export interface Task {
     dueDate?: string; 
     createdAt?: string; 
     updatedAt?: string; 
+    // images?: string[]; TODO
   }
   
   /**

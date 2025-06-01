@@ -26,7 +26,11 @@ const Page = (): JSX.Element => {
     handleRemoveColumn,
     handleUpdateColumnTitle,
     handleRemoveTask,
+    handleUpdateTask,
   } = useBoard(id as string);
+
+  // Add debugging
+  console.log("handleUpdateTask from useBoard:", handleUpdateTask);
 
   const [newColumnTitle, setNewColumnTitle] = useState<string>("");
   const [isAddingColumn, setIsAddingColumn] = useState<boolean>(false);
@@ -187,6 +191,7 @@ const Page = (): JSX.Element => {
                   >
                     <Column
                       column={column}
+                      onUpdateTask={handleUpdateTask}
                       colIndex={colIndex}
                       onUpdateColumnTitle={handleUpdateColumnTitle}
                       onRemoveColumn={handleRemoveColumn}

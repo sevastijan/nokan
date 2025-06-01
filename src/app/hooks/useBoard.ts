@@ -7,13 +7,14 @@ import {
   updateBoardTitle,
   updateTaskTitle,
   updateColumnTitle,
+  updateTask,
 } from "../lib/api";
 import { Task, Column, Board } from "../types/useBoardTypes";
 
 /**
  * Custom hook for managing board state and operations
- * @param boardId - The ID of the board to manage
- * @returns Object containing board state and handler functions
+ * @param {string} boardId - The ID of the board to manage
+ * @returns {object} Object containing board state and handler functions
  */
 export const useBoard = (boardId: string) => {
   const [board, setBoard] = useState<Board | null>(null);
@@ -45,7 +46,7 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Update the entire board state
-   * @param updatedBoard - New board data to set
+   * @param {Board} updatedBoard - New board data to set
    */
   const updateBoard = (updatedBoard: Board) => {
     setBoard(updatedBoard);
@@ -53,8 +54,8 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Get a column by its ID
-   * @param columnId - ID of the column to find
-   * @returns Column object or undefined if not found
+   * @param {string} columnId - ID of the column to find
+   * @returns {Column | undefined} Column object or undefined if not found
    */
   const getColumnById = (columnId: string): Column | undefined => {
     return board?.columns.find((col) => col.id === columnId);
@@ -62,7 +63,7 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Update board title
-   * @param newTitle - New title for the board
+   * @param {string} newTitle - New title for the board
    */
   const handleUpdateBoardTitle = async (newTitle: string) => {
     if (!newTitle.trim() || newTitle === board?.title) return;
@@ -82,7 +83,7 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Add a new column to the board
-   * @param title - Title for the new column
+   * @param {string} title - Title for the new column
    */
   const handleAddColumn = async (title: string) => {
     if (!title.trim()) return;
@@ -109,7 +110,7 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Remove a column from the board
-   * @param columnId - ID of the column to remove
+   * @param {string} columnId - ID of the column to remove
    */
   const handleRemoveColumn = async (columnId: string) => {
     setLoading(true);
@@ -134,8 +135,8 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Update column title
-   * @param columnId - ID of the column to update
-   * @param newTitle - New title for the column
+   * @param {string} columnId - ID of the column to update
+   * @param {string} newTitle - New title for the column
    */
   const handleUpdateColumnTitle = async (columnId: string, newTitle: string) => {
     if (!newTitle.trim()) return;
@@ -164,9 +165,9 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Update task title
-   * @param columnId - ID of the column containing the task
-   * @param taskId - ID of the task to update
-   * @param newTitle - New title for the task
+   * @param {string} columnId - ID of the column containing the task
+   * @param {string} taskId - ID of the task to update
+   * @param {string} newTitle - New title for the task
    */
   const handleUpdateTaskTitle = async (columnId: string, taskId: string, newTitle: string) => {
     if (!newTitle.trim()) return;
@@ -202,14 +203,20 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Update an entire task object
-   * @param columnId - ID of the column containing the task
-   * @param updatedTask - Updated task object
+   * @param {string} columnId - ID of the column containing the task
+   * @param {Task} updatedTask - Updated task object
    */
   const handleUpdateTask = async (columnId: string, updatedTask: Task) => {
     setLoading(true);
     setError(null);
 
     try {
+      await updateTask(updatedTask.id, {
+        title: updatedTask.title,
+        description: updatedTask.description,
+        priority: updatedTask.priority,
+      });
+
       setBoard((prev) =>
         prev
           ? {
@@ -236,8 +243,8 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Remove a task from a column
-   * @param columnId - ID of the column containing the task
-   * @param taskId - ID of the task to remove
+   * @param {string} columnId - ID of the column containing the task
+   * @param {string} taskId - ID of the task to remove
    */
   const handleRemoveTask = async (columnId: string, taskId: string) => {
     setLoading(true);

@@ -13,17 +13,19 @@ interface ColumnProps {
   onRemoveColumn: (columnId: string) => void;
   onTaskAdded: (newTask: TaskType) => void;
   onRemoveTask: (columnId: string, taskId: string) => void;
+  onUpdateTask: (columnId: string, task: TaskType) => void;
 }
 
 /**
  * Column component that displays a draggable column with tasks in a Kanban board
- * @param column - Column data including id, title, and tasks
- * @param colIndex - Index of the column for drag and drop ordering
- * @param onUpdateColumnTitle - Function to handle column title updates
- * @param onRemoveColumn - Function to handle column removal
- * @param onTaskAdded - Function to handle new task additions
- * @param onRemoveTask - Function to handle task removal
- * @returns JSX element containing the column interface
+ * @param {ColumnType} column - Column data including id, title, and tasks
+ * @param {number} colIndex - Index of the column for drag and drop ordering
+ * @param {Function} onUpdateColumnTitle - Function to handle column title updates
+ * @param {Function} onRemoveColumn - Function to handle column removal
+ * @param {Function} onTaskAdded - Function to handle new task additions
+ * @param {Function} onRemoveTask - Function to handle task removal
+ * @param {Function} onUpdateTask - Function to handle task updates
+ * @returns {JSX.Element} JSX element containing the column interface
  */
 const Column = ({
   column,
@@ -32,12 +34,13 @@ const Column = ({
   onRemoveColumn,
   onTaskAdded,
   onRemoveTask,
+  onUpdateTask,
 }: ColumnProps): JSX.Element => {
   const [selectedTask, setSelectedTask] = useState<TaskType | null>(null);
 
   /**
    * Open task modal for editing
-   * @param task - Task to be edited
+   * @param {TaskType} task - Task to be edited
    */
   const openTaskModal = (task: TaskType) => {
     setSelectedTask(task);
@@ -130,7 +133,9 @@ const Column = ({
               isOpen={!!selectedTask}
               mode="edit"
               task={selectedTask}
+              columnId={column.id}
               onClose={closeTaskModal}
+              onUpdateTask={onUpdateTask}
             />
           )}
         </div>

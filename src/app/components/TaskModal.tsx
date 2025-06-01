@@ -18,8 +18,9 @@ interface TaskModalProps {
   onClose: () => void;
   mode: "add" | "edit";
   task?: Task;
-  onAddTask?: (newTask: Task) => void;
-  onUpdateTask?: (updatedTask: Task) => void;
+  columnId?: string;
+  onAddTask?: (task: Omit<Task, "id"> | Task) => void;
+  onUpdateTask?: (columnId: string, task: Task) => void;
 }
 
 /**
@@ -28,6 +29,7 @@ interface TaskModalProps {
  * @param onClose - Function to close the modal
  * @param mode - Modal mode (add or edit)
  * @param task - Task data when in edit mode
+ * @param columnId - Column ID for task updates
  * @param onAddTask - Function to handle new task creation
  * @param onUpdateTask - Function to handle task updates
  * @returns JSX element containing the task modal interface
@@ -37,6 +39,7 @@ const TaskModal = ({
   onClose,
   mode,
   task,
+  columnId,
   onAddTask,
   onUpdateTask,
 }: TaskModalProps) => {
@@ -45,6 +48,7 @@ const TaskModal = ({
   const [priority, setPriority] = useState(task?.priority || "Medium");
   const [images, setImages] = useState<string[]>(task?.images || []);
   const [isClosing, setIsClosing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   /**
    * Update form fields when mode or task changes
@@ -79,13 +83,32 @@ const TaskModal = ({
   /**
    * Handle saving task (add or update based on mode)
    */
-  const handleSave = () => {
-    if (mode === "add" && onAddTask) {
-      onAddTask({ id: "", title, description, priority, images });
-    } else if (mode === "edit" && onUpdateTask) {
-      onUpdateTask({ ...task, title, description, priority, images } as Task);
+  const handleSave = (e?: React.MouseEvent | React.TouchEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+
+    if (!title.trim()) return;
+
+    setLoading(true);
+
+    try {
+      if (mode === "add" && onAddTask) {
+        onAddTask({ id: "", title, description, priority });
+      } else if (mode === "edit" && onUpdateTask && task && columnId) {
+        onUpdateTask(columnId, {
+          ...task,
+          title,
+          description,
+          priority,
+        } as Task);
+      }
+
+      setLoading(false);
+      triggerClose();
+    } catch (error) {
+      console.error("Error saving task:", error);
+      setLoading(false);
     }
-    triggerClose();
   };
 
   /**
@@ -111,9 +134,9 @@ const TaskModal = ({
 
   return (
     <AnimatePresence>
-      {isOpen && !isClosing && (
+      {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center z-50 p-4"
           onClick={handleOutsideClick}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -121,81 +144,79 @@ const TaskModal = ({
           transition={{ duration: 0.3 }}
         >
           <motion.div
-            className="bg-gray-900 text-white rounded-lg p-6 w-full max-w-2xl"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
+            className="bg-gray-800 text-white rounded-lg p-4 sm:p-6 w-full max-w-xs sm:max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 50 }}
             transition={{ duration: 0.3 }}
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
           >
-            <h2 className="text-2xl font-bold mb-4">
-              {mode === "add" ? "Add New Task" : "Edit Task"}
-            </h2>
-            <div className="space-y-6">
+            <div className="space-y-4">
+              {/* Title input */}
               <div>
-                <label className="block text-lg font-medium mb-2">Title:</label>
+                <label className="block text-sm font-medium mb-2">
+                  Task Title:
+                </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-3 focus:outline-none focus:border-blue-500"
-                  placeholder="Task Title"
-                  autoFocus
+                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="Enter task title"
                 />
               </div>
+
+              {/* Description textarea */}
               <div>
-                <label className="block text-lg font-medium mb-2">
+                <label className="block text-sm font-medium mb-2">
                   Description:
                 </label>
                 <textarea
-                  className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-3 focus:outline-none focus:border-blue-500"
-                  placeholder="Add a description..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
+                  rows={3}
+                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-blue-500"
+                  placeholder="Enter task description"
                 />
               </div>
-              <PrioritySelector
-                selectedPriority={priority}
-                onChange={setPriority}
-              />
+
+              {/* Priority selector */}
               <div>
-                <label className="block text-lg font-medium mb-2">
-                  Upload Images:
+                <label className="block text-sm font-medium mb-2">
+                  Priority:
                 </label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600"
-                />
-                <div className="mt-4 flex flex-wrap gap-4">
-                  {images.map((image, index) => (
-                    <Image
-                      key={index}
-                      src={image}
-                      alt={`Uploaded ${index}`}
-                      width={128}
-                      height={128}
-                      className="object-cover rounded-lg border border-gray-600"
-                    />
-                  ))}
-                </div>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
               </div>
             </div>
-            <div className="mt-6 flex justify-end space-x-4">
+
+            {/* Buttons */}
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
               <button
                 onClick={triggerClose}
-                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200"
+                className="w-full sm:w-auto bg-gray-600 text-white px-4 py-3 sm:py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 order-2 sm:order-1"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!title.trim()}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSave(e);
+                }}
+                disabled={!title.trim() || loading}
+                className="w-full sm:w-auto bg-blue-500 text-white px-4 py-3 sm:py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
               >
-                Save
+                {loading ? "Saving..." : "Save"}
               </button>
             </div>
           </motion.div>

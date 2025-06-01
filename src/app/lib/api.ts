@@ -1,5 +1,5 @@
-// lib/api.ts
 import { createClient } from "@supabase/supabase-js";
+import { Task } from "../types/useBoardTypes";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -7,14 +7,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
- * Fetches a board by its ID, including its columns and tasks.
- *
- * @param {string} id - The ID of the board to fetch.
- * @returns {Promise<Object>} The board data.
+ * Fetches a board by its ID, including its columns and tasks
+ * @param {string} id - The ID of the board to fetch
+ * @returns {Promise<Object>} The board data
  */
 export async function getBoardById(id: string) {
-  console.log("Fetching board with ID:", id);
-  
   const { data, error } = await supabase
     .from("boards")
     .select(`
@@ -36,26 +33,21 @@ export async function getBoardById(id: string) {
     `)
     .eq("id", id);
 
-  console.log("Supabase response:", { data, error });
-
   if (error) {
     console.error("Error fetching board:", error.message);
     throw error;
   }
 
   if (!data || data.length === 0) {
-    console.log("No board found for ID:", id);
     throw new Error(`Board with id ${id} not found`);
   }
 
-  console.log("Found board:", data[0]);
   return data[0];
 }
 
 /**
- * Fetches all boards.
- *
- * @returns {Promise<Array>} The list of boards.
+ * Fetches all boards
+ * @returns {Promise<Array>} The list of boards
  */
 export async function getBoards() {
   const { data, error } = await supabase.from("boards").select("*");
@@ -69,11 +61,10 @@ export async function getBoards() {
 }
 
 /**
- * Adds a new board.
- *
- * @param {Object} params - The parameters for the new board.
- * @param {string} params.title - The title of the new board.
- * @returns {Promise<Object>} The created board.
+ * Adds a new board
+ * @param {Object} params - The parameters for the new board
+ * @param {string} params.title - The title of the new board
+ * @returns {Promise<Object>} The created board
  */
 export const addBoard = async ({ title }: { title: string }) => {
   const { data, error } = await supabase
@@ -92,13 +83,13 @@ export const addBoard = async ({ title }: { title: string }) => {
 
   return data[0];
 };
+
 /**
- * Adds a new column to a board.
- *
- * @param {string} boardId - The ID of the board.
- * @param {string} title - The title of the column.
- * @param {number} order - The order of the column.
- * @returns {Promise<Object>} The created column.
+ * Adds a new column to a board
+ * @param {string} boardId - The ID of the board
+ * @param {string} title - The title of the column
+ * @param {number} order - The order of the column
+ * @returns {Promise<Object>} The created column
  */
 export async function addColumn(boardId: string, title: string, order: number) {
   const { data, error } = await supabase
@@ -115,12 +106,11 @@ export async function addColumn(boardId: string, title: string, order: number) {
 }
 
 /**
- * Adds a new task to a column.
- *
- * @param {string} columnId - The ID of the column.
- * @param {string} title - The title of the task.
- * @param {number} order - The order of the task.
- * @returns {Promise<Object>} The created task.
+ * Adds a new task to a column
+ * @param {string} columnId - The ID of the column
+ * @param {string} title - The title of the task
+ * @param {number} order - The order of the task
+ * @returns {Promise<Object>} The created task
  */
 export async function addTask(columnId: string, title: string, order: number): Promise<{ id: string; title: string }> {
   const { data, error } = await supabase
@@ -141,10 +131,9 @@ export async function addTask(columnId: string, title: string, order: number): P
 }
 
 /**
- * Updates the title of a board.
- *
- * @param {string} boardId - The ID of the board.
- * @param {string} newTitle - The new title of the board.
+ * Updates the title of a board
+ * @param {string} boardId - The ID of the board
+ * @param {string} newTitle - The new title of the board
  */
 export async function updateBoardTitle(boardId: string, newTitle: string) {
   const { error } = await supabase
@@ -159,10 +148,9 @@ export async function updateBoardTitle(boardId: string, newTitle: string) {
 }
 
 /**
- * Updates the title of a task.
- *
- * @param {string} taskId - The ID of the task.
- * @param {string} newTitle - The new title of the task.
+ * Updates the title of a task
+ * @param {string} taskId - The ID of the task
+ * @param {string} newTitle - The new title of the task
  */
 export async function updateTaskTitle(taskId: string, newTitle: string) {
   const { error } = await supabase
@@ -177,10 +165,9 @@ export async function updateTaskTitle(taskId: string, newTitle: string) {
 }
 
 /**
- * Updates the title of a column.
- *
- * @param {string} columnId - The ID of the column.
- * @param {string} newTitle - The new title of the column.
+ * Updates the title of a column
+ * @param {string} columnId - The ID of the column
+ * @param {string} newTitle - The new title of the column
  */
 export async function updateColumnTitle(columnId: string, newTitle: string) {
   const { error } = await supabase
@@ -195,9 +182,8 @@ export async function updateColumnTitle(columnId: string, newTitle: string) {
 }
 
 /**
- * Deletes a column by its ID.
- *
- * @param {string} columnId - The ID of the column to delete.
+ * Deletes a column by its ID
+ * @param {string} columnId - The ID of the column to delete
  */
 export async function deleteColumn(columnId: string) {
   const { error } = await supabase.from("columns").delete().eq("id", columnId);
@@ -209,9 +195,8 @@ export async function deleteColumn(columnId: string) {
 }
 
 /**
- * Deletes a task by its ID.
- *
- * @param {string} taskId - The ID of the task to delete.
+ * Deletes a task by its ID
+ * @param {string} taskId - The ID of the task to delete
  */
 export async function deleteTask(taskId: string) {
   const { error } = await supabase.from("tasks").delete().eq("id", taskId);
@@ -223,9 +208,8 @@ export async function deleteTask(taskId: string) {
 }
 
 /**
- * Deletes a board by its ID.
- *
- * @param {string} boardId - The ID of the board to delete.
+ * Deletes a board by its ID
+ * @param {string} boardId - The ID of the board to delete
  */
 export async function deleteBoard(boardId: string) {
   const { error } = await supabase.from("boards").delete().eq("id", boardId);
@@ -237,14 +221,13 @@ export async function deleteBoard(boardId: string) {
 }
 
 /**
- * Updates the details of a task.
- *
- * @param {string} taskId - The ID of the task.
- * @param {Object} updates - The updates to apply.
- * @param {string} [updates.title] - The new title of the task.
- * @param {string} [updates.description] - The new description of the task.
- * @param {string} [updates.priority] - The new priority of the task.
- * @param {Array<string>} [updates.images] - The new list of image URLs.
+ * Updates the details of a task
+ * @param {string} taskId - The ID of the task
+ * @param {Object} updates - The updates to apply
+ * @param {string} [updates.title] - The new title of the task
+ * @param {string} [updates.description] - The new description of the task
+ * @param {string} [updates.priority] - The new priority of the task
+ * @param {Array<string>} [updates.images] - The new list of image URLs
  */
 export async function updateTaskDetails(
   taskId: string,
@@ -262,9 +245,8 @@ export async function updateTaskDetails(
 }
 
 /**
- * Fetches all priorities.
- *
- * @returns {Promise<Array>} The list of priorities.
+ * Fetches all priorities
+ * @returns {Promise<Array>} The list of priorities
  */
 export async function getPriorities() {
   const { data, error } = await supabase.from("priorities").select("*");
@@ -278,11 +260,10 @@ export async function getPriorities() {
 }
 
 /**
- * Adds a new priority.
- *
- * @param {string} label - The label of the priority.
- * @param {string} color - The color of the priority.
- * @returns {Promise<Object>} The created priority.
+ * Adds a new priority
+ * @param {string} label - The label of the priority
+ * @param {string} color - The color of the priority
+ * @returns {Promise<Object>} The created priority
  */
 export async function addPriority(label: string, color: string) {
   const { data, error } = await supabase
@@ -299,9 +280,8 @@ export async function addPriority(label: string, color: string) {
 }
 
 /**
- * Deletes a priority by its ID.
- *
- * @param {string} id - The ID of the priority to delete.
+ * Deletes a priority by its ID
+ * @param {string} id - The ID of the priority to delete
  */
 export async function deletePriority(id: string) {
   const { error } = await supabase.from("priorities").delete().eq("id", id);
@@ -311,3 +291,32 @@ export async function deletePriority(id: string) {
     throw error;
   }
 }
+
+/**
+ * Update task with new data
+ * @param {string} taskId - ID of the task to update
+ * @param {Object} taskData - New task data
+ * @param {string} taskData.title - Task title
+ * @param {string} [taskData.description] - Task description
+ * @param {string} [taskData.priority] - Task priority
+ * @returns {Promise<Task>} Updated task data
+ */
+export const updateTask = async (taskId: string, taskData: {
+  title: string;
+  description?: string;
+  priority?: string;
+}): Promise<Task> => {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update(taskData)
+    .eq("id", taskId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating task:", error.message);
+    throw new Error("Failed to update task");
+  }
+
+  return data;
+};
