@@ -78,7 +78,9 @@ const BoardList = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto bg-gray-900 text-gray-100 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center">Your Boards</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center text-red-600">
+        Your Boards
+      </h2>
 
       <ul className="space-y-4 text-red">
         {boards.map((board) => (

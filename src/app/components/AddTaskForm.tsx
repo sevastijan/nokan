@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { JSX, useState } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store/index";
 import { addTask as addTaskToRedux } from "../store/slices/boardSlice";
@@ -23,7 +23,7 @@ const AddTaskForm = ({
   boardId: string;
   columnId: string;
   onTaskAdded?: (newTask: { id: string; title: string }) => void;
-}) => {
+}): JSX.Element => {
   const dispatch = useDispatch<AppDispatch>();
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,10 +40,8 @@ const AddTaskForm = ({
     setError(null);
 
     try {
-      // Save the task to the database
       const newTask = await addTaskToDB(columnId, title.trim(), 0);
 
-      // Upewnij się, że newTask ma właściwości id i title
       if (
         !newTask ||
         typeof newTask.id !== "string" ||
@@ -52,15 +50,12 @@ const AddTaskForm = ({
         throw new Error("Invalid task data returned from the database");
       }
 
-      // Dispatch to Redux
       dispatch(addTaskToRedux({ boardId, columnId, taskTitle: newTask.title }));
 
-      // Call the optional callback
       if (onTaskAdded) {
         onTaskAdded(newTask);
       }
 
-      // Reset the input field
       setTitle("");
     } catch (err) {
       console.error("Error adding task:", err);

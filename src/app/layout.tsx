@@ -1,5 +1,5 @@
+import "./styles/globals.css";
 import { Providers } from "./providers";
-import "../styles/globals.css";
 
 export const metadata = {
   title: "NOKODE Task Board",
@@ -13,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body className="bg-gray-900 text-gray-100">
+      <body className="bg-gray-900 text-red">
         <Providers>{children}</Providers>
       </body>
     </html>

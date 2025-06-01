@@ -1,6 +1,8 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskForm from "./AddTaskForm";
 import Task from "./Task";
+import { FaGripVertical } from "react-icons/fa";
+import { JSX } from "react";
 
 /**
  * Component representing a single column in the task board.
@@ -23,25 +25,33 @@ const Column = ({
   onTaskAdded,
   onUpdateTaskTitle,
   onRemoveTask,
-}: any) => {
+}: any): JSX.Element => {
   return (
     <Draggable key={column.id} draggableId={column.id} index={colIndex}>
       {(provided) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="bg-gray-100 rounded p-4 min-w-[250px] flex-shrink-0"
+          className="bg-gray-100 rounded p-4 min-w-[250px]"
         >
-          <div
-            {...provided.dragHandleProps}
-            className="flex justify-between items-center mb-2 cursor-move"
-          >
+          <div className="flex justify-between items-center mb-2">
+            <div
+              {...provided.dragHandleProps}
+              className="cursor-move text-gray-500"
+              role="button"
+              tabIndex={0}
+              aria-label="Drag handle"
+            >
+              <FaGripVertical size={20} />
+            </div>
+
             <input
               type="text"
               defaultValue={column.title}
               onBlur={(e) => onUpdateColumnTitle(column.id, e.target.value)}
-              className="font-semibold w-full border-b focus:outline-none"
+              className="font-semibold w-full border-b focus:outline-none ml-2"
             />
+
             <button
               onClick={() => onRemoveColumn(column.id)}
               className="text-sm text-red-600"

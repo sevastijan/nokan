@@ -4,6 +4,7 @@ import { DragDropContext, Droppable } from "@hello-pangea/dnd";
 import { useParams } from "next/navigation";
 import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
+import AddColumnPopup from "../../components/AddColumnPopup";
 import { JSX, useState, useEffect } from "react";
 
 /**
@@ -28,6 +29,7 @@ const BoardPage = (): JSX.Element => {
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [localBoardTitle, setLocalBoardTitle] = useState(board?.title || "");
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   useEffect(() => {
     if (board?.title && board.title !== localBoardTitle) {
@@ -40,7 +42,7 @@ const BoardPage = (): JSX.Element => {
       if (localBoardTitle !== board?.title) {
         handleUpdateBoardTitle(localBoardTitle);
       }
-    }, 300); // 300ms opóźnienia
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
@@ -95,6 +97,15 @@ const BoardPage = (): JSX.Element => {
           ),
         });
       }
+    } else if (type === "COLUMN") {
+      const newColumns = [...board.columns];
+      const [movedColumn] = newColumns.splice(source.index, 1);
+      newColumns.splice(destination.index, 0, movedColumn);
+
+      updateBoard({
+        ...board,
+        columns: newColumns,
+      });
     }
   };
 
@@ -107,6 +118,7 @@ const BoardPage = (): JSX.Element => {
     try {
       await handleAddColumn(newColumnTitle);
       setNewColumnTitle("");
+      setIsPopupOpen(false);
     } finally {
       setIsAddingColumn(false);
     }
@@ -123,7 +135,6 @@ const BoardPage = (): JSX.Element => {
           onChange={(e) => setLocalBoardTitle(e.target.value)}
           className="text-2xl font-bold mb-4 w-full border-b-2 focus:outline-none"
         />
-
         <Droppable droppableId="board" type="COLUMN" direction="horizontal">
           {(provided) => (
             <div
@@ -156,24 +167,20 @@ const BoardPage = (): JSX.Element => {
             </div>
           )}
         </Droppable>
-
-        <div className="min-w-[250px] p-4 bg-blue-50 rounded">
-          <input
-            type="text"
-            placeholder="New column"
-            value={newColumnTitle}
-            onChange={(e) => setNewColumnTitle(e.target.value)}
-            className="w-full border rounded px-2 py-1 mb-2"
-          />
-          <button
-            onClick={addColumn}
-            className="bg-blue-600 text-white w-full py-1 rounded"
-            disabled={isAddingColumn || !newColumnTitle.trim()}
-          >
-            {isAddingColumn ? "Adding..." : "Add Column"}
-          </button>
-          {error && <p className="text-red-500 mt-2">{error}</p>}
-        </div>
+        <button
+          onClick={() => setIsPopupOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
+        >
+          Add Column
+        </button>
+        <AddColumnPopup
+          isOpen={isPopupOpen}
+          onClose={() => setIsPopupOpen(false)}
+          onAddColumn={addColumn}
+          newColumnTitle={newColumnTitle}
+          setNewColumnTitle={setNewColumnTitle}
+          isAddingColumn={isAddingColumn}
+        />
       </div>
     </DragDropContext>
   );
