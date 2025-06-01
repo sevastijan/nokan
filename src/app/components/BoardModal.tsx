@@ -33,17 +33,17 @@ const BoardModal = ({
   mode = "create",
 }: BoardModalProps) => {
   const [input, setInput] = useState(initialTitle);
+  const [loading, setLoading] = useState(false);
 
   /**
    * Handle form submission
    * @param e - Form event
    */
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (mode === "delete") {
-      onDelete?.();
-    } else if (input.trim()) {
+  const handleSave = () => {
+    if (input.trim()) {
+      setLoading(true);
       onSubmit(input.trim());
+      setLoading(false);
       setInput("");
     }
   };
@@ -56,95 +56,69 @@ const BoardModal = ({
   }, [initialTitle, isOpen]);
 
   /**
-   * Get modal title based on mode
-   * @returns Modal title string
+   * Handle outside click to close modal
+   * @param e - Mouse event
    */
-  const getTitle = () => {
-    switch (mode) {
-      case "edit":
-        return "Edit Board";
-      case "delete":
-        return "Delete Board";
-      default:
-        return title;
+  const handleOutsideClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
     }
-  };
-
-  /**
-   * Get submit button text based on mode
-   * @returns Submit button text
-   */
-  const getSubmitText = () => {
-    switch (mode) {
-      case "edit":
-        return "Save";
-      case "delete":
-        return "Delete";
-      default:
-        return "Save";
-    }
-  };
-
-  /**
-   * Get submit button CSS classes based on mode
-   * @returns CSS class string
-   */
-  const getSubmitButtonClass = () => {
-    return mode === "delete"
-      ? "px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
-      : "px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700";
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center z-50 p-4"
+          onClick={handleOutsideClick}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
         >
           <motion.div
-            className="bg-gray-900 rounded-lg p-6 w-full max-w-md relative"
-            initial={{ scale: 0.9, y: 40 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 40 }}
+            className="bg-gray-800 text-white rounded-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md mx-4"
+            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 50 }}
+            transition={{ duration: 0.3 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <button
-              className="absolute top-3 right-3 text-gray-400 hover:text-white"
-              onClick={onClose}
-            >
-              <FiX size={22} />
-            </button>
-            <h2 className="text-lg font-semibold mb-4">{getTitle()}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "delete" ? (
-                <p className="text-gray-300">
-                  Are you sure you want to delete board "{initialTitle}"? This
-                  action cannot be undone.
-                </p>
-              ) : (
+            <h2 className="text-lg sm:text-xl font-bold mb-4">
+              {mode === "create" ? "Create New Board" : "Edit Board"}
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Board Title:
+                </label>
                 <input
-                  className="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white"
-                  placeholder="Board title"
+                  type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="Enter board title"
                   autoFocus
                 />
-              )}
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 rounded bg-gray-700 text-white hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className={getSubmitButtonClass()}>
-                  {getSubmitText()}
-                </button>
               </div>
-            </form>
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
+              <button
+                onClick={onClose}
+                className="w-full sm:w-auto bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 order-2 sm:order-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!input.trim() || loading}
+                className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
+              >
+                {loading ? "Saving..." : mode === "create" ? "Create" : "Save"}
+              </button>
+            </div>
           </motion.div>
         </motion.div>
       )}
