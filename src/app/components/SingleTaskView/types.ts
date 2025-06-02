@@ -2,8 +2,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  image?: string | null;
-  created_at?: string;
+  image?: string;
+  created_at?: string; 
 }
 
 export interface Priority {
@@ -14,12 +14,13 @@ export interface Priority {
 
 export interface Attachment {
   id: string;
-  fileName: string;
-  filePath: string;
-  fileSize: number;
-  mimeType: string;
-  uploadedAt: string;
-  uploadedBy: string;
+  task_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_by: string;
+  created_at: string;
 }
 
 export interface TaskDetail {
@@ -27,15 +28,13 @@ export interface TaskDetail {
   title: string;
   description?: string;
   user_id: string;
-  column_id: string;
-  position: number;
+  assignee_id?: string;
+  priority?: string;
   created_at: string;
-  updated_at: string;
-  images?: string[];
-  attachments?: Attachment[];
+  updated_at?: string;
   assignee?: User;
   priority_info?: Priority;
-  priority?: string;
+  attachments?: Attachment[];
 }
 
 export interface Comment {
@@ -44,7 +43,6 @@ export interface Comment {
   user_id: string;
   content: string;
   created_at: string;
-  updated_at?: string;
   author: User;
 }
 

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
 import AddColumnPopup from "../../components/TaskColumn/AddColumnPopup";
-import SingleTaskView from "../../components/SingleTaskView/SignleTaskView";
+import SingleTaskView from "../../components/SingleTaskView/SingleTaskView";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Column as ColumnType, Task } from "../../types/useBoardTypes";
@@ -66,7 +66,7 @@ const Page = (): JSX.Element => {
               created_at: userData.created_at,
             };
             setCurrentUser(user);
-          } else if (error?.code === 'PGRST116') {
+          } else if (error?.code === "PGRST116") {
             // Użytkownik nie istnieje, utwórz go
             const { data: newUser, error: createError } = await supabase
               .from("users")
@@ -104,7 +104,6 @@ const Page = (): JSX.Element => {
             name: session.user.name || "Unknown User",
             email: session.user.email || "",
             image: session.user.image || undefined,
-            created_at: new Date().toISOString(),
           };
           setCurrentUser(user);
         }

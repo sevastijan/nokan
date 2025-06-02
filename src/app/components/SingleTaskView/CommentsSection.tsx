@@ -1,0 +1,105 @@
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Comment, User, TaskDetail } from "./types";
+import { supabase } from "../../lib/supabase";
+import { toast } from "react-toastify";
+import CommentForm from "./CommentForm";
+import CommentList from "./CommentList";
+import { getUserAvatar, formatDate } from "./utils";
+
+interface CommentsSectionProps {
+  taskId: string;
+  comments: Comment[];
+  currentUser: User;
+  task: TaskDetail;
+  onRefreshComments: () => Promise<void>;
+  onRefreshTask: () => Promise<void>;
+  onImagePreview: (url: string) => void;
+}
+
+const CommentsSection = ({
+  taskId,
+  comments,
+  currentUser,
+  task,
+  onRefreshComments,
+  onRefreshTask,
+  onImagePreview,
+}: CommentsSectionProps) => {
+  const addComment = async (content: string) => {
+    if (!content.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("task_comments")
+        .insert({
+          task_id: taskId,
+          user_id: currentUser.id,
+          content: content.trim(),
+        })
+        .select();
+
+      if (error) throw error;
+
+      await onRefreshComments();
+      toast.success("Comment added");
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      toast.error("Error adding comment");
+    }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("task_comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (error) throw error;
+
+      await onRefreshComments();
+      toast.success("Comment deleted");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Error deleting comment");
+    }
+  };
+
+  return (
+    <div className="border-t border-gray-600 p-6">
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <img
+            src={getUserAvatar(currentUser)}
+            alt={currentUser.name}
+            className="w-8 h-8 rounded-full"
+          />
+          <span className="text-sm text-gray-400">
+            {currentUser.name} created this task
+          </span>
+          <span className="text-sm text-gray-500">
+            {formatDate(task.updated_at)}
+          </span>
+        </div>
+      </div>
+
+      <CommentForm
+        currentUser={currentUser}
+        taskId={taskId}
+        onAddComment={addComment}
+        onRefreshTask={onRefreshTask}
+      />
+
+      <CommentList
+        comments={comments}
+        currentUser={currentUser}
+        task={task}
+        onDeleteComment={deleteComment}
+        onImagePreview={onImagePreview}
+      />
+    </div>
+  );
+};
+
+export default CommentsSection;

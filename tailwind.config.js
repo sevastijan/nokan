@@ -5,7 +5,15 @@ export default {
     "./src/components/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        gray: {
+          800: "#1f2937",
+          700: "#374151",
+          600: "#4b5563",
+        },
+      },
+    },
   },
   plugins: [require("@tailwindcss/line-clamp")],
 };
