@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import PrioritySelector from "./PrioritySelector";
+import PrioritySelector from "./TaskColumn/PrioritySelector";
 import Image from "next/image";
 
 interface Task {

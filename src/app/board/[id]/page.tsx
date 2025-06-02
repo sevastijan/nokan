@@ -4,11 +4,12 @@ import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { useParams, useRouter } from "next/navigation";
 import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
-import AddColumnPopup from "../../components/AddColumnPopup";
+import AddColumnPopup from "../../components/TaskColumn/AddColumnPopup";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Column as ColumnType, Task } from "../../types/useBoardTypes";
 import { useSession } from "next-auth/react";
+import Loader from "../../components/Loader";
 
 /**
  * Board page component that displays a Kanban board with drag-and-drop functionality
@@ -28,9 +29,6 @@ const Page = (): JSX.Element => {
     handleRemoveTask,
     handleUpdateTask,
   } = useBoard(id as string);
-
-  // Add debugging
-  console.log("handleUpdateTask from useBoard:", handleUpdateTask);
 
   const [newColumnTitle, setNewColumnTitle] = useState<string>("");
   const [isAddingColumn, setIsAddingColumn] = useState<boolean>(false);
@@ -149,21 +147,21 @@ const Page = (): JSX.Element => {
   };
 
   if (status === "loading" || !board) {
-    return <p className="p-4">Loading...</p>;
+    return <Loader text="Loading board..." />;
   }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="p-4 sm:p-6 bg-gray-900 min-h-screen">
-        <div className="mb-4">
+        <div className="mb-4 flex  flex-col md:flex-row">
           <button
             onClick={() => router.push("/dashboard")}
-            className="text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors"
+            className="text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors m-0 max-w-[160]"
           >
             ← Back to Dashboard
           </button>
         </div>
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-6 flex-col md:flex-row gap-4 flex md:items-center">
           <input
             type="text"
             value={localBoardTitle}
@@ -171,6 +169,12 @@ const Page = (): JSX.Element => {
             className="text-2xl sm:text-3xl font-bold bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
             placeholder="Board Title"
           />
+          <button
+            onClick={() => setIsPopupOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200 max-w-[160] lg:w-full"
+          >
+            Add Column
+          </button>
         </div>
         <Droppable droppableId="board" type="COLUMN" direction="horizontal">
           {(provided) => (
@@ -214,12 +218,6 @@ const Page = (): JSX.Element => {
             </div>
           )}
         </Droppable>
-        <button
-          onClick={() => setIsPopupOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md mt-4 transition-all duration-200 w-full sm:w-auto"
-        >
-          Add Column
-        </button>
         <AddColumnPopup
           isOpen={isPopupOpen}
           onClose={() => setIsPopupOpen(false)}

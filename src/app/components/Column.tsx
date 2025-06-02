@@ -1,5 +1,5 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
-import AddTaskForm from "./AddTaskForm";
+import AddTaskForm from "./TaskColumn/AddTaskForm";
 import TaskComponent from "./Task";
 import { FaGripVertical, FaTrash } from "react-icons/fa";
 import { JSX, useState } from "react";
@@ -99,7 +99,7 @@ const Column = ({
               <ul
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className={`space-y-2 flex-1 overflow-y-auto ${
+                className={`space-y-2 flex-1 overflow-y-auto max-w-[300px] ${
                   column.tasks?.length === 0 ? "min-h-0" : "min-h-[50px]"
                 }`}
               >

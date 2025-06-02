@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import BoardModal from "./BoardModal";
 import BoardDropdown from "./BoardDropdown";
+import Loader from "../Loader";
 
 interface Board {
   id: string;
@@ -171,11 +172,7 @@ const BoardList = () => {
   };
 
   if (status === "loading" || loading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-gray-400">Loading boards...</div>
-      </div>
-    );
+    return <Loader text="Loading board..." />;
   }
 
   if (!session) {

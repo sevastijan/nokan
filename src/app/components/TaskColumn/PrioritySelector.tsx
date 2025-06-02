@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import AddPriorityModal from "./AddPriorityModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { getPriorities } from "../lib/api";
+import { getPriorities } from "../../lib/api";
 import { FaChevronDown } from "react-icons/fa";
 
 interface Priority {

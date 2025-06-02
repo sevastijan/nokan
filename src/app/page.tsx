@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import AuthButton from "./components/AuthButton";
+import AuthButton from "./GoogleLogin/AuthButton";
 
 /**
  * Home page component that displays the landing page with authentication

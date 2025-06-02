@@ -1,10 +1,10 @@
 "use client";
 
 import { JSX, useState } from "react";
-import { useAppDispatch } from "../store/hooks";
-import { addTask as addTaskToRedux } from "../store/slices/boardSlice";
-import { addTask as addTaskToDB } from "../lib/api";
-import TaskModal from "./TaskModal";
+import { useAppDispatch } from "../../store/hooks";
+import { addTask as addTaskToRedux } from "../../store/slices/boardSlice";
+import { addTask as addTaskToDB } from "../../lib/api";
+import TaskModal from "../TaskModal";
 
 interface AddTaskFormProps {
   boardId: string;

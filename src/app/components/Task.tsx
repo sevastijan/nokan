@@ -19,6 +19,24 @@ interface MenuPosition {
 }
 
 /**
+ * Truncate text to specified number of words
+ * @param {string} text - Text to truncate
+ * @param {number} maxWords - Maximum number of words to show
+ * @returns {string} Truncated text
+ */
+const truncateText = (text: string, maxWords: number = 12): string => {
+  if (!text) return "";
+
+  const words = text.trim().split(/\s+/);
+
+  if (words.length <= maxWords) {
+    return text;
+  }
+
+  return words.slice(0, maxWords).join(" ") + "...";
+};
+
+/**
  * Task component that displays a draggable task card with edit/delete menu
  * @param task - Task data including id, title, and description
  * @param taskIndex - Index of the task for drag and drop ordering
@@ -128,19 +146,21 @@ const Task = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`bg-gray-700 text-white rounded-lg shadow-md p-3 flex justify-between items-center transition-transform duration-200 ${
+          className={`bg-gray-700 text-white rounded-lg shadow-md p-3 flex justify-between items-start transition-transform duration-200 h-[80px] overflow-hidden ${
             snapshot.isDragging ? "transform scale-105" : ""
           }`}
         >
-          <div className="flex-1">
-            <p className="font-semibold text-sm sm:text-base">{task.title}</p>
+          <div className="flex-1 min-w-0 pr-2 overflow-hidden">
+            <p className="font-semibold text-sm sm:text-base truncate">
+              {task.title}
+            </p>
             {task.description && (
-              <p className="text-xs sm:text-sm text-gray-400">
-                {task.description}
+              <p className="text-xs sm:text-sm text-gray-400 mt-1 line-clamp-2 overflow-hidden">
+                {truncateText(task.description, 12)}
               </p>
             )}
           </div>
-          <div>
+          <div className="flex-shrink-0">
             <button
               onClick={toggleMenu}
               className="text-gray-400 hover:text-gray-200 cursor-pointer transition-colors duration-200 p-1"

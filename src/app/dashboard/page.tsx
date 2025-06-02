@@ -2,7 +2,8 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import BoardList from "../components/BoardList";
+import BoardList from "../components/Board/BoardList";
+import Loader from "../components/Loader";
 
 /**
  * Dashboard page component that displays user's boards
@@ -15,11 +16,7 @@ const DashboardPage = () => {
 
   // Check session status - loading, authenticated, unauthenticated
   if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+    return <Loader text="Loading dashboards..." />;
   }
 
   // If user is not authenticated, redirect to sign in page
