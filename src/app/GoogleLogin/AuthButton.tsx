@@ -2,6 +2,7 @@
 
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Loader from "../components/Loader";
 
 /**
  * Authentication button component that handles user sign-in and navigation to dashboard
@@ -26,7 +27,7 @@ const AuthButton = () => {
   };
 
   if (status === "loading") {
-    return <div className="text-gray-400">Loading...</div>;
+    return <Loader text="Loading..." />;
   }
 
   return (

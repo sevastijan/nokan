@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import AuthButton from "./GoogleLogin/AuthButton";
+import Loader from "./components/Loader";
 
 /**
  * Home page component that displays the landing page with authentication
@@ -11,11 +12,7 @@ const Home = () => {
   const { status } = useSession();
 
   if (status === "loading") {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
+    return <Loader text="Loading..." />;
   }
 
   return (
