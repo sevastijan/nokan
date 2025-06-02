@@ -20,7 +20,7 @@ import {
   FaUsers,
   FaTrash,
 } from "react-icons/fa";
-import { TaskDetail, Comment, User, Priority } from "./types";
+import { TaskDetail, Comment, User, Priority, Attachment } from "./types";
 import UserSelector from "./UserSelector";
 import PrioritySelector from "./PrioritySelector";
 
@@ -32,15 +32,12 @@ interface SingleTaskViewProps {
 
 /**
  * Single task detail view component with full task management capabilities
- * @param taskId - ID of the task to display
- * @param onClose - Function to close the task view
- * @param currentUser - Current authenticated user
  */
-const SingleTaskView: React.FC<SingleTaskViewProps> = ({
+const SingleTaskView = ({
   taskId,
   onClose,
   currentUser,
-}) => {
+}: SingleTaskViewProps) => {
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -52,6 +49,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
   const [isCompleted, setIsCompleted] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [priorities, setPriorities] = useState<Priority[]>([]);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTaskData();
@@ -85,7 +83,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
       setLoading(false);
     } catch (error) {
       console.error("Error fetching task:", error);
-      toast.error("Błąd podczas ładowania taska");
+      toast.error("Error loading task");
       setLoading(false);
     }
   };
@@ -110,7 +108,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
       setComments(data || []);
     } catch (error) {
       console.error("Error fetching comments:", error);
-      toast.error("Błąd podczas ładowania komentarzy");
+      toast.error("Error loading comments");
     }
   };
 
@@ -128,7 +126,6 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
       setAvailableUsers(data || []);
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast.error("Błąd podczas ładowania użytkowników");
     }
   };
 
@@ -146,13 +143,11 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
       setPriorities(data || []);
     } catch (error) {
       console.error("Error fetching priorities:", error);
-      toast.error("Błąd podczas ładowania priorytetów");
     }
   };
 
   /**
    * Update task with new data
-   * @param updates - Partial task data to update
    */
   const updateTask = async (updates: Partial<TaskDetail>) => {
     try {
@@ -164,10 +159,10 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
       if (error) throw error;
 
       await fetchTaskData();
-      toast.success("Task zaktualizowany");
+      toast.success("Task updated");
     } catch (error) {
       console.error("Error updating task:", error);
-      toast.error("Błąd podczas aktualizacji taska");
+      toast.error("Error updating task");
     }
   };
 
@@ -196,29 +191,6 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
   const addComment = async () => {
     if (!newComment.trim()) return;
 
-    // DODAJ TO ŻEBY SPRAWDZIĆ
-    console.log("taskId type and value:", typeof taskId, taskId);
-    console.log(
-      "currentUser.id type and value:",
-      typeof currentUser.id,
-      currentUser.id
-    );
-
-    // Sprawdź czy taskId to prawidłowy UUID
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(taskId)) {
-      console.error("taskId is not a valid UUID:", taskId);
-      toast.error("Invalid task ID");
-      return;
-    }
-
-    if (!uuidRegex.test(currentUser.id)) {
-      console.error("currentUser.id is not a valid UUID:", currentUser.id);
-      toast.error("Invalid user ID");
-      return;
-    }
-
     try {
       const { data, error } = await supabase
         .from("task_comments")
@@ -229,12 +201,8 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
         })
         .select();
 
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log("Comment added successfully:", data);
       setNewComment("");
       await fetchComments();
       toast.success("Comment added");
@@ -245,8 +213,147 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
   };
 
   /**
+   * Delete comment from task
+   */
+  const deleteComment = async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("task_comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (error) throw error;
+
+      await fetchComments();
+      toast.success("Comment deleted");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Error deleting comment");
+    }
+  };
+
+  /**
+   * Handle paste event in comment textarea
+   */
+  const handleCommentPaste = async (
+    event: React.ClipboardEvent<HTMLTextAreaElement>
+  ) => {
+    const items = event.clipboardData.items;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      if (item.type.indexOf("image") !== -1) {
+        event.preventDefault();
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error("Image too large. Maximum size is 5MB.");
+          return;
+        }
+
+        setUploading(true);
+        try {
+          const fileName = `pasted-image-${Date.now()}.png`;
+          const filePath = `task-attachments/${taskId}/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("attachments")
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          // Zamiast publicUrl użyj signed URL
+          const { data: signedUrlData, error: signedUrlError } =
+            await supabase.storage
+              .from("attachments")
+              .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 rok
+
+          if (signedUrlError) throw signedUrlError;
+
+          const attachment: Attachment = {
+            id: `att_${Date.now()}`,
+            fileName: fileName,
+            filePath: filePath,
+            fileSize: file.size,
+            mimeType: file.type,
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: currentUser.id,
+          };
+
+          const currentAttachments = task?.attachments || [];
+          const updatedAttachments = [...currentAttachments, attachment];
+
+          await supabase
+            .from("tasks")
+            .update({
+              attachments: updatedAttachments,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", taskId);
+
+          const textarea = event.target as HTMLTextAreaElement;
+          const cursorPosition = textarea.selectionStart;
+          const textBefore = newComment.substring(0, cursorPosition);
+          const textAfter = newComment.substring(cursorPosition);
+
+          const imageMarkdown = `![${fileName}](${signedUrlData.signedUrl})`;
+          setNewComment(textBefore + imageMarkdown + textAfter);
+
+          await fetchTaskData();
+          toast.success("Image pasted successfully");
+        } catch (error) {
+          console.error("Error uploading pasted image:", error);
+          toast.error("Error uploading image");
+        } finally {
+          setUploading(false);
+        }
+      }
+    }
+  };
+
+  /**
+   * Render markdown content with image support
+   */
+  const renderMarkdownContent = (content: string) => {
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    const parts = content.split(imageRegex);
+
+    console.log("Rendering content:", content);
+    console.log("Image parts:", parts);
+
+    const elements = [];
+    for (let i = 0; i < parts.length; i += 3) {
+      if (parts[i]) {
+        elements.push(
+          <span key={`text-${i}`} className="whitespace-pre-wrap">
+            {parts[i]}
+          </span>
+        );
+      }
+
+      if (parts[i + 1] && parts[i + 2]) {
+        console.log("Rendering image:", parts[i + 2]);
+        elements.push(
+          <motion.img
+            key={`img-${i}`}
+            whileHover={{ scale: 1.02 }}
+            src={parts[i + 2]}
+            alt={parts[i + 1]}
+            className="max-w-full h-auto rounded-lg mt-2 mb-2 cursor-pointer border border-gray-600 hover:border-gray-500 transition-colors"
+            onClick={() => setImagePreview(parts[i + 2])}
+            onError={(e) => console.error("Image load error:", e)}
+          />
+        );
+      }
+    }
+
+    return elements.length > 0 ? elements : content;
+  };
+
+  /**
    * Handle file upload for task attachments
-   * @param event - File input change event
    */
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -254,11 +361,15 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File too large. Maximum size is 10MB.");
+      return;
+    }
+
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${taskId}-${Date.now()}.${fileExt}`;
-      const filePath = `task-attachments/${fileName}`;
+      const fileName = `${Date.now()}-${file.name}`;
+      const filePath = `task-attachments/${taskId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("attachments")
@@ -266,17 +377,122 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
 
       if (uploadError) throw uploadError;
 
-      const currentImages = task?.images || [];
-      const updatedImages = [...currentImages, filePath];
+      const attachment: Attachment = {
+        id: `att_${Date.now()}`,
+        fileName: file.name,
+        filePath: filePath,
+        fileSize: file.size,
+        mimeType: file.type,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: currentUser.id,
+      };
 
-      await updateTask({ images: updatedImages });
-      toast.success("Plik przesłany");
+      const currentAttachments = task?.attachments || [];
+      const updatedAttachments = [...currentAttachments, attachment];
+
+      const { error: updateError } = await supabase
+        .from("tasks")
+        .update({
+          attachments: updatedAttachments,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", taskId);
+
+      if (updateError) throw updateError;
+
+      await fetchTaskData();
+      toast.success("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast.error("Błąd podczas przesyłania pliku");
+      toast.error("Error uploading file");
     } finally {
       setUploading(false);
+      event.target.value = "";
     }
+  };
+
+  /**
+   * Delete attachment from task
+   */
+  const deleteAttachment = async (attachment: Attachment) => {
+    try {
+      const { error: storageError } = await supabase.storage
+        .from("attachments")
+        .remove([attachment.filePath]);
+
+      if (storageError) console.warn("Storage delete warning:", storageError);
+
+      const updatedAttachments = (task?.attachments || []).filter(
+        (att) => att.id !== attachment.id
+      );
+
+      const { error: updateError } = await supabase
+        .from("tasks")
+        .update({
+          attachments: updatedAttachments,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", taskId);
+
+      if (updateError) throw updateError;
+
+      await fetchTaskData();
+      toast.success("Attachment deleted");
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+      toast.error("Error deleting attachment");
+    }
+  };
+
+  /**
+   * Download attachment
+   */
+  const downloadAttachment = async (attachment: Attachment) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("attachments")
+        .download(attachment.filePath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = attachment.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Error downloading file");
+    }
+  };
+
+  /**
+   * Format file size for display
+   */
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  /**
+   * Get file icon based on mime type
+   */
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith("image/")) return "🖼️";
+    if (mimeType.startsWith("video/")) return "🎥";
+    if (mimeType.startsWith("audio/")) return "🎵";
+    if (mimeType.includes("pdf")) return "📄";
+    if (mimeType.includes("word") || mimeType.includes("document")) return "📝";
+    if (mimeType.includes("excel") || mimeType.includes("spreadsheet"))
+      return "📊";
+    if (mimeType.includes("zip") || mimeType.includes("rar")) return "📦";
+    return "📁";
   };
 
   /**
@@ -286,15 +502,12 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
     const newStatus = !isCompleted;
     setIsCompleted(newStatus);
     toast.success(
-      newStatus
-        ? "Task oznaczony jako ukończony"
-        : "Task oznaczony jako nieukończony"
+      newStatus ? "Task marked as complete" : "Task marked as incomplete"
     );
   };
 
   /**
    * Update task assignee
-   * @param userId - ID of the user to assign
    */
   const updateAssignee = async (userId: string) => {
     await updateTask({ user_id: userId });
@@ -302,7 +515,6 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
 
   /**
    * Update task priority
-   * @param priorityId - ID of the priority to set
    */
   const updatePriority = async (priorityId: string) => {
     await updateTask({ priority: priorityId });
@@ -310,7 +522,6 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
 
   /**
    * Get user avatar URL with fallback
-   * @param user - User object
    */
   const getUserAvatar = (user: User) => {
     return (
@@ -323,10 +534,9 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
 
   /**
    * Format date for display
-   * @param dateString - ISO date string
    */
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pl-PL", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -344,7 +554,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
           className="bg-white rounded-lg p-8"
         >
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-center mt-4 text-gray-600">Ładowanie...</p>
+          <p className="text-center mt-4 text-gray-600">Loading...</p>
         </motion.div>
       </div>
     );
@@ -358,14 +568,12 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white rounded-lg p-8"
         >
-          <p className="text-center text-gray-600">
-            Task nie został znaleziony
-          </p>
+          <p className="text-center text-gray-600">Task not found</p>
           <button
             onClick={onClose}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 w-full transition-colors"
           >
-            Zamknij
+            Close
           </button>
         </motion.div>
       </div>
@@ -374,12 +582,10 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
 
   return (
     <AnimatePresence>
-      {/* Główny overlay */}
       <motion.div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 cursor-pointer"
         onClick={onClose}
       >
-        {/* Modal content */}
         <motion.div
           className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto cursor-auto"
           onClick={(e) => e.stopPropagation()}
@@ -398,9 +604,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                 }`}
               >
                 <FaCheck className="w-4 h-4" />
-                {isCompleted
-                  ? "Oznacz jako niekompletne"
-                  : "Oznacz jako kompletne"}
+                {isCompleted ? "Mark as incomplete" : "Mark as complete"}
               </motion.button>
 
               <div className="flex items-center gap-2">
@@ -429,12 +633,12 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
 
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <FaLock className="w-4 h-4" />
-              <span>Ten task jest prywatny dla Ciebie.</span>
+              <span>This task is private to you.</span>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 className="text-blue-400 hover:text-blue-300 ml-2 cursor-pointer"
               >
-                Udostępnij
+                Share
               </motion.button>
             </div>
           </div>
@@ -493,6 +697,60 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                 className="w-full min-h-[100px] p-3 border border-gray-600 rounded-lg resize-vertical bg-gray-700 text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+
+            {/* Attachments */}
+            {task.attachments && task.attachments.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  Attachments ({task.attachments.length})
+                </label>
+                <div className="space-y-2">
+                  {task.attachments.map((attachment) => (
+                    <motion.div
+                      key={attachment.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      <div className="text-2xl">
+                        {getFileIcon(attachment.mimeType)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-200 truncate">
+                          {attachment.fileName}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {formatFileSize(attachment.fileSize)} •{" "}
+                          {new Date(attachment.uploadedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => downloadAttachment(attachment)}
+                          className="p-2 text-gray-400 hover:text-blue-400 rounded cursor-pointer"
+                          title="Download"
+                        >
+                          <FaArrowRight className="w-4 h-4 rotate-90" />
+                        </motion.button>
+                        {attachment.uploadedBy === currentUser.id && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => deleteAttachment(attachment)}
+                            className="p-2 text-gray-400 hover:text-red-400 rounded cursor-pointer"
+                            title="Delete"
+                          >
+                            <FaTrash className="w-4 h-4" />
+                          </motion.button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Comments Section */}
@@ -505,7 +763,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                   className="w-8 h-8 rounded-full"
                 />
                 <span className="text-sm text-gray-400">
-                  {currentUser.name} utworzył ten task
+                  {currentUser.name} created this task
                 </span>
                 <span className="text-sm text-gray-500">
                   {formatDate(task.created_at)}
@@ -524,7 +782,8 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Zadaj pytanie lub dodaj aktualizację..."
+                  onPaste={handleCommentPaste}
+                  placeholder="Ask a question or add an update... (Ctrl+V to paste images)"
                   className="w-full p-3 border border-gray-600 rounded-lg resize-vertical min-h-[80px] bg-gray-700 text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <div className="flex items-center justify-between mt-2">
@@ -543,6 +802,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
+                      title="Attach file"
                     >
                       <FaPaperclip className="w-4 h-4" />
                       <input
@@ -550,11 +810,12 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                         onChange={handleFileUpload}
                         className="hidden"
                         disabled={uploading}
+                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
                       />
                     </motion.label>
                     {uploading && (
                       <span className="text-sm text-gray-400">
-                        Przesyłanie...
+                        Uploading...
                       </span>
                     )}
                   </div>
@@ -565,7 +826,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                     disabled={!newComment.trim()}
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
-                    Wyślij
+                    Send
                   </motion.button>
                 </div>
               </div>
@@ -578,7 +839,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                   key={comment.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-3"
+                  className="flex gap-3 group"
                 >
                   <img
                     src={getUserAvatar(comment.author)}
@@ -593,13 +854,27 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
                       <span className="text-sm text-gray-500">
                         {formatDate(comment.created_at)}
                       </span>
+
+                      {/* Delete button - show only for comment author or task owner */}
+                      {(comment.author.id === currentUser.id ||
+                        task.user_id === currentUser.id) && (
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => deleteComment(comment.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-400 rounded cursor-pointer transition-opacity ml-auto"
+                          title="Delete comment"
+                        >
+                          <FaTrash className="w-3 h-3" />
+                        </motion.button>
+                      )}
                     </div>
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       className="text-sm text-gray-200 bg-gray-700 p-3 rounded-lg"
                     >
-                      {comment.content}
+                      {renderMarkdownContent(comment.content)}
                     </motion.div>
                   </div>
                 </motion.div>
@@ -610,7 +885,7 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
           {/* Footer */}
           <div className="border-t border-gray-600 p-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">Współpracownicy</span>
+              <span className="text-sm text-gray-400">Collaborators</span>
               <div className="flex -space-x-2">
                 <img
                   src={getUserAvatar(currentUser)}
@@ -638,11 +913,44 @@ const SingleTaskView: React.FC<SingleTaskViewProps> = ({
               className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 cursor-pointer"
             >
               <FaUsers className="w-4 h-4" />
-              Opuść task
+              Leave task
             </motion.button>
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Image Preview Modal */}
+      {imagePreview && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-60"
+          onClick={() => setImagePreview(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.8 }}
+            className="max-w-4xl max-h-[90vh] p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="max-w-full max-h-full rounded-lg"
+            />
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setImagePreview(null)}
+              className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70"
+            >
+              <FaTimes className="w-4 h-4" />
+            </motion.button>
+          </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 };

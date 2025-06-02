@@ -12,19 +12,30 @@ export interface Priority {
   color: string;
 }
 
+export interface Attachment {
+  id: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 export interface TaskDetail {
   id: string;
   title: string;
   description?: string;
-  order: number;
-  priority?: string;
-  images?: string[];
   user_id: string;
   column_id: string;
+  position: number;
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
+  images?: string[];
+  attachments?: Attachment[];
   assignee?: User;
   priority_info?: Priority;
+  priority?: string;
 }
 
 export interface Comment {
