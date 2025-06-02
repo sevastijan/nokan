@@ -5,6 +5,7 @@ import AddPriorityModal from "./AddPriorityModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPriorities, addPriority, deletePriority } from "../../lib/api";
 import { FaChevronDown, FaTrash } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 interface Priority {
   id: string;
@@ -43,7 +44,8 @@ const PrioritySelector = ({
         const data = await getPriorities();
         setPriorities(data);
       } catch (error) {
-        //TODO: Error handling without console.log - could be replaced with toast notification
+        toast.error("Failed to load priorities");
+        console.error("Error fetching priorities:", error);
       }
     };
     fetchPriorities();
@@ -60,9 +62,11 @@ const PrioritySelector = ({
         newPriority.color
       );
       setPriorities([...priorities, createdPriority]);
+      toast.success(`Priority "${newPriority.label}" added successfully!`);
     } catch (error) {
+      toast.error("Failed to add priority. Please try again.");
       console.error("Error adding priority:", error);
-      // TODO: Show error toast notification
+      throw error; // Re-throw to handle in modal
     }
   };
 
@@ -76,12 +80,18 @@ const PrioritySelector = ({
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
+
+    // Find priority name for toast message
+    const priorityToDelete = priorities.find((p) => p.id === priorityId);
+    const priorityName = priorityToDelete?.label || "Priority";
+
     try {
       await deletePriority(priorityId);
       setPriorities(priorities.filter((p) => p.id !== priorityId));
+      toast.success(`"${priorityName}" deleted successfully!`);
     } catch (error) {
+      toast.error(`Failed to delete "${priorityName}". Please try again.`);
       console.error("Error deleting priority:", error);
-      // TODO: Show error toast notification
     }
   };
 
@@ -142,7 +152,6 @@ const PrioritySelector = ({
       <AnimatePresence>
         {isDropdownOpen && (
           <>
-            {/* Overlay to close dropdown */}
             <div
               className="fixed inset-0 z-40"
               onClick={() => {

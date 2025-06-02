@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
 import { addPriority } from "../../lib/api";
 
 interface AddPriorityModalProps {
@@ -34,7 +35,10 @@ const AddPriorityModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!label.trim()) return;
+    if (!label.trim()) {
+      toast.error("Priority name is required");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -45,10 +49,10 @@ const AddPriorityModal = ({
       };
 
       await onAddPriority(newPriority);
-      triggerClose();
+      onClose();
     } catch (error) {
+      // Error toast is handled in parent component
       console.error("Error adding priority:", error);
-      // TODO: Show error message
     } finally {
       setLoading(false);
     }
