@@ -43,7 +43,7 @@ const PrioritySelector = ({
         const data = await getPriorities();
         setPriorities(data);
       } catch (error) {
-        // Error handling without console.log - could be replaced with toast notification
+        //TODO: Error handling without console.log - could be replaced with toast notification
       }
     };
     fetchPriorities();
@@ -141,57 +141,67 @@ const PrioritySelector = ({
 
       <AnimatePresence>
         {isDropdownOpen && (
-          <motion.ul
-            className="absolute bg-gray-900 text-white border border-gray-600 rounded-lg mt-1 w-full z-10 text-sm"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <li
-              className="p-2.5 hover:bg-gray-700 cursor-pointer"
-              onClick={() => handlePrioritySelect("Low")}
+          <>
+            {/* Overlay to close dropdown */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => {
+                setIsDropdownOpen(false);
+                onDropdownToggle?.(false);
+              }}
+            />
+            <motion.ul
+              className="absolute bg-gray-900 text-white border border-gray-600 rounded-lg mt-1 w-full text-sm shadow-lg"
+              style={{ zIndex: 9999 }}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
-              Low
-            </li>
-            <li
-              className="p-2.5 hover:bg-gray-700 cursor-pointer"
-              onClick={() => handlePrioritySelect("Medium")}
-            >
-              Medium
-            </li>
-            <li
-              className="p-2.5 hover:bg-gray-700 cursor-pointer"
-              onClick={() => handlePrioritySelect("High")}
-            >
-              High
-            </li>
-            {priorities.map((priority) => (
               <li
-                key={priority.id}
-                className="p-2.5 hover:bg-gray-700 cursor-pointer flex justify-between items-center group"
-                onClick={() => handlePrioritySelect(priority.label)}
+                className="p-2.5 hover:bg-gray-700 cursor-pointer transition-colors duration-150"
+                onClick={() => handlePrioritySelect("Low")}
               >
-                <span>{priority.label}</span>
-                <button
-                  onClick={(e) => handleDeletePriority(priority.id, e)}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-600 rounded transition-all duration-200"
-                  title="Delete priority"
-                >
-                  <FaTrash size={10} />
-                </button>
+                Low
               </li>
-            ))}
-            <li
-              className="p-2.5 hover:bg-gray-700 cursor-pointer text-blue-400 border-t border-gray-600"
-              onClick={openAddPriorityModal}
-            >
-              + Add Priority
-            </li>
-          </motion.ul>
+              <li
+                className="p-2.5 hover:bg-gray-700 cursor-pointer transition-colors duration-150"
+                onClick={() => handlePrioritySelect("Medium")}
+              >
+                Medium
+              </li>
+              <li
+                className="p-2.5 hover:bg-gray-700 cursor-pointer transition-colors duration-150"
+                onClick={() => handlePrioritySelect("High")}
+              >
+                High
+              </li>
+              {priorities.map((priority) => (
+                <li
+                  key={priority.id}
+                  className="p-2.5 hover:bg-gray-700 cursor-pointer flex justify-between items-center group transition-colors duration-150"
+                  onClick={() => handlePrioritySelect(priority.label)}
+                >
+                  <span>{priority.label}</span>
+                  <button
+                    onClick={(e) => handleDeletePriority(priority.id, e)}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-600 rounded transition-all duration-200"
+                    title="Delete priority"
+                  >
+                    <FaTrash size={10} />
+                  </button>
+                </li>
+              ))}
+              <li
+                className="p-2.5 hover:bg-gray-700 cursor-pointer text-blue-400 border-t border-gray-600 transition-colors duration-150"
+                onClick={openAddPriorityModal}
+              >
+                + Add Priority
+              </li>
+            </motion.ul>
+          </>
         )}
       </AnimatePresence>
-
       <AnimatePresence>
         {isModalOpen && (
           <motion.div
