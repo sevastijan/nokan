@@ -189,7 +189,11 @@ const BoardList = () => {
         <h2 className="text-xl font-semibold">Your Boards</h2>
         <button
           onClick={() => setCreateModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className={`bg-blue-600 cursor-pointer text-white px-4 py-2 rounded hover:bg-blue-700 transition-all duration-300 ${
+            boards.length === 0 && !loading
+              ? "animate-pulse shadow-lg shadow-blue-500/30 ring-2 ring-blue-400/50"
+              : ""
+          }`}
         >
           Create Board
         </button>
@@ -225,7 +229,7 @@ const BoardList = () => {
 
       {boards.length === 0 && !loading && (
         <div className="text-center p-8">
-          <div className="text-gray-400">
+          <div className="text-gray-400 mb-4">
             No boards found. Create your first board!
           </div>
         </div>
