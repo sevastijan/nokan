@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import AddPriorityModal from "./AddPriorityModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { getPriorities } from "../../lib/api";
+import { getPriorities, addPriority, deletePriority } from "../../lib/api";
 import { FaChevronDown, FaTrash } from "react-icons/fa";
 
 interface Priority {
@@ -53,8 +53,17 @@ const PrioritySelector = ({
    * Handle adding a new priority to the list
    * @param newPriority - Priority object to add to the list
    */
-  const handleAddPriority = (newPriority: Priority) => {
-    setPriorities([...priorities, newPriority]);
+  const handleAddPriority = async (newPriority: Priority) => {
+    try {
+      const createdPriority = await addPriority(
+        newPriority.label,
+        newPriority.color
+      );
+      setPriorities([...priorities, createdPriority]);
+    } catch (error) {
+      console.error("Error adding priority:", error);
+      // TODO: Show error toast notification
+    }
   };
 
   /**
@@ -68,11 +77,11 @@ const PrioritySelector = ({
   ) => {
     e.stopPropagation();
     try {
-      // TODO: Call API to delete priority
-      // await deletePriority(priorityId);
+      await deletePriority(priorityId);
       setPriorities(priorities.filter((p) => p.id !== priorityId));
     } catch (error) {
-      // TODO :Error handling
+      console.error("Error deleting priority:", error);
+      // TODO: Show error toast notification
     }
   };
 

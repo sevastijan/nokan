@@ -24,21 +24,33 @@ const AddPriorityModal = ({
   onAddPriority,
 }: AddPriorityModalProps) => {
   const [label, setLabel] = useState("");
-  const [color, setColor] = useState("#000000");
+  const [color, setColor] = useState("#3B82F6");
+  const [loading, setLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
   /**
    * Handle saving a new priority
    */
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!label.trim()) return;
 
+    setLoading(true);
     try {
-      const newPriority = await addPriority(label, color);
-      onAddPriority(newPriority);
+      const newPriority = {
+        id: Date.now().toString(),
+        label: label.trim(),
+        color,
+      };
+
+      await onAddPriority(newPriority);
       triggerClose();
     } catch (error) {
-      //TODO: Error handling without console.log - could be replaced with toast notification
+      console.error("Error adding priority:", error);
+      // TODO: Show error message
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,7 +94,7 @@ const AddPriorityModal = ({
             transition={{ duration: 0.3 }}
           >
             <h2 className="text-xl font-bold mb-4">Add New Priority</h2>
-            <div className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-lg font-medium mb-2">Label:</label>
                 <input
@@ -103,22 +115,23 @@ const AddPriorityModal = ({
                   className="w-10 h-10 border border-gray-600 rounded-lg"
                 />
               </div>
-            </div>
-            <div className="mt-6 flex justify-end space-x-4">
-              <button
-                onClick={triggerClose}
-                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!label.trim()}
-              >
-                Save
-              </button>
-            </div>
+              <div className="mt-6 flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={triggerClose}
+                  className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!label.trim() || loading}
+                >
+                  {loading ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
           </motion.div>
         </motion.div>
       )}

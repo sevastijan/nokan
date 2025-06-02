@@ -249,14 +249,17 @@ export async function updateTaskDetails(
  * @returns {Promise<Array>} The list of priorities
  */
 export async function getPriorities() {
-  const { data, error } = await supabase.from("priorities").select("*");
+  const { data, error } = await supabase
+    .from("priorities")
+    .select("*")
+    .order("label", { ascending: true });
 
   if (error) {
     console.error("Error fetching priorities:", error.message);
-    throw error;
+    throw new Error("Failed to fetch priorities");
   }
 
-  return data;
+  return data || [];
 }
 
 /**
@@ -269,14 +272,19 @@ export async function addPriority(label: string, color: string) {
   const { data, error } = await supabase
     .from("priorities")
     .insert([{ label, color }])
-    .select();
+    .select()
+    .single();
 
   if (error) {
     console.error("Error adding priority:", error.message);
-    throw error;
+    throw new Error("Failed to add priority");
   }
 
-  return data[0];
+  if (!data) {
+    throw new Error("No data returned from the database");
+  }
+
+  return data;
 }
 
 /**
@@ -284,11 +292,14 @@ export async function addPriority(label: string, color: string) {
  * @param {string} id - The ID of the priority to delete
  */
 export async function deletePriority(id: string) {
-  const { error } = await supabase.from("priorities").delete().eq("id", id);
+  const { error } = await supabase
+    .from("priorities")
+    .delete()
+    .eq("id", id);
 
   if (error) {
     console.error("Error deleting priority:", error.message);
-    throw error;
+    throw new Error("Failed to delete priority");
   }
 }
 
