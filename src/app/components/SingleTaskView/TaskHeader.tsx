@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaTimes, FaEdit, FaCheck } from "react-icons/fa";
 import { TaskDetail } from "./types";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface TaskHeaderProps {
   task: TaskDetail | null;
@@ -22,6 +23,8 @@ const TaskHeader = ({
 }: TaskHeaderProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task?.title || "");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     setEditedTitle(task?.title || "");
@@ -43,17 +46,30 @@ const TaskHeader = ({
     setIsEditingTitle(false);
   };
 
+  const showConfirm = (action: () => void) => {
+    setConfirmAction(() => action);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirm = () => {
+    if (confirmAction) {
+      confirmAction();
+    }
+    setShowConfirmDialog(false);
+    setConfirmAction(null);
+  };
+
+  const handleCancel = () => {
+    setShowConfirmDialog(false);
+    setConfirmAction(null);
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleTitleSave();
     } else if (e.key === "Escape") {
       if (hasLocalUnsavedChanges()) {
-        const shouldDiscard = window.confirm(
-          "You have unsaved changes in title. Do you want to discard them?"
-        );
-        if (shouldDiscard) {
-          handleDiscardChanges();
-        }
+        showConfirm(handleDiscardChanges);
       } else {
         handleDiscardChanges();
       }
@@ -62,19 +78,9 @@ const TaskHeader = ({
 
   const handleBlur = () => {
     if (hasLocalUnsavedChanges()) {
-      const shouldDiscard = window.confirm(
-        "You have unsaved changes in title. Do you want to discard them?"
-      );
-      if (shouldDiscard) {
+      showConfirm(() => {
         handleDiscardChanges();
-      } else {
-        setTimeout(() => {
-          const input = document.querySelector(
-            'input[type="text"]'
-          ) as HTMLInputElement;
-          input?.focus();
-        }, 0);
-      }
+      });
     } else {
       setIsEditingTitle(false);
     }
@@ -82,17 +88,14 @@ const TaskHeader = ({
 
   const handleClose = () => {
     if (hasLocalUnsavedChanges()) {
-      const shouldDiscard = window.confirm(
-        "You have unsaved changes in title. Do you want to discard them?"
-      );
-      if (shouldDiscard) {
+      showConfirm(() => {
         handleDiscardChanges();
         if (hasUnsavedChanges && onUnsavedChangesAlert) {
           onUnsavedChangesAlert();
         } else {
           onClose();
         }
-      }
+      });
     } else if (hasUnsavedChanges && onUnsavedChangesAlert) {
       onUnsavedChangesAlert();
     } else {
@@ -101,51 +104,64 @@ const TaskHeader = ({
   };
 
   return (
-    <div className="flex items-center justify-between p-6 border-b border-gray-600">
-      <div className="flex-1 mr-4">
-        {isEditingTitle ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onKeyDown={handleKeyPress}
-              onBlur={handleBlur}
-              className="text-xl font-bold bg-gray-700 text-gray-200 px-2 py-1 rounded border border-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
-              autoFocus
-            />
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleTitleSave}
-              className="p-2 text-green-400 hover:text-green-300 rounded"
-            >
-              <FaCheck className="w-4 h-4" />
-            </motion.button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-gray-200">{task?.title}</h1>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsEditingTitle(true)}
-              className="p-2 text-gray-400 hover:text-gray-200 rounded"
-            >
-              <FaEdit className="w-4 h-4" />
-            </motion.button>
-          </div>
-        )}
+    <>
+      <div className="flex items-center justify-between p-6 border-b border-gray-600">
+        <div className="flex-1 mr-4">
+          {isEditingTitle ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onKeyDown={handleKeyPress}
+                onBlur={handleBlur}
+                className="text-xl font-bold bg-gray-700 text-gray-200 px-2 py-1 rounded border border-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+                autoFocus
+              />
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleTitleSave}
+                className="p-2 text-green-400 hover:text-green-300 rounded"
+              >
+                <FaCheck className="w-4 h-4" />
+              </motion.button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-200">{task?.title}</h1>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsEditingTitle(true)}
+                className="p-2 text-gray-400 hover:text-gray-200 rounded"
+              >
+                <FaEdit className="w-4 h-4" />
+              </motion.button>
+            </div>
+          )}
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={handleClose}
+          className="p-2 text-gray-400 hover:text-gray-200 rounded"
+        >
+          <FaTimes className="w-5 h-5" />
+        </motion.button>
       </div>
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={handleClose}
-        className="p-2 text-gray-400 hover:text-gray-200 rounded"
-      >
-        <FaTimes className="w-5 h-5" />
-      </motion.button>
-    </div>
+
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        title="Unsaved Changes"
+        message="You have unsaved changes in the title. Do you want to discard them?"
+        confirmText="Discard"
+        cancelText="Keep Editing"
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        type="warning"
+      />
+    </>
   );
 };
 

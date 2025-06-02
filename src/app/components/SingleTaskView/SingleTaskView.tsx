@@ -283,7 +283,7 @@ const SingleTaskView = ({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-8 rounded-lg">
           <div className="text-white">Ładowanie...</div>
         </div>
@@ -293,7 +293,7 @@ const SingleTaskView = ({
 
   if (!task) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-8 rounded-lg">
           <div className="text-white">Nie znaleziono zadania</div>
           <button
@@ -313,7 +313,7 @@ const SingleTaskView = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4"
         onClick={(e) => {
           if (e.target === e.currentTarget) handleClose();
         }}
@@ -394,7 +394,7 @@ const SingleTaskView = ({
       )}
 
       {showUnsavedAlert && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60]">
+        <div className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-[60]">
           <div className="bg-gray-800 p-6 rounded-lg max-w-md">
             <h3 className="text-lg font-semibold text-white mb-4">
               Niezapisane zmiany
