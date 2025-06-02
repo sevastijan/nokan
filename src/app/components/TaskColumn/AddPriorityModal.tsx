@@ -51,7 +51,6 @@ const AddPriorityModal = ({
       await onAddPriority(newPriority);
       onClose();
     } catch (error) {
-      // Error toast is handled in parent component
       console.error("Error adding priority:", error);
     } finally {
       setLoading(false);

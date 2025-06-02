@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoClose } from "react-icons/io5";
 import PrioritySelector from "./TaskColumn/PrioritySelector";
@@ -70,6 +70,62 @@ const TaskModal = ({
   }, [mode, task]);
 
   /**
+   * Trigger modal close with animation
+   */
+  const triggerClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 300);
+  }, [isClosing, onClose]);
+
+  /**
+   * Handle saving task (add or update based on mode)
+   */
+  const handleSave = useCallback(
+    (e?: React.MouseEvent | React.TouchEvent) => {
+      e?.preventDefault();
+      e?.stopPropagation();
+
+      if (!title.trim()) return;
+
+      setLoading(true);
+
+      try {
+        if (mode === "add" && onAddTask) {
+          onAddTask({ id: "", title, description, priority });
+        } else if (mode === "edit" && onUpdateTask && task && columnId) {
+          onUpdateTask(columnId, {
+            ...task,
+            title,
+            description,
+            priority,
+          } as Task);
+        }
+
+        setLoading(false);
+        triggerClose();
+      } catch (error) {
+        console.error("Error saving task:", error);
+        setLoading(false);
+      }
+    },
+    [
+      title,
+      description,
+      priority,
+      mode,
+      onAddTask,
+      onUpdateTask,
+      task,
+      columnId,
+      triggerClose,
+    ]
+  );
+
+  /**
    * Handle keyboard events (ESC to close, Enter to save)
    */
   useEffect(() => {
@@ -94,7 +150,7 @@ const TaskModal = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, title, loading]);
+  }, [isOpen, title, loading, handleSave, triggerClose]);
 
   /**
    * Handle image upload and create object URLs for preview
@@ -107,49 +163,6 @@ const TaskModal = ({
       );
       setImages([...images, ...uploadedImages]);
     }
-  };
-
-  /**
-   * Handle saving task (add or update based on mode)
-   */
-  const handleSave = (e?: React.MouseEvent | React.TouchEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-
-    if (!title.trim()) return;
-
-    setLoading(true);
-
-    try {
-      if (mode === "add" && onAddTask) {
-        onAddTask({ id: "", title, description, priority });
-      } else if (mode === "edit" && onUpdateTask && task && columnId) {
-        onUpdateTask(columnId, {
-          ...task,
-          title,
-          description,
-          priority,
-        } as Task);
-      }
-
-      setLoading(false);
-      triggerClose();
-    } catch (error) {
-      console.error("Error saving task:", error);
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Trigger modal close with animation
-   */
-  const triggerClose = () => {
-    if (isClosing) return;
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-      setIsClosing(false);
-    }, 300);
   };
 
   /**
