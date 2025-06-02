@@ -9,7 +9,7 @@ import { getUserAvatar } from "./utils";
 interface UserSelectorProps {
   selectedUser: User | null;
   availableUsers: User[];
-  onUserSelect: (userId: string) => Promise<void>;
+  onUserSelect: (userId: string | null) => void;
   label: string;
 }
 
@@ -21,7 +21,7 @@ const UserSelector = ({
 }: UserSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleUserSelect = async (userId: string) => {
+  const handleUserSelect = async (userId: string | null) => {
     await onUserSelect(userId);
     setIsOpen(false);
   };
@@ -69,27 +69,41 @@ const UserSelector = ({
             exit={{ opacity: 0, y: -10 }}
             className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
           >
-            {availableUsers.map((user) => (
+            <div className="max-h-48 overflow-y-auto">
+              {/* Option to unassign */}
               <motion.button
-                key={user.id}
-                whileHover={{ backgroundColor: "#4B5563" }}
-                onClick={() => handleUserSelect(user.id)}
-                className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-600 transition-colors"
+                whileHover={{ backgroundColor: "#374151" }}
+                onClick={() => {
+                  onUserSelect(null);
+                  setIsOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-600 transition-colors border-b border-gray-600"
               >
-                <img
-                  src={getUserAvatar(user)}
-                  alt={user.name}
-                  className="w-6 h-6 rounded-full"
-                />
-                <div>
-                  <div className="text-gray-200">{user.name}</div>
-                  <div className="text-sm text-gray-400">{user.email}</div>
+                <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
+                  <span className="text-xs text-gray-400">✕</span>
                 </div>
-                {selectedUser?.id === user.id && (
-                  <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
-                )}
+                <span className="text-gray-400 italic">Unassign</span>
               </motion.button>
-            ))}
+
+              {availableUsers.map((user) => (
+                <motion.button
+                  key={user.id}
+                  whileHover={{ backgroundColor: "#374151" }}
+                  onClick={() => {
+                    onUserSelect(user.id);
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-600 transition-colors"
+                >
+                  <img
+                    src={getUserAvatar(user)}
+                    alt={user.name}
+                    className="w-6 h-6 rounded-full"
+                  />
+                  <span className="text-gray-200">{user.name}</span>
+                </motion.button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,10 +1,12 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
-import AddTaskForm from "./TaskColumn/AddTaskForm";
-import Task from "./Task";
+import AddTaskForm from "../TaskColumn/AddTaskForm";
+import Task from "../Task";
 import { FaGripVertical } from "react-icons/fa";
-import { JSX } from "react";
-import { Column as ColumnType, Task as TaskType } from "../types/useBoardTypes";
-import SingleTaskView from "./SingleTaskView/SingleTaskView";
+import { JSX, useState } from "react";
+import {
+  Column as ColumnType,
+  Task as TaskType,
+} from "../../types/useBoardTypes";
 
 interface ColumnProps {
   column: ColumnType;
@@ -15,9 +17,9 @@ interface ColumnProps {
   onTaskAdded: (newTask: { id: string; title: string }) => void;
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskDetail: (taskId: string | null) => void;
-  selectedTaskId?: string | null;
   onTaskUpdate?: () => void;
   currentUser: any;
+  selectedTaskId?: string | null;
 }
 
 /**
@@ -32,10 +34,12 @@ const Column = ({
   onTaskAdded,
   onRemoveTask,
   onOpenTaskDetail,
-  selectedTaskId,
   onTaskUpdate,
   currentUser,
+  selectedTaskId,
 }: ColumnProps): JSX.Element => {
+  const [isAdding, setIsAdding] = useState(false);
+
   return (
     <Draggable key={column.id} draggableId={column.id} index={colIndex}>
       {(provided, snapshot) => (
@@ -75,17 +79,24 @@ const Column = ({
             >
               ×
             </button>
+            <button
+              onClick={() => setIsAdding(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors cursor-pointer"
+            >
+              + Add Task
+            </button>
           </div>
+
           <Droppable droppableId={column.id}>
             {(provided, snapshot) => (
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
                 className={`space-y-2 flex-1 overflow-y-auto max-w-[300px] ${
-                  column.tasks.length === 0 ? "min-h-0" : "min-h-[50px]"
+                  column.tasks?.length === 0 ? "min-h-0" : "min-h-[50px]"
                 }`}
               >
-                {column.tasks.map((task, index) => (
+                {column.tasks?.map((task, index) => (
                   <Task
                     key={task.id}
                     task={task}
@@ -99,21 +110,13 @@ const Column = ({
               </div>
             )}
           </Droppable>
+
           <AddTaskForm
             boardId={column.board_id || ""}
             columnId={column.id}
             onTaskAdded={onTaskAdded}
-            currentUser={currentUser} // ✅ Przekaż currentUser
+            currentUser={currentUser}
           />
-          {selectedTaskId && (
-            <SingleTaskView
-              taskId={selectedTaskId}
-              mode="edit"
-              onClose={() => onOpenTaskDetail(null)} // ✅ Przekaż null
-              onTaskUpdate={onTaskUpdate}
-              currentUser={currentUser}
-            />
-          )}
         </div>
       )}
     </Draggable>

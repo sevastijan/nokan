@@ -24,6 +24,7 @@ const Page = (): JSX.Element => {
   const { data: session, status } = useSession();
   const {
     board,
+    fetchBoardData,
     updateBoard,
     handleUpdateBoardTitle,
     handleAddColumn,
@@ -316,7 +317,10 @@ const Page = (): JSX.Element => {
                           })
                         }
                         onRemoveTask={handleRemoveTask}
-                        onOpenTaskDetail={handleOpenTaskDetail}
+                        onOpenTaskDetail={setSelectedTaskId}
+                        onTaskUpdate={fetchBoardData}
+                        currentUser={currentUser}
+                        selectedTaskId={selectedTaskId}
                       />
                     </motion.div>
                   ))}
@@ -341,7 +345,11 @@ const Page = (): JSX.Element => {
         {selectedTaskId && (
           <SingleTaskView
             taskId={selectedTaskId}
-            onClose={handleCloseTaskDetail}
+            mode="edit"
+            onClose={() => setSelectedTaskId(null)}
+            onTaskUpdate={() => {
+              fetchBoardData();
+            }}
             currentUser={currentUser}
           />
         )}

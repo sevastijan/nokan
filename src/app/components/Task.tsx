@@ -1,5 +1,5 @@
 import { Draggable } from "@hello-pangea/dnd";
-import { FaEllipsisV } from "react-icons/fa";
+import { FaEllipsisV, FaFlag } from "react-icons/fa";
 import { Task as TaskType } from "../types/useBoardTypes";
 import { JSX, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,8 +9,7 @@ interface TaskProps {
   taskIndex: number;
   columnId: string;
   onRemoveTask: (columnId: string, taskId: string) => void;
-  onOpenTaskModal: (task: TaskType) => void;
-  onOpenTaskDetail: (taskId: string) => void; // New prop
+  onOpenTaskDetail: (taskId: string) => void;
 }
 
 interface MenuPosition {
@@ -38,12 +37,52 @@ const truncateText = (text: string, maxWords: number = 12): string => {
 };
 
 /**
+ * Get priority color based on priority level
+ * @param {string} priority - Priority level
+ * @returns {string} CSS class for priority color
+ */
+const getPriorityColor = (priority: string) => {
+  switch (priority?.toLowerCase()) {
+    case "high":
+      return "text-red-500";
+    case "medium":
+      return "text-yellow-500";
+    case "low":
+      return "text-green-500";
+    default:
+      return "text-gray-500";
+  }
+};
+
+/**
+ * Get user avatar URL or initials
+ * @param {any} user - User object containing name and image
+ * @returns {string} Avatar URL or initials
+ */
+const getUserAvatar = (user: any) => {
+  if (user?.image) {
+    return user.image;
+  }
+
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((name: string) => name[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?";
+
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    initials
+  )}&background=4285f4&color=ffffff&size=32`;
+};
+
+/**
  * Task component that displays a draggable task card with edit/delete menu
  * @param task - Task data including id, title, and description
  * @param taskIndex - Index of the task for drag and drop ordering
  * @param columnId - ID of the column containing this task
  * @param onRemoveTask - Function to handle task removal
- * @param onOpenTaskModal - Function to open task edit modal
  * @param onOpenTaskDetail - Function to open task detail view
  * @returns JSX element containing the task card interface
  */
@@ -52,8 +91,7 @@ const Task = ({
   taskIndex,
   columnId,
   onRemoveTask,
-  onOpenTaskModal,
-  onOpenTaskDetail, // New prop
+  onOpenTaskDetail,
 }: TaskProps): JSX.Element => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition>({
@@ -72,20 +110,17 @@ const Task = ({
     const rect = event.currentTarget.getBoundingClientRect();
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const menuWidth = 120; // Approximate menu width
-    const menuHeight = 80; // Approximate menu height
+    const menuWidth = 120;
+    const menuHeight = 80;
 
     let top = rect.top + window.scrollY - 10;
     let left: number | undefined = rect.right + window.scrollX + 10;
     let right: number | undefined;
 
-    // Check if menu would go off right edge of screen
     if (rect.right + menuWidth + 10 > screenWidth) {
-      // Position menu to the left of button instead
       left = rect.left + window.scrollX - menuWidth - 10;
       right = undefined;
 
-      // If still off screen (very narrow), position relative to screen edge
       if (left < 10) {
         left = 10;
         right = undefined;
@@ -122,7 +157,10 @@ const Task = ({
   /**
    * Handle menu action and close menu immediately
    */
-  const handleMenuAction = (action: () => void) => {
+  const handleMenuAction = (event: React.MouseEvent, action: () => void) => {
+    event.stopPropagation();
+    event.preventDefault();
+
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
     }
@@ -131,10 +169,21 @@ const Task = ({
   };
 
   /**
-   * Handle task edit action
+   * Handle task click - open detail only if not clicking menu items
    */
-  const handleEdit = () => {
-    onOpenTaskModal(task);
+  const handleTaskClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const target = event.target as HTMLElement;
+    if (
+      target.closest(".task-menu") ||
+      target.closest('button[aria-label="Task options"]')
+    ) {
+      return;
+    }
+
+    console.log("Opening task detail for:", task.id);
+    onOpenTaskDetail(task.id);
   };
 
   /**
@@ -144,17 +193,6 @@ const Task = ({
     onRemoveTask(columnId, task.id);
   };
 
-  /**
-   * Handle task click to open detail view
-   */
-  const handleTaskClick = (e: React.MouseEvent) => {
-    // Do not open details if menu is clicked or menu is open
-    if (isMenuOpen) return;
-
-    e.stopPropagation();
-    onOpenTaskDetail(task.id);
-  };
-
   return (
     <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
       {(provided, snapshot) => (
@@ -162,27 +200,53 @@ const Task = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          onClick={() => onOpenTaskDetail(task.id)}
+          onClick={handleTaskClick}
           className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200 hover:bg-gray-750 cursor-pointer"
         >
-          <div className="flex-1 min-w-0 pr-2 overflow-hidden">
-            <p className="font-semibold text-sm sm:text-base truncate">
-              {task.title}
-            </p>
-            {task.description && (
-              <p className="text-xs sm:text-sm text-gray-400 mt-1 mb-2 line-clamp-3 overflow-hidden">
-                {truncateText(task.description, 15)}
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex-1 min-w-0 pr-2">
+              <p className="font-semibold text-sm sm:text-base truncate text-gray-200">
+                {task.title}
               </p>
-            )}
-          </div>
-          <div className="flex-shrink-0">
+            </div>
             <button
               onClick={toggleMenu}
-              className="text-gray-400 hover:text-gray-200 cursor-pointer transition-colors duration-200 p-1"
+              className="text-gray-400 hover:text-gray-200 cursor-pointer transition-colors duration-200 p-1 flex-shrink-0"
               aria-label="Task options"
             >
               <FaEllipsisV size={16} />
             </button>
+          </div>
+          {task.description && (
+            <p className="text-xs sm:text-sm text-gray-400 mb-3 line-clamp-3">
+              {truncateText(task.description, 15)}
+            </p>
+          )}
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-2">
+              {task.priority && (
+                <div className="flex items-center gap-1">
+                  <FaFlag
+                    size={12}
+                    className={getPriorityColor(task.priority)}
+                  />
+                  <span
+                    className={`text-xs capitalize ${getPriorityColor(
+                      task.priority
+                    )}`}
+                  >
+                    {task.priority}
+                  </span>
+                </div>
+              )}
+            </div>
+            {task.assignee && (
+              <img
+                src={getUserAvatar(task.assignee)}
+                alt={task.assignee.name}
+                className="w-6 h-6 rounded-full border border-gray-600"
+              />
+            )}
           </div>
           <AnimatePresence>
             {isMenuOpen && (
@@ -191,7 +255,7 @@ const Task = ({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.15 }}
-                className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[120px]"
+                className="task-menu fixed bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[120px]"
                 style={{
                   top: menuPosition.top,
                   left: menuPosition.left,
@@ -200,14 +264,8 @@ const Task = ({
                 onMouseLeave={handleMenuClose}
               >
                 <button
-                  onClick={() => handleMenuAction(handleEdit)}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 rounded-t-lg transition-colors duration-150"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleMenuAction(handleDelete)}
-                  className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 rounded-b-lg transition-colors duration-150"
+                  onClick={(e) => handleMenuAction(e, handleDelete)}
+                  className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 rounded-lg transition-colors duration-150"
                 >
                   Delete
                 </button>

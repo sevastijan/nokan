@@ -26,15 +26,16 @@ export interface Attachment {
 export interface TaskDetail {
   id: string;
   title: string;
-  description?: string;
-  user_id: string;
-  assignee_id?: string;
-  priority?: string;
+  description: string;
+  column_id: string; 
   created_at: string;
-  updated_at?: string;
-  assignee?: User;
-  priority_info?: Priority;
-  attachments?: Attachment[];
+  updated_at: string;
+  order: number;
+  priority?: string | null; 
+  user_id?: string | null;  
+  assignee?: User | null;   
+  priority_info?: Priority | null; 
+  attachments: any[];
 }
 
 export interface Comment {

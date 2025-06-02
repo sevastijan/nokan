@@ -21,13 +21,18 @@ export async function getBoardById(id: string) {
         id,
         title,
         order,
+        board_id,
         tasks (
           id,
           title,
           order,
           description,
           priority,
-          images
+          images,
+          user_id,
+          column_id,
+          updated_at,
+          assignee:users!tasks_user_id_fkey(id, name, email, image)
         )
       )
     `)
@@ -41,6 +46,8 @@ export async function getBoardById(id: string) {
   if (!data || data.length === 0) {
     throw new Error(`Board with id ${id} not found`);
   }
+
+  console.log('Board data:', JSON.stringify(data[0], null, 2));
 
   return data[0];
 }
@@ -110,24 +117,64 @@ export async function addColumn(boardId: string, title: string, order: number) {
  * @param {string} columnId - The ID of the column
  * @param {string} title - The title of the task
  * @param {number} order - The order of the task
+ * @param {string} [priority] - The priority of the task (optional)
  * @returns {Promise<Object>} The created task
  */
-export async function addTask(columnId: string, title: string, order: number): Promise<{ id: string; title: string }> {
+export async function addTask(
+  columnId: string, 
+  title: string, 
+  order: number, 
+  priority?: string
+): Promise<{ id: string; title: string; priority?: string }> {
+  
+  const taskData: any = { 
+    column_id: columnId, 
+    title, 
+    order 
+  };
+  
+  let priorityId = null;
+  
+  // Dodaj priorytet tylko jeśli został podany i nie jest pusty
+  if (priority && priority.trim() !== '') {
+    // Sprawdź czy priorytet istnieje w bazie (case-insensitive)
+    const { data: priorityExists } = await supabase
+      .from("priorities")
+      .select("id")
+      .ilike("label", priority)
+      .single();
+    
+    if (priorityExists) {
+      taskData.priority = priorityExists.id;
+      priorityId = priorityExists.id;
+    } else {
+      console.warn(`Priority "${priority}" not found in database`);
+    }
+  }
+  
+  console.log('Final task data to insert:', taskData);
+  
   const { data, error } = await supabase
     .from("tasks")
-    .insert([{ column_id: columnId, title, order }])
-    .select();
+    .insert([taskData])
+    .select('*, priority:priorities(id, label, color)') // ✅ Pobierz pełne dane o priorytecie
+    .single();
 
   if (error) {
     console.error("Error adding task to DB:", error.message);
+    console.error("Task data:", taskData);
     throw error;
   }
 
-  if (!data || data.length === 0) {
+  if (!data) {
     throw new Error("No data returned from the database");
   }
 
-  return { id: data[0].id, title: data[0].title };
+  return { 
+    id: data.id, 
+    title: data.title,
+    priority: data.priority?.label || undefined // ✅ Zwróć label priorytetu
+  };
 }
 
 /**

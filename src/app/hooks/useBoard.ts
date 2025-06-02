@@ -22,26 +22,51 @@ export const useBoard = (boardId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   /**
+   * Fetch board data
+   */
+  const fetchBoardData = async () => {
+    if (!boardId) return;
+
+    try {
+      setLoading(true);
+      const data = await getBoardById(boardId);
+      const updatedData: Board = {
+        ...data,
+        columns: data.columns.map((col) => ({
+          id: col.id,
+          title: col.title,
+          order: col.order,
+          boardId: data.id,
+          tasks: (col.tasks || []).map((task) => ({
+            id: task.id,
+            title: task.title,
+            order: task.order || 0,
+            description: task.description,
+            priority: task.priority,
+            images: task.images,
+            user_id: task.user_id,
+            assignee: Array.isArray(task.assignee) 
+              ? task.assignee[0] 
+              : task.assignee, 
+            created_at: task.created_at,
+            updated_at: task.updated_at,
+          })),
+        })),
+      };
+      setBoard(updatedData);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load board. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * Fetch board data when boardId changes
    */
   useEffect(() => {
-    if (!boardId) return;
-
-    getBoardById(boardId)
-      .then((data) => {
-        const updatedData: Board = {
-          ...data,
-          columns: data.columns.map((col) => ({
-            ...col,
-            boardId: data.id,
-          })),
-        };
-
-        setBoard(updatedData);
-      })
-      .catch((err) => {
-        setError("Failed to load board. Please try again.");
-      });
+    fetchBoardData();
   }, [boardId]);
 
   /**
@@ -278,6 +303,7 @@ export const useBoard = (boardId: string) => {
     board,
     loading,
     error,
+    fetchBoardData,
     updateBoard,
     getColumnById,
     handleUpdateBoardTitle,
