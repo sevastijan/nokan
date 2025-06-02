@@ -1,46 +1,40 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskForm from "./TaskColumn/AddTaskForm";
 import TaskComponent from "./Task";
-import { FaGripVertical, FaTrash } from "react-icons/fa";
+import { FaGripVertical } from "react-icons/fa";
 import { JSX, useState } from "react";
 import { Column as ColumnType, Task as TaskType } from "../types/useBoardTypes";
 import TaskModal from "./TaskModal";
 
 interface ColumnProps {
   column: ColumnType;
+  onUpdateTask: (columnId: string, task: TaskType) => void;
   colIndex: number;
   onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
   onRemoveColumn: (columnId: string) => void;
   onTaskAdded: (newTask: TaskType) => void;
   onRemoveTask: (columnId: string, taskId: string) => void;
-  onUpdateTask: (columnId: string, task: TaskType) => void;
+  onOpenTaskDetail: (taskId: string) => void;
 }
 
 /**
  * Column component that displays a draggable column with tasks in a Kanban board
- * @param {ColumnType} column - Column data including id, title, and tasks
- * @param {number} colIndex - Index of the column for drag and drop ordering
- * @param {Function} onUpdateColumnTitle - Function to handle column title updates
- * @param {Function} onRemoveColumn - Function to handle column removal
- * @param {Function} onTaskAdded - Function to handle new task additions
- * @param {Function} onRemoveTask - Function to handle task removal
- * @param {Function} onUpdateTask - Function to handle task updates
- * @returns {JSX.Element} JSX element containing the column interface
  */
 const Column = ({
   column,
+  onUpdateTask,
   colIndex,
   onUpdateColumnTitle,
   onRemoveColumn,
   onTaskAdded,
   onRemoveTask,
-  onUpdateTask,
+  onOpenTaskDetail,
 }: ColumnProps): JSX.Element => {
   const [selectedTask, setSelectedTask] = useState<TaskType | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   /**
    * Open task modal for editing
-   * @param {TaskType} task - Task to be edited
    */
   const openTaskModal = (task: TaskType) => {
     setSelectedTask(task);
@@ -88,43 +82,43 @@ const Column = ({
             />
             <button
               onClick={() => onRemoveColumn(column.id)}
-              className="text-red-500 hover:text-red-700 transition-colors duration-200 cursor-pointer"
-              aria-label="Remove column"
+              className="text-red-400 hover:text-red-300 transition-colors cursor-pointer"
             >
-              <FaTrash size={18} />
+              ×
+            </button>
+            <button
+              onClick={() => setIsAdding(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors cursor-pointer"
+            >
+              + Add Task
             </button>
           </div>
-          <Droppable droppableId={column.id} type="TASK">
-            {(provided) => (
-              <ul
+          <Droppable droppableId={column.id}>
+            {(provided, snapshot) => (
+              <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
                 className={`space-y-2 flex-1 overflow-y-auto max-w-[300px] ${
-                  column.tasks?.length === 0 ? "min-h-0" : "min-h-[50px]"
+                  column.tasks.length === 0 ? "min-h-0" : "min-h-[50px]"
                 }`}
               >
-                {column.tasks && column.tasks.length > 0 ? (
-                  column.tasks
-                    .filter((task) => task && task.id)
-                    .map((task, taskIndex) => (
-                      <TaskComponent
-                        key={task.id}
-                        task={task}
-                        taskIndex={taskIndex}
-                        columnId={column.id}
-                        onRemoveTask={onRemoveTask}
-                        onOpenTaskModal={openTaskModal}
-                      />
-                    ))
-                ) : (
-                  <p className="text-gray-500 text-center">No tasks</p>
-                )}
+                {column.tasks.map((task, index) => (
+                  <TaskComponent
+                    key={task.id}
+                    task={task}
+                    taskIndex={index}
+                    columnId={column.id}
+                    onRemoveTask={onRemoveTask}
+                    onOpenTaskModal={openTaskModal}
+                    onOpenTaskDetail={onOpenTaskDetail}
+                  />
+                ))}
                 {provided.placeholder}
-              </ul>
+              </div>
             )}
           </Droppable>
           <AddTaskForm
-            boardId={column.boardId}
+            boardId={column.board_id}
             columnId={column.id}
             onTaskAdded={onTaskAdded}
           />

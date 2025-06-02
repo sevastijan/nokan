@@ -41,19 +41,20 @@ const AddColumnPopup = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 backdrop-blur-sm flex items-center justify-center"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 cursor-pointer"
+          onClick={onClose}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
           <motion.div
-            className="bg-gray-800 p-6 rounded-lg shadow-lg w-[350px]"
-            initial={{ scale: 0.9, opacity: 0 }}
+            className="bg-gray-800 p-6 rounded-lg w-96 cursor-auto shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
             <h2 className="text-xl font-bold text-white mb-4">
               Add New Column
@@ -64,20 +65,20 @@ const AddColumnPopup = ({
               value={newColumnTitle}
               onChange={(e) => setNewColumnTitle(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full border border-gray-600 rounded px-3 py-2 mb-4 bg-gray-700 text-white focus:outline-none focus:border-blue-500"
+              className="w-full border border-gray-600 rounded px-3 py-2 mb-4 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               autoFocus
             />
-            <div className="flex justify-end gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-all duration-200"
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={onAddColumn}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isAddingColumn || !newColumnTitle.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 {isAddingColumn ? "Adding..." : "Add Column"}
               </button>

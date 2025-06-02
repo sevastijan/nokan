@@ -17,9 +17,12 @@ export interface Task {
    */
   export interface Column {
     id: string;
+    board_id: string;
     title: string;
+    order: number;
+    index: number; // Dodaj to pole
+    boardId: string;
     tasks: Task[];
-    boardId: string; 
   }
   /**
    * Represents the entire board.

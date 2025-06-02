@@ -10,6 +10,7 @@ interface TaskProps {
   columnId: string;
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskModal: (task: TaskType) => void;
+  onOpenTaskDetail: (taskId: string) => void; // New prop
 }
 
 interface MenuPosition {
@@ -43,6 +44,7 @@ const truncateText = (text: string, maxWords: number = 12): string => {
  * @param columnId - ID of the column containing this task
  * @param onRemoveTask - Function to handle task removal
  * @param onOpenTaskModal - Function to open task edit modal
+ * @param onOpenTaskDetail - Function to open task detail view
  * @returns JSX element containing the task card interface
  */
 const Task = ({
@@ -51,6 +53,7 @@ const Task = ({
   columnId,
   onRemoveTask,
   onOpenTaskModal,
+  onOpenTaskDetail, // New prop
 }: TaskProps): JSX.Element => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition>({
@@ -64,6 +67,8 @@ const Task = ({
    * @param event - Mouse event from the menu button
    */
   const toggleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation(); // Prevent opening task details
+
     const rect = event.currentTarget.getBoundingClientRect();
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
@@ -139,6 +144,17 @@ const Task = ({
     onRemoveTask(columnId, task.id);
   };
 
+  /**
+   * Handle task click to open detail view
+   */
+  const handleTaskClick = (e: React.MouseEvent) => {
+    // Do not open details if menu is clicked or menu is open
+    if (isMenuOpen) return;
+
+    e.stopPropagation();
+    onOpenTaskDetail(task.id);
+  };
+
   return (
     <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
       {(provided, snapshot) => (
@@ -146,9 +162,8 @@ const Task = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`bg-gray-700 text-white rounded-lg shadow-md p-3 flex justify-between items-start transition-transform duration-200 min-h-[70px] overflow-hidden ${
-            snapshot.isDragging ? "transform scale-105" : ""
-          }`}
+          onClick={() => onOpenTaskDetail(task.id)}
+          className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200 hover:bg-gray-750 cursor-pointer"
         >
           <div className="flex-1 min-w-0 pr-2 overflow-hidden">
             <p className="font-semibold text-sm sm:text-base truncate">
@@ -171,53 +186,32 @@ const Task = ({
           </div>
           <AnimatePresence>
             {isMenuOpen && (
-              <>
-                {/* Backdrop to close menu when clicking outside */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={handleMenuClose}
-                  onTouchStart={handleMenuClose}
-                />
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  style={{
-                    position: "fixed",
-                    top: menuPosition.top,
-                    left: menuPosition.left,
-                    right: menuPosition.right,
-                    zIndex: 1000,
-                  }}
-                  className="bg-gray-800 text-white rounded-lg shadow-lg p-1 min-w-[120px] max-w-[150px]"
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.15 }}
+                className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[120px]"
+                style={{
+                  top: menuPosition.top,
+                  left: menuPosition.left,
+                  right: menuPosition.right,
+                }}
+                onMouseLeave={handleMenuClose}
+              >
+                <button
+                  onClick={() => handleMenuAction(handleEdit)}
+                  className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 rounded-t-lg transition-colors duration-150"
                 >
-                  <button
-                    onClick={() => handleMenuAction(handleEdit)}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleMenuAction(handleEdit);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-700 rounded-md transition-colors duration-200"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleMenuAction(handleDelete)}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleMenuAction(handleDelete);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md transition-colors duration-200"
-                  >
-                    Delete
-                  </button>
-                </motion.div>
-              </>
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleMenuAction(handleDelete)}
+                  className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 rounded-b-lg transition-colors duration-150"
+                >
+                  Delete
+                </button>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
