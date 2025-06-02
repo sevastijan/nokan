@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { addPriority } from "../lib/api";
+import { addPriority } from "../../lib/api";
 
 interface AddPriorityModalProps {
   onClose: () => void;
@@ -38,7 +38,7 @@ const AddPriorityModal = ({
       onAddPriority(newPriority);
       triggerClose();
     } catch (error) {
-      // Error handling without console.log - could be replaced with toast notification
+      //TODO: Error handling without console.log - could be replaced with toast notification
     }
   };
 
