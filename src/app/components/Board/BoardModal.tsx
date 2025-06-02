@@ -37,14 +37,34 @@ const BoardModal = ({
 
   /**
    * Handle form submission
-   * @param e - Form event
    */
-  const handleSave = () => {
+  const handleSave = async () => {
     if (input.trim()) {
       setLoading(true);
-      onSubmit(input.trim());
-      setLoading(false);
-      setInput("");
+      try {
+        await onSubmit(input.trim());
+        setInput("");
+      } catch (error) {
+        console.error("Error saving:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  /**
+   * Handle board deletion
+   */
+  const handleDelete = async () => {
+    if (onDelete) {
+      setLoading(true);
+      try {
+        await onDelete();
+      } catch (error) {
+        console.error("Error deleting:", error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -85,39 +105,68 @@ const BoardModal = ({
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg sm:text-xl font-bold mb-4">
-              {mode === "create" ? "Create New Board" : "Edit Board"}
+              {mode === "create" && "Create New Board"}
+              {mode === "edit" && "Edit Board"}
+              {mode === "delete" && "Delete Board"}
             </h2>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Board Title:
-                </label>
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="Enter board title"
-                  autoFocus
-                />
-              </div>
+              {mode === "delete" ? (
+                <div className="text-center">
+                  <p className="text-gray-300 mb-2">
+                    Are you sure you want to delete this board?
+                  </p>
+                  <p className="text-white font-semibold">"{initialTitle}"</p>
+                  <p className="text-red-400 text-xs mt-2">
+                    This action cannot be undone.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Board Title:
+                  </label>
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
+                    placeholder="Enter board title"
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
 
             <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
               <button
                 onClick={onClose}
-                className="w-full sm:w-auto bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 order-2 sm:order-1"
+                className="w-full sm:w-auto bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer duration-200 order-2 sm:order-1"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleSave}
-                disabled={!input.trim() || loading}
-                className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
-              >
-                {loading ? "Saving..." : mode === "create" ? "Create" : "Save"}
-              </button>
+
+              {mode === "delete" ? (
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="w-full sm:w-auto cursor-pointer  bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
+                >
+                  {loading ? "Deleting..." : "Delete"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleSave}
+                  disabled={!input.trim() || loading}
+                  className="w-full sm:w-auto cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
+                >
+                  {loading
+                    ? "Saving..."
+                    : mode === "create"
+                    ? "Create"
+                    : "Save"}
+                </button>
+              )}
             </div>
           </motion.div>
         </motion.div>
