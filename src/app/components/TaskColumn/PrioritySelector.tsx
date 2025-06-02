@@ -15,17 +15,20 @@ interface Priority {
 interface PrioritySelectorProps {
   selectedPriority: string;
   onChange: (priority: string) => void;
+  onDropdownToggle?: (isOpen: boolean) => void;
 }
 
 /**
  * Priority selector component with dropdown and add priority functionality
  * @param selectedPriority - Currently selected priority value
  * @param onChange - Function to handle priority selection changes
+ * @param onDropdownToggle - Optional function to handle dropdown toggle state changes
  * @returns JSX element containing the priority selector interface
  */
 const PrioritySelector = ({
   selectedPriority,
   onChange,
+  onDropdownToggle,
 }: PrioritySelectorProps) => {
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,7 +61,9 @@ const PrioritySelector = ({
    * Toggle dropdown visibility
    */
   const toggleDropdown = () => {
-    setIsDropdownOpen((prev) => !prev);
+    const newState = !isDropdownOpen;
+    setIsDropdownOpen(newState);
+    onDropdownToggle?.(newState);
   };
 
   /**
@@ -79,6 +84,7 @@ const PrioritySelector = ({
   const handlePrioritySelect = (priority: string) => {
     onChange(priority);
     setIsDropdownOpen(false);
+    onDropdownToggle?.(false);
   };
 
   /**
