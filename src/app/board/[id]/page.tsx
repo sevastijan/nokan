@@ -13,6 +13,7 @@ import { User } from "../../components/SingleTaskView/types";
 import { useSession } from "next-auth/react";
 import Loader from "../../components/Loader";
 import { supabase } from "../../lib/supabase";
+import { getPriorities } from "../../lib/api";
 
 /**
  * Board page component that displays a Kanban board with drag-and-drop functionality
@@ -42,6 +43,33 @@ const Page = (): JSX.Element => {
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [addTaskColumnId, setAddTaskColumnId] = useState<string | null>(null);
+  const [priorities, setPriorities] = useState<
+    Array<{ id: string; label: string; color: string }>
+  >([]);
+
+  /**
+   * Load priorities from database
+   */
+  useEffect(() => {
+    const loadPriorities = async () => {
+      try {
+        const fetchedPriorities = await getPriorities();
+        setPriorities(fetchedPriorities);
+      } catch (error) {
+        console.error("Error loading priorities:", error);
+        // Fallback priorities w przypadku błędu
+        setPriorities([
+          { id: "low", label: "Low", color: "#10b981" },
+          { id: "medium", label: "Medium", color: "#f59e0b" },
+          { id: "high", label: "High", color: "#ef4444" },
+          { id: "urgent", label: "Urgent", color: "#dc2626" },
+        ]);
+      }
+    };
+
+    loadPriorities();
+  }, []);
 
   /**
    * Create user object from NextAuth session and fetch from database
@@ -321,6 +349,8 @@ const Page = (): JSX.Element => {
                         onTaskUpdate={fetchBoardData}
                         currentUser={currentUser}
                         selectedTaskId={selectedTaskId}
+                        onOpenAddTask={setAddTaskColumnId}
+                        priorities={priorities}
                       />
                     </motion.div>
                   ))}
@@ -340,9 +370,9 @@ const Page = (): JSX.Element => {
         </div>
       </DragDropContext>
 
-      {/* Single Task Detail View */}
+      {/* Single Task Detail View - EDIT */}
       <AnimatePresence>
-        {selectedTaskId && (
+        {selectedTaskId && !addTaskColumnId && (
           <SingleTaskView
             taskId={selectedTaskId}
             mode="edit"
@@ -351,6 +381,32 @@ const Page = (): JSX.Element => {
               fetchBoardData();
             }}
             currentUser={currentUser}
+            priorities={priorities}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Single Task Detail View - ADD */}
+      <AnimatePresence>
+        {addTaskColumnId && !selectedTaskId && (
+          <SingleTaskView
+            mode="add"
+            columnId={addTaskColumnId}
+            boardId={id as string}
+            onClose={() => setAddTaskColumnId(null)}
+            onTaskAdd={(newTask) => {
+              updateBoard({
+                ...board,
+                columns: board.columns.map((col: ColumnType) =>
+                  col.id === addTaskColumnId
+                    ? { ...col, tasks: [...col.tasks, newTask] }
+                    : col
+                ),
+              });
+              setAddTaskColumnId(null);
+            }}
+            currentUser={currentUser}
+            priorities={priorities}
           />
         )}
       </AnimatePresence>

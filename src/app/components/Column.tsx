@@ -4,7 +4,6 @@ import Task from "./Task";
 import { FaGripVertical } from "react-icons/fa";
 import { JSX } from "react";
 import { Column as ColumnType, Task as TaskType } from "../types/useBoardTypes";
-import SingleTaskView from "./SingleTaskView/SingleTaskView";
 
 interface ColumnProps {
   column: ColumnType;
@@ -18,6 +17,8 @@ interface ColumnProps {
   selectedTaskId?: string | null;
   onTaskUpdate?: () => void;
   currentUser: any;
+  onOpenAddTask: (columnId: string) => void;
+  priorities?: Array<{ id: string; label: string; color: string }>;
 }
 
 /**
@@ -35,6 +36,8 @@ const Column = ({
   selectedTaskId,
   onTaskUpdate,
   currentUser,
+  onOpenAddTask,
+  priorities = [], // Dodaj priorities z defaultem
 }: ColumnProps): JSX.Element => {
   return (
     <Draggable key={column.id} draggableId={column.id} index={colIndex}>
@@ -93,6 +96,7 @@ const Column = ({
                     columnId={column.id}
                     onRemoveTask={onRemoveTask}
                     onOpenTaskDetail={onOpenTaskDetail}
+                    priorities={priorities}
                   />
                 ))}
                 {provided.placeholder}
@@ -103,17 +107,10 @@ const Column = ({
             boardId={column.board_id || ""}
             columnId={column.id}
             onTaskAdded={onTaskAdded}
-            currentUser={currentUser} // ✅ Przekaż currentUser
+            currentUser={currentUser}
+            selectedTaskId={selectedTaskId}
+            onOpenAddTask={onOpenAddTask}
           />
-          {selectedTaskId && (
-            <SingleTaskView
-              taskId={selectedTaskId}
-              mode="edit"
-              onClose={() => onOpenTaskDetail(null)} // ✅ Przekaż null
-              onTaskUpdate={onTaskUpdate}
-              currentUser={currentUser}
-            />
-          )}
         </div>
       )}
     </Draggable>

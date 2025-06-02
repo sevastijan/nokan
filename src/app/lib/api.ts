@@ -32,7 +32,8 @@ export async function getBoardById(id: string) {
           user_id,
           column_id,
           updated_at,
-          assignee:users!tasks_user_id_fkey(id, name, email, image)
+          assignee:users!tasks_user_id_fkey(id, name, email, image),
+          priorities(id, label, color)
         )
       )
     `)
@@ -268,27 +269,65 @@ export async function deleteBoard(boardId: string) {
 }
 
 /**
+ * Fetches a single task by its ID with all related data
+ * @param {string} taskId - The ID of the task
+ * @returns {Promise<Object>} The task data with related information
+ */
+export async function getTaskById(taskId: string) {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(`
+      *,
+      assignee:users!tasks_user_id_fkey(id, name, email, image),
+      priorities(id, label, color)
+    `)
+    .eq("id", taskId)
+    .single();
+
+  if (error) {
+    console.error("Error fetching task:", error.message);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
  * Updates the details of a task
  * @param {string} taskId - The ID of the task
  * @param {Object} updates - The updates to apply
  * @param {string} [updates.title] - The new title of the task
  * @param {string} [updates.description] - The new description of the task
- * @param {string} [updates.priority] - The new priority of the task
+ * @param {string} [updates.priority] - The new priority ID of the task
  * @param {Array<string>} [updates.images] - The new list of image URLs
  */
 export async function updateTaskDetails(
   taskId: string,
-  updates: { title?: string; description?: string; priority?: string; images?: string[] }
+  updates: { title?: string; description?: string; priority?: string | null; images?: string[] }
 ) {
-  const { error } = await supabase
+  // Jeśli priority to pusty string, zmień na null
+  const cleanedUpdates = {
+    ...updates,
+    priority: updates.priority === "" ? null : updates.priority
+  };
+
+  const { data, error } = await supabase
     .from("tasks")
-    .update(updates)
-    .eq("id", taskId);
+    .update(cleanedUpdates)
+    .eq("id", taskId)
+    .select(`
+      *,
+      assignee:users!tasks_user_id_fkey(id, name, email, image),
+      priorities(id, label, color)
+    `)
+    .single();
 
   if (error) {
     console.error("Error updating task details:", error.message);
     throw error;
   }
+
+  return data;
 }
 
 /**
@@ -299,7 +338,7 @@ export async function getPriorities() {
   const { data, error } = await supabase
     .from("priorities")
     .select("*")
-    .order("label", { ascending: true });
+    .order("id");
 
   if (error) {
     console.error("Error fetching priorities:", error.message);

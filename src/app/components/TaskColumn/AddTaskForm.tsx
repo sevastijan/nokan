@@ -1,13 +1,14 @@
 "use client";
 
-import { JSX, useState } from "react";
-import SingleTaskView from "../SingleTaskView/SingleTaskView";
+import { JSX } from "react";
 
 interface AddTaskFormProps {
   boardId: string;
   columnId: string;
   onTaskAdded?: (newTask: { id: string; title: string }) => void;
   currentUser: any;
+  onOpenAddTask: (columnId: string) => void;
+  selectedTaskId?: string | null | undefined;
 }
 
 const AddTaskForm = ({
@@ -15,28 +16,17 @@ const AddTaskForm = ({
   columnId,
   onTaskAdded,
   currentUser,
+  onOpenAddTask,
+  selectedTaskId,
 }: AddTaskFormProps): JSX.Element => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
   return (
     <div className="mt-4">
       <button
-        onClick={() => setIsModalOpen(true)}
+        onClick={() => onOpenAddTask(columnId)}
         className="w-full bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded-lg transition-colors"
       >
         Add Task
       </button>
-
-      {isModalOpen && (
-        <SingleTaskView
-          mode="add"
-          columnId={columnId}
-          boardId={boardId}
-          onClose={() => setIsModalOpen(false)}
-          onTaskAdd={onTaskAdded}
-          currentUser={currentUser}
-        />
-      )}
     </div>
   );
 };

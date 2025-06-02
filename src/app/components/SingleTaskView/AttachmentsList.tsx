@@ -4,9 +4,9 @@ import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { FaPlus, FaDownload, FaTrash, FaEye } from "react-icons/fa";
 import { Attachment, User } from "./types";
+import { formatFileSize, getFileIcon } from "./utils";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
-import { formatFileSize, getFileIcon } from "./utils";
 
 interface AttachmentsListProps {
   attachments: Attachment[];
@@ -134,7 +134,7 @@ const AttachmentsList = ({
         window.open(data.signedUrl, "_blank");
       } catch (error) {
         console.error("Error creating preview:", error);
-        toast.error("Error opening preview");
+        toast.error("Error creating preview");
       }
     } else {
       handleDownload(attachment);
@@ -144,17 +144,17 @@ const AttachmentsList = ({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <label className="block text-sm font-medium text-gray-300">
+        <h3 className="text-lg font-semibold text-gray-200">
           Attachments ({attachments.length})
-        </label>
+        </h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          <FaPlus className="w-3 h-3" />
+          <FaPlus className="w-4 h-4" />
           {uploading ? "Uploading..." : "Add File"}
         </motion.button>
       </div>
@@ -170,62 +170,58 @@ const AttachmentsList = ({
       {attachments.length > 0 ? (
         <div className="space-y-2">
           {attachments.map((attachment) => (
-            <motion.div
+            <div
               key={attachment.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
               className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="text-2xl flex-shrink-0">
+                <span className="text-2xl">
                   {getFileIcon(attachment.mime_type)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-gray-200 truncate">
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-200 truncate">
                     {attachment.file_name}
-                  </div>
-                  <div className="text-xs text-gray-400">
+                  </p>
+                  <p className="text-xs text-gray-400">
                     {formatFileSize(attachment.file_size)}
-                  </div>
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-2">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handlePreview(attachment)}
-                  className="p-2 text-gray-400 hover:text-blue-400 rounded cursor-pointer"
-                  title={
-                    attachment.mime_type.startsWith("image/")
-                      ? "Preview"
-                      : "Download"
-                  }
+                  className="p-2 text-blue-400 hover:text-blue-300 rounded"
                 >
-                  {attachment.mime_type.startsWith("image/") ? (
-                    <FaEye className="w-4 h-4" />
-                  ) : (
-                    <FaDownload className="w-4 h-4" />
-                  )}
+                  <FaEye className="w-4 h-4" />
                 </motion.button>
-                {attachment.uploaded_by === currentUser.id && (
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleDelete(attachment)}
-                    className="p-2 text-gray-400 hover:text-red-400 rounded cursor-pointer"
-                    title="Delete"
-                  >
-                    <FaTrash className="w-4 h-4" />
-                  </motion.button>
-                )}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleDownload(attachment)}
+                  className="p-2 text-green-400 hover:text-green-300 rounded"
+                >
+                  <FaDownload className="w-4 h-4" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleDelete(attachment)}
+                  className="p-2 text-red-400 hover:text-red-300 rounded"
+                >
+                  <FaTrash className="w-4 h-4" />
+                </motion.button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       ) : (
         <div className="text-center text-gray-400 py-6 border-2 border-dashed border-gray-600 rounded-lg">
           <p>No attachments yet</p>
-          <p className="text-sm mt-1">Upload files to share with your team</p>
+          <p className="text-sm">
+            Click "Add File" to upload your first attachment
+          </p>
         </div>
       )}
     </div>

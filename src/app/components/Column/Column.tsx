@@ -20,6 +20,8 @@ interface ColumnProps {
   onTaskUpdate?: () => void;
   currentUser: any;
   selectedTaskId?: string | null;
+  onOpenAddTask: (columnId: string | null) => void; // ✅ New prop
+  addTaskColumnId?: string | null; // ✅ New prop
 }
 
 /**
@@ -37,6 +39,8 @@ const Column = ({
   onTaskUpdate,
   currentUser,
   selectedTaskId,
+  onOpenAddTask, // ✅ New prop
+  addTaskColumnId, // ✅ New prop
 }: ColumnProps): JSX.Element => {
   const [isAdding, setIsAdding] = useState(false);
 
@@ -80,7 +84,7 @@ const Column = ({
               ×
             </button>
             <button
-              onClick={() => setIsAdding(true)}
+              onClick={() => onOpenAddTask(column.id)} // ✅ Updated to use new prop
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors cursor-pointer"
             >
               + Add Task

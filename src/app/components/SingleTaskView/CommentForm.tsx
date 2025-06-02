@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { FaPaperPlane, FaPaperclip } from "react-icons/fa";
-import { User, Attachment } from "./types";
+import { FaPaperclip } from "react-icons/fa";
+import { User } from "./types";
+import { getUserAvatar } from "./utils";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
-import { getUserAvatar } from "./utils";
 
 interface CommentFormProps {
   currentUser: User;
@@ -122,12 +122,12 @@ const CommentForm = ({
                 </motion.button>
                 <motion.button
                   type="submit"
+                  disabled={!newComment.trim() || uploading}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  disabled={!newComment.trim() || uploading}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <FaPaperPlane className="w-4 h-4" />
+                  {uploading ? "Uploading..." : "Comment"}
                 </motion.button>
               </div>
             </div>

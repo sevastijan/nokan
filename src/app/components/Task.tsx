@@ -1,8 +1,7 @@
+import React, { useState, useRef } from "react";
 import { Draggable } from "@hello-pangea/dnd";
-import { FaEllipsisV, FaFlag } from "react-icons/fa";
+import { FaFlag } from "react-icons/fa";
 import { Task as TaskType } from "../types/useBoardTypes";
-import { JSX, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface TaskProps {
   task: TaskType;
@@ -10,6 +9,7 @@ interface TaskProps {
   columnId: string;
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskDetail: (taskId: string) => void;
+  priorities?: Array<{ id: string; label: string; color: string }>;
 }
 
 interface MenuPosition {
@@ -55,6 +55,28 @@ const getPriorityColor = (priority: string) => {
 };
 
 /**
+ * Get priority info from priorities array based on task priority
+ * @param {string | null | undefined} taskPriority - Priority ID from task
+ * @param {Array} priorities - Available priorities from database
+ * @returns {object} Priority display info
+ */
+const getPriorityInfo = (
+  taskPriority: string | null | undefined,
+  priorities: Array<{ id: string; label: string; color: string }> = []
+) => {
+  if (!taskPriority || !priorities.length) return null;
+
+  const priority = priorities.find((p) => p.id === taskPriority);
+
+  if (!priority) return null;
+
+  return {
+    color: priority.color || "#6B7280",
+    label: priority.label || "Unknown",
+  };
+};
+
+/**
  * Get user avatar URL or initials
  * @param {any} user - User object containing name and image
  * @returns {string} Avatar URL or initials
@@ -84,6 +106,7 @@ const getUserAvatar = (user: any) => {
  * @param columnId - ID of the column containing this task
  * @param onRemoveTask - Function to handle task removal
  * @param onOpenTaskDetail - Function to open task detail view
+ * @param priorities - Array of available priorities
  * @returns JSX element containing the task card interface
  */
 const Task = ({
@@ -92,7 +115,8 @@ const Task = ({
   columnId,
   onRemoveTask,
   onOpenTaskDetail,
-}: TaskProps): JSX.Element => {
+  priorities = [],
+}: TaskProps): React.JSX.Element => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition>({
     top: 0,
@@ -118,23 +142,18 @@ const Task = ({
     let right: number | undefined;
 
     if (rect.right + menuWidth + 10 > screenWidth) {
-      left = rect.left + window.scrollX - menuWidth - 10;
-      right = undefined;
-
-      if (left < 10) {
-        left = 10;
-        right = undefined;
-      }
+      left = undefined;
+      right = screenWidth - rect.left + window.scrollX + 10;
     }
 
     // Check if menu would go off bottom of screen
     if (rect.top + menuHeight > screenHeight) {
-      top = rect.bottom + window.scrollY - menuHeight + 10;
+      top = rect.bottom + window.scrollY - menuHeight - 10;
     }
 
     // For very small screens, center the menu
     if (screenWidth < 400) {
-      left = (screenWidth - menuWidth) / 2;
+      left = screenWidth / 2 - menuWidth / 2;
       right = undefined;
     }
 
@@ -172,18 +191,9 @@ const Task = ({
    * Handle task click - open detail only if not clicking menu items
    */
   const handleTaskClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-
-    const target = event.target as HTMLElement;
-    if (
-      target.closest(".task-menu") ||
-      target.closest('button[aria-label="Task options"]')
-    ) {
-      return;
+    if (!isMenuOpen) {
+      onOpenTaskDetail(task.id);
     }
-
-    console.log("Opening task detail for:", task.id);
-    onOpenTaskDetail(task.id);
   };
 
   /**
@@ -193,6 +203,8 @@ const Task = ({
     onRemoveTask(columnId, task.id);
   };
 
+  const priorityInfo = getPriorityInfo(task.priority, priorities);
+
   return (
     <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
       {(provided, snapshot) => (
@@ -200,42 +212,48 @@ const Task = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          style={{
+            ...provided.draggableProps.style,
+            boxShadow: snapshot.isDragging
+              ? "0 4px 8px rgba(0, 0, 0, 0.2)"
+              : "none",
+          }}
+          className={`bg-gray-700 text-white rounded-lg p-4 mb-2 cursor-pointer hover:bg-gray-600 transition-all duration-200 relative ${
+            snapshot.isDragging ? "transform scale-105" : ""
+          }`}
           onClick={handleTaskClick}
-          className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200 hover:bg-gray-750 cursor-pointer"
         >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1 min-w-0 pr-2">
-              <p className="font-semibold text-sm sm:text-base truncate text-gray-200">
-                {task.title}
-              </p>
-            </div>
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-sm font-medium leading-tight pr-2">
+              {truncateText(task.title, 8)}
+            </h3>
             <button
               onClick={toggleMenu}
-              className="text-gray-400 hover:text-gray-200 cursor-pointer transition-colors duration-200 p-1 flex-shrink-0"
-              aria-label="Task options"
+              className="text-gray-400 hover:text-gray-200 p-1 rounded transition-colors"
             >
-              <FaEllipsisV size={16} />
+              ⋮
             </button>
           </div>
+
           {task.description && (
-            <p className="text-xs sm:text-sm text-gray-400 mb-3 line-clamp-3">
-              {truncateText(task.description, 15)}
+            <p className="text-xs text-gray-300 mb-2">
+              {truncateText(task.description, 12)}
             </p>
           )}
-          <div className="flex items-center justify-between mt-3">
+
+          <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-2">
-              {task.priority && (
+              {priorityInfo && (
                 <div className="flex items-center gap-1">
                   <FaFlag
-                    size={12}
-                    className={getPriorityColor(task.priority)}
+                    className="w-3 h-3"
+                    style={{ color: priorityInfo.color }}
                   />
                   <span
-                    className={`text-xs capitalize ${getPriorityColor(
-                      task.priority
-                    )}`}
+                    style={{ color: priorityInfo.color }}
+                    className="font-medium"
                   >
-                    {task.priority}
+                    {priorityInfo.label}
                   </span>
                 </div>
               )}
@@ -244,34 +262,38 @@ const Task = ({
               <img
                 src={getUserAvatar(task.assignee)}
                 alt={task.assignee.name}
-                className="w-6 h-6 rounded-full border border-gray-600"
+                className="w-6 h-6 rounded-full"
               />
             )}
           </div>
-          <AnimatePresence>
-            {isMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.15 }}
-                className="task-menu fixed bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[120px]"
-                style={{
-                  top: menuPosition.top,
-                  left: menuPosition.left,
-                  right: menuPosition.right,
-                }}
-                onMouseLeave={handleMenuClose}
+
+          {/* Context Menu */}
+          {isMenuOpen && (
+            <div
+              className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px]"
+              style={{
+                top: menuPosition.top,
+                left: menuPosition.left,
+                right: menuPosition.right,
+              }}
+              onMouseLeave={handleMenuClose}
+            >
+              <button
+                onClick={(e) =>
+                  handleMenuAction(e, () => onOpenTaskDetail(task.id))
+                }
+                className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors"
               >
-                <button
-                  onClick={(e) => handleMenuAction(e, handleDelete)}
-                  className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 rounded-lg transition-colors duration-150"
-                >
-                  Delete
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                Edit
+              </button>
+              <button
+                onClick={(e) => handleMenuAction(e, handleDelete)}
+                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          )}
         </div>
       )}
     </Draggable>

@@ -12,7 +12,7 @@ interface TaskContentProps {
   currentUser: User;
   availableUsers: User[];
   priorities: Priority[];
-  onUpdateTask: (updates: Partial<TaskDetail>) => Promise<void>;
+  onUpdateTask: (updates: Partial<TaskDetail>) => void;
   onRefreshTask: () => Promise<void>;
   taskId: string;
   setHasUnsavedChanges: (value: boolean) => void;
@@ -54,18 +54,18 @@ const TaskContent = ({
 
   const handleDescriptionSave = async () => {
     if (editedDescription !== (task?.description || "")) {
-      await onUpdateTask({ description: editedDescription });
+      onUpdateTask({ description: editedDescription });
     }
   };
 
-  const updateAssignee = async (userId: string | null) => {
+  const updateAssignee = (userId: string | null) => {
     setHasUnsavedChanges(true);
-    await onUpdateTask({ user_id: userId });
+    onUpdateTask({ user_id: userId });
   };
 
-  const updatePriority = async (priorityId: string) => {
+  const updatePriority = (priorityId: string | null) => {
     setHasUnsavedChanges(true);
-    await onUpdateTask({ priority: priorityId });
+    onUpdateTask({ priority: priorityId });
   };
 
   return (
@@ -97,10 +97,9 @@ const TaskContent = ({
       />
 
       <PrioritySelector
-        selectedPriority={task.priority_info || null}
-        availablePriorities={priorities}
-        onPrioritySelect={updatePriority}
-        label="Priority"
+        selectedPriority={task.priority || null}
+        onChange={updatePriority}
+        priorities={priorities}
       />
 
       <div>

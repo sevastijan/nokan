@@ -9,6 +9,15 @@ export interface User {
 }
 
 /**
+ * Represents priority information.
+ */
+export interface Priority {
+  id: string;
+  label: string;
+  color: string;
+}
+
+/**
  * Represents a single task in a column.
  */
 export interface Task {
@@ -22,6 +31,7 @@ export interface Task {
   order?: number;
   images?: string[];
   assignee?: User;
+  priority_info?: Priority;
 }
 
 /**
