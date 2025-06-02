@@ -50,7 +50,6 @@ const TaskModal = ({
   const [images, setImages] = useState<string[]>(task?.images || []);
   const [isClosing, setIsClosing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false);
 
   /**
    * Update form fields when mode or task changes
@@ -175,15 +174,9 @@ const TaskModal = ({
           transition={{ duration: 0.3 }}
         >
           <motion.div
-            className="bg-gray-800 text-white rounded-lg p-3 sm:p-4 w-full max-w-xs sm:max-w-sm mx-4 overflow-y-auto"
+            className="bg-gray-800 text-white rounded-lg p-4 sm:p-6 w-full max-w-xs sm:max-w-md mx-4 max-h-[90vh] overflow-y-auto"
             initial={{ scale: 0.8, opacity: 0, y: 50 }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-              y: 0,
-              height: isPriorityDropdownOpen ? "auto" : "auto",
-              maxHeight: isPriorityDropdownOpen ? "95vh" : "90vh",
-            }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 50 }}
             transition={{
               duration: 0.3,
@@ -194,61 +187,55 @@ const TaskModal = ({
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-base font-semibold">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">
                 {mode === "add" ? "Add New Task" : "Edit Task"}
               </h2>
               <button
                 onClick={triggerClose}
-                className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors duration-200 group"
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors duration-200 group"
                 title="Close modal (ESC)"
               >
-                <IoClose className="w-4 h-4 text-gray-400 group-hover:text-white" />
+                <IoClose className="w-5 h-5 text-gray-400 group-hover:text-white" />
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1.5">
+                <label className="block text-sm font-medium mb-2">
                   Task Title:
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-2.5 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
                   placeholder="Enter task title"
                   autoFocus
                 />
               </div>
-
               <div>
-                <label className="block text-xs font-medium mb-1.5">
+                <label className="block text-sm font-medium mb-2">
                   Description:
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={2}
-                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-blue-500"
+                  rows={3}
+                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-blue-500"
                   placeholder="Enter task description"
                 />
               </div>
-              <div
-                className={`transition-all duration-300 ${
-                  isPriorityDropdownOpen ? "pb-32" : "pb-0"
-                }`}
-              >
-                <PrioritySelector
-                  selectedPriority={priority}
-                  onChange={setPriority}
-                  onDropdownToggle={setIsPriorityDropdownOpen}
-                />
-              </div>
+
+              <PrioritySelector
+                selectedPriority={priority}
+                onChange={setPriority}
+              />
             </div>
-            <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-end">
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
               <button
                 onClick={triggerClose}
-                className="w-full sm:w-auto bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm order-2 sm:order-1"
+                className="w-full sm:w-auto bg-gray-600 text-white px-4 py-3 sm:py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 order-2 sm:order-1"
               >
                 Cancel
               </button>
@@ -260,13 +247,13 @@ const TaskModal = ({
                   handleSave(e);
                 }}
                 disabled={!title.trim() || loading}
-                className="w-full sm:w-auto bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm order-1 sm:order-2"
+                className="w-full sm:w-auto bg-blue-500 text-white px-4 py-3 sm:py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
                 title="Cmd/Ctrl + Enter to save quickly"
               >
                 {loading ? "Saving..." : "Save"}
               </button>
             </div>
-            <div className="mt-3 text-xs text-gray-400 text-center opacity-30">
+            <div className="mt-4 text-xs text-gray-400 text-center opacity-30">
               <span>ESC to close • Cmd/Ctrl + Enter to save</span>
             </div>
           </motion.div>

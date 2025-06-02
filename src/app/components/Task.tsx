@@ -146,7 +146,7 @@ const Task = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`bg-gray-700 text-white rounded-lg shadow-md p-3 flex justify-between items-start transition-transform duration-200 h-[80px] overflow-hidden ${
+          className={`bg-gray-700 text-white rounded-lg shadow-md p-3 flex justify-between items-start transition-transform duration-200 min-h-[70px] overflow-hidden ${
             snapshot.isDragging ? "transform scale-105" : ""
           }`}
         >
@@ -155,8 +155,8 @@ const Task = ({
               {task.title}
             </p>
             {task.description && (
-              <p className="text-xs sm:text-sm text-gray-400 mt-1 line-clamp-2 overflow-hidden">
-                {truncateText(task.description, 12)}
+              <p className="text-xs sm:text-sm text-gray-400 mt-1 mb-2 line-clamp-3 overflow-hidden">
+                {truncateText(task.description, 15)}
               </p>
             )}
           </div>

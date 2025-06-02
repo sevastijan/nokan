@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import AddPriorityModal from "./AddPriorityModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPriorities } from "../../lib/api";
-import { FaChevronDown } from "react-icons/fa";
+import { FaChevronDown, FaTrash } from "react-icons/fa";
 
 interface Priority {
   id: string;
@@ -58,6 +58,25 @@ const PrioritySelector = ({
   };
 
   /**
+   * Handle deleting a priority
+   * @param priorityId - ID of the priority to delete
+   * @param e - Mouse event to prevent propagation
+   */
+  const handleDeletePriority = async (
+    priorityId: string,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    try {
+      // TODO: Call API to delete priority
+      // await deletePriority(priorityId);
+      setPriorities(priorities.filter((p) => p.id !== priorityId));
+    } catch (error) {
+      // TODO :Error handling
+    }
+  };
+
+  /**
    * Toggle dropdown visibility
    */
   const toggleDropdown = () => {
@@ -97,9 +116,9 @@ const PrioritySelector = ({
 
   return (
     <div className="relative">
-      <label className="block text-lg font-medium mb-2">Priority:</label>
+      <label className="block text-xs font-medium mb-1.5">Priority:</label>
       <div
-        className="bg-gray-800 text-white border border-gray-600 rounded-lg p-3 cursor-pointer flex justify-between items-center"
+        className="bg-gray-800 text-white border border-gray-600 rounded-lg p-2.5 cursor-pointer flex justify-between items-center text-sm"
         onClick={toggleDropdown}
       >
         <span>{selectedPriority || "Select Priority"}</span>
@@ -107,33 +126,33 @@ const PrioritySelector = ({
           animate={{ rotate: isDropdownOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <FaChevronDown size={16} />
+          <FaChevronDown size={12} />
         </motion.div>
       </div>
 
       <AnimatePresence>
         {isDropdownOpen && (
           <motion.ul
-            className="absolute bg-gray-900 text-white border border-gray-600 rounded-lg mt-2 w-full z-10"
+            className="absolute bg-gray-900 text-white border border-gray-600 rounded-lg mt-1 w-full z-10 text-sm"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
             <li
-              className="p-3 hover:bg-gray-700 cursor-pointer"
+              className="p-2.5 hover:bg-gray-700 cursor-pointer"
               onClick={() => handlePrioritySelect("Low")}
             >
               Low
             </li>
             <li
-              className="p-3 hover:bg-gray-700 cursor-pointer"
+              className="p-2.5 hover:bg-gray-700 cursor-pointer"
               onClick={() => handlePrioritySelect("Medium")}
             >
               Medium
             </li>
             <li
-              className="p-3 hover:bg-gray-700 cursor-pointer"
+              className="p-2.5 hover:bg-gray-700 cursor-pointer"
               onClick={() => handlePrioritySelect("High")}
             >
               High
@@ -141,14 +160,21 @@ const PrioritySelector = ({
             {priorities.map((priority) => (
               <li
                 key={priority.id}
-                className="p-3 hover:bg-gray-700 cursor-pointer"
+                className="p-2.5 hover:bg-gray-700 cursor-pointer flex justify-between items-center group"
                 onClick={() => handlePrioritySelect(priority.label)}
               >
-                {priority.label}
+                <span>{priority.label}</span>
+                <button
+                  onClick={(e) => handleDeletePriority(priority.id, e)}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-600 rounded transition-all duration-200"
+                  title="Delete priority"
+                >
+                  <FaTrash size={10} />
+                </button>
               </li>
             ))}
             <li
-              className="p-3 hover:bg-gray-700 cursor-pointer text-blue-400"
+              className="p-2.5 hover:bg-gray-700 cursor-pointer text-blue-400 border-t border-gray-600"
               onClick={openAddPriorityModal}
             >
               + Add Priority
@@ -168,7 +194,7 @@ const PrioritySelector = ({
             transition={{ duration: 0.3 }}
           >
             <motion.div
-              className="bg-gray-900 text-white rounded-lg p-6 w-full max-w-sm"
+              className="bg-gray-900 text-white rounded-lg p-4 w-full max-w-xs"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
