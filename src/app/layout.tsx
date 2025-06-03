@@ -17,7 +17,7 @@ export default function RootLayout({
       <body>
         <Providers>
           <Navbar />
-          <main>{children}</main>
+          <main className="ml-64">{children}</main>
         </Providers>
       </body>
     </html>

@@ -36,35 +36,37 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-gray-900 border-b border-gray-700 px-6 py-4">
-      <div className="flex items-center justify-between">
+    <nav className="fixed left-0 top-0 h-full w-64 bg-gray-900 border-r border-gray-700 px-6 py-8 flex flex-col">
+      <div className="flex flex-col gap-8">
         <button
           onClick={goHome}
-          className="text-2xl font-bold text-white hover:text-gray-300 transition-colors cursor-pointer"
+          className="text-3xl font-bold text-white hover:text-gray-300 transition-colors cursor-pointer text-left"
         >
           NOKAN
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-6">
           {status === "loading" ? (
             <div className="text-gray-400">Loading...</div>
           ) : session?.user ? (
-            <div className="flex items-center gap-3">
-              {session.user.image && (
-                <img
-                  src={session.user.image}
-                  alt="User avatar"
-                  width={32}
-                  height={32}
-                  className="rounded-full w-8 h-8"
-                />
-              )}
-              <span className="text-gray-300 text-sm">
-                {session.user.name || session.user.email}
-              </span>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col items-center gap-3 p-4 bg-gray-800 rounded-lg">
+                {session.user.image && (
+                  <img
+                    src={session.user.image}
+                    alt="User avatar"
+                    width={48}
+                    height={48}
+                    className="rounded-full w-12 h-12"
+                  />
+                )}
+                <span className="text-gray-300 text-sm text-center">
+                  {session.user.name || session.user.email}
+                </span>
+              </div>
               <button
                 onClick={handleSignOut}
-                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors cursor-pointer"
+                className="bg-red-600 text-white px-4 py-3 rounded text-sm hover:bg-red-700 transition-colors cursor-pointer w-full"
               >
                 Sign Out
               </button>
@@ -72,7 +74,7 @@ const Navbar = () => {
           ) : (
             <button
               onClick={handleSignIn}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors cursor-pointer"
+              className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full"
             >
               Sign In
             </button>
