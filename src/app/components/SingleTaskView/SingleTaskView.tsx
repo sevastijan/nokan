@@ -58,32 +58,31 @@ const SingleTaskView = ({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (mode === "edit" && taskId) {
+    if (taskId && mode === "edit") {
       fetchTaskData();
-      fetchComments();
     } else if (mode === "add") {
-      const now = new Date().toISOString();
+      // Initialize new task
       setTask({
         id: "",
         title: "",
-        description: "",
         column_id: columnId || "",
-        created_at: now,
-        updated_at: now,
-        order: 0,
+        description: "",
         priority: null,
         user_id: null,
-        assignee: null,
-        priority_info: null,
+        images: [],
         attachments: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
+      setIsNewTask(true);
       setLoading(false);
     }
 
     fetchAvailableUsers();
-  }, [taskId, mode, columnId]);
+  }, [taskId, mode]);
 
   useEffect(() => {
     const fetchPriorities = async () => {
@@ -101,28 +100,28 @@ const SingleTaskView = ({
   const fetchTaskData = async () => {
     if (!taskId) return;
 
+    setLoading(true);
     try {
       const taskData = await getTaskById(taskId);
 
-      const completeTask: TaskDetail = {
-        id: taskData.id,
-        title: taskData.title || "",
-        description: taskData.description || "",
-        column_id: taskData.column_id,
-        created_at: taskData.created_at,
-        updated_at: taskData.updated_at,
-        order: taskData.order || 0,
-        priority: taskData.priority || null,
-        user_id: taskData.user_id || null,
-        assignee: taskData.assignee || null,
-        priority_info: taskData.priority_info || null,
-        attachments: taskData.attachments || [],
-      };
+      // Pobierz załączniki
+      const { data: attachments, error: attachError } = await supabase
+        .from("task_attachments")
+        .select("*")
+        .eq("task_id", taskId)
+        .order("created_at", { ascending: false });
 
-      setTask(completeTask);
+      if (attachError) {
+        console.error("Error fetching attachments:", attachError);
+      }
+
+      setTask({
+        ...taskData,
+        attachments: attachments || [],
+      });
     } catch (error) {
       console.error("Error fetching task:", error);
-      toast.error("Nie udało się załadować zadania");
+      setError("Failed to load task");
     } finally {
       setLoading(false);
     }

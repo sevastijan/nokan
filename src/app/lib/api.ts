@@ -402,3 +402,18 @@ export const updateTask = async (taskId: string, taskData: {
 
   return data;
 };
+
+export async function createAttachmentsBucket() {
+  const { data, error } = await supabase.storage.createBucket('attachments', {
+    public: false,
+    allowedMimeTypes: ['image/*', 'application/pdf', 'text/*', 'application/*'],
+    fileSizeLimit: 10485760 // 10MB
+  });
+
+  if (error && error.message !== 'Bucket already exists') {
+    console.error('Error creating bucket:', error);
+    throw error;
+  }
+
+  return data;
+}

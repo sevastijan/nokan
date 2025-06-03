@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { FaFlag } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
@@ -120,6 +120,27 @@ const Task = ({
     left: 0,
   });
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false);
+        }
+        if (isMenuOpen) {
+          setIsMenuOpen(false);
+        }
+      }
+    };
+
+    if (showDeleteConfirm || isMenuOpen) {
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showDeleteConfirm, isMenuOpen]);
 
   /**
    * Toggle context menu and calculate its position with mobile-friendly positioning
@@ -321,7 +342,8 @@ const Task = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-50"
+            onClick={cancelDelete}
           >
             <motion.div
               initial={{ scale: 0.8 }}
@@ -329,6 +351,7 @@ const Task = ({
               exit={{ scale: 0.8 }}
               transition={{ duration: 0.2 }}
               className="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-sm mx-4"
+              onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-white text-lg font-medium mb-4">
                 Delete Task
@@ -340,13 +363,13 @@ const Task = ({
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={cancelDelete}
-                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  className="px-4 py-2 text-gray-300 cursor-pointer hover:text-white transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                  className="px-4 py-2 bg-red-600 cursor-pointer text-white rounded hover:bg-red-700 transition-colors"
                 >
                   Delete
                 </button>

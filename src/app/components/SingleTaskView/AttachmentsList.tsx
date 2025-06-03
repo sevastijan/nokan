@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { FaPlus, FaDownload, FaTrash, FaEye } from "react-icons/fa";
 import { Attachment, User } from "./types";
 import { formatFileSize, getFileIcon } from "./utils";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../lib/api";
 import { toast } from "react-toastify";
 
 interface AttachmentsListProps {

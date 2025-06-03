@@ -31,6 +31,7 @@ export interface TaskDetail {
   created_at: string;
   updated_at: string;
   priority?: string | null; 
+  images?: string[]; 
   priority_info?: any;  
   user_id?: string | null;  
   assignee?: User | null;   
