@@ -43,7 +43,10 @@ const CommentsSection = ({
   onRefreshTask,
   onImagePreview,
 }: CommentsSectionProps) => {
-  // Add new comment to Supabase and refresh the list
+  /**
+   * Adds a new comment to Supabase and refreshes the comment list.
+   * @param {string} content - The content of the comment to be added.
+   */
   const addComment = async (content: string) => {
     if (!content.trim()) return;
 
@@ -67,7 +70,10 @@ const CommentsSection = ({
     }
   };
 
-  // Delete comment from Supabase and refresh the list
+  /**
+   * Deletes a comment from Supabase and refreshes the comment list.
+   * @param {string} commentId - The ID of the comment to be deleted.
+   */
   const deleteComment = async (commentId: string) => {
     try {
       const { error } = await supabase
@@ -86,21 +92,16 @@ const CommentsSection = ({
   };
 
   return (
-    <div className="border-t border-gray-600 p-6">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <img
-            src={getUserAvatar(currentUser)}
-            alt={currentUser.name}
-            className="w-8 h-8 rounded-full"
-          />
-          <span className="text-sm text-gray-400">
-            {currentUser.name} created this task
-          </span>
-          <span className="text-sm text-gray-500">
-            {formatDate(task.updated_at)}
-          </span>
-        </div>
+    <div className="border-t border-gray-600 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <img
+          src={getUserAvatar(currentUser)}
+          alt={currentUser.name}
+          className="w-6 h-6 rounded-full"
+        />
+        <span className="text-xs text-gray-400">
+          {currentUser.name} created this task on {formatDate(task.created_at)}
+        </span>
       </div>
       <CommentForm
         currentUser={currentUser}

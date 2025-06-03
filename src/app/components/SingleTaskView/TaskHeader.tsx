@@ -133,7 +133,10 @@ const TaskHeader = ({
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-200">{task?.title}</h1>
+              <h1 className="text-xl font-bold text-gray-200">
+                {task?.id ? `ID: [${task.id.slice(0, 8)}] - ` : ""}
+                {task?.title}
+              </h1>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}

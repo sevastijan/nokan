@@ -70,31 +70,31 @@ const ActionFooter = ({
 
   return (
     <>
-      <div className="border-t border-gray-600 p-4 bg-gray-800 flex justify-between items-center">
+      <div className="border-t border-gray-600 p-3 bg-gray-800 flex justify-between items-center">
+        {" "}
         <div>
           {!isNewTask && onDelete && (
             <button
               onClick={handleDeleteClick}
               disabled={isSaving}
-              className="px-4 py-2 bg-red-600 cursor-pointer text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+              className="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors text-sm" // Smaller button
             >
               Delete
             </button>
           )}
         </div>
-
-        <div className="flex space-x-3">
+        <div className="flex space-x-2">
+          {" "}
           <button
             onClick={onClose}
-            className="px-4 py-2 border cursor-pointer  border-gray-500 text-gray-300 rounded-md hover:bg-gray-700 transition-colors"
+            className="px-3 py-1.5 border border-gray-500 text-gray-300 rounded-md hover:bg-gray-700 transition-colors text-sm" // Smaller button
           >
             Cancel
           </button>
-
           <button
             onClick={onSave}
             disabled={!canSave || isSaving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm" // Smaller button
           >
             {isSaving
               ? isNewTask
