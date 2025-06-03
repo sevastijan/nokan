@@ -23,14 +23,19 @@ const TaskFooter = ({ task, currentUser }: TaskFooterProps) => {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <FaCalendarAlt className="w-4 h-4" />
-            <span>Created {task ? formatDate(task.updated_at) : "N/A"}</span>
+            <span>
+              Created{" "}
+              {task ? formatDate(task.created_at || task.updated_at) : "N/A"}
+            </span>
           </div>
-          {task?.updated_at && task.updated_at !== task.created_at && (
-            <div className="flex items-center gap-2">
-              <FaClock className="w-4 h-4" />
-              <span>Updated {formatDate(task.updated_at)}</span>
-            </div>
-          )}
+          {task?.updated_at &&
+            task.created_at &&
+            task.updated_at !== task.created_at && (
+              <div className="flex items-center gap-2">
+                <FaClock className="w-4 h-4" />
+                <span>Updated {formatDate(task.updated_at)}</span>
+              </div>
+            )}
         </div>
         <div className="text-xs">
           Task ID: {task ? task.id.slice(0, 8) : "N/A"}

@@ -33,6 +33,7 @@ const Page = (): JSX.Element => {
     handleUpdateColumnTitle,
     handleRemoveTask,
     handleUpdateTask,
+    handleAddTask,
   } = useBoard(id as string);
 
   const [newColumnTitle, setNewColumnTitle] = useState<string>("");
@@ -334,16 +335,12 @@ const Page = (): JSX.Element => {
                         colIndex={colIndex}
                         onUpdateColumnTitle={handleUpdateColumnTitle}
                         onRemoveColumn={handleRemoveColumn}
-                        onTaskAdded={(newTask: Task) =>
-                          updateBoard({
-                            ...board,
-                            columns: board.columns.map((col: ColumnType) =>
-                              col.id === column.id
-                                ? { ...col, tasks: [...col.tasks, newTask] }
-                                : col
-                            ),
-                          })
-                        }
+                        onTaskAdded={(
+                          columnId: string,
+                          title: string,
+                          priority?: string,
+                          userId?: string
+                        ) => handleAddTask(columnId, title, priority, userId)}
                         onRemoveTask={handleRemoveTask}
                         onOpenTaskDetail={setSelectedTaskId}
                         onTaskUpdate={fetchBoardData}
@@ -405,6 +402,7 @@ const Page = (): JSX.Element => {
               });
               setAddTaskColumnId(null);
             }}
+            onTaskAdded={handleAddTask}
             currentUser={currentUser}
             priorities={priorities}
           />

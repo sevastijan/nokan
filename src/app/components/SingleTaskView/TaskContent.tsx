@@ -59,6 +59,7 @@ const TaskContent = ({
   };
 
   const updateAssignee = (userId: string | null) => {
+    console.log("updateAssignee called with userId:", userId); // Debug log
     setHasUnsavedChanges(true);
     onUpdateTask({ user_id: userId });
   };
@@ -67,6 +68,11 @@ const TaskContent = ({
     setHasUnsavedChanges(true);
     onUpdateTask({ priority: priorityId });
   };
+
+  // Find the assigned user based on user_id
+  const assignedUser = task.user_id
+    ? availableUsers.find((user) => user.id === task.user_id) || null
+    : null;
 
   return (
     <div className="p-6 space-y-6">
@@ -90,7 +96,7 @@ const TaskContent = ({
       )}
 
       <UserSelector
-        selectedUser={task.assignee || null}
+        selectedUser={assignedUser} // Changed from task.assignee to assignedUser
         availableUsers={availableUsers}
         onUserSelect={updateAssignee}
         label="Assigned to"

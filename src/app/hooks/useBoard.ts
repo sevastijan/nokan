@@ -8,6 +8,7 @@ import {
   updateTaskTitle,
   updateColumnTitle,
   updateTask,
+  addTask,
 } from "../lib/api";
 import { Task, Column, Board } from "../types/useBoardTypes";
 
@@ -299,6 +300,74 @@ export const useBoard = (boardId: string) => {
     }
   };
 
+  /**
+   * Add a new task to a column
+   * @param {string} columnId - ID of the column to add task to
+   * @param {string} title - Title of the new task
+   * @param {string} [priority] - Priority ID (optional)
+   * @param {string} [userId] - User ID (optional)
+   * @returns {Promise<Task>} The newly created task
+   */
+  const handleAddTask = async (
+    columnId: string, 
+    title: string, 
+    priority?: string, 
+    userId?: string
+  ): Promise<Task> => {
+    if (!title.trim()) {
+      throw new Error("Title is required");
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const column = getColumnById(columnId);
+      const order = column ? column.tasks.length : 0;
+
+      const newTaskFromDB = await addTask(columnId, title.trim(), order, priority, userId);
+
+      const newTask: Task = {
+        id: newTaskFromDB.id,
+        title: newTaskFromDB.title,
+        order: newTaskFromDB.order || 0,
+        description: newTaskFromDB.description,
+        priority: newTaskFromDB.priority,
+        images: newTaskFromDB.images,
+        user_id: newTaskFromDB.user_id,
+        assignee: Array.isArray(newTaskFromDB.assignee) 
+          ? newTaskFromDB.assignee[0] 
+          : newTaskFromDB.assignee,
+        created_at: newTaskFromDB.created_at,
+        updated_at: newTaskFromDB.updated_at,
+      };
+
+      setBoard((prev) =>
+        prev
+          ? {
+              ...prev,
+              columns: prev.columns.map((col) =>
+                col.id === columnId
+                  ? {
+                      ...col,
+                      tasks: [...col.tasks, newTask],
+                    }
+                  : col
+              ),
+            }
+          : prev
+      );
+
+      return newTask;
+    } catch (err) {
+      console.error("Error adding task:", err);
+      setError("Failed to add task. Please try again.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     board,
     loading,
@@ -313,5 +382,6 @@ export const useBoard = (boardId: string) => {
     handleUpdateTaskTitle,
     handleUpdateTask,
     handleRemoveTask,
+    handleAddTask,
   };
 };

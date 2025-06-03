@@ -31,6 +31,7 @@ export async function getBoardById(id: string) {
           images,
           user_id,
           column_id,
+          created_at,
           updated_at,
           assignee:users!tasks_user_id_fkey(id, name, email, image),
           priorities(id, label, color)
@@ -47,8 +48,6 @@ export async function getBoardById(id: string) {
   if (!data || data.length === 0) {
     throw new Error(`Board with id ${id} not found`);
   }
-
-  console.log('Board data:', JSON.stringify(data[0], null, 2));
 
   return data[0];
 }
@@ -119,64 +118,54 @@ export async function addColumn(boardId: string, title: string, order: number) {
  * @param {string} title - The title of the task
  * @param {number} order - The order of the task
  * @param {string} [priority] - The priority of the task (optional)
+ * @param {string} [userId] - The user ID associated with the task (optional)
  * @returns {Promise<Object>} The created task
  */
-export async function addTask(
-  columnId: string, 
-  title: string, 
-  order: number, 
-  priority?: string
-): Promise<{ id: string; title: string; priority?: string }> {
-  
-  const taskData: any = { 
-    column_id: columnId, 
-    title, 
-    order 
-  };
-  
-  let priorityId = null;
-  
-  // Dodaj priorytet tylko jeśli został podany i nie jest pusty
-  if (priority && priority.trim() !== '') {
-    // Sprawdź czy priorytet istnieje w bazie (case-insensitive)
-    const { data: priorityExists } = await supabase
-      .from("priorities")
-      .select("id")
-      .ilike("label", priority)
-      .single();
-    
-    if (priorityExists) {
-      taskData.priority = priorityExists.id;
-      priorityId = priorityExists.id;
-    } else {
-      console.warn(`Priority "${priority}" not found in database`);
-    }
+export const addTask = async (
+  columnId: string,
+  title: string,
+  order: number,
+  priority?: string,
+  userId?: string
+) => {
+  // Validate that the column exists first
+  const { data: columnExists, error: columnError } = await supabase
+    .from("columns")
+    .select("id")
+    .eq("id", columnId)
+    .single();
+
+  if (columnError || !columnExists) {
+    console.error("Column validation failed:", columnError);
+    throw new Error(`Column with ID ${columnId} does not exist`);
   }
-  
-  console.log('Final task data to insert:', taskData);
-  
+
+  const taskData: any = {
+    column_id: columnId,
+    title,
+    order,
+    priority: priority || null, // null powinno działać
+    user_id: userId || null,
+  };
+
   const { data, error } = await supabase
     .from("tasks")
-    .insert([taskData])
-    .select('*, priority:priorities(id, label, color)') // ✅ Pobierz pełne dane o priorytecie
+    .insert(taskData)
+    .select(`
+      *,
+      assignee:users!tasks_user_id_fkey(id, name, email, image),
+      priorities(id, label, color)
+    `)
     .single();
 
   if (error) {
-    console.error("Error adding task to DB:", error.message);
-    console.error("Task data:", taskData);
+    console.error("Error adding task:", error);
     throw error;
   }
 
-  if (!data) {
-    throw new Error("No data returned from the database");
-  }
-
-  return { 
-    id: data.id, 
-    title: data.title,
-    priority: data.priority?.label || undefined // ✅ Zwróć label priorytetu
-  };
-}
+  console.log("Task added successfully:", data);
+  return data;
+};
 
 /**
  * Updates the title of a board
@@ -305,15 +294,12 @@ export async function updateTaskDetails(
   taskId: string,
   updates: { title?: string; description?: string; priority?: string | null; images?: string[] }
 ) {
-  // Jeśli priority to pusty string, zmień na null
-  const cleanedUpdates = {
-    ...updates,
-    priority: updates.priority === "" ? null : updates.priority
-  };
-
   const { data, error } = await supabase
     .from("tasks")
-    .update(cleanedUpdates)
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString() // Dodaj aktualizację updated_at
+    })
     .eq("id", taskId)
     .select(`
       *,
@@ -323,7 +309,7 @@ export async function updateTaskDetails(
     .single();
 
   if (error) {
-    console.error("Error updating task details:", error.message);
+    console.error("Error updating task:", error.message);
     throw error;
   }
 

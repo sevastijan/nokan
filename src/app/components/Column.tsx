@@ -11,7 +11,12 @@ interface ColumnProps {
   colIndex: number;
   onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
   onRemoveColumn: (columnId: string) => void;
-  onTaskAdded: (newTask: { id: string; title: string }) => void;
+  onTaskAdded: (
+    columnId: string,
+    title: string,
+    priority?: string,
+    userId?: string
+  ) => Promise<TaskType>;
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskDetail: (taskId: string | null) => void;
   selectedTaskId?: string | null;
@@ -37,7 +42,7 @@ const Column = ({
   onTaskUpdate,
   currentUser,
   onOpenAddTask,
-  priorities = [], // Dodaj priorities z defaultem
+  priorities = [],
 }: ColumnProps): JSX.Element => {
   return (
     <Draggable key={column.id} draggableId={column.id} index={colIndex}>

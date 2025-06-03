@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { FaFlag } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
 import { Task as TaskType } from "../types/useBoardTypes";
 
 interface TaskProps {
@@ -118,6 +119,7 @@ const Task = ({
   priorities = [],
 }: TaskProps): React.JSX.Element => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition>({
     top: 0,
     left: 0,
@@ -129,7 +131,7 @@ const Task = ({
    * @param event - Mouse event from the menu button
    */
   const toggleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation(); // Prevent opening task details
+    event.stopPropagation();
 
     const rect = event.currentTarget.getBoundingClientRect();
     const screenWidth = window.innerWidth;
@@ -197,106 +199,174 @@ const Task = ({
   };
 
   /**
-   * Handle task delete action
+   * Handle task delete action with confirmation
    */
   const handleDelete = () => {
+    setIsMenuOpen(false);
+    setShowDeleteConfirm(true);
+  };
+
+  /**
+   * Confirm task deletion
+   */
+  const confirmDelete = () => {
     onRemoveTask(columnId, task.id);
+    setShowDeleteConfirm(false);
+  };
+
+  /**
+   * Cancel task deletion
+   */
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
   };
 
   const priorityInfo = getPriorityInfo(task.priority, priorities);
 
   return (
-    <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          style={{
-            ...provided.draggableProps.style,
-            boxShadow: snapshot.isDragging
-              ? "0 4px 8px rgba(0, 0, 0, 0.2)"
-              : "none",
-          }}
-          className={`bg-gray-700 text-white rounded-lg p-4 mb-2 cursor-pointer hover:bg-gray-600 transition-all duration-200 relative ${
-            snapshot.isDragging ? "transform scale-105" : ""
-          }`}
-          onClick={handleTaskClick}
-        >
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-sm font-medium leading-tight pr-2">
-              {truncateText(task.title, 8)}
-            </h3>
-            <button
-              onClick={toggleMenu}
-              className="text-gray-400 hover:text-gray-200 p-1 rounded transition-colors"
-            >
-              ⋮
-            </button>
-          </div>
-
-          {task.description && (
-            <p className="text-xs text-gray-300 mb-2">
-              {truncateText(task.description, 12)}
-            </p>
-          )}
-
-          <div className="flex justify-between items-center text-xs">
-            <div className="flex items-center gap-2">
-              {priorityInfo && (
-                <div className="flex items-center gap-1">
-                  <FaFlag
-                    className="w-3 h-3"
-                    style={{ color: priorityInfo.color }}
-                  />
-                  <span
-                    style={{ color: priorityInfo.color }}
-                    className="font-medium"
-                  >
-                    {priorityInfo.label}
-                  </span>
-                </div>
-              )}
+    <>
+      <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            style={{
+              ...provided.draggableProps.style,
+              boxShadow: snapshot.isDragging
+                ? "0 4px 8px rgba(0, 0, 0, 0.2)"
+                : "none",
+            }}
+            className={`bg-gray-700 text-white rounded-lg p-4 mb-2 cursor-pointer hover:bg-gray-600 transition-all duration-200 relative ${
+              snapshot.isDragging ? "transform scale-105" : ""
+            }`}
+            onClick={handleTaskClick}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-sm font-medium leading-tight pr-2">
+                {truncateText(task.title, 8)}
+              </h3>
+              <button
+                onClick={toggleMenu}
+                className="text-gray-400 hover:text-gray-200 p-1 rounded transition-colors"
+              >
+                ⋮
+              </button>
             </div>
-            {task.assignee && (
-              <img
-                src={getUserAvatar(task.assignee)}
-                alt={task.assignee.name}
-                className="w-6 h-6 rounded-full"
-              />
+
+            {task.description && (
+              <p className="text-xs text-gray-300 mb-2">
+                {truncateText(task.description, 12)}
+              </p>
+            )}
+
+            <div className="flex justify-between items-center text-xs">
+              <div className="flex items-center gap-2">
+                {priorityInfo && (
+                  <div className="flex items-center gap-1">
+                    <FaFlag
+                      className="w-3 h-3"
+                      style={{ color: priorityInfo.color }}
+                    />
+                    <span
+                      style={{ color: priorityInfo.color }}
+                      className="font-medium"
+                    >
+                      {priorityInfo.label}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {/* Debug: Pokaż więcej informacji */}
+              <div className="flex items-center gap-2">
+                {task.assignee ? (
+                  <img
+                    src={getUserAvatar(task.assignee)}
+                    alt={task.assignee.name}
+                    className="w-6 h-6 rounded-full"
+                  />
+                ) : task.user_id ? (
+                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-xs">
+                    ?
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Context Menu */}
+            {isMenuOpen && (
+              <div
+                className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px]"
+                style={{
+                  top: menuPosition.top,
+                  left: menuPosition.left,
+                  right: menuPosition.right,
+                }}
+                onMouseLeave={handleMenuClose}
+              >
+                <button
+                  onClick={(e) =>
+                    handleMenuAction(e, () => onOpenTaskDetail(task.id))
+                  }
+                  className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => handleMenuAction(e, handleDelete)}
+                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
             )}
           </div>
+        )}
+      </Draggable>
 
-          {/* Context Menu */}
-          {isMenuOpen && (
-            <div
-              className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px]"
-              style={{
-                top: menuPosition.top,
-                left: menuPosition.left,
-                right: menuPosition.right,
-              }}
-              onMouseLeave={handleMenuClose}
+      {/* Delete Confirmation Popup with animations */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              transition={{ duration: 0.2 }}
+              className="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-sm mx-4"
             >
-              <button
-                onClick={(e) =>
-                  handleMenuAction(e, () => onOpenTaskDetail(task.id))
-                }
-                className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors"
-              >
-                Edit
-              </button>
-              <button
-                onClick={(e) => handleMenuAction(e, handleDelete)}
-                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </Draggable>
+              <h3 className="text-white text-lg font-medium mb-4">
+                Delete Task
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Are you sure you want to delete "{truncateText(task.title, 6)}"?
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

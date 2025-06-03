@@ -152,7 +152,7 @@ const AttachmentsList = ({
           whileTap={{ scale: 0.95 }}
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="flex items-center cursor-pointer gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
           <FaPlus className="w-4 h-4" />
           {uploading ? "Uploading..." : "Add File"}
@@ -192,7 +192,7 @@ const AttachmentsList = ({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handlePreview(attachment)}
-                  className="p-2 text-blue-400 hover:text-blue-300 rounded"
+                  className="p-2 text-blue-400 hover:text-blue-300 rounded cursor-pointer"
                 >
                   <FaEye className="w-4 h-4" />
                 </motion.button>
@@ -200,7 +200,7 @@ const AttachmentsList = ({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleDownload(attachment)}
-                  className="p-2 text-green-400 hover:text-green-300 rounded"
+                  className="p-2 text-green-400 hover:text-green-300 rounded cursor-pointer"
                 >
                   <FaDownload className="w-4 h-4" />
                 </motion.button>
@@ -208,7 +208,7 @@ const AttachmentsList = ({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleDelete(attachment)}
-                  className="p-2 text-red-400 hover:text-red-300 rounded"
+                  className="p-2 text-red-400 hover:text-red-300 rounded cursor-pointer"
                 >
                   <FaTrash className="w-4 h-4" />
                 </motion.button>

@@ -1,11 +1,17 @@
 "use client";
 
 import { JSX } from "react";
+import { Task } from "../../types/useBoardTypes";
 
 interface AddTaskFormProps {
   boardId: string;
   columnId: string;
-  onTaskAdded?: (newTask: { id: string; title: string }) => void;
+  onTaskAdded?: (
+    columnId: string,
+    title: string,
+    priority?: string,
+    userId?: string
+  ) => Promise<Task>;
   currentUser: any;
   onOpenAddTask: (columnId: string) => void;
   selectedTaskId?: string | null | undefined;

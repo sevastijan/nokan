@@ -134,7 +134,7 @@ const TaskHeader = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsEditingTitle(true)}
-                className="p-2 text-gray-400 hover:text-gray-200 rounded"
+                className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
               >
                 <FaEdit className="w-4 h-4" />
               </motion.button>
@@ -145,7 +145,7 @@ const TaskHeader = ({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={handleClose}
-          className="p-2 text-gray-400 hover:text-gray-200 rounded"
+          className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
         >
           <FaTimes className="w-5 h-5" />
         </motion.button>

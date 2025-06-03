@@ -27,6 +27,12 @@ interface SingleTaskViewProps {
   onClose: () => void;
   onTaskUpdate?: () => void;
   onTaskAdd?: (newTask: { id: string; title: string }) => void;
+  onTaskAdded?: (
+    columnId: string,
+    title: string,
+    priority?: string,
+    userId?: string
+  ) => Promise<any>;
   currentUser: User;
   priorities?: Array<{ id: string; label: string; color: string }>;
 }
@@ -39,6 +45,7 @@ const SingleTaskView = ({
   onClose,
   onTaskUpdate,
   onTaskAdd,
+  onTaskAdded,
   currentUser,
 }: SingleTaskViewProps) => {
   const [task, setTask] = useState<TaskDetail | null>(null);
@@ -109,7 +116,7 @@ const SingleTaskView = ({
         user_id: taskData.user_id || null,
         assignee: taskData.assignee || null,
         priority_info: taskData.priority_info || null,
-        attachments: [],
+        attachments: taskData.attachments || [],
       };
 
       setTask(completeTask);
@@ -174,84 +181,176 @@ const SingleTaskView = ({
     }
   };
 
-  const handleUpdateTask = (updates: Partial<TaskDetail>) => {
+  /**
+   * Updates an existing task in the database
+   * Handles field validation and error recovery
+   */
+  const handleUpdateTask = async (updates: Partial<TaskDetail>) => {
     if (!task) return;
 
-    const updatedTask = {
-      ...task,
-      ...updates,
-      updated_at: new Date().toISOString(),
-    };
-    setTask(updatedTask);
+    try {
+      // Update local state
+      setTask((prev) => (prev ? { ...prev, ...updates } : null));
 
-    if (!isNewTask) {
-      (async () => {
-        try {
-          const updatedData = await updateTaskDetails(taskId!, {
-            title: updatedTask.title,
-            description: updatedTask.description,
-            priority: updatedTask.priority,
-          });
+      // If not a new task, save to database
+      if (!isNewTask && task.id) {
+        await updateTaskDetails(task.id, updates);
 
-          setTask((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  priority_info: updatedData.priority_info,
-                }
-              : null
-          );
-
-          onTaskUpdate?.();
-          setHasUnsavedChanges(false);
-          toast.success("Zadanie zostało zaktualizowane!");
-        } catch (error) {
-          console.error("Error updating task:", error);
-          toast.error("Nie udało się zaktualizować zadania");
+        // Refresh task data after update
+        if (taskId) {
+          await fetchTaskData();
         }
-      })();
-    } else {
-      setHasUnsavedChanges(true);
+
+        // Call parent callback
+        onTaskUpdate?.();
+
+        toast.success("Task updated successfully!");
+      } else {
+        // For new tasks, just mark as having unsaved changes
+        setHasUnsavedChanges(true);
+      }
+    } catch (error) {
+      console.error("Error updating task:", error);
+      toast.error("Error updating task");
+
+      // Revert local state on error
+      if (!isNewTask && taskId) {
+        await fetchTaskData();
+      }
     }
   };
 
-  const handleSaveNewTask = async () => {
-    if (!task || !task.title.trim()) {
-      toast.error("Tytuł jest wymagany");
-      return;
-    }
+  /**
+   * Saves changes to an existing task
+   * Closes modal after successful save
+   */
+  const handleSaveExistingTask = async () => {
+    if (!task || !task.id) return;
 
     setIsSaving(true);
     try {
-      const newTask = await addTask(
-        columnId!,
-        task.title.trim(),
-        0,
-        task.priority || undefined
-      );
+      const updates: Partial<TaskDetail> = {
+        title: task.title.trim(),
+        description: task.description?.trim() || "",
+        priority: task.priority || null,
+        user_id: task.user_id || null,
+      };
 
-      if (task.description?.trim()) {
-        await updateTaskDetails(newTask.id, {
-          description: task.description.trim(),
-        });
-      }
+      await updateTaskDetails(task.id, updates);
 
-      onTaskAdd?.(newTask);
-      onClose();
+      // Odśwież board TYLKO po zapisaniu, nie przy każdej zmianie
+      onTaskUpdate?.();
+
       setHasUnsavedChanges(false);
-      toast.success("Zadanie zostało utworzone!");
+      toast.success("Task saved successfully!");
+      onClose();
     } catch (error) {
-      console.error("Error creating task:", error);
-      toast.error("Nie udało się utworzyć zadania");
+      console.error("Error saving task:", error);
+      toast.error("Failed to save task");
     } finally {
       setIsSaving(false);
     }
   };
 
+  /**
+   * Creates a new task in the database
+   * Validates required fields and refreshes board data
+   */
+  const handleSaveNewTask = async () => {
+    if (!task || !task.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+
+    if (!columnId) {
+      toast.error("Cannot create task - missing column ID");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Validate column exists
+      const { data: columnExists, error: columnError } = await supabase
+        .from("columns")
+        .select("id")
+        .eq("id", columnId)
+        .single();
+
+      if (columnError || !columnExists) {
+        toast.error("Column does not exist");
+        return;
+      }
+
+      // Prepare task data
+      const taskData: any = {
+        column_id: columnId,
+        title: task.title.trim(),
+        order: 0,
+      };
+
+      if (task.description?.trim()) {
+        taskData.description = task.description.trim();
+      }
+
+      if (task.priority) {
+        taskData.priority = task.priority;
+      }
+
+      if (task.user_id) {
+        taskData.user_id = task.user_id;
+      }
+
+      // Insert task with full data (including joins)
+      const { data: newTask, error: insertError } = await supabase
+        .from("tasks")
+        .insert(taskData)
+        .select(
+          `
+          *,
+          assignee:users!tasks_user_id_fkey(id, name, email, image),
+          priorities(id, label, color)
+        `
+        )
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      if (onTaskAdded) {
+        try {
+          await onTaskAdded(
+            columnId,
+            task.title.trim(),
+            task.priority || undefined,
+            task.user_id || undefined
+          );
+        } catch (callbackError) {
+          console.error("Error in onTaskAdded callback:", callbackError);
+          onTaskUpdate?.();
+        }
+      } else {
+        onTaskUpdate?.();
+      }
+
+      onClose();
+      setHasUnsavedChanges(false);
+      toast.success("Task created successfully!");
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast.error("Failed to create task");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /**
+   * Deletes the current task after confirmation
+   */
   const handleDeleteTask = async () => {
     if (!taskId) return;
 
-    if (!confirm("Czy na pewno chcesz usunąć to zadanie?")) {
+    if (!confirm("Are you sure you want to delete this task?")) {
       return;
     }
 
@@ -260,10 +359,10 @@ const SingleTaskView = ({
       await deleteTask(taskId);
       onTaskUpdate?.();
       onClose();
-      toast.success("Zadanie zostało usunięte!");
+      toast.success("Task deleted successfully!");
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Nie udało się usunąć zadania");
+      toast.error("Failed to delete task");
     } finally {
       setIsSaving(false);
     }
@@ -378,7 +477,7 @@ const SingleTaskView = ({
             isNewTask={isNewTask}
             hasUnsavedChanges={hasUnsavedChanges}
             isSaving={isSaving}
-            onSave={handleSaveNewTask}
+            onSave={isNewTask ? handleSaveNewTask : handleSaveExistingTask}
             onClose={handleClose}
             onDelete={!isNewTask ? handleDeleteTask : undefined}
             task={task}
