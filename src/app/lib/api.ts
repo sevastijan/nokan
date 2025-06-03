@@ -163,7 +163,6 @@ export const addTask = async (
     throw error;
   }
 
-  console.log("Task added successfully:", data);
   return data;
 };
 

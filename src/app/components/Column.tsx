@@ -56,7 +56,7 @@ const Column = ({
               ? "0 4px 8px rgba(0, 0, 0, 0.2)"
               : "none",
           }}
-          className={`bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] h-[500px] flex flex-col gap-4 transition-transform duration-200 ${
+          className={`bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] min-h-[200px] max-h-[80vh] flex flex-col gap-4 transition-transform duration-200 ${
             snapshot.isDragging ? "transform scale-105" : ""
           }`}
         >
@@ -90,7 +90,7 @@ const Column = ({
                 ref={provided.innerRef}
                 {...provided.droppableProps}
                 className={`space-y-2 flex-1 overflow-y-auto max-w-[300px] ${
-                  column.tasks.length === 0 ? "min-h-0" : "min-h-[50px]"
+                  column.tasks.length === 0 ? "min-h-0" : ""
                 }`}
               >
                 {column.tasks.map((task, index) => (
