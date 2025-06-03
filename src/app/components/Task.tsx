@@ -1,15 +1,16 @@
+import React, { useState, useRef } from "react";
 import { Draggable } from "@hello-pangea/dnd";
-import { FaEllipsisV } from "react-icons/fa";
-import { Task as TaskType } from "../types/useBoardTypes";
-import { JSX, useState, useRef } from "react";
+import { FaFlag } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import { Task as TaskType } from "../types/useBoardTypes";
 
 interface TaskProps {
   task: TaskType;
   taskIndex: number;
   columnId: string;
   onRemoveTask: (columnId: string, taskId: string) => void;
-  onOpenTaskModal: (task: TaskType) => void;
+  onOpenTaskDetail: (taskId: string) => void;
+  priorities?: Array<{ id: string; label: string; color: string }>;
 }
 
 interface MenuPosition {
@@ -37,12 +38,71 @@ const truncateText = (text: string, maxWords: number = 12): string => {
 };
 
 /**
+ * Get priority color based on priority level
+ * @param {string} priority - Priority level
+ * @returns {string} CSS class for priority color
+ */
+const getPriorityColor = (priority: string) => {
+  switch (priority?.toLowerCase()) {
+    case "high":
+      return "text-red-500";
+    case "medium":
+      return "text-yellow-500";
+    case "low":
+      return "text-green-500";
+    default:
+      return "text-gray-500";
+  }
+};
+
+/**
+ * Get priority info from priorities array based on task priority
+ * @param {string | null | undefined} taskPriority - Priority ID from task
+ * @param {Array} priorities - Available priorities from database
+ * @returns {object|null} Priority display info or null if not found
+ */
+const getPriorityInfo = (
+  taskPriority: string | null | undefined,
+  priorities: Array<{ id: string; label: string; color: string }> = []
+) => {
+  if (!taskPriority || !priorities.length) return null;
+
+  const priority = priorities.find((p) => p.id === taskPriority);
+
+  if (!priority) return null;
+
+  return {
+    color: priority.color || "#6B7280",
+    label: priority.label || "Unknown",
+  };
+};
+
+/**
+ * Get user avatar URL or initials
+ * @param {any} user - User object containing name and image
+ * @returns {string} Avatar URL or generated initials avatar URL
+ */
+const getUserAvatar = (user: any) => {
+  if (user?.image) {
+    return user.image;
+  }
+
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((name: string) => name[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?";
+
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    initials
+  )}&background=4285f4&color=ffffff&size=32`;
+};
+
+/**
  * Task component that displays a draggable task card with edit/delete menu
- * @param task - Task data including id, title, and description
- * @param taskIndex - Index of the task for drag and drop ordering
- * @param columnId - ID of the column containing this task
- * @param onRemoveTask - Function to handle task removal
- * @param onOpenTaskModal - Function to open task edit modal
+ * @param {TaskProps} props - Component props
  * @returns JSX element containing the task card interface
  */
 const Task = ({
@@ -50,9 +110,11 @@ const Task = ({
   taskIndex,
   columnId,
   onRemoveTask,
-  onOpenTaskModal,
-}: TaskProps): JSX.Element => {
+  onOpenTaskDetail,
+  priorities = [],
+}: TaskProps): React.JSX.Element => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition>({
     top: 0,
     left: 0,
@@ -64,37 +126,31 @@ const Task = ({
    * @param event - Mouse event from the menu button
    */
   const toggleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+
     const rect = event.currentTarget.getBoundingClientRect();
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const menuWidth = 120; // Approximate menu width
-    const menuHeight = 80; // Approximate menu height
+    const menuWidth = 120;
+    const menuHeight = 80;
 
     let top = rect.top + window.scrollY - 10;
     let left: number | undefined = rect.right + window.scrollX + 10;
     let right: number | undefined;
 
-    // Check if menu would go off right edge of screen
     if (rect.right + menuWidth + 10 > screenWidth) {
-      // Position menu to the left of button instead
-      left = rect.left + window.scrollX - menuWidth - 10;
-      right = undefined;
-
-      // If still off screen (very narrow), position relative to screen edge
-      if (left < 10) {
-        left = 10;
-        right = undefined;
-      }
+      left = undefined;
+      right = screenWidth - rect.left + window.scrollX + 10;
     }
 
     // Check if menu would go off bottom of screen
     if (rect.top + menuHeight > screenHeight) {
-      top = rect.bottom + window.scrollY - menuHeight + 10;
+      top = rect.bottom + window.scrollY - menuHeight - 10;
     }
 
     // For very small screens, center the menu
     if (screenWidth < 400) {
-      left = (screenWidth - menuWidth) / 2;
+      left = screenWidth / 2 - menuWidth / 2;
       right = undefined;
     }
 
@@ -117,7 +173,10 @@ const Task = ({
   /**
    * Handle menu action and close menu immediately
    */
-  const handleMenuAction = (action: () => void) => {
+  const handleMenuAction = (event: React.MouseEvent, action: () => void) => {
+    event.stopPropagation();
+    event.preventDefault();
+
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
     }
@@ -126,103 +185,177 @@ const Task = ({
   };
 
   /**
-   * Handle task edit action
+   * Handle task click - open detail only if not clicking menu items
    */
-  const handleEdit = () => {
-    onOpenTaskModal(task);
+  const handleTaskClick = (event: React.MouseEvent) => {
+    if (!isMenuOpen) {
+      onOpenTaskDetail(task.id);
+    }
   };
 
   /**
-   * Handle task delete action
+   * Handle task delete action with confirmation
    */
   const handleDelete = () => {
-    onRemoveTask(columnId, task.id);
+    setIsMenuOpen(false);
+    setShowDeleteConfirm(true);
   };
 
+  /**
+   * Confirm task deletion
+   */
+  const confirmDelete = () => {
+    onRemoveTask(columnId, task.id);
+    setShowDeleteConfirm(false);
+  };
+
+  /**
+   * Cancel task deletion
+   */
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  const priorityInfo = getPriorityInfo(task.priority, priorities);
+
   return (
-    <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          className={`bg-gray-700 text-white rounded-lg shadow-md p-3 flex justify-between items-start transition-transform duration-200 min-h-[70px] overflow-hidden ${
-            snapshot.isDragging ? "transform scale-105" : ""
-          }`}
-        >
-          <div className="flex-1 min-w-0 pr-2 overflow-hidden">
-            <p className="font-semibold text-sm sm:text-base truncate">
-              {task.title}
-            </p>
+    <>
+      <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            style={{
+              ...provided.draggableProps.style,
+              boxShadow: snapshot.isDragging
+                ? "0 4px 8px rgba(0, 0, 0, 0.2)"
+                : "none",
+            }}
+            className={`bg-gray-700 text-white rounded-lg p-4 mb-2 cursor-pointer hover:bg-gray-600 transition-all duration-200 relative ${
+              snapshot.isDragging ? "transform scale-105" : ""
+            }`}
+            onClick={handleTaskClick}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-sm font-medium leading-tight pr-2">
+                {truncateText(task.title, 8)}
+              </h3>
+              <button
+                onClick={toggleMenu}
+                className="text-gray-400 hover:text-gray-200 p-1 rounded transition-colors"
+              >
+                ⋮
+              </button>
+            </div>
             {task.description && (
-              <p className="text-xs sm:text-sm text-gray-400 mt-1 mb-2 line-clamp-3 overflow-hidden">
-                {truncateText(task.description, 15)}
+              <p className="text-xs text-gray-300 mb-2">
+                {truncateText(task.description, 12)}
               </p>
             )}
-          </div>
-          <div className="flex-shrink-0">
-            <button
-              onClick={toggleMenu}
-              className="text-gray-400 hover:text-gray-200 cursor-pointer transition-colors duration-200 p-1"
-              aria-label="Task options"
-            >
-              <FaEllipsisV size={16} />
-            </button>
-          </div>
-          <AnimatePresence>
+            <div className="flex justify-between items-center text-xs">
+              <div className="flex items-center gap-2">
+                {priorityInfo && (
+                  <div className="flex items-center gap-1">
+                    <FaFlag
+                      className="w-3 h-3"
+                      style={{ color: priorityInfo.color }}
+                    />
+                    <span
+                      style={{ color: priorityInfo.color }}
+                      className="font-medium"
+                    >
+                      {priorityInfo.label}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {task.assignee ? (
+                  <img
+                    src={getUserAvatar(task.assignee)}
+                    alt={task.assignee.name}
+                    className="w-6 h-6 rounded-full"
+                  />
+                ) : task.user_id ? (
+                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-xs">
+                    ?
+                  </div>
+                ) : null}
+              </div>
+            </div>
             {isMenuOpen && (
-              <>
-                {/* Backdrop to close menu when clicking outside */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={handleMenuClose}
-                  onTouchStart={handleMenuClose}
-                />
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  style={{
-                    position: "fixed",
-                    top: menuPosition.top,
-                    left: menuPosition.left,
-                    right: menuPosition.right,
-                    zIndex: 1000,
-                  }}
-                  className="bg-gray-800 text-white rounded-lg shadow-lg p-1 min-w-[120px] max-w-[150px]"
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
+              <div
+                className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px]"
+                style={{
+                  top: menuPosition.top,
+                  left: menuPosition.left,
+                  right: menuPosition.right,
+                }}
+                onMouseLeave={handleMenuClose}
+              >
+                <button
+                  onClick={(e) =>
+                    handleMenuAction(e, () => onOpenTaskDetail(task.id))
+                  }
+                  className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors"
                 >
-                  <button
-                    onClick={() => handleMenuAction(handleEdit)}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleMenuAction(handleEdit);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-700 rounded-md transition-colors duration-200"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleMenuAction(handleDelete)}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleMenuAction(handleDelete);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md transition-colors duration-200"
-                  >
-                    Delete
-                  </button>
-                </motion.div>
-              </>
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => handleMenuAction(e, handleDelete)}
+                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
             )}
-          </AnimatePresence>
-        </div>
-      )}
-    </Draggable>
+          </div>
+        )}
+      </Draggable>
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              transition={{ duration: 0.2 }}
+              className="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-sm mx-4"
+            >
+              <h3 className="text-white text-lg font-medium mb-4">
+                Delete Task
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Are you sure you want to delete "{truncateText(task.title, 6)}"?
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

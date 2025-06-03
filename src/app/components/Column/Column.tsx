@@ -1,9 +1,12 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
-import AddTaskForm from "./TaskColumn/AddTaskForm";
-import Task from "./Task";
+import AddTaskForm from "../TaskColumn/AddTaskForm";
+import Task from "../Task";
 import { FaGripVertical } from "react-icons/fa";
-import { JSX } from "react";
-import { Column as ColumnType, Task as TaskType } from "../types/useBoardTypes";
+import { JSX, useState } from "react";
+import {
+  Column as ColumnType,
+  Task as TaskType,
+} from "../../types/useBoardTypes";
 
 interface ColumnProps {
   column: ColumnType;
@@ -11,19 +14,14 @@ interface ColumnProps {
   colIndex: number;
   onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
   onRemoveColumn: (columnId: string) => void;
-  onTaskAdded: (
-    columnId: string,
-    title: string,
-    priority?: string,
-    userId?: string
-  ) => Promise<TaskType>;
+  onTaskAdded: (newTask: { id: string; title: string }) => void;
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskDetail: (taskId: string | null) => void;
-  selectedTaskId?: string | null;
   onTaskUpdate?: () => void;
   currentUser: any;
-  onOpenAddTask: (columnId: string) => void;
-  priorities?: Array<{ id: string; label: string; color: string }>;
+  selectedTaskId?: string | null;
+  onOpenAddTask: (columnId: string | null) => void; // ✅ New prop
+  addTaskColumnId?: string | null; // ✅ New prop
 }
 
 /**
@@ -38,12 +36,14 @@ const Column = ({
   onTaskAdded,
   onRemoveTask,
   onOpenTaskDetail,
-  selectedTaskId,
   onTaskUpdate,
   currentUser,
-  onOpenAddTask,
-  priorities = [],
+  selectedTaskId,
+  onOpenAddTask, // ✅ New prop
+  addTaskColumnId, // ✅ New prop
 }: ColumnProps): JSX.Element => {
+  const [isAdding, setIsAdding] = useState(false);
+
   return (
     <Draggable key={column.id} draggableId={column.id} index={colIndex}>
       {(provided, snapshot) => (
@@ -56,7 +56,7 @@ const Column = ({
               ? "0 4px 8px rgba(0, 0, 0, 0.2)"
               : "none",
           }}
-          className={`bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] min-h-[200px] max-h-[80vh] flex flex-col gap-4 transition-transform duration-200 ${
+          className={`bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] h-[500px] flex flex-col gap-4 transition-transform duration-200 ${
             snapshot.isDragging ? "transform scale-105" : ""
           }`}
         >
@@ -83,17 +83,24 @@ const Column = ({
             >
               ×
             </button>
+            <button
+              onClick={() => onOpenAddTask(column.id)} // ✅ Updated to use new prop
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors cursor-pointer"
+            >
+              + Add Task
+            </button>
           </div>
+
           <Droppable droppableId={column.id}>
             {(provided, snapshot) => (
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
                 className={`space-y-2 flex-1 overflow-y-auto max-w-[300px] ${
-                  column.tasks.length === 0 ? "min-h-0" : ""
+                  column.tasks?.length === 0 ? "min-h-0" : "min-h-[50px]"
                 }`}
               >
-                {column.tasks.map((task, index) => (
+                {column.tasks?.map((task, index) => (
                   <Task
                     key={task.id}
                     task={task}
@@ -101,20 +108,18 @@ const Column = ({
                     columnId={column.id}
                     onRemoveTask={onRemoveTask}
                     onOpenTaskDetail={onOpenTaskDetail}
-                    priorities={priorities}
                   />
                 ))}
                 {provided.placeholder}
               </div>
             )}
           </Droppable>
+
           <AddTaskForm
             boardId={column.board_id || ""}
             columnId={column.id}
             onTaskAdded={onTaskAdded}
             currentUser={currentUser}
-            selectedTaskId={selectedTaskId}
-            onOpenAddTask={onOpenAddTask}
           />
         </div>
       )}

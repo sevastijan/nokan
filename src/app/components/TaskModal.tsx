@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoClose } from "react-icons/io5";
-import PrioritySelector from "./TaskColumn/PrioritySelector";
-import Image from "next/image";
+import PrioritySelector from "./SingleTaskView/PrioritySelector";
 
 interface Task {
   id: string;
@@ -24,16 +23,58 @@ interface TaskModalProps {
   onUpdateTask?: (columnId: string, task: Task) => void;
 }
 
+const SimplePrioritySelector = ({
+  selectedPriority,
+  onChange,
+}: {
+  selectedPriority: string;
+  onChange: (priority: string) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const priorities = ["Low", "Medium", "High"];
+
+  return (
+    <div className="relative">
+      <label className="block text-sm font-medium text-gray-300 mb-2">
+        Priority
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-2.5 border border-gray-600 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors"
+      >
+        <span>{selectedPriority}</span>
+        <span
+          className={`transform transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        >
+          ↓
+        </span>
+      </button>
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+          {priorities.map((priority) => (
+            <button
+              key={priority}
+              type="button"
+              onClick={() => {
+                onChange(priority);
+                setIsOpen(false);
+              }}
+              className="w-full text-left p-2.5 hover:bg-gray-600 transition-colors first:rounded-t-lg last:rounded-b-lg"
+            >
+              {priority}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /**
  * Modal component for adding or editing tasks with image upload functionality
- * @param isOpen - Whether the modal is visible
- * @param onClose - Function to close the modal
- * @param mode - Modal mode (add or edit)
- * @param task - Task data when in edit mode
- * @param columnId - Column ID for task updates
- * @param onAddTask - Function to handle new task creation
- * @param onUpdateTask - Function to handle task updates
- * @returns JSX element containing the task modal interface
  */
 const TaskModal = ({
   isOpen,
@@ -47,10 +88,8 @@ const TaskModal = ({
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
   const [priority, setPriority] = useState(task?.priority || "Medium");
-  const [images, setImages] = useState<string[]>(task?.images || []);
   const [isClosing, setIsClosing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false);
 
   /**
    * Update form fields when mode or task changes
@@ -60,12 +99,10 @@ const TaskModal = ({
       setTitle("");
       setDescription("");
       setPriority("Medium");
-      setImages([]);
     } else if (task) {
       setTitle(task.title);
       setDescription(task.description || "");
       setPriority(task.priority || "Medium");
-      setImages(task.images || []);
     }
   }, [mode, task]);
 
@@ -153,21 +190,7 @@ const TaskModal = ({
   }, [isOpen, title, loading, handleSave, triggerClose]);
 
   /**
-   * Handle image upload and create object URLs for preview
-   * @param event - File input change event
-   */
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const uploadedImages = Array.from(event.target.files).map((file) =>
-        URL.createObjectURL(file)
-      );
-      setImages([...images, ...uploadedImages]);
-    }
-  };
-
-  /**
    * Handle clicks outside the modal to close it
-   * @param e - Mouse event from the backdrop
    */
   const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -201,16 +224,12 @@ const TaskModal = ({
               stiffness: 300,
               damping: 30,
             }}
-            style={{
-              overflow: "visible",
-              maxHeight: "none",
-            }}
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-base font-semibold">
-                {mode === "add" ? "Add New Task" : "Edit Task"}
+                {mode === "add" ? "Add Task" : "Edit Task"}
               </h2>
               <button
                 onClick={triggerClose}
@@ -222,9 +241,6 @@ const TaskModal = ({
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium mb-1.5">
-                  Task Title:
-                </label>
                 <input
                   type="text"
                   value={title}
@@ -235,9 +251,6 @@ const TaskModal = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1.5">
-                  Description:
-                </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -246,21 +259,11 @@ const TaskModal = ({
                   placeholder="Enter task description"
                 />
               </div>
-              <div style={{ zIndex: 1000 }}>
-                <PrioritySelector
-                  selectedPriority={priority}
-                  onChange={setPriority}
-                  onDropdownToggle={setIsPriorityDropdownOpen}
-                />
-              </div>
+              <SimplePrioritySelector
+                selectedPriority={priority}
+                onChange={setPriority}
+              />
             </div>
-            <motion.div
-              animate={{
-                height: isPriorityDropdownOpen ? "200px" : "0px",
-              }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              style={{ overflow: "hidden" }}
-            />
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={triggerClose}
@@ -270,20 +273,15 @@ const TaskModal = ({
               </button>
               <button
                 onClick={handleSave}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleSave(e);
-                }}
                 disabled={!title.trim() || loading}
-                className="w-full sm:w-auto bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm order-1 sm:order-2"
-                title="Cmd/Ctrl + Enter to save quickly"
+                className="w-full sm:w-auto bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 text-sm order-1 sm:order-2"
               >
-                {loading ? "Saving..." : "Save"}
+                {loading
+                  ? "Saving..."
+                  : mode === "add"
+                  ? "Add Task"
+                  : "Save Changes"}
               </button>
-            </div>
-            <div className="mt-3 text-xs text-gray-400 text-center opacity-30">
-              <span>ESC to close • Cmd/Ctrl + Enter to save</span>
             </div>
           </motion.div>
         </motion.div>
