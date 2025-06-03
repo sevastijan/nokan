@@ -6,29 +6,45 @@ import { FaChevronDown, FaFlag } from "react-icons/fa";
 import { getPriorities } from "../../lib/api";
 
 interface Priority {
+  /** Unique identifier of the priority */
   id: string;
+  /** Display label of the priority */
   label: string;
+  /** Color code used to represent the priority */
   color: string;
 }
 
 interface PrioritySelectorProps {
+  /** Currently selected priority ID, or null/undefined if none */
   selectedPriority: string | null | undefined;
+  /** Callback invoked when priority changes, passing the new priority ID or null */
   onChange: (priority: string | null) => void;
+  /** Optional callback triggered when dropdown toggles open/close */
   onDropdownToggle?: (isOpen: boolean) => void;
+  /** Optional externally provided list of priorities */
   priorities?: Priority[];
 }
 
+/**
+ * PrioritySelector component allows user to select a priority from a dropdown list.
+ * It fetches priorities from an API if not provided externally, supports loading state,
+ * and calls callbacks on selection change and dropdown toggle.
+ */
 const PrioritySelector = ({
   selectedPriority,
   onChange,
   onDropdownToggle,
   priorities: externalPriorities,
 }: PrioritySelectorProps) => {
+  /** Controls dropdown open/close state */
   const [isOpen, setIsOpen] = useState(false);
+  /** Stores list of priorities to display */
   const [priorities, setPriorities] = useState<Priority[]>([]);
+  /** Indicates whether priorities are being loaded */
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    /** Loads priorities from external prop or API, falls back to defaults on error */
     const loadPriorities = async () => {
       try {
         if (externalPriorities) {
@@ -55,17 +71,20 @@ const PrioritySelector = ({
     loadPriorities();
   }, [externalPriorities]);
 
+  /** Finds the selected priority object from the list */
   const selectedPriorityObj = priorities.find((p) => {
     if (!selectedPriority) return false;
     return p.id === selectedPriority;
   });
 
+  /** Toggles dropdown open state and invokes optional toggle callback */
   const handleToggle = () => {
     const newIsOpen = !isOpen;
     setIsOpen(newIsOpen);
     onDropdownToggle?.(newIsOpen);
   };
 
+  /** Handles selection of a priority: updates state and calls change callback */
   const handlePrioritySelect = (priority: Priority) => {
     if (typeof onChange === "function") {
       onChange(priority.id);
@@ -74,6 +93,7 @@ const PrioritySelector = ({
     onDropdownToggle?.(false);
   };
 
+  /** Clears selected priority, closes dropdown, and calls change callback */
   const handleClearPriority = () => {
     if (typeof onChange === "function") {
       onChange(null);

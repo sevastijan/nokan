@@ -6,13 +6,26 @@ import { getUserAvatar, formatDate } from "./utils";
 import MarkdownContent from "./MarkdownContent";
 
 interface CommentListProps {
+  /** Array of comments related to the task */
   comments: Comment[];
+
+  /** Currently logged-in user */
   currentUser: User;
+
+  /** Details of the task the comments belong to */
   task: TaskDetail;
+
+  /** Callback for deleting a specific comment */
   onDeleteComment: (commentId: string) => Promise<void>;
+
+  /** Callback to handle image preview click from markdown */
   onImagePreview: (url: string) => void;
 }
 
+/**
+ * Renders a list of comments with user avatars, markdown content,
+ * and the ability to delete a comment (if user is author or task owner).
+ */
 const CommentList = ({
   comments,
   currentUser,
@@ -20,6 +33,7 @@ const CommentList = ({
   onDeleteComment,
   onImagePreview,
 }: CommentListProps) => {
+  // Show placeholder when there are no comments
   if (comments.length === 0) {
     return (
       <div className="text-center text-gray-400 py-8">
@@ -33,6 +47,7 @@ const CommentList = ({
       <h3 className="text-lg font-semibold text-gray-200 mb-4">
         Comments ({comments.length})
       </h3>
+
       {comments.map((comment) => (
         <motion.div
           key={comment.id}

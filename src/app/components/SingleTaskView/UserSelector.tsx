@@ -13,6 +13,11 @@ interface UserSelectorProps {
   label: string;
 }
 
+/**
+ * UserSelector component shows a dropdown to select a user.
+ * Displays selected user avatar and name or a placeholder if none selected.
+ * Supports unassigning user and animates open/close with framer-motion.
+ */
 const UserSelector = ({
   selectedUser,
   availableUsers,
@@ -21,6 +26,10 @@ const UserSelector = ({
 }: UserSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  /**
+   * Handle user selection and close dropdown
+   * @param userId selected user ID or null to unassign
+   */
   const handleUserSelect = async (userId: string | null) => {
     await onUserSelect(userId);
     setIsOpen(false);
@@ -60,7 +69,6 @@ const UserSelector = ({
           }`}
         />
       </motion.button>
-
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -73,10 +81,7 @@ const UserSelector = ({
               {/* Option to unassign */}
               <motion.button
                 whileHover={{ backgroundColor: "#374151" }}
-                onClick={() => {
-                  onUserSelect(null);
-                  setIsOpen(false);
-                }}
+                onClick={() => handleUserSelect(null)}
                 className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-600 transition-colors border-b border-gray-600"
               >
                 <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
@@ -84,15 +89,11 @@ const UserSelector = ({
                 </div>
                 <span className="text-gray-400 italic">Unassign</span>
               </motion.button>
-
               {availableUsers.map((user) => (
                 <motion.button
                   key={user.id}
                   whileHover={{ backgroundColor: "#374151" }}
-                  onClick={() => {
-                    onUserSelect(user.id);
-                    setIsOpen(false);
-                  }}
+                  onClick={() => handleUserSelect(user.id)}
                   className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-600 transition-colors"
                 >
                   <img

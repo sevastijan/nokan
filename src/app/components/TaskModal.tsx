@@ -23,7 +23,6 @@ interface TaskModalProps {
   onUpdateTask?: (columnId: string, task: Task) => void;
 }
 
-// Simple priority selector for the modal
 const SimplePrioritySelector = ({
   selectedPriority,
   onChange,

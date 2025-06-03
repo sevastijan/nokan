@@ -7,12 +7,23 @@ import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
 
 interface CommentFormProps {
+  /** Currently logged-in user */
   currentUser: User;
+
+  /** ID of the related task */
   taskId: string;
+
+  /** Callback to add a comment to the task */
   onAddComment: (content: string) => Promise<void>;
+
+  /** Callback to refresh task details after upload */
   onRefreshTask: () => Promise<void>;
 }
 
+/**
+ * CommentForm component allows users to add text comments
+ * and paste images directly into the textarea, which are then uploaded to Supabase.
+ */
 const CommentForm = ({
   currentUser,
   taskId,
@@ -22,6 +33,9 @@ const CommentForm = ({
   const [newComment, setNewComment] = useState("");
   const [uploading, setUploading] = useState(false);
 
+  /**
+   * Handles form submission to add a new comment.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -30,6 +44,10 @@ const CommentForm = ({
     setNewComment("");
   };
 
+  /**
+   * Handles pasted images in the textarea by uploading them to Supabase
+   * and inserting a markdown image reference at the cursor position.
+   */
   const handlePaste = async (
     event: React.ClipboardEvent<HTMLTextAreaElement>
   ) => {
@@ -62,10 +80,11 @@ const CommentForm = ({
           const { data: signedUrlData, error: signedUrlError } =
             await supabase.storage
               .from("attachments")
-              .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+              .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
 
           if (signedUrlError) throw signedUrlError;
 
+          // Insert markdown image syntax at cursor position
           const textarea = event.target as HTMLTextAreaElement;
           const cursorPosition = textarea.selectionStart;
           const textBefore = newComment.substring(0, cursorPosition);

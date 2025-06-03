@@ -5,15 +5,32 @@ import { TaskDetail } from "./types";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface ActionFooterProps {
+  /** Indicates if this is a new task */
   isNewTask: boolean;
+
+  /** Indicates if there are unsaved changes */
   hasUnsavedChanges: boolean;
+
+  /** Indicates if the save operation is currently in progress */
   isSaving: boolean;
+
+  /** Callback function to handle save action */
   onSave: () => void;
+
+  /** Callback function to handle close/cancel action */
   onClose: () => void;
+
+  /** Optional callback function to handle delete action */
   onDelete?: () => void;
+
+  /** The task being edited or viewed */
   task?: TaskDetail;
 }
 
+/**
+ * ActionFooter component renders action buttons for saving, canceling, or deleting a task.
+ * It conditionally displays the delete button and a confirmation dialog if required.
+ */
 const ActionFooter = ({
   isNewTask,
   hasUnsavedChanges,
@@ -25,14 +42,20 @@ const ActionFooter = ({
 }: ActionFooterProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  /**
+   * Determines if the Save button should be enabled.
+   * For new tasks, the title must not be empty and there must be unsaved changes.
+   */
   const canSave = isNewTask
     ? task?.title?.trim() && hasUnsavedChanges
     : hasUnsavedChanges;
 
+  /** Handles the click event for the Delete button by showing the confirmation dialog */
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
   };
 
+  /** Handles the confirmation of deletion */
   const handleDeleteConfirm = () => {
     setShowDeleteConfirm(false);
     if (onDelete) {
@@ -40,6 +63,7 @@ const ActionFooter = ({
     }
   };
 
+  /** Cancels the delete confirmation dialog */
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);
   };

@@ -59,7 +59,7 @@ const getPriorityColor = (priority: string) => {
  * Get priority info from priorities array based on task priority
  * @param {string | null | undefined} taskPriority - Priority ID from task
  * @param {Array} priorities - Available priorities from database
- * @returns {object} Priority display info
+ * @returns {object|null} Priority display info or null if not found
  */
 const getPriorityInfo = (
   taskPriority: string | null | undefined,
@@ -80,7 +80,7 @@ const getPriorityInfo = (
 /**
  * Get user avatar URL or initials
  * @param {any} user - User object containing name and image
- * @returns {string} Avatar URL or initials
+ * @returns {string} Avatar URL or generated initials avatar URL
  */
 const getUserAvatar = (user: any) => {
   if (user?.image) {
@@ -102,12 +102,7 @@ const getUserAvatar = (user: any) => {
 
 /**
  * Task component that displays a draggable task card with edit/delete menu
- * @param task - Task data including id, title, and description
- * @param taskIndex - Index of the task for drag and drop ordering
- * @param columnId - ID of the column containing this task
- * @param onRemoveTask - Function to handle task removal
- * @param onOpenTaskDetail - Function to open task detail view
- * @param priorities - Array of available priorities
+ * @param {TaskProps} props - Component props
  * @returns JSX element containing the task card interface
  */
 const Task = ({
@@ -253,13 +248,11 @@ const Task = ({
                 ⋮
               </button>
             </div>
-
             {task.description && (
               <p className="text-xs text-gray-300 mb-2">
                 {truncateText(task.description, 12)}
               </p>
             )}
-
             <div className="flex justify-between items-center text-xs">
               <div className="flex items-center gap-2">
                 {priorityInfo && (
@@ -277,7 +270,7 @@ const Task = ({
                   </div>
                 )}
               </div>
-              {/* Debug: Pokaż więcej informacji */}
+
               <div className="flex items-center gap-2">
                 {task.assignee ? (
                   <img
@@ -292,8 +285,6 @@ const Task = ({
                 ) : null}
               </div>
             </div>
-
-            {/* Context Menu */}
             {isMenuOpen && (
               <div
                 className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px]"
@@ -323,8 +314,6 @@ const Task = ({
           </div>
         )}
       </Draggable>
-
-      {/* Delete Confirmation Popup with animations */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div

@@ -15,6 +15,10 @@ interface ConfirmDialogProps {
   type?: "warning" | "danger" | "info";
 }
 
+/**
+ * Modal dialog used to confirm user actions.
+ * Can be styled based on severity (info/warning/danger).
+ */
 const ConfirmDialog = ({
   isOpen,
   title,
@@ -27,6 +31,7 @@ const ConfirmDialog = ({
 }: ConfirmDialogProps) => {
   if (!isOpen) return null;
 
+  // Returns color classes based on dialog type
   const getColors = () => {
     switch (type) {
       case "danger":
@@ -61,9 +66,7 @@ const ConfirmDialog = ({
           <FaExclamationTriangle className={`w-6 h-6 ${colors.icon}`} />
           <h3 className="text-lg font-semibold text-white">{title}</h3>
         </div>
-
         <p className="text-gray-300 mb-6 leading-relaxed">{message}</p>
-
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}

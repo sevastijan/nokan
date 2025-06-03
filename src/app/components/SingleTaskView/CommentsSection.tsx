@@ -8,15 +8,32 @@ import CommentList from "./CommentList";
 import { getUserAvatar, formatDate } from "./utils";
 
 interface CommentsSectionProps {
+  /** ID of the task for which comments are displayed */
   taskId: string;
+
+  /** Array of comments related to the task */
   comments: Comment[];
+
+  /** Currently logged-in user */
   currentUser: User;
+
+  /** Details of the task */
   task: TaskDetail;
+
+  /** Function to refresh the comment list after update */
   onRefreshComments: () => Promise<void>;
+
+  /** Function to refresh task data after comment (e.g. attachments) */
   onRefreshTask: () => Promise<void>;
+
+  /** Function to preview image (when clicked in markdown) */
   onImagePreview: (url: string) => void;
 }
 
+/**
+ * Wrapper component that manages comment form, comment list,
+ * and handles creating & deleting comments.
+ */
 const CommentsSection = ({
   taskId,
   comments,
@@ -26,6 +43,7 @@ const CommentsSection = ({
   onRefreshTask,
   onImagePreview,
 }: CommentsSectionProps) => {
+  // Add new comment to Supabase and refresh the list
   const addComment = async (content: string) => {
     if (!content.trim()) return;
 
@@ -49,6 +67,7 @@ const CommentsSection = ({
     }
   };
 
+  // Delete comment from Supabase and refresh the list
   const deleteComment = async (commentId: string) => {
     try {
       const { error } = await supabase
@@ -83,14 +102,12 @@ const CommentsSection = ({
           </span>
         </div>
       </div>
-
       <CommentForm
         currentUser={currentUser}
         taskId={taskId}
         onAddComment={addComment}
         onRefreshTask={onRefreshTask}
       />
-
       <CommentList
         comments={comments}
         currentUser={currentUser}

@@ -17,6 +17,10 @@ interface AddTaskFormProps {
   selectedTaskId?: string | null | undefined;
 }
 
+/**
+ * AddTaskForm component renders a button to trigger adding a new task.
+ * Calls onOpenAddTask callback with the current column ID when clicked.
+ */
 const AddTaskForm = ({
   boardId,
   columnId,

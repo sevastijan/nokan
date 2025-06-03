@@ -9,12 +9,23 @@ import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
 
 interface AttachmentsListProps {
+  /** List of attachments related to the task */
   attachments: Attachment[];
+
+  /** Current logged-in user */
   currentUser: User;
+
+  /** ID of the related task */
   taskId: string;
+
+  /** Callback to refresh task data after operations */
   onRefreshTask: () => Promise<void>;
 }
 
+/**
+ * AttachmentsList component provides functionality to upload, preview, download, and delete
+ * attachments related to a specific task. It uses Supabase for file storage and metadata management.
+ */
 const AttachmentsList = ({
   attachments,
   currentUser,
@@ -24,6 +35,9 @@ const AttachmentsList = ({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Handles uploading a file to Supabase storage and saving metadata in the database.
+   */
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -46,7 +60,9 @@ const AttachmentsList = ({
 
       if (uploadError) throw uploadError;
 
-      // Add attachment record to database
+      /**
+       * Inserts attachment metadata into the task_attachments table.
+       */
       const { error: dbError } = await supabase
         .from("task_attachments")
         .insert({
@@ -73,6 +89,9 @@ const AttachmentsList = ({
     }
   };
 
+  /**
+   * Handles downloading an attachment from Supabase storage.
+   */
   const handleDownload = async (attachment: Attachment) => {
     try {
       const { data, error } = await supabase.storage
@@ -95,18 +114,19 @@ const AttachmentsList = ({
     }
   };
 
+  /**
+   * Handles deleting an attachment from both storage and database.
+   */
   const handleDelete = async (attachment: Attachment) => {
     if (!confirm("Are you sure you want to delete this attachment?")) return;
 
     try {
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from("attachments")
         .remove([attachment.file_path]);
 
       if (storageError) throw storageError;
 
-      // Delete from database
       const { error: dbError } = await supabase
         .from("task_attachments")
         .delete()
@@ -122,6 +142,9 @@ const AttachmentsList = ({
     }
   };
 
+  /**
+   * Previews image attachments in a new tab, or downloads non-image files.
+   */
   const handlePreview = async (attachment: Attachment) => {
     if (attachment.mime_type.startsWith("image/")) {
       try {
@@ -158,7 +181,6 @@ const AttachmentsList = ({
           {uploading ? "Uploading..." : "Add File"}
         </motion.button>
       </div>
-
       <input
         ref={fileInputRef}
         type="file"
@@ -166,7 +188,6 @@ const AttachmentsList = ({
         className="hidden"
         accept="*/*"
       />
-
       {attachments.length > 0 ? (
         <div className="space-y-2">
           {attachments.map((attachment) => (

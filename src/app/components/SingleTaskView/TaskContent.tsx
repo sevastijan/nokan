@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { TaskDetail, User, Priority, Attachment } from "./types";
+import { TaskDetail, User, Priority } from "./types";
 import UserSelector from "./UserSelector";
 import PrioritySelector from "./PrioritySelector";
 import AttachmentsList from "./AttachmentsList";
@@ -35,6 +34,7 @@ const TaskContent = ({
   );
 
   if (!task) {
+    // Show loading skeleton while task data is not loaded
     return (
       <div className="p-6">
         <div className="animate-pulse">
@@ -45,6 +45,7 @@ const TaskContent = ({
     );
   }
 
+  // Update local description state and mark form as dirty
   const handleDescriptionChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
@@ -52,24 +53,26 @@ const TaskContent = ({
     setHasUnsavedChanges(true);
   };
 
+  // Save the description if changed after textarea loses focus
   const handleDescriptionSave = async () => {
     if (editedDescription !== (task?.description || "")) {
       onUpdateTask({ description: editedDescription });
     }
   };
 
+  // Update the assigned user for the task and mark as dirty
   const updateAssignee = (userId: string | null) => {
-    console.log("updateAssignee called with userId:", userId); // Debug log
     setHasUnsavedChanges(true);
     onUpdateTask({ user_id: userId });
   };
 
+  // Update the priority of the task and mark as dirty
   const updatePriority = (priorityId: string | null) => {
     setHasUnsavedChanges(true);
     onUpdateTask({ priority: priorityId });
   };
 
-  // Find the assigned user based on user_id
+  // Find the currently assigned user object from the available users list
   const assignedUser = task.user_id
     ? availableUsers.find((user) => user.id === task.user_id) || null
     : null;
@@ -94,9 +97,8 @@ const TaskContent = ({
           />
         </div>
       )}
-
       <UserSelector
-        selectedUser={assignedUser} // Changed from task.assignee to assignedUser
+        selectedUser={assignedUser}
         availableUsers={availableUsers}
         onUserSelect={updateAssignee}
         label="Assigned to"
@@ -107,7 +109,6 @@ const TaskContent = ({
         onChange={updatePriority}
         priorities={priorities}
       />
-
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Description
@@ -120,7 +121,6 @@ const TaskContent = ({
           className="w-full min-h-[100px] p-3 border border-gray-600 rounded-lg resize-vertical bg-gray-700 text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
-
       <AttachmentsList
         attachments={task.attachments || []}
         currentUser={currentUser}

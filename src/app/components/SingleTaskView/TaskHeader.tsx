@@ -14,6 +14,10 @@ interface TaskHeaderProps {
   onUnsavedChangesAlert?: () => void;
 }
 
+/**
+ * TaskHeader component shows the task title with edit and close options.
+ * Handles title editing with save, discard, and unsaved changes confirmation.
+ */
 const TaskHeader = ({
   task,
   onClose,
@@ -26,10 +30,14 @@ const TaskHeader = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
 
+  // Update editedTitle when task title changes
   useEffect(() => {
     setEditedTitle(task?.title || "");
   }, [task?.title]);
 
+  /**
+   * Save edited title if changed and not empty
+   */
   const handleTitleSave = async () => {
     if (task && editedTitle !== task.title && editedTitle.trim()) {
       await onUpdateTask({ title: editedTitle.trim() });
@@ -37,16 +45,26 @@ const TaskHeader = ({
     setIsEditingTitle(false);
   };
 
+  /**
+   * Discard changes and reset title input
+   */
   const handleDiscardChanges = () => {
     setEditedTitle(task?.title || "");
     setIsEditingTitle(false);
   };
 
+  /**
+   * Show confirmation dialog before discarding changes or closing
+   * @param action function to call after confirming
+   */
   const showConfirm = (action: () => void) => {
     setConfirmAction(() => action);
     setShowConfirmDialog(true);
   };
 
+  /**
+   * Confirm action from dialog
+   */
   const handleConfirm = () => {
     if (confirmAction) {
       confirmAction();
@@ -55,11 +73,17 @@ const TaskHeader = ({
     setConfirmAction(null);
   };
 
+  /**
+   * Cancel confirmation dialog
+   */
   const handleCancel = () => {
     setShowConfirmDialog(false);
     setConfirmAction(null);
   };
 
+  /**
+   * Handle keyboard events for input: Enter saves, Escape cancels
+   */
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleTitleSave();
@@ -69,6 +93,11 @@ const TaskHeader = ({
     }
   };
 
+  /**
+   * Handle close button click
+   * If editing with unsaved changes, confirm discard first
+   * Otherwise alert or close directly
+   */
   const handleClose = () => {
     if (isEditingTitle && editedTitle.trim() !== (task?.title || "")) {
       showConfirm(() => {

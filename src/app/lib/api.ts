@@ -8,8 +8,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Fetches a board by its ID, including its columns and tasks
- * @param {string} id - The ID of the board to fetch
+ * @param {string} id - The ID of the board
  * @returns {Promise<Object>} The board data
+ * @throws {Error} Throws if board is not found or query fails
  */
 export async function getBoardById(id: string) {
   const { data, error } = await supabase
@@ -41,7 +42,6 @@ export async function getBoardById(id: string) {
     .eq("id", id);
 
   if (error) {
-    console.error("Error fetching board:", error.message);
     throw error;
   }
 
@@ -54,13 +54,13 @@ export async function getBoardById(id: string) {
 
 /**
  * Fetches all boards
- * @returns {Promise<Array>} The list of boards
+ * @returns {Promise<Array>} List of all boards
+ * @throws {Error} Throws if query fails
  */
 export async function getBoards() {
   const { data, error } = await supabase.from("boards").select("*");
 
   if (error) {
-    console.error("Error fetching boards:", error.message);
     throw error;
   }
 
@@ -69,18 +69,18 @@ export async function getBoards() {
 
 /**
  * Adds a new board
- * @param {Object} params - The parameters for the new board
- * @param {string} params.title - The title of the new board
- * @returns {Promise<Object>} The created board
+ * @param {Object} params - Board details
+ * @param {string} params.title - Title of the board
+ * @returns {Promise<Object>} The newly created board
+ * @throws {Error} Throws if insert fails or no data returned
  */
 export const addBoard = async ({ title }: { title: string }) => {
   const { data, error } = await supabase
     .from("boards")
-    .insert([{ title }]) 
+    .insert([{ title }])
     .select();
 
   if (error) {
-    console.error("Error adding board:", error.message);
     throw new Error(error.message);
   }
 
@@ -93,10 +93,11 @@ export const addBoard = async ({ title }: { title: string }) => {
 
 /**
  * Adds a new column to a board
- * @param {string} boardId - The ID of the board
- * @param {string} title - The title of the column
- * @param {number} order - The order of the column
- * @returns {Promise<Object>} The created column
+ * @param {string} boardId - ID of the board
+ * @param {string} title - Title of the column
+ * @param {number} order - Order/index of the column
+ * @returns {Promise<Object>} The newly created column
+ * @throws {Error} Throws if insert fails
  */
 export async function addColumn(boardId: string, title: string, order: number) {
   const { data, error } = await supabase
@@ -105,7 +106,6 @@ export async function addColumn(boardId: string, title: string, order: number) {
     .select();
 
   if (error) {
-    console.error("Error adding column:", error.message);
     throw error;
   }
 
@@ -114,12 +114,13 @@ export async function addColumn(boardId: string, title: string, order: number) {
 
 /**
  * Adds a new task to a column
- * @param {string} columnId - The ID of the column
- * @param {string} title - The title of the task
- * @param {number} order - The order of the task
- * @param {string} [priority] - The priority of the task (optional)
- * @param {string} [userId] - The user ID associated with the task (optional)
- * @returns {Promise<Object>} The created task
+ * @param {string} columnId - ID of the column
+ * @param {string} title - Title of the task
+ * @param {number} order - Order/index of the task
+ * @param {string} [priority] - Optional priority ID
+ * @param {string} [userId] - Optional user ID for assignee
+ * @returns {Promise<Object>} The newly created task with related data
+ * @throws {Error} Throws if column doesn't exist or insert fails
  */
 export const addTask = async (
   columnId: string,
@@ -128,7 +129,7 @@ export const addTask = async (
   priority?: string,
   userId?: string
 ) => {
-  // Validate that the column exists first
+  // Validate column existence
   const { data: columnExists, error: columnError } = await supabase
     .from("columns")
     .select("id")
@@ -136,7 +137,6 @@ export const addTask = async (
     .single();
 
   if (columnError || !columnExists) {
-    console.error("Column validation failed:", columnError);
     throw new Error(`Column with ID ${columnId} does not exist`);
   }
 
@@ -144,7 +144,7 @@ export const addTask = async (
     column_id: columnId,
     title,
     order,
-    priority: priority || null, // null powinno działać
+    priority: priority || null,
     user_id: userId || null,
   };
 
@@ -159,7 +159,6 @@ export const addTask = async (
     .single();
 
   if (error) {
-    console.error("Error adding task:", error);
     throw error;
   }
 
@@ -168,8 +167,9 @@ export const addTask = async (
 
 /**
  * Updates the title of a board
- * @param {string} boardId - The ID of the board
- * @param {string} newTitle - The new title of the board
+ * @param {string} boardId - ID of the board to update
+ * @param {string} newTitle - New title of the board
+ * @throws {Error} Throws if update fails
  */
 export async function updateBoardTitle(boardId: string, newTitle: string) {
   const { error } = await supabase
@@ -178,15 +178,15 @@ export async function updateBoardTitle(boardId: string, newTitle: string) {
     .eq("id", boardId);
 
   if (error) {
-    console.error("Error updating board title:", error.message);
     throw error;
   }
 }
 
 /**
  * Updates the title of a task
- * @param {string} taskId - The ID of the task
- * @param {string} newTitle - The new title of the task
+ * @param {string} taskId - ID of the task to update
+ * @param {string} newTitle - New title of the task
+ * @throws {Error} Throws if update fails
  */
 export async function updateTaskTitle(taskId: string, newTitle: string) {
   const { error } = await supabase
@@ -195,15 +195,15 @@ export async function updateTaskTitle(taskId: string, newTitle: string) {
     .eq("id", taskId);
 
   if (error) {
-    console.error("Error updating task title:", error.message);
     throw error;
   }
 }
 
 /**
  * Updates the title of a column
- * @param {string} columnId - The ID of the column
- * @param {string} newTitle - The new title of the column
+ * @param {string} columnId - ID of the column to update
+ * @param {string} newTitle - New title of the column
+ * @throws {Error} Throws if update fails
  */
 export async function updateColumnTitle(columnId: string, newTitle: string) {
   const { error } = await supabase
@@ -212,54 +212,54 @@ export async function updateColumnTitle(columnId: string, newTitle: string) {
     .eq("id", columnId);
 
   if (error) {
-    console.error("Error updating column title:", error.message);
     throw error;
   }
 }
 
 /**
  * Deletes a column by its ID
- * @param {string} columnId - The ID of the column to delete
+ * @param {string} columnId - ID of the column to delete
+ * @throws {Error} Throws if deletion fails
  */
 export async function deleteColumn(columnId: string) {
   const { error } = await supabase.from("columns").delete().eq("id", columnId);
 
   if (error) {
-    console.error("Error deleting column:", error.message);
     throw error;
   }
 }
 
 /**
  * Deletes a task by its ID
- * @param {string} taskId - The ID of the task to delete
+ * @param {string} taskId - ID of the task to delete
+ * @throws {Error} Throws if deletion fails
  */
 export async function deleteTask(taskId: string) {
   const { error } = await supabase.from("tasks").delete().eq("id", taskId);
 
   if (error) {
-    console.error("Error deleting task:", error.message);
     throw error;
   }
 }
 
 /**
  * Deletes a board by its ID
- * @param {string} boardId - The ID of the board to delete
+ * @param {string} boardId - ID of the board to delete
+ * @throws {Error} Throws if deletion fails
  */
 export async function deleteBoard(boardId: string) {
   const { error } = await supabase.from("boards").delete().eq("id", boardId);
 
   if (error) {
-    console.error("Error deleting board:", error.message);
     throw error;
   }
 }
 
 /**
- * Fetches a single task by its ID with all related data
- * @param {string} taskId - The ID of the task
- * @returns {Promise<Object>} The task data with related information
+ * Fetches a single task by its ID with related assignee and priority
+ * @param {string} taskId - ID of the task
+ * @returns {Promise<Object>} Task data with related info
+ * @throws {Error} Throws if query fails
  */
 export async function getTaskById(taskId: string) {
   const { data, error } = await supabase
@@ -273,7 +273,6 @@ export async function getTaskById(taskId: string) {
     .single();
 
   if (error) {
-    console.error("Error fetching task:", error.message);
     throw error;
   }
 
@@ -281,13 +280,15 @@ export async function getTaskById(taskId: string) {
 }
 
 /**
- * Updates the details of a task
- * @param {string} taskId - The ID of the task
- * @param {Object} updates - The updates to apply
- * @param {string} [updates.title] - The new title of the task
- * @param {string} [updates.description] - The new description of the task
- * @param {string} [updates.priority] - The new priority ID of the task
- * @param {Array<string>} [updates.images] - The new list of image URLs
+ * Updates details of a task
+ * @param {string} taskId - ID of the task
+ * @param {Object} updates - Fields to update
+ * @param {string} [updates.title] - New task title
+ * @param {string} [updates.description] - New task description
+ * @param {string|null} [updates.priority] - New priority ID or null
+ * @param {Array<string>} [updates.images] - New list of image URLs
+ * @returns {Promise<Object>} Updated task with related data
+ * @throws {Error} Throws if update fails
  */
 export async function updateTaskDetails(
   taskId: string,
@@ -297,7 +298,7 @@ export async function updateTaskDetails(
     .from("tasks")
     .update({
       ...updates,
-      updated_at: new Date().toISOString() // Dodaj aktualizację updated_at
+      updated_at: new Date().toISOString(),
     })
     .eq("id", taskId)
     .select(`
@@ -308,7 +309,6 @@ export async function updateTaskDetails(
     .single();
 
   if (error) {
-    console.error("Error updating task:", error.message);
     throw error;
   }
 
@@ -317,7 +317,8 @@ export async function updateTaskDetails(
 
 /**
  * Fetches all priorities
- * @returns {Promise<Array>} The list of priorities
+ * @returns {Promise<Array>} List of priorities
+ * @throws {Error} Throws if query fails
  */
 export async function getPriorities() {
   const { data, error } = await supabase
@@ -326,7 +327,6 @@ export async function getPriorities() {
     .order("id");
 
   if (error) {
-    console.error("Error fetching priorities:", error.message);
     throw new Error("Failed to fetch priorities");
   }
 
@@ -335,9 +335,10 @@ export async function getPriorities() {
 
 /**
  * Adds a new priority
- * @param {string} label - The label of the priority
- * @param {string} color - The color of the priority
- * @returns {Promise<Object>} The created priority
+ * @param {string} label - Priority label
+ * @param {string} color - Priority color
+ * @returns {Promise<Object>} Created priority
+ * @throws {Error} Throws if insert fails or no data returned
  */
 export async function addPriority(label: string, color: string) {
   const { data, error } = await supabase
@@ -347,7 +348,6 @@ export async function addPriority(label: string, color: string) {
     .single();
 
   if (error) {
-    console.error("Error adding priority:", error.message);
     throw new Error("Failed to add priority");
   }
 
@@ -360,7 +360,8 @@ export async function addPriority(label: string, color: string) {
 
 /**
  * Deletes a priority by its ID
- * @param {string} id - The ID of the priority to delete
+ * @param {string} id - Priority ID
+ * @throws {Error} Throws if deletion fails
  */
 export async function deletePriority(id: string) {
   const { error } = await supabase
@@ -369,19 +370,19 @@ export async function deletePriority(id: string) {
     .eq("id", id);
 
   if (error) {
-    console.error("Error deleting priority:", error.message);
     throw new Error("Failed to delete priority");
   }
 }
 
 /**
- * Update task with new data
- * @param {string} taskId - ID of the task to update
- * @param {Object} taskData - New task data
+ * Updates a task with new data
+ * @param {string} taskId - Task ID
+ * @param {Object} taskData - Updated task data
  * @param {string} taskData.title - Task title
  * @param {string} [taskData.description] - Task description
  * @param {string} [taskData.priority] - Task priority
- * @returns {Promise<Task>} Updated task data
+ * @returns {Promise<Task>} Updated task object
+ * @throws {Error} Throws if update fails
  */
 export const updateTask = async (taskId: string, taskData: {
   title: string;
@@ -396,7 +397,6 @@ export const updateTask = async (taskId: string, taskData: {
     .single();
 
   if (error) {
-    console.error("Error updating task:", error.message);
     throw new Error("Failed to update task");
   }
 

@@ -3,15 +3,29 @@
 import React from "react";
 
 interface MarkdownContentProps {
+  /**
+   * Markdown content string, which may contain images in format ![alt](url)
+   */
   content: string;
+  /**
+   * Callback function triggered when an image is clicked, receiving the image URL
+   */
   onImageClick: (url: string) => void;
 }
 
+/**
+ * Component rendering markdown content with support for images.
+ * Images are extracted and rendered as <img> elements that can be clicked.
+ * Non-image text parts are rendered inside <span> elements preserving whitespace.
+ *
+ * @param {MarkdownContentProps} props - Component props
+ * @returns React element displaying parsed markdown with clickable images
+ */
 const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {
   const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
   const parts = content.split(imageRegex);
-
   const elements = [];
+
   for (let i = 0; i < parts.length; i += 3) {
     if (parts[i]) {
       elements.push(
@@ -20,7 +34,6 @@ const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {
         </span>
       );
     }
-
     if (parts[i + 1] && parts[i + 2]) {
       elements.push(
         <img

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes } from "react-icons/fa";
 
@@ -9,7 +9,24 @@ interface ImagePreviewModalProps {
   onClose: () => void;
 }
 
+/**
+ * Modal component to preview images. Closes on Escape key or outside click.
+ */
 const ImagePreviewModal = ({ imageUrl, onClose }: ImagePreviewModalProps) => {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
   if (!imageUrl) return null;
 
   return (
@@ -36,7 +53,6 @@ const ImagePreviewModal = ({ imageUrl, onClose }: ImagePreviewModalProps) => {
           >
             <FaTimes className="w-5 h-5" />
           </motion.button>
-
           <img
             src={imageUrl}
             alt="Preview"

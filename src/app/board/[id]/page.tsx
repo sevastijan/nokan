@@ -16,13 +16,15 @@ import { supabase } from "../../lib/supabase";
 import { getPriorities } from "../../lib/api";
 
 /**
- * Board page component that displays a Kanban board with drag-and-drop functionality
- * @returns JSX element containing the board interface
+ * Board page component displaying a Kanban board with drag-and-drop support
+ * @returns JSX element rendering the board UI
  */
 const Page = (): JSX.Element => {
   const { id } = useParams();
   const router = useRouter();
   const { data: session, status } = useSession();
+
+  // Custom hook for board data and handlers
   const {
     board,
     fetchBoardData,
@@ -36,6 +38,7 @@ const Page = (): JSX.Element => {
     handleAddTask,
   } = useBoard(id as string);
 
+  // Local state for new column input, popup visibility, selected tasks, user, priorities, etc.
   const [newColumnTitle, setNewColumnTitle] = useState<string>("");
   const [isAddingColumn, setIsAddingColumn] = useState<boolean>(false);
   const [localBoardTitle, setLocalBoardTitle] = useState<string>(
@@ -50,7 +53,7 @@ const Page = (): JSX.Element => {
   >([]);
 
   /**
-   * Load priorities from database
+   * Fetch task priorities from API or set default priorities on failure
    */
   useEffect(() => {
     const loadPriorities = async () => {
@@ -59,7 +62,6 @@ const Page = (): JSX.Element => {
         setPriorities(fetchedPriorities);
       } catch (error) {
         console.error("Error loading priorities:", error);
-        // Fallback priorities w przypadku błędu
         setPriorities([
           { id: "low", label: "Low", color: "#10b981" },
           { id: "medium", label: "Medium", color: "#f59e0b" },
@@ -73,13 +75,12 @@ const Page = (): JSX.Element => {
   }, []);
 
   /**
-   * Create user object from NextAuth session and fetch from database
+   * Fetch or create current user from Supabase using session email
    */
   useEffect(() => {
     const fetchUser = async () => {
       if (session?.user?.email) {
         try {
-          // Znajdź użytkownika w bazie danych po emailu
           const { data: userData, error } = await supabase
             .from("users")
             .select("*")
@@ -87,7 +88,7 @@ const Page = (): JSX.Element => {
             .single();
 
           if (userData && !error) {
-            // Użytkownik istnieje w bazie
+            // Set user from existing database record
             const user: User = {
               id: userData.id,
               name: userData.name || session.user.name || "Unknown User",
@@ -97,7 +98,7 @@ const Page = (): JSX.Element => {
             };
             setCurrentUser(user);
           } else if (error?.code === "PGRST116") {
-            // Użytkownik nie istnieje, utwórz go
+            // If user not found, create a new one in the database
             const { data: newUser, error: createError } = await supabase
               .from("users")
               .insert({
@@ -122,13 +123,13 @@ const Page = (): JSX.Element => {
             };
             setCurrentUser(user);
           } else {
-            // Inny błąd
+            // Log other errors
             console.error("Database error:", error);
             throw error;
           }
         } catch (error) {
+          // Fallback user object from session if DB fails
           console.error("Error fetching/creating user:", error);
-          // Fallback do temporary user (tylko w przypadku błędu)
           const user: User = {
             id: session.user.email || "temp-id",
             name: session.user.name || "Unknown User",
@@ -146,7 +147,7 @@ const Page = (): JSX.Element => {
   }, [session]);
 
   /**
-   * Redirect unauthenticated users to sign-in page
+   * Redirect to sign-in page if user is unauthenticated
    */
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -155,7 +156,7 @@ const Page = (): JSX.Element => {
   }, [status, router]);
 
   /**
-   * Update local board title when board data changes
+   * Synchronize local board title state when board data updates
    */
   useEffect(() => {
     if (board?.title && board.title !== localBoardTitle) {
@@ -164,7 +165,7 @@ const Page = (): JSX.Element => {
   }, [board?.title, localBoardTitle]);
 
   /**
-   * Debounced board title update to reduce API calls
+   * Debounce board title updates to reduce number of API calls
    */
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -177,8 +178,8 @@ const Page = (): JSX.Element => {
   }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
 
   /**
-   * Handle drag and drop operations for tasks and columns
-   * @param result - The drag and drop result from react-beautiful-dnd
+   * Handle drag and drop events for tasks and columns
+   * @param result - Result object from drag-and-drop library
    */
   const onDragEnd = (result: DropResult) => {
     if (!board) return;
@@ -199,6 +200,7 @@ const Page = (): JSX.Element => {
       const taskToMove = sourceCol.tasks[source.index];
 
       if (source.droppableId === destination.droppableId) {
+        // Reorder task within same column
         const newTasks = [...sourceCol.tasks];
         newTasks.splice(source.index, 1);
         newTasks.splice(destination.index, 0, taskToMove);
@@ -210,6 +212,7 @@ const Page = (): JSX.Element => {
           ),
         });
       } else {
+        // Move task between columns
         const sourceTasks = [...sourceCol.tasks];
         const destTasks = [...destCol.tasks];
 
@@ -228,6 +231,7 @@ const Page = (): JSX.Element => {
         });
       }
     } else if (type === "COLUMN") {
+      // Reorder columns
       const newColumns = [...board.columns];
       const [movedColumn] = newColumns.splice(source.index, 1);
       newColumns.splice(destination.index, 0, movedColumn);
@@ -240,7 +244,7 @@ const Page = (): JSX.Element => {
   };
 
   /**
-   * Add a new column to the board
+   * Add a new column to the board after validating title
    */
   const addColumn = async () => {
     if (!newColumnTitle.trim()) return;
@@ -255,7 +259,7 @@ const Page = (): JSX.Element => {
   };
 
   /**
-   * Handle opening task detail view
+   * Open task detail view by setting selected task ID
    */
   const handleOpenTaskDetail = (taskId: string) => {
     console.log("Opening task detail for ID:", taskId);
@@ -263,7 +267,7 @@ const Page = (): JSX.Element => {
   };
 
   /**
-   * Handle closing task detail view
+   * Close task detail view by clearing selected task ID
    */
   const handleCloseTaskDetail = () => {
     setSelectedTaskId(null);
@@ -367,7 +371,7 @@ const Page = (): JSX.Element => {
         </div>
       </DragDropContext>
 
-      {/* Single Task Detail View - EDIT */}
+      {/* Single Task Detail View in Edit Mode */}
       <AnimatePresence>
         {selectedTaskId && !addTaskColumnId && (
           <SingleTaskView
@@ -383,7 +387,7 @@ const Page = (): JSX.Element => {
         )}
       </AnimatePresence>
 
-      {/* Single Task Detail View - ADD */}
+      {/* Single Task Detail View in Add Mode */}
       <AnimatePresence>
         {addTaskColumnId && !selectedTaskId && (
           <SingleTaskView
