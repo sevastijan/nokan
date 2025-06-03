@@ -35,7 +35,7 @@ interface TaskFooterProps {
 const TaskFooter = ({ task, currentUser }: TaskFooterProps) => {
   return (
     <div className="border-t border-gray-600 p-2 bg-gray-800/50">
-      <div className="text-[0.6rem] justify-evenly md:text-sm text-gray-400 flex flex-wrap items-center justify-start gap-2">
+      <div className="text-[0.6rem] justify-evenly md:text-sm text-gray-400 flex flex-wrap items-center  gap-2">
         <div className="flex items-center gap-1">
           <FaCalendarAlt className="w-2 h-2" />
           <span>
