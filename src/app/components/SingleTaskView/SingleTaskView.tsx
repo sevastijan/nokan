@@ -188,34 +188,20 @@ const SingleTaskView = ({
   const handleUpdateTask = async (updates: Partial<TaskDetail>) => {
     if (!task) return;
 
-    try {
-      // Update local state
-      setTask((prev) => (prev ? { ...prev, ...updates } : null));
+    setTask((prev) => (prev ? { ...prev, ...updates } : null));
 
-      // If not a new task, save to database
-      if (!isNewTask && task.id) {
-        await updateTaskDetails(task.id, updates);
-
-        // Refresh task data after update
-        if (taskId) {
-          await fetchTaskData();
+    if (isNewTask) {
+      setHasUnsavedChanges(true);
+    } else {
+      try {
+        if (task.id) {
+          await updateTaskDetails(task.id, updates);
+          onTaskUpdate?.();
+          toast.success("Task updated successfully!");
         }
-
-        // Call parent callback
-        onTaskUpdate?.();
-
-        toast.success("Task updated successfully!");
-      } else {
-        // For new tasks, just mark as having unsaved changes
-        setHasUnsavedChanges(true);
-      }
-    } catch (error) {
-      console.error("Error updating task:", error);
-      toast.error("Error updating task");
-
-      // Revert local state on error
-      if (!isNewTask && taskId) {
-        await fetchTaskData();
+      } catch (error) {
+        console.error("Error updating task:", error);
+        toast.error("Error updating task");
       }
     }
   };
@@ -229,7 +215,7 @@ const SingleTaskView = ({
 
     setIsSaving(true);
     try {
-      const updates: Partial<TaskDetail> = {
+      const updates = {
         title: task.title.trim(),
         description: task.description?.trim() || "",
         priority: task.priority || null,
@@ -237,10 +223,7 @@ const SingleTaskView = ({
       };
 
       await updateTaskDetails(task.id, updates);
-
-      // Odśwież board TYLKO po zapisaniu, nie przy każdej zmianie
       onTaskUpdate?.();
-
       setHasUnsavedChanges(false);
       toast.success("Task saved successfully!");
       onClose();
@@ -405,7 +388,6 @@ const SingleTaskView = ({
       </div>
     );
   }
-
   return (
     <>
       <motion.div
@@ -442,7 +424,6 @@ const SingleTaskView = ({
               </button>
             </div>
           )}
-
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto">
               <TaskContent
@@ -456,7 +437,6 @@ const SingleTaskView = ({
                 setHasUnsavedChanges={setHasUnsavedChanges}
                 isNewTask={isNewTask}
               />
-
               {!isNewTask && taskId && task && (
                 <CommentsSection
                   taskId={taskId}
@@ -472,7 +452,6 @@ const SingleTaskView = ({
 
             {!isNewTask && <TaskFooter task={task} currentUser={currentUser} />}
           </div>
-
           <ActionFooter
             isNewTask={isNewTask}
             hasUnsavedChanges={hasUnsavedChanges}
@@ -491,7 +470,6 @@ const SingleTaskView = ({
           onClose={() => setImagePreview(null)}
         />
       )}
-
       {showUnsavedAlert && (
         <div className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-[60]">
           <div className="bg-gray-800 p-6 rounded-lg max-w-md">

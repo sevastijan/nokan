@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FaTimes, FaEdit, FaCheck } from "react-icons/fa";
+import { FaTimes, FaEdit } from "react-icons/fa";
 import { TaskDetail } from "./types";
 import ConfirmDialog from "./ConfirmDialog";
 
@@ -30,13 +30,9 @@ const TaskHeader = ({
     setEditedTitle(task?.title || "");
   }, [task?.title]);
 
-  const hasLocalUnsavedChanges = () => {
-    return isEditingTitle && editedTitle.trim() !== (task?.title || "");
-  };
-
   const handleTitleSave = async () => {
     if (task && editedTitle !== task.title && editedTitle.trim()) {
-      onUpdateTask({ title: editedTitle.trim() });
+      await onUpdateTask({ title: editedTitle.trim() });
     }
     setIsEditingTitle(false);
   };
@@ -68,26 +64,13 @@ const TaskHeader = ({
     if (e.key === "Enter") {
       handleTitleSave();
     } else if (e.key === "Escape") {
-      if (hasLocalUnsavedChanges()) {
-        showConfirm(handleDiscardChanges);
-      } else {
-        handleDiscardChanges();
-      }
-    }
-  };
-
-  const handleBlur = () => {
-    if (hasLocalUnsavedChanges()) {
-      showConfirm(() => {
-        handleDiscardChanges();
-      });
-    } else {
+      setEditedTitle(task?.title || "");
       setIsEditingTitle(false);
     }
   };
 
   const handleClose = () => {
-    if (hasLocalUnsavedChanges()) {
+    if (isEditingTitle && editedTitle.trim() !== (task?.title || "")) {
       showConfirm(() => {
         handleDiscardChanges();
         if (hasUnsavedChanges && onUnsavedChangesAlert) {
@@ -114,18 +97,10 @@ const TaskHeader = ({
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
                 onKeyDown={handleKeyPress}
-                onBlur={handleBlur}
+                onBlur={handleTitleSave}
                 className="text-xl font-bold bg-gray-700 text-gray-200 px-2 py-1 rounded border border-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
                 autoFocus
               />
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={handleTitleSave}
-                className="p-2 text-green-400 hover:text-green-300 rounded"
-              >
-                <FaCheck className="w-4 h-4" />
-              </motion.button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -150,7 +125,6 @@ const TaskHeader = ({
           <FaTimes className="w-5 h-5" />
         </motion.button>
       </div>
-
       <ConfirmDialog
         isOpen={showConfirmDialog}
         title="Unsaved Changes"
