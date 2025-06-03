@@ -4,4 +4,22 @@ html, body {
     margin: 0;
     padding: 0;
     height: 100%;
-  }
+}
+
+/* Ensure main content doesn't overlap with burger button on mobile */
+@media (max-width: 768px) {
+    .main-content {
+        padding-left: 16px; /* 1rem = 16px */
+        padding-right: 16px;
+        padding-top: 76px; /* Space for burger button + some extra */
+        padding-bottom: 16px;
+    }
+}
+
+/* Ensure content has proper spacing on desktop */
+@media (min-width: 769px) {
+    .main-content {
+        margin-left: 256px; /* Width of sidebar (w-64 = 16rem = 256px) */
+        /* Removed padding - content should touch the edges */
+    }
+}
