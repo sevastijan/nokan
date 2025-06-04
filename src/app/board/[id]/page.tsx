@@ -14,6 +14,7 @@ import { useSession } from "next-auth/react";
 import Loader from "../../components/Loader";
 import { supabase } from "../../lib/supabase";
 import { getPriorities } from "../../lib/api";
+import { extractIdFromUrl } from "../../lib/utils";
 
 /**
  * Board page component displaying a Kanban board with drag-and-drop support
@@ -176,6 +177,16 @@ const Page = (): JSX.Element => {
 
     return () => clearTimeout(timeoutId);
   }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
+
+  /**
+   * If there is ID in url, display task details
+   */
+  useEffect(() => {
+    const id = extractIdFromUrl(window.location.href);
+    if (id) {
+      setSelectedTaskId(id);
+    }
+  }, []);
 
   /**
    * Handle drag and drop events for tasks and columns
