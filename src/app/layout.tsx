@@ -1,3 +1,4 @@
+import { ToastContainer } from "react-toastify";
 import "./styles/globals.css";
 import { Providers } from "./providers";
 import Navbar from "./components/Navbar";
@@ -18,6 +19,7 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           <main className="main-content min-h-screen">{children}</main>
+          <ToastContainer position="top-right" autoClose={3000} />
         </Providers>
       </body>
     </html>
