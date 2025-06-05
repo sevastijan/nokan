@@ -53,6 +53,26 @@ export async function getBoardById(id: string) {
 }
 
 /**
+ * Gets user UUID by email address
+ * @param {string} email - User's email address
+ * @returns {Promise<string | null>} User UUID or null if not found
+ */
+export async function getUserIdByEmail(email: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", email)
+    .single();
+
+  if (error) {
+    console.error("Error fetching user UUID:", error);
+    return null;
+  }
+
+  return data?.id || null;
+}
+
+/**
  * Fetches all boards
  * @returns {Promise<Array>} List of all boards
  * @throws {Error} Throws if query fails
@@ -403,6 +423,11 @@ export const updateTask = async (taskId: string, taskData: {
   return data;
 };
 
+/**
+ * Creates attachments storage bucket
+ * @returns {Promise<Object>} Bucket creation result
+ * @throws {Error} Throws if bucket creation fails
+ */
 export async function createAttachmentsBucket() {
   const { data, error } = await supabase.storage.createBucket('attachments', {
     public: false,
@@ -416,4 +441,234 @@ export async function createAttachmentsBucket() {
   }
 
   return data;
+}
+
+/**
+ * Fetches all teams
+ * @returns {Promise<Array>} List of all teams
+ * @throws {Error} Throws if query fails
+ */
+export async function getTeams() {
+  const { data, error } = await supabase
+    .from("teams")
+    .select(`
+      id,
+      name,
+      created_at,
+      board_id,
+      users: team_members (
+        user_id
+      )
+    `);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Adds a new team
+ * @param {string} name - Name of the team
+ * @param {string[]} userIds - Array of user IDs in the team
+ * @param {string} boardId - ID of the board
+ * @returns {Promise<Object>} The newly created team
+ * @throws {Error} Throws if insert fails
+ */
+export async function addTeam(
+  name: string,
+  userIds: string[],
+  boardId: string
+) {
+  const { data: teamData, error: teamError } = await supabase
+    .from("teams")
+    .insert([{ name }])
+    .select()
+    .single();
+
+  if (teamError) {
+    throw teamError;
+  }
+
+  if (!teamData) {
+    throw new Error("Failed to create team");
+  }
+
+  // Insert team members into team_members table
+  const teamId = teamData.id;
+  const teamMembers = userIds.map((userId) => ({
+    team_id: teamId,
+    user_id: userId,
+  }));
+
+  const { data: memberData, error: memberError } = await supabase
+    .from("team_members")
+    .insert(teamMembers);
+
+  if (memberError) {
+    // If adding members fails, delete the team to maintain consistency
+    await deleteTeam(teamId);
+    throw memberError;
+  }
+
+  // Assign team to board
+  if (boardId) {
+    await addTeamToBoard(boardId, teamId);
+  }
+
+  return teamData;
+}
+
+/**
+ * Updates a team
+ * @param {string} teamId - ID of the team to update
+ * @param {string} name - New name of the team
+ * @param {string[]} userIds - Array of user IDs in the team
+ * @param {string} boardId - ID of the board
+ * @returns {Promise<Object>} The updated team
+ * @throws {Error} Throws if update fails
+ */
+export async function updateTeam(
+  teamId: string,
+  name: string,
+  userIds: string[],
+  boardId: string
+) {
+  const { error } = await supabase
+    .from("teams")
+    .update({ name, board_id: boardId }) 
+    .eq("id", teamId);
+
+  if (error) throw error;
+
+  await supabase.from("team_members").delete().eq("team_id", teamId);
+  if (userIds.length > 0) {
+    const inserts = userIds.map((userId) => ({
+      team_id: teamId,
+      user_id: userId,
+    }));
+    await supabase.from("team_members").insert(inserts);
+  }
+}
+
+/**
+ * Deletes a team by its ID
+ * @param {string} teamId - ID of the team to delete
+ * @throws {Error} Throws if deletion fails
+ */
+export async function deleteTeam(teamId: string) {
+  // First, delete team members
+  const { error: deleteMembersError } = await supabase
+    .from("team_members")
+    .delete()
+    .eq("team_id", teamId);
+
+  if (deleteMembersError) {
+    throw deleteMembersError;
+  }
+
+  // Then, delete the team
+  const { error: deleteTeamError } = await supabase
+    .from("teams")
+    .delete()
+    .eq("id", teamId);
+
+  if (deleteTeamError) {
+    throw deleteTeamError;
+  }
+}
+
+/**
+ * Adds a team to a board
+ * @param {string} boardId - ID of the board
+ * @param {string} teamId - ID of the team to add
+ * @returns {Promise<Object>} Insertion result
+ * @throws {Error} Throws if insertion fails
+ */
+export async function addTeamToBoard(boardId: string, teamId: string) {
+  const { data, error } = await supabase
+    .from("board_access")
+    .insert([{ board_id: boardId, team_id: teamId }]);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Gets all boards for a user - both owned and accessible via teams
+ * @param {string} userEmail - User's email address
+ * @returns {Promise<Array>} All boards accessible to the user
+ * @throws {Error} Throws if query fails
+ */
+export async function getAllBoardsForUser(userEmail: string) {
+  
+  const userId = await getUserIdByEmail(userEmail);
+  if (!userId) {
+    return [];
+  }
+
+  const { data: ownedBoards, error: ownedError } = await supabase
+    .from("boards")
+    .select("*")
+    .eq("owner", userEmail);
+
+  if (ownedError) {
+    console.error("Error fetching owned boards:", ownedError);
+  }
+
+  const { data: teamMemberships, error: teamError } = await supabase
+    .from("team_members")
+    .select("team_id")
+    .eq("user_id", userId);
+
+  if (teamError) {
+    console.error("Error fetching team memberships:", teamError);
+    return ownedBoards || [];
+  }
+
+  const teamIds = (teamMemberships || []).map(tm => tm.team_id);
+
+  if (teamIds.length === 0) {
+    return ownedBoards || [];
+  }
+
+  // Get board access through teams
+  const { data: boardAccess, error: accessError } = await supabase
+    .from("board_access")
+    .select("board_id")
+    .in("team_id", teamIds);
+
+  if (accessError) {
+    console.error("Error fetching board access:", accessError);
+    return ownedBoards || [];
+  }
+
+  const accessibleBoardIds = (boardAccess || []).map(ba => ba.board_id);
+
+  if (accessibleBoardIds.length === 0) {
+    return ownedBoards || [];
+  }
+
+  // Get the actual board data
+  const { data: accessibleBoards, error: boardsError } = await supabase
+    .from("boards")
+    .select("*")
+    .in("id", accessibleBoardIds);
+
+  if (boardsError) {
+    console.error("Error fetching accessible boards:", boardsError);
+    return ownedBoards || [];
+  }
+
+  // Combine owned and accessible boards, remove duplicates
+  const allBoards = [...(ownedBoards || []), ...(accessibleBoards || [])];
+  const uniqueBoards = allBoards.filter((board, index, self) => 
+    index === self.findIndex(b => b.id === board.id)
+  );
+
+  return uniqueBoards;
 }
