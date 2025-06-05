@@ -8,12 +8,13 @@ import AddColumnPopup from "../../components/TaskColumn/AddColumnPopup";
 import SingleTaskView from "../../components/SingleTaskView/SingleTaskView";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FiArrowLeft } from "react-icons/fi";
 import { Column as ColumnType, Task } from "../../types/useBoardTypes";
 import { User } from "../../components/SingleTaskView/types";
 import { useSession } from "next-auth/react";
 import Loader from "../../components/Loader";
 import { supabase } from "../../lib/supabase";
-import { getPriorities } from "../../lib/api";
+import { getPriorities, getTeams } from "../../lib/api";
 
 /**
  * Board page component displaying a Kanban board with drag-and-drop support
@@ -38,7 +39,7 @@ const Page = (): JSX.Element => {
     handleAddTask,
   } = useBoard(id as string);
 
-  // Local state for new column input, popup visibility, selected tasks, user, priorities, etc.
+  // Local state for board functionality
   const [newColumnTitle, setNewColumnTitle] = useState<string>("");
   const [isAddingColumn, setIsAddingColumn] = useState<boolean>(false);
   const [localBoardTitle, setLocalBoardTitle] = useState<string>(
@@ -123,7 +124,6 @@ const Page = (): JSX.Element => {
             };
             setCurrentUser(user);
           } else {
-            // Log other errors
             console.error("Database error:", error);
             throw error;
           }
@@ -259,18 +259,10 @@ const Page = (): JSX.Element => {
   };
 
   /**
-   * Open task detail view by setting selected task ID
+   * Navigate back to dashboard
    */
-  const handleOpenTaskDetail = (taskId: string) => {
-    console.log("Opening task detail for ID:", taskId);
-    setSelectedTaskId(taskId);
-  };
-
-  /**
-   * Close task detail view by clearing selected task ID
-   */
-  const handleCloseTaskDetail = () => {
-    setSelectedTaskId(null);
+  const handleBackToDashboard = () => {
+    router.push("/dashboard");
   };
 
   if (status === "loading") {
@@ -293,29 +285,35 @@ const Page = (): JSX.Element => {
     <>
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="p-4 sm:p-6 bg-gray-900 min-h-screen">
-          <div className="mb-4 flex  flex-col md:flex-row">
+          {/* Back to Dashboard Button */}
+          <div className="mb-4">
             <button
-              onClick={() => router.push("/dashboard")}
-              className="text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors m-0 max-w-[160] cursor-pointer"
+              onClick={handleBackToDashboard}
+              className="flex cursor-pointer items-center gap-2 text-gray-400 hover:text-white transition-colors group"
             >
-              ← Back to Dashboard
+              <FiArrowLeft className="group-hover:-translate-x-1 transition-transform" />
+              <span>Back to Dashboard</span>
             </button>
           </div>
-          <div className="mb-4 sm:mb-6 flex-col md:flex-row gap-4 flex md:items-center">
+
+          {/* Board Header */}
+          <div className="mb-4 sm:mb-6 flex flex-col md:flex-row gap-4 md:items-center">
             <input
               type="text"
               value={localBoardTitle}
               onChange={(e) => setLocalBoardTitle(e.target.value)}
-              className="text-2xl sm:text-3xl font-bold bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500"
+              className="text-2xl sm:text-3xl font-bold bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
               placeholder="Board Title"
             />
             <button
               onClick={() => setIsPopupOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200 max-w-[160] lg:w-full cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200 max-w-[160px] lg:w-auto"
             >
               Add Column
             </button>
           </div>
+
+          {/* Board Columns */}
           <Droppable droppableId="board" type="COLUMN" direction="horizontal">
             {(provided) => (
               <div
@@ -360,6 +358,8 @@ const Page = (): JSX.Element => {
               </div>
             )}
           </Droppable>
+
+          {/* Add Column Popup */}
           <AddColumnPopup
             isOpen={isPopupOpen}
             onClose={() => setIsPopupOpen(false)}
