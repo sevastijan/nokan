@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FaTimes, FaEdit } from "react-icons/fa";
+import { FaTimes, FaEdit, FaLink } from "react-icons/fa";
 import { TaskDetail } from "./types";
 import ConfirmDialog from "./ConfirmDialog";
+import { copyTaskUrlToClipboard } from "./utils";
 
 interface TaskHeaderProps {
   task: TaskDetail | null;
@@ -144,6 +145,14 @@ const TaskHeader = ({
                 className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
               >
                 <FaEdit className="w-4 h-4" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => task && copyTaskUrlToClipboard(task.id)}
+                className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
+              >
+                <FaLink className="w-4 h-4" />
               </motion.button>
             </div>
           )}
