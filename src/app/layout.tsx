@@ -2,11 +2,7 @@ import { ToastContainer } from "react-toastify";
 import "./styles/globals.css";
 import { Providers } from "./providers";
 import Navbar from "./components/Navbar";
-
-export const metadata = {
-  title: "Nokan Taskboard",
-  description: "Taskboard application",
-};
+import { metadata } from "./metadata";
 
 export default function RootLayout({
   children,

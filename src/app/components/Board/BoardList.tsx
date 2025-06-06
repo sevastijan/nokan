@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import BoardModal from "./BoardModal";
 import BoardDropdown from "./BoardDropdown";
 import Loader from "../Loader";
+import { getAllBoardsForUser } from "../../lib/api";
 
 interface Board {
   id: string;
@@ -45,15 +46,15 @@ const BoardList = () => {
    */
   const fetchBoards = async () => {
     try {
-      const response = await fetch("/api/dashboards");
-      const data = await response.json();
+      const userEmail = session?.user?.email;
 
-      if (Array.isArray(data)) {
-        setBoards(data);
-      } else {
-        setBoards([]);
+      if (!userEmail) {
+        return;
       }
+      const boards = await getAllBoardsForUser(userEmail);
+      setBoards(boards);
     } catch (error) {
+      console.error("Error fetching boards:", error);
       setError("Failed to fetch boards");
       setBoards([]);
     } finally {
@@ -72,7 +73,10 @@ const BoardList = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({
+          title,
+          owner: session?.user?.email,
+        }),
       });
 
       if (!response.ok) {
@@ -82,7 +86,11 @@ const BoardList = () => {
       const newBoard = await response.json();
       setBoards([...boards, newBoard]);
       setCreateModalOpen(false);
+
+      // Refresh boards to get updated list
+      fetchBoards();
     } catch (error) {
+      console.error("Error creating board:", error);
       setError("Failed to create board");
     }
   };
@@ -118,6 +126,7 @@ const BoardList = () => {
       setEditModalOpen(false);
       setSelectedBoard(null);
     } catch (error) {
+      console.error("Error editing board:", error);
       setError("Failed to edit board");
     }
   };
@@ -141,6 +150,7 @@ const BoardList = () => {
       setDeleteModalOpen(false);
       setSelectedBoard(null);
     } catch (error) {
+      console.error("Error deleting board:", error);
       setError("Failed to delete board");
     }
   };
@@ -172,7 +182,7 @@ const BoardList = () => {
   };
 
   if (status === "loading" || loading) {
-    return <Loader text="Loading board..." />;
+    return <Loader text="Loading boards..." />;
   }
 
   if (!session) {

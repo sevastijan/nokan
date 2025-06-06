@@ -4,6 +4,7 @@ import { useSession, signOut, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 const sidebarVariants = {
   hidden: { x: "-100%" },
@@ -100,6 +101,12 @@ const Navbar = () => {
                 >
                   Sign Out
                 </button>
+                <Link
+                  href="/team-management"
+                  className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full text-center"
+                >
+                  Manage Teams
+                </Link>
               </div>
             ) : (
               <button
@@ -182,6 +189,13 @@ const Navbar = () => {
                       >
                         Sign Out
                       </button>
+                      <Link
+                        href="/team-management"
+                        className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full text-center"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Manage Teams
+                      </Link>
                     </div>
                   ) : (
                     <button
