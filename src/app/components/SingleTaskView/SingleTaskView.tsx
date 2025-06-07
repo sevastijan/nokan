@@ -127,6 +127,10 @@ const SingleTaskView = ({
     }
   };
 
+  /**
+   * Fetches comments for a task with author information
+   * Used for displaying comment history in task details
+   */
   const fetchComments = async () => {
     if (!taskId) return;
 
@@ -166,17 +170,76 @@ const SingleTaskView = ({
     }
   };
 
+  /**
+   * Fetches users available for task assignment
+   * Filters users based on teams assigned to the current board
+   * Falls back to all users if no board or teams are assigned
+   */
   const fetchAvailableUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, name, email, image")
-        .order("name");
+      if (!boardId) {
+        const { data, error } = await supabase
+          .from("users")
+          .select("id, name, email, image")
+          .order("name");
 
-      if (error) throw error;
-      setAvailableUsers(data || []);
+        if (error) throw error;
+        setAvailableUsers(data || []);
+        return;
+      }
+
+      const { data: boardTeams, error: boardTeamsError } = await supabase
+        .from("board_access")
+        .select("team_id")
+        .eq("board_id", boardId);
+
+      if (boardTeamsError) {
+        console.error("Error fetching board teams:", boardTeamsError);
+        setAvailableUsers([]);
+        return;
+      }
+
+      if (!boardTeams || boardTeams.length === 0) {
+        setAvailableUsers([]);
+        return;
+      }
+
+      const teamIds = boardTeams.map((bt) => bt.team_id);
+
+      const { data: teamMembers, error: membersError } = await supabase
+        .from("team_members")
+        .select(
+          `
+          user_id,
+          users!inner(id, name, email, image)
+        `
+        )
+        .in("team_id", teamIds);
+
+      if (membersError) {
+        console.error("Error fetching team members:", membersError);
+        setAvailableUsers([]);
+        return;
+      }
+
+      const uniqueUsers =
+        teamMembers?.reduce((acc: User[], member: any) => {
+          const user = member.users;
+          if (user && !acc.find((u: User) => u.id === user.id)) {
+            acc.push({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image,
+            } as User);
+          }
+          return acc;
+        }, []) || [];
+
+      setAvailableUsers(uniqueUsers);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching available users:", error);
+      setAvailableUsers([]);
     }
   };
 
@@ -275,7 +338,8 @@ const SingleTaskView = ({
   };
 
   /**
-   * Deletes the current task after confirmation
+   * Deletes the current task after user confirmation
+   * Refreshes parent component data on success
    */
   const handleDeleteTask = async () => {
     if (!taskId) return;
@@ -298,6 +362,10 @@ const SingleTaskView = ({
     }
   };
 
+  /**
+   * Handles modal close with unsaved changes check
+   * Shows confirmation dialog for new tasks with unsaved changes
+   */
   const handleClose = () => {
     if (hasUnsavedChanges && isNewTask) {
       setShowUnsavedAlert(true);
@@ -306,6 +374,10 @@ const SingleTaskView = ({
     }
   };
 
+  /**
+   * Triggers unsaved changes alert dialog
+   * Used by child components to warn about data loss
+   */
   const handleUnsavedChangesAlert = () => {
     setShowUnsavedAlert(true);
   };

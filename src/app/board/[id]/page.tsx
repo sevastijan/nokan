@@ -388,6 +388,7 @@ const Page = (): JSX.Element => {
           <SingleTaskView
             taskId={selectedTaskId}
             mode="edit"
+            boardId={id as string}
             onClose={() => setSelectedTaskId(null)}
             onTaskUpdate={() => {
               fetchBoardData();
