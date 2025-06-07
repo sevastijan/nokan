@@ -97,6 +97,20 @@ const SingleTaskView = ({
     fetchPriorities();
   }, []);
 
+  // Handle ESC key press
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        handleClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscKey);
+    return () => {
+      document.removeEventListener("keydown", handleEscKey);
+    };
+  }, [hasUnsavedChanges, isNewTask]);
+
   const fetchTaskData = async () => {
     if (!taskId) return;
 
@@ -104,7 +118,6 @@ const SingleTaskView = ({
     try {
       const taskData = await getTaskById(taskId);
 
-      // Pobierz załączniki
       const { data: attachments, error: attachError } = await supabase
         .from("task_attachments")
         .select("*")
