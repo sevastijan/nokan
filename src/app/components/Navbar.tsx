@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useUserRole } from "../hooks/useUserRole";
 
 const sidebarVariants = {
   hidden: { x: "-100%" },
@@ -20,6 +21,7 @@ const overlayVariants = {
 
 const Navbar = () => {
   const { data: session, status } = useSession();
+  const { hasManagementAccess, loading: roleLoading, userRole } = useUserRole();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -43,9 +45,41 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
+  const getRoleBadge = () => {
+    if (roleLoading) return null;
+
+    let badgeColor = "";
+    let roleText = "";
+
+    switch (userRole) {
+      case "OWNER":
+        badgeColor =
+          "bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900";
+        roleText = "Owner";
+        break;
+      case "PROJECT_MANAGER":
+        badgeColor = "bg-gradient-to-r from-blue-400 to-blue-600 text-blue-900";
+        roleText = "Project Manager";
+        break;
+      case "MEMBER":
+        badgeColor = "bg-gradient-to-r from-gray-400 to-gray-600 text-gray-900";
+        roleText = "Member";
+        break;
+      default:
+        return null;
+    }
+
+    return (
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-semibold ${badgeColor} shadow-sm`}
+      >
+        {roleText}
+      </span>
+    );
+  };
+
   return (
     <>
-      {/* Hamburger button (mobile only) - Fixed positioning */}
       <button
         className="fixed top-4 left-4 z-50 md:hidden bg-gray-800 text-white p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
         onClick={() => setIsOpen(true)}
@@ -94,6 +128,7 @@ const Navbar = () => {
                   <span className="text-gray-300 text-sm text-center">
                     {session.user.name || session.user.email}
                   </span>
+                  {getRoleBadge()}
                 </div>
                 <button
                   onClick={handleSignOut}
@@ -101,12 +136,14 @@ const Navbar = () => {
                 >
                   Sign Out
                 </button>
-                <Link
-                  href="/team-management"
-                  className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full text-center"
-                >
-                  Manage Teams
-                </Link>
+                {!roleLoading && hasManagementAccess() && (
+                  <Link
+                    href="/team-management"
+                    className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full text-center"
+                  >
+                    Manage Teams
+                  </Link>
+                )}
               </div>
             ) : (
               <button
@@ -179,6 +216,7 @@ const Navbar = () => {
                         <span className="text-gray-300 text-sm text-center">
                           {session.user.name || session.user.email}
                         </span>
+                        {getRoleBadge()}
                       </div>
                       <button
                         onClick={() => {
@@ -189,13 +227,15 @@ const Navbar = () => {
                       >
                         Sign Out
                       </button>
-                      <Link
-                        href="/team-management"
-                        className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full text-center"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Manage Teams
-                      </Link>
+                      {!roleLoading && hasManagementAccess() && (
+                        <Link
+                          href="/team-management"
+                          className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full text-center"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          Manage Teams
+                        </Link>
+                      )}
                     </div>
                   ) : (
                     <button
