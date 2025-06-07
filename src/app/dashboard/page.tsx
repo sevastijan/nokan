@@ -27,7 +27,7 @@ const DashboardPage = () => {
 
   return (
     <div className="p-4 sm:p-6 bg-gray-900 min-h-screen text-white">
-      <h1 className="text-3xl font-bold mb-6">Your Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">Your Dashboard 🥷🏻</h1>
       <BoardList />
     </div>
   );
