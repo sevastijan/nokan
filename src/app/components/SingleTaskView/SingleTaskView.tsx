@@ -251,68 +251,16 @@ const SingleTaskView = ({
 
     setIsSaving(true);
     try {
-      // Validate column exists
-      const { data: columnExists, error: columnError } = await supabase
-        .from("columns")
-        .select("id")
-        .eq("id", columnId)
-        .single();
-
-      if (columnError || !columnExists) {
-        toast.error("Column does not exist");
-        return;
-      }
-
-      // Prepare task data
-      const taskData: any = {
-        column_id: columnId,
-        title: task.title.trim(),
-        order: 0,
-      };
-
-      if (task.description?.trim()) {
-        taskData.description = task.description.trim();
-      }
-
-      if (task.priority) {
-        taskData.priority = task.priority;
-      }
-
-      if (task.user_id) {
-        taskData.user_id = task.user_id;
-      }
-
-      // Insert task with full data (including joins)
-      const { data: newTask, error: insertError } = await supabase
-        .from("tasks")
-        .insert(taskData)
-        .select(
-          `
-          *,
-          assignee:users!tasks_user_id_fkey(id, name, email, image),
-          priorities(id, label, color)
-        `
-        )
-        .single();
-
-      if (insertError) {
-        throw insertError;
-      }
-
       if (onTaskAdded) {
-        try {
-          await onTaskAdded(
-            columnId,
-            task.title.trim(),
-            task.priority || undefined,
-            task.user_id || undefined
-          );
-        } catch (callbackError) {
-          console.error("Error in onTaskAdded callback:", callbackError);
-          onTaskUpdate?.();
-        }
+        await onTaskAdded(
+          columnId,
+          task.title.trim(),
+          task.priority || undefined,
+          task.user_id || undefined
+        );
       } else {
-        onTaskUpdate?.();
+        toast.error("Cannot create task - no callback provided");
+        return;
       }
 
       onClose();
