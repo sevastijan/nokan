@@ -3,24 +3,11 @@
 import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { FaPlus, FaDownload, FaTrash, FaEye } from "react-icons/fa";
-import { Attachment, User } from "./types";
+import { Attachment, User, AttachmentsListProps } from "./types";
 import { formatFileSize, getFileIcon } from "./utils";
 import { supabase } from "../../lib/api";
 import { toast } from "react-toastify";
-
-interface AttachmentsListProps {
-  /** List of attachments related to the task */
-  attachments: Attachment[];
-
-  /** Current logged-in user */
-  currentUser: User;
-
-  /** ID of the related task */
-  taskId: string;
-
-  /** Callback to refresh task data after operations */
-  onRefreshTask: () => Promise<void>;
-}
+import Button from "../Button/Button";
 
 /**
  * AttachmentsList component provides functionality to upload, preview, download, and delete
@@ -30,7 +17,8 @@ const AttachmentsList = ({
   attachments,
   currentUser,
   taskId,
-  onRefreshTask,
+  onTaskUpdate,
+  onAttachmentsUpdate,
 }: AttachmentsListProps) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,10 +48,7 @@ const AttachmentsList = ({
 
       if (uploadError) throw uploadError;
 
-      /**
-       * Inserts attachment metadata into the task_attachments table.
-       */
-      const { error: dbError } = await supabase
+      const { data: newAttachment, error: dbError } = await supabase
         .from("task_attachments")
         .insert({
           task_id: taskId,
@@ -72,11 +57,18 @@ const AttachmentsList = ({
           file_size: file.size,
           mime_type: file.type,
           uploaded_by: currentUser.id,
-        });
+        })
+        .select()
+        .single();
 
       if (dbError) throw dbError;
 
-      await onRefreshTask();
+      if (onAttachmentsUpdate && newAttachment) {
+        onAttachmentsUpdate((prev) => [newAttachment, ...prev]);
+      } else if (onTaskUpdate) {
+        await onTaskUpdate();
+      }
+
       toast.success("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -134,7 +126,14 @@ const AttachmentsList = ({
 
       if (dbError) throw dbError;
 
-      await onRefreshTask();
+      if (onAttachmentsUpdate) {
+        onAttachmentsUpdate((prev) =>
+          prev.filter((att) => att.id !== attachment.id)
+        );
+      } else if (onTaskUpdate) {
+        await onTaskUpdate();
+      }
+
       toast.success("Attachment deleted");
     } catch (error) {
       console.error("Error deleting attachment:", error);
@@ -170,17 +169,18 @@ const AttachmentsList = ({
         <h3 className="text-lg font-semibold text-gray-200">
           Attachments ({attachments.length})
         </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <Button
+          variant="primary"
+          size="md"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center cursor-pointer gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          loading={uploading}
+          icon={<FaPlus />}
         >
-          <FaPlus className="w-4 h-4" />
           {uploading ? "Uploading..." : "Add File"}
-        </motion.button>
+        </Button>
       </div>
+
       <input
         ref={fileInputRef}
         type="file"
@@ -188,6 +188,7 @@ const AttachmentsList = ({
         className="hidden"
         accept="*/*"
       />
+
       {attachments.length > 0 ? (
         <div className="space-y-2">
           {attachments.map((attachment) => (
@@ -196,7 +197,7 @@ const AttachmentsList = ({
               className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <span className="text-2xl">
+                <span className="text-2xl flex items-center justify-center w-8 h-8">
                   {getFileIcon(attachment.mime_type)}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -209,30 +210,27 @@ const AttachmentsList = ({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handlePreview(attachment)}
-                  className="p-2 text-blue-400 hover:text-blue-300 rounded cursor-pointer"
-                >
-                  <FaEye className="w-4 h-4" />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  icon={<FaEye />}
+                  className="text-blue-400 hover:text-blue-300 p-2"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleDownload(attachment)}
-                  className="p-2 text-green-400 hover:text-green-300 rounded cursor-pointer"
-                >
-                  <FaDownload className="w-4 h-4" />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  icon={<FaDownload />}
+                  className="text-green-400 hover:text-green-300 p-2"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleDelete(attachment)}
-                  className="p-2 text-red-400 hover:text-red-300 rounded cursor-pointer"
-                >
-                  <FaTrash className="w-4 h-4" />
-                </motion.button>
+                  icon={<FaTrash />}
+                  className="text-red-400 hover:text-red-300 p-2"
+                />
               </div>
             </div>
           ))}

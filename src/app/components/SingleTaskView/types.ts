@@ -1,3 +1,5 @@
+import { Column as ColumnType, Task as TaskType } from "../../types/useBoardTypes";
+
 export interface User {
   id: string;
   name: string;
@@ -11,6 +13,7 @@ export interface Priority {
   label: string;
   color: string;
 }
+
 
 export interface Attachment {
   id: string;
@@ -48,6 +51,15 @@ export interface Comment {
   author: User;
 }
 
+
+export interface CommentFormProps {
+  currentUser: User;
+  taskId: string;
+  onAddComment: (content: string) => Promise<void>;
+  onRefreshTask?: () => Promise<void>;
+}
+
+
 export interface MenuPosition {
   top: number;
   left?: number;
@@ -75,13 +87,122 @@ export interface CommentsSectionProps {
   currentUser: User;
   task: TaskDetail;
   onRefreshComments: () => Promise<void>;
-  onRefreshTask: () => Promise<void>;
   onImagePreview: (url: string) => void;
 }
 
-export interface CommentFormProps {
+export interface TaskContentProps {
+  task: TaskDetail | null;
+  currentUser: User;
+  availableUsers: User[];
+  priorities: Priority[];
+  onUpdateTask: (updates: Partial<TaskDetail>) => void;
+  taskId: string;
+  setHasUnsavedChanges: (value: boolean) => void;
+  isNewTask?: boolean;
+  onTaskUpdate?: () => Promise<void>;
+  onAttachmentsUpdate?: (
+    updater: (attachments: Attachment[]) => Attachment[]
+  ) => void;
+}
+
+export interface AttachmentsListProps {
+  attachments: Attachment[];
   currentUser: User;
   taskId: string;
-  onAddComment: (content: string) => Promise<void>;
-  onRefreshTask: () => Promise<void>;
+  onTaskUpdate?: () => Promise<void>;
+
+  /** Callback to update attachments locally (smooth) */
+  onAttachmentsUpdate?: (
+    updater: (attachments: Attachment[]) => Attachment[]
+  ) => void;
+}
+
+export interface SingleTaskViewProps {
+  taskId?: string;
+  mode: "add" | "edit";
+  columnId?: string;
+  boardId?: string;
+  onClose: () => void;
+  onTaskUpdate?: () => void;
+  onTaskAdd?: (newTask: { id: string; title: string }) => void;
+  onTaskAdded?: (
+    columnId: string,
+    title: string,
+    priority?: number,
+    userId?: number
+  ) => Promise<any>;
+  currentUser: User;
+  priorities?: Array<{ id: string; label: string; color: string }>;
+}
+
+export interface ColumnProps {
+  column: ColumnType;
+  onUpdateTask: (columnId: string, task: TaskType) => void;
+  colIndex: number;
+  onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
+  onRemoveColumn: (columnId: string) => void;
+  onTaskAdded: (
+    columnId: string,
+    title: string,
+    priority?: string,
+    userId?: string
+  ) => Promise<TaskType>;
+  onRemoveTask: (columnId: string, taskId: string) => void;
+  onOpenTaskDetail: (taskId: string | null) => void;
+  selectedTaskId?: string | null;
+  onTaskUpdate?: () => void;
+  currentUser: any;
+  onOpenAddTask: (columnId: string) => void;
+  priorities?: Array<{ id: string; label: string; color: string }>;
+}
+
+export interface TaskHeaderProps {
+  task: TaskDetail | null;
+  onClose: () => void;
+  onUpdateTask: (updates: Partial<TaskDetail>) => void;
+  hasUnsavedChanges?: boolean;
+  onUnsavedChangesAlert?: () => void;
+}
+
+export interface TaskFooterProps {
+  task?: TaskDetail;
+  currentUser: User;
+  isNewTask?: boolean;
+  hasUnsavedChanges?: boolean;
+  isSaving?: boolean;
+  onSave?: () => void;
+  onClose?: () => void;
+}
+
+export interface PrioritySelectorProps {
+  selectedPriority: string | null | undefined;
+  onChange: (priority: string | null) => void;
+  onDropdownToggle?: (isOpen: boolean) => void;
+  priorities?: Priority[];
+}
+
+export interface ImagePreviewModalProps {
+  imageUrl: string | null;
+  onClose: () => void;
+}
+
+export interface ConfirmDialogProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  type?: "warning" | "danger" | "info";
+}
+
+export interface ActionFooterProps {
+  isNewTask: boolean;
+  hasUnsavedChanges: boolean;
+  isSaving: boolean;
+  onSave: () => void;
+  onClose: () => void;
+  onDelete?: () => void;
+  task?: TaskDetail;
 }

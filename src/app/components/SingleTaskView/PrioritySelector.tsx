@@ -4,26 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaFlag } from "react-icons/fa";
 import { getPriorities } from "../../lib/api";
-
-interface Priority {
-  /** Unique identifier of the priority */
-  id: string;
-  /** Display label of the priority */
-  label: string;
-  /** Color code used to represent the priority */
-  color: string;
-}
-
-interface PrioritySelectorProps {
-  /** Currently selected priority ID, or null/undefined if none */
-  selectedPriority: string | null | undefined;
-  /** Callback invoked when priority changes, passing the new priority ID or null */
-  onChange: (priority: string | null) => void;
-  /** Optional callback triggered when dropdown toggles open/close */
-  onDropdownToggle?: (isOpen: boolean) => void;
-  /** Optional externally provided list of priorities */
-  priorities?: Priority[];
-}
+import { PrioritySelectorProps, Priority } from "./types";
 
 /**
  * PrioritySelector component allows user to select a priority from a dropdown list.

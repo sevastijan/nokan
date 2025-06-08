@@ -7,6 +7,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useUserRole } from "../hooks/useUserRole";
 import Avatar from "../components/Avatar/Avatar";
+import Button from "../components/Button/Button";
+import {
+  FaHome,
+  FaTachometerAlt,
+  FaCalendarAlt,
+  FaSignOutAlt,
+  FaUsers,
+  FaSignInAlt,
+  FaBars,
+  FaTimes,
+} from "react-icons/fa";
 
 const sidebarVariants = {
   hidden: { x: "-100%" },
@@ -81,41 +92,35 @@ const Navbar = () => {
 
   return (
     <>
-      <button
-        className="fixed top-4 left-4 z-50 md:hidden bg-gray-800 text-white p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+      {/* Mobile Menu Button */}
+      <Button
+        variant="secondary"
+        size="md"
+        className="fixed top-4 left-4 z-50 md:hidden shadow-lg"
         onClick={() => setIsOpen(true)}
-        aria-label="Open menu"
-      >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
-      </button>
+        icon={<FaBars />}
+      />
 
       {/* Desktop Sidebar */}
       <nav className="hidden md:flex fixed top-0 left-0 h-full w-64 bg-gray-900 border-r border-gray-700 px-6 py-8 flex-col z-30">
         <div className="flex flex-col gap-8">
-          <button
+          {/* Logo */}
+          <Button
+            variant="ghost"
+            size="lg"
             onClick={goHome}
-            className="text-3xl font-bold text-white hover:text-gray-300 transition-colors cursor-pointer text-left"
+            className="text-3xl font-bold justify-start p-0 hover:bg-transparent hover:text-gray-300"
+            icon={<FaHome />}
           >
             NOKAN
-          </button>
+          </Button>
 
           <div className="flex flex-col gap-6">
             {status === "loading" ? (
               <div className="text-gray-400">Loading...</div>
             ) : session?.user ? (
               <div className="flex flex-col gap-4">
+                {/* User Info */}
                 <div className="flex flex-col items-center gap-3 p-4 bg-gray-800 rounded-lg">
                   <Avatar
                     src={session.user.image || null}
@@ -127,28 +132,68 @@ const Navbar = () => {
                   </span>
                   {getRoleBadge()}
                 </div>
-                <button
-                  onClick={handleSignOut}
-                  className="bg-red-600 text-white px-4 py-3 rounded text-sm hover:bg-red-700 transition-colors cursor-pointer w-full"
-                >
-                  Sign Out
-                </button>
-                {!roleLoading && hasManagementAccess() && (
-                  <Link
-                    href="/team-management"
-                    className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full text-center"
-                  >
-                    Manage Teams
+
+                {/* Navigation Links */}
+                <div className="flex flex-col gap-3">
+                  <Link href="/dashboard">
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      fullWidth
+                      icon={<FaTachometerAlt />}
+                    >
+                      Dashboard
+                    </Button>
                   </Link>
-                )}
+
+                  <Link href="/calendar">
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      fullWidth
+                      icon={<FaCalendarAlt />}
+                    >
+                      Calendar
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-3 mt-4">
+                  <Button
+                    variant="danger"
+                    size="md"
+                    fullWidth
+                    onClick={handleSignOut}
+                    icon={<FaSignOutAlt />}
+                  >
+                    Sign Out
+                  </Button>
+
+                  {!roleLoading && hasManagementAccess() && (
+                    <Link href="/team-management">
+                      <Button
+                        variant="primary"
+                        size="md"
+                        fullWidth
+                        icon={<FaUsers />}
+                      >
+                        Manage Teams
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </div>
             ) : (
-              <button
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
                 onClick={handleSignIn}
-                className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full"
+                icon={<FaSignInAlt />}
               >
                 Sign In
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -169,7 +214,7 @@ const Navbar = () => {
               onClick={() => setIsOpen(false)}
             />
 
-            {/* Sidebar */}
+            {/* Mobile Sidebar */}
             <motion.nav
               className="fixed top-0 left-0 h-full w-64 bg-gray-900 border-r border-gray-700 px-6 py-8 flex flex-col z-50 md:hidden"
               variants={sidebarVariants}
@@ -179,27 +224,33 @@ const Navbar = () => {
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
               {/* Close button */}
-              <button
-                className="self-end text-gray-400 hover:text-white text-3xl mb-4 p-2 hover:bg-gray-800 rounded transition-colors"
-                onClick={() => setIsOpen(false)}
-                aria-label="Close menu"
-              >
-                ×
-              </button>
+              <div className="self-end mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  icon={<FaTimes />}
+                />
+              </div>
 
               <div className="flex flex-col gap-8">
-                <button
+                {/* Mobile Logo */}
+                <Button
+                  variant="ghost"
+                  size="lg"
                   onClick={goHome}
-                  className="text-3xl font-bold text-white hover:text-gray-300 transition-colors cursor-pointer text-left"
+                  className="text-3xl font-bold justify-start p-0 hover:bg-transparent hover:text-gray-300"
+                  icon={<FaHome />}
                 >
                   NOKAN
-                </button>
+                </Button>
 
                 <div className="flex flex-col gap-6">
                   {status === "loading" ? (
                     <div className="text-gray-400">Loading...</div>
                   ) : session?.user ? (
                     <div className="flex flex-col gap-4">
+                      {/* Mobile User Info */}
                       <div className="flex flex-col items-center gap-3 p-4 bg-gray-800 rounded-lg">
                         <Avatar
                           src={session.user.image || null}
@@ -211,35 +262,77 @@ const Navbar = () => {
                         </span>
                         {getRoleBadge()}
                       </div>
-                      <button
-                        onClick={() => {
-                          handleSignOut();
-                          setIsOpen(false);
-                        }}
-                        className="bg-red-600 text-white px-4 py-3 rounded text-sm hover:bg-red-700 transition-colors cursor-pointer w-full"
-                      >
-                        Sign Out
-                      </button>
-                      {!roleLoading && hasManagementAccess() && (
-                        <Link
-                          href="/team-management"
-                          className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full text-center"
-                          onClick={() => setIsOpen(false)}
-                        >
-                          Manage Teams
+
+                      {/* Mobile Navigation Links */}
+                      <div className="flex flex-col gap-3">
+                        <Link href="/dashboard">
+                          <Button
+                            variant="secondary"
+                            size="md"
+                            fullWidth
+                            onClick={() => setIsOpen(false)}
+                            icon={<FaTachometerAlt />}
+                          >
+                            Dashboard
+                          </Button>
                         </Link>
-                      )}
+
+                        <Link href="/calendar">
+                          <Button
+                            variant="secondary"
+                            size="md"
+                            fullWidth
+                            onClick={() => setIsOpen(false)}
+                            icon={<FaCalendarAlt />}
+                          >
+                            Calendar
+                          </Button>
+                        </Link>
+                      </div>
+
+                      {/* Mobile Action Buttons */}
+                      <div className="flex flex-col gap-3 mt-4">
+                        <Button
+                          variant="danger"
+                          size="md"
+                          fullWidth
+                          onClick={() => {
+                            handleSignOut();
+                            setIsOpen(false);
+                          }}
+                          icon={<FaSignOutAlt />}
+                        >
+                          Sign Out
+                        </Button>
+
+                        {!roleLoading && hasManagementAccess() && (
+                          <Link href="/team-management">
+                            <Button
+                              variant="primary"
+                              size="md"
+                              fullWidth
+                              onClick={() => setIsOpen(false)}
+                              icon={<FaUsers />}
+                            >
+                              Manage Teams
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   ) : (
-                    <button
+                    <Button
+                      variant="primary"
+                      size="md"
+                      fullWidth
                       onClick={() => {
                         handleSignIn();
                         setIsOpen(false);
                       }}
-                      className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition-colors cursor-pointer w-full"
+                      icon={<FaSignInAlt />}
                     >
                       Sign In
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

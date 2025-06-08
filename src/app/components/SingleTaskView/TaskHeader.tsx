@@ -1,19 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { FaTimes, FaEdit, FaLink } from "react-icons/fa";
 import { TaskDetail } from "./types";
 import ConfirmDialog from "./ConfirmDialog";
 import { copyTaskUrlToClipboard } from "./utils";
-
-interface TaskHeaderProps {
-  task: TaskDetail | null;
-  onClose: () => void;
-  onUpdateTask: (updates: Partial<TaskDetail>) => void;
-  hasUnsavedChanges?: boolean;
-  onUnsavedChangesAlert?: () => void;
-}
+import Button from "../Button/Button";
+import { TaskHeaderProps } from "./types";
 
 /**
  * TaskHeader component shows the task title with edit and close options.
@@ -138,33 +131,30 @@ const TaskHeader = ({
                 {task?.id ? `ID: [${task.id.slice(0, 8)}] - ` : ""}
                 {task?.title}
               </h1>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsEditingTitle(true)}
-                className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
-              >
-                <FaEdit className="w-4 h-4" />
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                icon={<FaEdit />}
+                className="p-2 text-gray-400 hover:text-gray-200"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => task && copyTaskUrlToClipboard(task.id)}
-                className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
-              >
-                <FaLink className="w-4 h-4" />
-              </motion.button>
+                icon={<FaLink />}
+                className="p-2 text-gray-400 hover:text-gray-200"
+              />
             </div>
           )}
         </div>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleClose}
-          className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
-        >
-          <FaTimes className="w-5 h-5" />
-        </motion.button>
+          icon={<FaTimes />}
+          className="p-2 text-gray-400 hover:text-gray-200"
+        />
       </div>
       <ConfirmDialog
         isOpen={showConfirmDialog}

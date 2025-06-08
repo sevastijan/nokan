@@ -1,42 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { supabase } from "../../lib/api";
-import {
-  addTask,
-  deleteTask,
-  getPriorities,
-  updateTaskDetails,
-  updateTaskDates,
-  getTaskById,
-} from "../../lib/api";
-import { TaskDetail, Comment, User, Priority } from "./types";
+import { updateTaskDetails } from "../../lib/api";
+import { TaskDetail, Attachment, SingleTaskViewProps } from "./types";
 import TaskHeader from "./TaskHeader";
 import TaskContent from "./TaskContent";
 import CommentsSection from "./CommentsSection";
+import AttachmentsList from "./AttachmentsList";
 import ActionFooter from "./ActionFooter";
 import TaskFooter from "./TaskFooter";
 import ImagePreviewModal from "./ImagePreviewModal";
-
-interface SingleTaskViewProps {
-  taskId?: string;
-  mode: "add" | "edit";
-  columnId?: string;
-  boardId?: string;
-  onClose: () => void;
-  onTaskUpdate?: () => void;
-  onTaskAdd?: (newTask: { id: string; title: string }) => void;
-  onTaskAdded?: (
-    columnId: string,
-    title: string,
-    priority?: string,
-    userId?: string
-  ) => Promise<any>;
-  currentUser: User;
-  priorities?: Array<{ id: string; label: string; color: string }>;
-}
+import Button from "../Button/Button";
+import { FaTimes } from "react-icons/fa";
+import { useTaskData } from "./hooks/useTaskData";
+import { useTaskComments } from "./hooks/useTaskComments";
+import { useAvailableUsers } from "./hooks/useAvailableUsers";
+import { usePriorities } from "./hooks/usePriorities";
+import { useImagePreview } from "./hooks/useImagePreview";
+import { useUnsavedChanges } from "./hooks/useUnsavedChanges";
+import { useTaskDates } from "./hooks/useTaskDates";
+import { useTaskOperations } from "./hooks/useTaskOperations";
 
 const SingleTaskView = ({
   taskId,
@@ -49,219 +34,76 @@ const SingleTaskView = ({
   onTaskAdded,
   currentUser,
 }: SingleTaskViewProps) => {
-  const [task, setTask] = useState<TaskDetail | null>(null);
   const [isNewTask, setIsNewTask] = useState(mode === "add");
-  const [isSaving, setIsSaving] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
-  const [priorities, setPriorities] = useState<Priority[]>([]);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+
+  // Use all the hooks
+  const { task, loading, error, setTask, fetchTaskData } = useTaskData(
+    taskId,
+    mode,
+    columnId
+  );
+
+  const { comments, fetchComments } = useTaskComments(taskId);
+  const { availableUsers } = useAvailableUsers(boardId);
+  const { priorities } = usePriorities();
+  const { imagePreview, openImagePreview, closeImagePreview } =
+    useImagePreview();
+
+  const {
+    hasUnsavedChanges,
+    showUnsavedAlert,
+    markAsChanged,
+    markAsSaved,
+    showUnsavedChangesAlert,
+    hideUnsavedChangesAlert,
+  } = useUnsavedChanges(isNewTask);
+
+  const { startDate, endDate, handleDateChange } = useTaskDates(
+    (task as any)?.start_date || "",
+    (task as any)?.end_date || ""
+  );
+
+  // Create adapter function for task creation
+  const handleTaskCreation = useCallback(
+    async (
+      columnId: string,
+      title: string,
+      priority?: number,
+      userId?: number
+    ) => {
+      if (onTaskAdded) {
+        return await onTaskAdded(columnId, title, priority, userId);
+      } else if (onTaskAdd) {
+        const newTask = { id: "temp-id", title };
+        await onTaskAdd(newTask);
+        return newTask;
+      }
+      throw new Error("No task creation callback provided");
+    },
+    [onTaskAdded, onTaskAdd]
+  );
+
+  const {
+    isSaving,
+    handleSaveExistingTask,
+    handleSaveNewTask,
+    handleDeleteTask,
+  } = useTaskOperations({
+    task,
+    taskId,
+    columnId,
+    isNewTask,
+    startDate,
+    endDate,
+    onTaskUpdate,
+    onTaskAdded: handleTaskCreation,
+    onClose,
+    markAsSaved,
+  });
 
   useEffect(() => {
-    if (taskId && mode === "edit") {
-      fetchTaskData();
-    } else if (mode === "add") {
-      // Initialize new task
-      setTask({
-        id: "",
-        title: "",
-        column_id: columnId || "",
-        description: "",
-        priority: null,
-        user_id: null,
-        images: [],
-        attachments: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      setIsNewTask(true);
-      setLoading(false);
-    }
-
-    fetchAvailableUsers();
-  }, [taskId, mode]);
-
-  useEffect(() => {
-    const fetchPriorities = async () => {
-      try {
-        const prioritiesData = await getPriorities();
-        setPriorities(prioritiesData);
-      } catch (error) {
-        console.error("Error fetching priorities:", error);
-      }
-    };
-
-    fetchPriorities();
-  }, []);
-
-  // Handle ESC key press
-  useEffect(() => {
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        handleClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleEscKey);
-    return () => {
-      document.removeEventListener("keydown", handleEscKey);
-    };
-  }, [hasUnsavedChanges, isNewTask]);
-
-  const fetchTaskData = async () => {
-    if (!taskId) return;
-
-    setLoading(true);
-    try {
-      const taskData = await getTaskById(taskId);
-
-      const { data: attachments, error: attachError } = await supabase
-        .from("task_attachments")
-        .select("*")
-        .eq("task_id", taskId)
-        .order("created_at", { ascending: false });
-
-      if (attachError) {
-        console.error("Error fetching attachments:", attachError);
-      }
-
-      setTask({
-        ...taskData,
-        attachments: attachments || [],
-      });
-
-      // Set date fields
-      setStartDate(taskData.start_date || "");
-      setEndDate(taskData.end_date || "");
-    } catch (error) {
-      console.error("Error fetching task:", error);
-      setError("Failed to load task");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Fetches comments for a task with author information
-   * Used for displaying comment history in task details
-   */
-  const fetchComments = async () => {
-    if (!taskId) return;
-
-    try {
-      const { data: commentsData, error: commentsError } = await supabase
-        .from("task_comments")
-        .select("*")
-        .eq("task_id", taskId)
-        .order("created_at", { ascending: true });
-
-      if (commentsError) throw commentsError;
-
-      const commentsWithAuthors = await Promise.all(
-        (commentsData || []).map(async (comment) => {
-          if (comment.user_id) {
-            const { data: authorData } = await supabase
-              .from("users")
-              .select("id, name, email, image")
-              .eq("id", comment.user_id)
-              .single();
-
-            return {
-              ...comment,
-              author: authorData || null,
-            };
-          }
-          return {
-            ...comment,
-            author: null,
-          };
-        })
-      );
-
-      setComments(commentsWithAuthors);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    }
-  };
-
-  /**
-   * Fetches users available for task assignment
-   * Filters users based on teams assigned to the current board
-   * Falls back to all users if no board or teams are assigned
-   */
-  const fetchAvailableUsers = async () => {
-    try {
-      if (!boardId) {
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, name, email, image")
-          .order("name");
-
-        if (error) throw error;
-        setAvailableUsers(data || []);
-        return;
-      }
-
-      const { data: boardTeams, error: boardTeamsError } = await supabase
-        .from("board_access")
-        .select("team_id")
-        .eq("board_id", boardId);
-
-      if (boardTeamsError) {
-        console.error("Error fetching board teams:", boardTeamsError);
-        setAvailableUsers([]);
-        return;
-      }
-
-      if (!boardTeams || boardTeams.length === 0) {
-        setAvailableUsers([]);
-        return;
-      }
-
-      const teamIds = boardTeams.map((bt) => bt.team_id);
-
-      const { data: teamMembers, error: membersError } = await supabase
-        .from("team_members")
-        .select(
-          `
-          user_id,
-          users!inner(id, name, email, image)
-        `
-        )
-        .in("team_id", teamIds);
-
-      if (membersError) {
-        console.error("Error fetching team members:", membersError);
-        setAvailableUsers([]);
-        return;
-      }
-
-      const uniqueUsers =
-        teamMembers?.reduce((acc: User[], member: any) => {
-          const user = member.users;
-          if (user && !acc.find((u: User) => u.id === user.id)) {
-            acc.push({
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              image: user.image,
-            } as User);
-          }
-          return acc;
-        }, []) || [];
-
-      setAvailableUsers(uniqueUsers);
-    } catch (error) {
-      console.error("Error fetching available users:", error);
-      setAvailableUsers([]);
-    }
-  };
+    setIsNewTask(mode === "add");
+  }, [mode]);
 
   /**
    * Updates an existing task in the database
@@ -273,7 +115,7 @@ const SingleTaskView = ({
     setTask((prev) => (prev ? { ...prev, ...updates } : null));
 
     if (isNewTask) {
-      setHasUnsavedChanges(true);
+      markAsChanged();
     } else {
       try {
         if (task.id) {
@@ -289,152 +131,40 @@ const SingleTaskView = ({
   };
 
   /**
-   * Updates task dates when date fields change
-   * Sets unsaved changes flag for all tasks (new and existing)
-   */
-  const handleDateChange = (dateType: "start" | "end", value: string) => {
-    if (dateType === "start") {
-      setStartDate(value);
-      // Clear end date if it's before start date
-      if (endDate && value && new Date(value) > new Date(endDate)) {
-        setEndDate("");
-      }
-    } else {
-      setEndDate(value);
-    }
-
-    // Always mark as having unsaved changes
-    setHasUnsavedChanges(true);
-  };
-
-  /**
-   * Saves changes to an existing task
-   * Closes modal after successful save
-   */
-  const handleSaveExistingTask = async () => {
-    if (!task || !task.id) return;
-
-    setIsSaving(true);
-    try {
-      const updates = {
-        title: task.title.trim(),
-        description: task.description?.trim() || "",
-        priority: task.priority || null,
-        user_id: task.user_id || null,
-      };
-
-      await updateTaskDetails(task.id, updates);
-
-      // Update dates if they changed
-      const currentStartDate = (task as any).start_date;
-      const currentEndDate = (task as any).end_date;
-
-      if (startDate !== currentStartDate || endDate !== currentEndDate) {
-        await updateTaskDates(task.id, startDate || null, endDate || null);
-      }
-
-      onTaskUpdate?.();
-      setHasUnsavedChanges(false);
-      toast.success("Task saved successfully!");
-      onClose();
-    } catch (error) {
-      console.error("Error saving task:", error);
-      toast.error("Failed to save task");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  /**
-   * Creates a new task in the database
-   * Validates required fields and refreshes board data
-   */
-  const handleSaveNewTask = async () => {
-    if (!task || !task.title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-
-    if (!columnId) {
-      toast.error("Cannot create task - missing column ID");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      let newTask;
-      if (onTaskAdded) {
-        newTask = await onTaskAdded(
-          columnId,
-          task.title.trim(),
-          task.priority || undefined,
-          task.user_id || undefined
-        );
-      } else {
-        toast.error("Cannot create task - no callback provided");
-        return;
-      }
-
-      // Add dates to newly created task if provided
-      if ((startDate || endDate) && newTask?.id) {
-        await updateTaskDates(newTask.id, startDate || null, endDate || null);
-      }
-
-      onClose();
-      setHasUnsavedChanges(false);
-      toast.success("Task created successfully!");
-    } catch (error) {
-      console.error("Error creating task:", error);
-      toast.error("Failed to create task");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  /**
-   * Deletes the current task after user confirmation
-   * Refreshes parent component data on success
-   */
-  const handleDeleteTask = async () => {
-    if (!taskId) return;
-
-    if (!confirm("Are you sure you want to delete this task?")) {
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await deleteTask(taskId);
-      onTaskUpdate?.();
-      onClose();
-      toast.success("Task deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      toast.error("Failed to delete task");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  /**
    * Handles modal close with unsaved changes check
    * Shows confirmation dialog for tasks with unsaved changes
    */
   const handleClose = () => {
     if (hasUnsavedChanges) {
-      setShowUnsavedAlert(true);
+      showUnsavedChangesAlert();
     } else {
       onClose();
     }
   };
 
   /**
-   * Triggers unsaved changes alert dialog
-   * Used by child components to warn about data loss
+   * Handle date changes with unsaved changes tracking
    */
-  const handleUnsavedChangesAlert = () => {
-    setShowUnsavedAlert(true);
+  const handleDateChangeWithTracking = (
+    dateType: "start" | "end",
+    value: string
+  ) => {
+    handleDateChange(dateType, value, markAsChanged);
   };
+
+  // Add function for local attachment updates
+  const updateAttachmentsLocally = useCallback(
+    (updater: (attachments: Attachment[]) => Attachment[]) => {
+      setTask((prevTask) => {
+        if (!prevTask) return prevTask;
+        return {
+          ...prevTask,
+          attachments: updater(prevTask.attachments || []),
+        };
+      });
+    },
+    [setTask]
+  );
 
   if (loading) {
     return (
@@ -450,13 +180,15 @@ const SingleTaskView = ({
     return (
       <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-8 rounded-lg">
-          <div className="text-white">Task not found</div>
-          <button
+          <div className="text-white mb-4">Task not found</div>
+          <Button
+            variant="primary"
+            size="md"
             onClick={onClose}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+            icon={<FaTimes />}
           >
             Close
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -485,17 +217,17 @@ const SingleTaskView = ({
               onClose={handleClose}
               onUpdateTask={handleUpdateTask}
               hasUnsavedChanges={hasUnsavedChanges}
-              onUnsavedChangesAlert={handleUnsavedChangesAlert}
+              onUnsavedChangesAlert={showUnsavedChangesAlert}
             />
           ) : (
             <div className="flex justify-between items-center p-6 border-b border-gray-600">
               <h2 className="text-xl font-semibold text-white">New Task</h2>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleClose}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
+                icon={<FaTimes />}
+              />
             </div>
           )}
           <div className="flex-1 overflow-hidden flex flex-col">
@@ -506,13 +238,12 @@ const SingleTaskView = ({
                 availableUsers={availableUsers}
                 priorities={priorities}
                 onUpdateTask={handleUpdateTask}
-                onRefreshTask={fetchTaskData}
                 taskId={taskId || ""}
-                setHasUnsavedChanges={setHasUnsavedChanges}
+                setHasUnsavedChanges={markAsChanged}
                 isNewTask={isNewTask}
+                onTaskUpdate={fetchTaskData}
+                onAttachmentsUpdate={updateAttachmentsLocally}
               />
-
-              {/* Date fields section */}
               <div className="p-6 border-t border-gray-600">
                 <h3 className="text-lg font-medium text-white mb-4">
                   Task Schedule
@@ -530,7 +261,7 @@ const SingleTaskView = ({
                       type="date"
                       value={startDate}
                       onChange={(e) =>
-                        handleDateChange("start", e.target.value)
+                        handleDateChangeWithTracking("start", e.target.value)
                       }
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -546,14 +277,15 @@ const SingleTaskView = ({
                       id="end-date"
                       type="date"
                       value={endDate}
-                      onChange={(e) => handleDateChange("end", e.target.value)}
+                      onChange={(e) =>
+                        handleDateChangeWithTracking("end", e.target.value)
+                      }
                       min={startDate}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
               </div>
-
               {!isNewTask && taskId && task && (
                 <CommentsSection
                   taskId={taskId}
@@ -561,12 +293,10 @@ const SingleTaskView = ({
                   currentUser={currentUser}
                   task={task}
                   onRefreshComments={fetchComments}
-                  onRefreshTask={fetchTaskData}
-                  onImagePreview={setImagePreview}
+                  onImagePreview={openImagePreview}
                 />
               )}
             </div>
-
             {!isNewTask && <TaskFooter task={task} currentUser={currentUser} />}
           </div>
           <ActionFooter
@@ -580,11 +310,10 @@ const SingleTaskView = ({
           />
         </motion.div>
       </motion.div>
-
       {imagePreview && (
         <ImagePreviewModal
           imageUrl={imagePreview}
-          onClose={() => setImagePreview(null)}
+          onClose={closeImagePreview}
         />
       )}
       {showUnsavedAlert && (
@@ -597,21 +326,23 @@ const SingleTaskView = ({
               You have unsaved changes. Are you sure you want to close?
             </p>
             <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowUnsavedAlert(false)}
-                className="px-4 py-2 text-gray-300 border border-gray-500 rounded hover:bg-gray-700"
+              <Button
+                variant="ghost"
+                size="md"
+                onClick={hideUnsavedChangesAlert}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
+                size="md"
                 onClick={() => {
-                  setShowUnsavedAlert(false);
+                  hideUnsavedChangesAlert();
                   onClose();
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
                 Close without saving
-              </button>
+              </Button>
             </div>
           </div>
         </div>

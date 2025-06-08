@@ -16,4 +16,11 @@ export default {
     },
   },
   plugins: [require("@tailwindcss/line-clamp")],
+  corePlugins: {
+    preflight: true,
+  },
+  safelist: [],
+  experimental: {
+    optimizeUniversalDefaults: true,
+  },
 };

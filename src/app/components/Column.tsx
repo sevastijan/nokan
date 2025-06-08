@@ -1,30 +1,10 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskForm from "./TaskColumn/AddTaskForm";
 import Task from "./Task";
-import { FaGripVertical } from "react-icons/fa";
+import { FaGripVertical, FaTimes } from "react-icons/fa";
 import { JSX } from "react";
-import { Column as ColumnType, Task as TaskType } from "../types/useBoardTypes";
-
-interface ColumnProps {
-  column: ColumnType;
-  onUpdateTask: (columnId: string, task: TaskType) => void;
-  colIndex: number;
-  onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
-  onRemoveColumn: (columnId: string) => void;
-  onTaskAdded: (
-    columnId: string,
-    title: string,
-    priority?: string,
-    userId?: string
-  ) => Promise<TaskType>;
-  onRemoveTask: (columnId: string, taskId: string) => void;
-  onOpenTaskDetail: (taskId: string | null) => void;
-  selectedTaskId?: string | null;
-  onTaskUpdate?: () => void;
-  currentUser: any;
-  onOpenAddTask: (columnId: string) => void;
-  priorities?: Array<{ id: string; label: string; color: string }>;
-}
+import Button from "./Button/Button";
+import { ColumnProps } from "./SingleTaskView/types";
 
 /**
  * Column component that displays a draggable column with tasks in a Kanban board
@@ -77,12 +57,13 @@ const Column = ({
               className="bg-transparent text-lg font-semibold w-full focus:outline-none focus:border-blue-500 ml-2"
               placeholder="Column Title"
             />
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onRemoveColumn(column.id)}
-              className="text-red-400 hover:text-red-300 transition-colors cursor-pointer"
-            >
-              ×
-            </button>
+              icon={<FaTimes />}
+              className="p-2 text-red-400 hover:text-red-300"
+            />
           </div>
           <Droppable droppableId={column.id}>
             {(provided, snapshot) => (

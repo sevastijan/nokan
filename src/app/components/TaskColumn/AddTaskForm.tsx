@@ -1,42 +1,29 @@
 "use client";
 
 import { JSX } from "react";
-import { Task } from "../../types/useBoardTypes";
-
-interface AddTaskFormProps {
-  boardId: string;
-  columnId: string;
-  onTaskAdded?: (
-    columnId: string,
-    title: string,
-    priority?: string,
-    userId?: string
-  ) => Promise<Task>;
-  currentUser: any;
-  onOpenAddTask: (columnId: string) => void;
-  selectedTaskId?: string | null | undefined;
-}
+import Button from "../Button/Button";
+import { FaPlus } from "react-icons/fa";
+import { AddTaskFormProps } from "./types";
 
 /**
  * AddTaskForm component renders a button to trigger adding a new task.
  * Calls onOpenAddTask callback with the current column ID when clicked.
  */
 const AddTaskForm = ({
-  boardId,
   columnId,
-  onTaskAdded,
-  currentUser,
   onOpenAddTask,
-  selectedTaskId,
 }: AddTaskFormProps): JSX.Element => {
   return (
     <div className="mt-4">
-      <button
+      <Button
+        variant="success"
+        size="md"
+        fullWidth={true}
         onClick={() => onOpenAddTask(columnId)}
-        className="w-full bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded-lg transition-colors"
+        icon={<FaPlus />}
       >
         Add Task
-      </button>
+      </Button>
     </div>
   );
 };

@@ -3,11 +3,7 @@
 import React, { useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes } from "react-icons/fa";
-
-interface ImagePreviewModalProps {
-  imageUrl: string | null;
-  onClose: () => void;
-}
+import { ImagePreviewModalProps } from "./types";
 
 /**
  * Modal component to preview images. Closes on Escape key or outside click.
