@@ -6,9 +6,10 @@ import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
 import AddColumnPopup from "../../components/TaskColumn/AddColumnPopup";
 import SingleTaskView from "../../components/SingleTaskView/SingleTaskView";
+import Calendar from "../../components/Calendar/Calendar";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiCalendar } from "react-icons/fi";
 import { Column as ColumnType, Task } from "../../types/useBoardTypes";
 import { User } from "../../components/SingleTaskView/types";
 import { useSession } from "next-auth/react";
@@ -50,6 +51,7 @@ const Page = (): JSX.Element => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [addTaskColumnId, setAddTaskColumnId] = useState<string | null>(null);
+  const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [priorities, setPriorities] = useState<
     Array<{ id: string; label: string; color: string }>
   >([]);
@@ -276,6 +278,13 @@ const Page = (): JSX.Element => {
     router.push("/dashboard");
   };
 
+  /**
+   * Handle calendar task click - open task in edit mode
+   */
+  const handleCalendarTaskClick = (taskId: string) => {
+    setSelectedTaskId(taskId);
+  };
+
   if (status === "loading") {
     return <Loader text="Loading session..." />;
   }
@@ -316,13 +325,44 @@ const Page = (): JSX.Element => {
               className="text-2xl sm:text-3xl font-bold bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
               placeholder="Board Title"
             />
-            <button
-              onClick={() => setIsPopupOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200 max-w-[160px] lg:w-auto"
-            >
-              Add Column
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCalendar(!showCalendar)}
+                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200 ${
+                  showCalendar
+                    ? "bg-green-600 hover:bg-green-700 text-white"
+                    : "bg-gray-600 hover:bg-gray-700 text-white"
+                }`}
+              >
+                <FiCalendar />
+                {showCalendar ? "Ukryj Kalendarz" : "Pokaż Kalendarz"}
+              </button>
+              <button
+                onClick={() => setIsPopupOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200"
+              >
+                Add Column
+              </button>
+            </div>
           </div>
+
+          {/* Calendar View */}
+          <AnimatePresence>
+            {showCalendar && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mb-6"
+              >
+                <Calendar
+                  boardId={id as string}
+                  onTaskClick={handleCalendarTaskClick}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Board Columns */}
           <Droppable droppableId="board" type="COLUMN" direction="horizontal">
