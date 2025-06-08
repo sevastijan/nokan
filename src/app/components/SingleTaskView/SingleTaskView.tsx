@@ -1,24 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { supabase } from "../../lib/api";
 import {
-  addTask,
   deleteTask,
   getPriorities,
   updateTaskDetails,
   updateTaskDates,
-  getTaskById,
 } from "../../lib/api";
-import { TaskDetail, Comment, User, Priority } from "./types";
+import { TaskDetail, User, Priority, Attachment } from "./types";
 import TaskHeader from "./TaskHeader";
 import TaskContent from "./TaskContent";
 import CommentsSection from "./CommentsSection";
+import AttachmentsList from "./AttachmentsList";
 import ActionFooter from "./ActionFooter";
 import TaskFooter from "./TaskFooter";
 import ImagePreviewModal from "./ImagePreviewModal";
+import { useTaskData } from "./hooks/useTaskData";
+import { useTaskComments } from "./hooks/useTaskComments";
+import { useAvailableUsers } from "./hooks/useAvailableUsers";
 
 interface SingleTaskViewProps {
   taskId?: string;
@@ -49,43 +50,34 @@ const SingleTaskView = ({
   onTaskAdded,
   currentUser,
 }: SingleTaskViewProps) => {
-  const [task, setTask] = useState<TaskDetail | null>(null);
+  // Use the useTaskData hook
+  const {
+    task,
+    loading,
+    error,
+    setTask,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    fetchTaskData,
+  } = useTaskData(taskId, mode, columnId);
   const [isNewTask, setIsNewTask] = useState(mode === "add");
   const [isSaving, setIsSaving] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+
+  // Use the useTaskComments hook
+  const { comments, fetchComments } = useTaskComments(taskId);
+
+  // Use the useAvailableUsers hook
+  const { availableUsers } = useAvailableUsers(boardId);
 
   useEffect(() => {
-    if (taskId && mode === "edit") {
-      fetchTaskData();
-    } else if (mode === "add") {
-      // Initialize new task
-      setTask({
-        id: "",
-        title: "",
-        column_id: columnId || "",
-        description: "",
-        priority: null,
-        user_id: null,
-        images: [],
-        attachments: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      setIsNewTask(true);
-      setLoading(false);
-    }
-
-    fetchAvailableUsers();
-  }, [taskId, mode]);
+    setIsNewTask(mode === "add");
+  }, [mode]);
 
   useEffect(() => {
     const fetchPriorities = async () => {
@@ -113,155 +105,6 @@ const SingleTaskView = ({
       document.removeEventListener("keydown", handleEscKey);
     };
   }, [hasUnsavedChanges, isNewTask]);
-
-  const fetchTaskData = async () => {
-    if (!taskId) return;
-
-    setLoading(true);
-    try {
-      const taskData = await getTaskById(taskId);
-
-      const { data: attachments, error: attachError } = await supabase
-        .from("task_attachments")
-        .select("*")
-        .eq("task_id", taskId)
-        .order("created_at", { ascending: false });
-
-      if (attachError) {
-        console.error("Error fetching attachments:", attachError);
-      }
-
-      setTask({
-        ...taskData,
-        attachments: attachments || [],
-      });
-
-      // Set date fields
-      setStartDate(taskData.start_date || "");
-      setEndDate(taskData.end_date || "");
-    } catch (error) {
-      console.error("Error fetching task:", error);
-      setError("Failed to load task");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Fetches comments for a task with author information
-   * Used for displaying comment history in task details
-   */
-  const fetchComments = async () => {
-    if (!taskId) return;
-
-    try {
-      const { data: commentsData, error: commentsError } = await supabase
-        .from("task_comments")
-        .select("*")
-        .eq("task_id", taskId)
-        .order("created_at", { ascending: true });
-
-      if (commentsError) throw commentsError;
-
-      const commentsWithAuthors = await Promise.all(
-        (commentsData || []).map(async (comment) => {
-          if (comment.user_id) {
-            const { data: authorData } = await supabase
-              .from("users")
-              .select("id, name, email, image")
-              .eq("id", comment.user_id)
-              .single();
-
-            return {
-              ...comment,
-              author: authorData || null,
-            };
-          }
-          return {
-            ...comment,
-            author: null,
-          };
-        })
-      );
-
-      setComments(commentsWithAuthors);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    }
-  };
-
-  /**
-   * Fetches users available for task assignment
-   * Filters users based on teams assigned to the current board
-   * Falls back to all users if no board or teams are assigned
-   */
-  const fetchAvailableUsers = async () => {
-    try {
-      if (!boardId) {
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, name, email, image")
-          .order("name");
-
-        if (error) throw error;
-        setAvailableUsers(data || []);
-        return;
-      }
-
-      const { data: boardTeams, error: boardTeamsError } = await supabase
-        .from("board_access")
-        .select("team_id")
-        .eq("board_id", boardId);
-
-      if (boardTeamsError) {
-        console.error("Error fetching board teams:", boardTeamsError);
-        setAvailableUsers([]);
-        return;
-      }
-
-      if (!boardTeams || boardTeams.length === 0) {
-        setAvailableUsers([]);
-        return;
-      }
-
-      const teamIds = boardTeams.map((bt) => bt.team_id);
-
-      const { data: teamMembers, error: membersError } = await supabase
-        .from("team_members")
-        .select(
-          `
-          user_id,
-          users!inner(id, name, email, image)
-        `
-        )
-        .in("team_id", teamIds);
-
-      if (membersError) {
-        console.error("Error fetching team members:", membersError);
-        setAvailableUsers([]);
-        return;
-      }
-
-      const uniqueUsers =
-        teamMembers?.reduce((acc: User[], member: any) => {
-          const user = member.users;
-          if (user && !acc.find((u: User) => u.id === user.id)) {
-            acc.push({
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              image: user.image,
-            } as User);
-          }
-          return acc;
-        }, []) || [];
-
-      setAvailableUsers(uniqueUsers);
-    } catch (error) {
-      console.error("Error fetching available users:", error);
-      setAvailableUsers([]);
-    }
-  };
 
   /**
    * Updates an existing task in the database
@@ -436,6 +279,20 @@ const SingleTaskView = ({
     setShowUnsavedAlert(true);
   };
 
+  // Add function for local attachment updates
+  const updateAttachmentsLocally = useCallback(
+    (updater: (attachments: Attachment[]) => Attachment[]) => {
+      setTask((prevTask) => {
+        if (!prevTask) return prevTask;
+        return {
+          ...prevTask,
+          attachments: updater(prevTask.attachments || []),
+        };
+      });
+    },
+    [setTask]
+  );
+
   if (loading) {
     return (
       <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
@@ -506,10 +363,11 @@ const SingleTaskView = ({
                 availableUsers={availableUsers}
                 priorities={priorities}
                 onUpdateTask={handleUpdateTask}
-                onRefreshTask={fetchTaskData}
                 taskId={taskId || ""}
                 setHasUnsavedChanges={setHasUnsavedChanges}
                 isNewTask={isNewTask}
+                onTaskUpdate={fetchTaskData}
+                onAttachmentsUpdate={updateAttachmentsLocally}
               />
 
               {/* Date fields section */}
@@ -561,8 +419,18 @@ const SingleTaskView = ({
                   currentUser={currentUser}
                   task={task}
                   onRefreshComments={fetchComments}
-                  onRefreshTask={fetchTaskData}
                   onImagePreview={setImagePreview}
+                />
+              )}
+
+              {/* Attachments section */}
+              {!isNewTask && taskId && task && (
+                <AttachmentsList
+                  taskId={taskId}
+                  attachments={task.attachments || []}
+                  currentUser={currentUser}
+                  onTaskUpdate={fetchTaskData}
+                  onAttachmentsUpdate={updateAttachmentsLocally}
                 />
               )}
             </div>

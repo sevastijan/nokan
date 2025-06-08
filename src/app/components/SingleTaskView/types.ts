@@ -75,13 +75,33 @@ export interface CommentsSectionProps {
   currentUser: User;
   task: TaskDetail;
   onRefreshComments: () => Promise<void>;
-  onRefreshTask: () => Promise<void>;
   onImagePreview: (url: string) => void;
 }
 
-export interface CommentFormProps {
+export interface TaskContentProps {
+  task: TaskDetail | null;
+  currentUser: User;
+  availableUsers: User[];
+  priorities: Priority[];
+  onUpdateTask: (updates: Partial<TaskDetail>) => void;
+  taskId: string;
+  setHasUnsavedChanges: (value: boolean) => void;
+  isNewTask?: boolean;
+  onTaskUpdate?: () => Promise<void>;
+  onAttachmentsUpdate?: (
+    updater: (attachments: Attachment[]) => Attachment[]
+  ) => void;
+}
+
+
+export interface AttachmentsListProps {
+  attachments: Attachment[];
   currentUser: User;
   taskId: string;
-  onAddComment: (content: string) => Promise<void>;
-  onRefreshTask: () => Promise<void>;
+  onTaskUpdate?: () => Promise<void>;
+
+  /** Callback to update attachments locally (smooth) */
+  onAttachmentsUpdate?: (
+    updater: (attachments: Attachment[]) => Attachment[]
+  ) => void;
 }

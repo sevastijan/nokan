@@ -17,7 +17,6 @@ const CommentsSection = ({
   currentUser,
   task,
   onRefreshComments,
-  onRefreshTask,
   onImagePreview,
 }: CommentsSectionProps) => {
   /**
@@ -84,7 +83,6 @@ const CommentsSection = ({
         currentUser={currentUser}
         taskId={taskId}
         onAddComment={addComment}
-        onRefreshTask={onRefreshTask}
       />
       <CommentList
         comments={comments}

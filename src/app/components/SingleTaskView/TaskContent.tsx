@@ -1,22 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { TaskDetail, User, Priority } from "./types";
+import { TaskContentProps } from "./types";
 import UserSelector from "./UserSelector";
 import PrioritySelector from "./PrioritySelector";
 import AttachmentsList from "./AttachmentsList";
-
-interface TaskContentProps {
-  task: TaskDetail | null;
-  currentUser: User;
-  availableUsers: User[];
-  priorities: Priority[];
-  onUpdateTask: (updates: Partial<TaskDetail>) => void;
-  onRefreshTask: () => Promise<void>;
-  taskId: string;
-  setHasUnsavedChanges: (value: boolean) => void;
-  isNewTask?: boolean;
-}
 
 const TaskContent = ({
   task,
@@ -24,10 +12,11 @@ const TaskContent = ({
   availableUsers,
   priorities,
   onUpdateTask,
-  onRefreshTask,
   taskId,
   setHasUnsavedChanges,
   isNewTask,
+  onTaskUpdate,
+  onAttachmentsUpdate,
 }: TaskContentProps) => {
   const [editedDescription, setEditedDescription] = useState(
     task?.description || ""
@@ -125,7 +114,8 @@ const TaskContent = ({
         attachments={task.attachments || []}
         currentUser={currentUser}
         taskId={taskId}
-        onRefreshTask={onRefreshTask}
+        onTaskUpdate={onTaskUpdate}
+        onAttachmentsUpdate={onAttachmentsUpdate}
       />
     </div>
   );

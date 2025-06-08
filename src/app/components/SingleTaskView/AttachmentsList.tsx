@@ -3,24 +3,10 @@
 import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { FaPlus, FaDownload, FaTrash, FaEye } from "react-icons/fa";
-import { Attachment, User } from "./types";
+import { Attachment, User, AttachmentsListProps } from "./types";
 import { formatFileSize, getFileIcon } from "./utils";
 import { supabase } from "../../lib/api";
 import { toast } from "react-toastify";
-
-interface AttachmentsListProps {
-  /** List of attachments related to the task */
-  attachments: Attachment[];
-
-  /** Current logged-in user */
-  currentUser: User;
-
-  /** ID of the related task */
-  taskId: string;
-
-  /** Callback to refresh task data after operations */
-  onRefreshTask: () => Promise<void>;
-}
 
 /**
  * AttachmentsList component provides functionality to upload, preview, download, and delete
@@ -30,7 +16,8 @@ const AttachmentsList = ({
   attachments,
   currentUser,
   taskId,
-  onRefreshTask,
+  onTaskUpdate,
+  onAttachmentsUpdate,
 }: AttachmentsListProps) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,10 +47,7 @@ const AttachmentsList = ({
 
       if (uploadError) throw uploadError;
 
-      /**
-       * Inserts attachment metadata into the task_attachments table.
-       */
-      const { error: dbError } = await supabase
+      const { data: newAttachment, error: dbError } = await supabase
         .from("task_attachments")
         .insert({
           task_id: taskId,
@@ -72,11 +56,18 @@ const AttachmentsList = ({
           file_size: file.size,
           mime_type: file.type,
           uploaded_by: currentUser.id,
-        });
+        })
+        .select()
+        .single();
 
       if (dbError) throw dbError;
 
-      await onRefreshTask();
+      if (onAttachmentsUpdate && newAttachment) {
+        onAttachmentsUpdate((prev) => [newAttachment, ...prev]);
+      } else if (onTaskUpdate) {
+        await onTaskUpdate();
+      }
+
       toast.success("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -134,7 +125,14 @@ const AttachmentsList = ({
 
       if (dbError) throw dbError;
 
-      await onRefreshTask();
+      if (onAttachmentsUpdate) {
+        onAttachmentsUpdate((prev) =>
+          prev.filter((att) => att.id !== attachment.id)
+        );
+      } else if (onTaskUpdate) {
+        await onTaskUpdate();
+      }
+
       toast.success("Attachment deleted");
     } catch (error) {
       console.error("Error deleting attachment:", error);
