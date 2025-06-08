@@ -9,6 +9,7 @@ import {
   deleteTask,
   getPriorities,
   updateTaskDetails,
+  updateTaskDates,
   getTaskById,
 } from "../../lib/api";
 import { TaskDetail, Comment, User, Priority } from "./types";
@@ -59,6 +60,8 @@ const SingleTaskView = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   useEffect(() => {
     if (taskId && mode === "edit") {
@@ -132,6 +135,10 @@ const SingleTaskView = ({
         ...taskData,
         attachments: attachments || [],
       });
+
+      // Set date fields
+      setStartDate(taskData.start_date || "");
+      setEndDate(taskData.end_date || "");
     } catch (error) {
       console.error("Error fetching task:", error);
       setError("Failed to load task");
@@ -282,6 +289,25 @@ const SingleTaskView = ({
   };
 
   /**
+   * Updates task dates when date fields change
+   * Sets unsaved changes flag for all tasks (new and existing)
+   */
+  const handleDateChange = (dateType: "start" | "end", value: string) => {
+    if (dateType === "start") {
+      setStartDate(value);
+      // Clear end date if it's before start date
+      if (endDate && value && new Date(value) > new Date(endDate)) {
+        setEndDate("");
+      }
+    } else {
+      setEndDate(value);
+    }
+
+    // Always mark as having unsaved changes
+    setHasUnsavedChanges(true);
+  };
+
+  /**
    * Saves changes to an existing task
    * Closes modal after successful save
    */
@@ -298,6 +324,15 @@ const SingleTaskView = ({
       };
 
       await updateTaskDetails(task.id, updates);
+
+      // Update dates if they changed
+      const currentStartDate = (task as any).start_date;
+      const currentEndDate = (task as any).end_date;
+
+      if (startDate !== currentStartDate || endDate !== currentEndDate) {
+        await updateTaskDates(task.id, startDate || null, endDate || null);
+      }
+
       onTaskUpdate?.();
       setHasUnsavedChanges(false);
       toast.success("Task saved successfully!");
@@ -327,8 +362,9 @@ const SingleTaskView = ({
 
     setIsSaving(true);
     try {
+      let newTask;
       if (onTaskAdded) {
-        await onTaskAdded(
+        newTask = await onTaskAdded(
           columnId,
           task.title.trim(),
           task.priority || undefined,
@@ -337,6 +373,11 @@ const SingleTaskView = ({
       } else {
         toast.error("Cannot create task - no callback provided");
         return;
+      }
+
+      // Add dates to newly created task if provided
+      if ((startDate || endDate) && newTask?.id) {
+        await updateTaskDates(newTask.id, startDate || null, endDate || null);
       }
 
       onClose();
@@ -377,10 +418,10 @@ const SingleTaskView = ({
 
   /**
    * Handles modal close with unsaved changes check
-   * Shows confirmation dialog for new tasks with unsaved changes
+   * Shows confirmation dialog for tasks with unsaved changes
    */
   const handleClose = () => {
-    if (hasUnsavedChanges && isNewTask) {
+    if (hasUnsavedChanges) {
       setShowUnsavedAlert(true);
     } else {
       onClose();
@@ -399,7 +440,7 @@ const SingleTaskView = ({
     return (
       <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-8 rounded-lg">
-          <div className="text-white">Ładowanie...</div>
+          <div className="text-white">Loading...</div>
         </div>
       </div>
     );
@@ -409,17 +450,18 @@ const SingleTaskView = ({
     return (
       <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-8 rounded-lg">
-          <div className="text-white">Nie znaleziono zadania</div>
+          <div className="text-white">Task not found</div>
           <button
             onClick={onClose}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
           >
-            Zamknij
+            Close
           </button>
         </div>
       </div>
     );
   }
+
   return (
     <>
       <motion.div
@@ -447,7 +489,7 @@ const SingleTaskView = ({
             />
           ) : (
             <div className="flex justify-between items-center p-6 border-b border-gray-600">
-              <h2 className="text-xl font-semibold text-white">Nowe zadanie</h2>
+              <h2 className="text-xl font-semibold text-white">New Task</h2>
               <button
                 onClick={handleClose}
                 className="text-gray-400 hover:text-white"
@@ -469,6 +511,49 @@ const SingleTaskView = ({
                 setHasUnsavedChanges={setHasUnsavedChanges}
                 isNewTask={isNewTask}
               />
+
+              {/* Date fields section */}
+              <div className="p-6 border-t border-gray-600">
+                <h3 className="text-lg font-medium text-white mb-4">
+                  Task Schedule
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="start-date"
+                      className="block text-sm font-medium text-gray-300 mb-2"
+                    >
+                      Start Date
+                    </label>
+                    <input
+                      id="start-date"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) =>
+                        handleDateChange("start", e.target.value)
+                      }
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="end-date"
+                      className="block text-sm font-medium text-gray-300 mb-2"
+                    >
+                      End Date
+                    </label>
+                    <input
+                      id="end-date"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => handleDateChange("end", e.target.value)}
+                      min={startDate}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {!isNewTask && taskId && task && (
                 <CommentsSection
                   taskId={taskId}
@@ -506,17 +591,17 @@ const SingleTaskView = ({
         <div className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-[60]">
           <div className="bg-gray-800 p-6 rounded-lg max-w-md">
             <h3 className="text-lg font-semibold text-white mb-4">
-              Niezapisane zmiany
+              Unsaved Changes
             </h3>
             <p className="text-gray-300 mb-6">
-              Masz niezapisane zmiany. Czy na pewno chcesz zamknąć?
+              You have unsaved changes. Are you sure you want to close?
             </p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowUnsavedAlert(false)}
                 className="px-4 py-2 text-gray-300 border border-gray-500 rounded hover:bg-gray-700"
               >
-                Anuluj
+                Cancel
               </button>
               <button
                 onClick={() => {
@@ -525,7 +610,7 @@ const SingleTaskView = ({
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
-                Zamknij bez zapisywania
+                Close without saving
               </button>
             </div>
           </div>

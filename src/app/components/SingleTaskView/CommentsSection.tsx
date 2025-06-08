@@ -1,34 +1,11 @@
-import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Comment, User, TaskDetail } from "./types";
+import { CommentsSectionProps } from "./types";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
-import { getUserAvatar, formatDate } from "./utils";
-
-interface CommentsSectionProps {
-  /** ID of the task for which comments are displayed */
-  taskId: string;
-
-  /** Array of comments related to the task */
-  comments: Comment[];
-
-  /** Currently logged-in user */
-  currentUser: User;
-
-  /** Details of the task */
-  task: TaskDetail;
-
-  /** Function to refresh the comment list after update */
-  onRefreshComments: () => Promise<void>;
-
-  /** Function to refresh task data after comment (e.g. attachments) */
-  onRefreshTask: () => Promise<void>;
-
-  /** Function to preview image (when clicked in markdown) */
-  onImagePreview: (url: string) => void;
-}
+import { formatDate } from "./utils";
+import Avatar from "../Avatar/Avatar";
 
 /**
  * Wrapper component that manages comment form, comment list,
@@ -94,10 +71,10 @@ const CommentsSection = ({
   return (
     <div className="border-t border-gray-600 p-4">
       <div className="flex items-center gap-2 mb-3">
-        <img
-          src={getUserAvatar(currentUser)}
+        <Avatar
+          src={currentUser.image || null}
           alt={currentUser.name}
-          className="w-6 h-6 rounded-full"
+          size={24}
         />
         <span className="text-xs text-gray-400">
           {currentUser.name} created this task on {formatDate(task.created_at)}

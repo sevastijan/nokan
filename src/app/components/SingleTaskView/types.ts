@@ -53,3 +53,35 @@ export interface MenuPosition {
   left?: number;
   right?: number;
 }
+
+export interface UserSelectorProps {
+  selectedUser: User | null;
+  availableUsers: User[];
+  onUserSelect: (userId: string | null) => void;
+  label: string;
+}
+
+export interface CommentListProps {
+  comments: Comment[];
+  currentUser: User;
+  task: TaskDetail;
+  onDeleteComment: (commentId: string) => Promise<void>;
+  onImagePreview: (url: string) => void;
+}
+
+export interface CommentsSectionProps {
+  taskId: string;
+  comments: Comment[];
+  currentUser: User;
+  task: TaskDetail;
+  onRefreshComments: () => Promise<void>;
+  onRefreshTask: () => Promise<void>;
+  onImagePreview: (url: string) => void;
+}
+
+export interface CommentFormProps {
+  currentUser: User;
+  taskId: string;
+  onAddComment: (content: string) => Promise<void>;
+  onRefreshTask: () => Promise<void>;
+}

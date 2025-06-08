@@ -1,17 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaChevronDown, FaUser } from "react-icons/fa";
-import { User } from "./types";
+import { FaChevronDown } from "react-icons/fa";
+import { User, UserSelectorProps } from "./types";
 import { getUserAvatar } from "./utils";
-
-interface UserSelectorProps {
-  selectedUser: User | null;
-  availableUsers: User[];
-  onUserSelect: (userId: string | null) => void;
-  label: string;
-}
+import Avatar from "../Avatar/Avatar";
 
 /**
  * UserSelector component shows a dropdown to select a user.
@@ -25,6 +19,20 @@ const UserSelector = ({
   label,
 }: UserSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (selectedUser) {
+        const url = await getUserAvatar(selectedUser);
+        setAvatarUrl(url);
+      } else {
+        setAvatarUrl(null);
+      }
+    };
+
+    loadAvatar();
+  }, [selectedUser]);
 
   /**
    * Handle user selection and close dropdown
@@ -49,16 +57,12 @@ const UserSelector = ({
         <div className="flex items-center gap-3">
           {selectedUser ? (
             <>
-              <img
-                src={getUserAvatar(selectedUser)}
-                alt={selectedUser.name}
-                className="w-6 h-6 rounded-full"
-              />
+              <Avatar src={avatarUrl || ""} alt={selectedUser.name} size={24} />
               <span>{selectedUser.name}</span>
             </>
           ) : (
             <>
-              <FaUser className="w-6 h-6 text-gray-400" />
+              <Avatar alt="No User" size={24} />
               <span className="text-gray-400">Select assignee</span>
             </>
           )}
@@ -89,6 +93,7 @@ const UserSelector = ({
                 </div>
                 <span className="text-gray-400 italic">Unassign</span>
               </motion.button>
+              {/* Use a regular for loop to await inside */}
               {availableUsers.map((user) => (
                 <motion.button
                   key={user.id}
@@ -96,11 +101,7 @@ const UserSelector = ({
                   onClick={() => handleUserSelect(user.id)}
                   className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-600 transition-colors"
                 >
-                  <img
-                    src={getUserAvatar(user)}
-                    alt={user.name}
-                    className="w-6 h-6 rounded-full"
-                  />
+                  <Avatar src={user.image || ""} alt={user.name} size={24} />
                   <span className="text-gray-200">{user.name}</span>
                 </motion.button>
               ))}

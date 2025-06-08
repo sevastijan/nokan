@@ -34,6 +34,8 @@ export async function getBoardById(id: string) {
           column_id,
           created_at,
           updated_at,
+          start_date,
+          end_date,
           assignee:users!tasks_user_id_fkey(id, name, email, image),
           priorities(id, label, color)
         )
@@ -333,6 +335,72 @@ export async function updateTaskDetails(
   }
 
   return data;
+}
+
+/**
+ * Updates task dates for calendar functionality
+ * @param {string} taskId - ID of the task
+ * @param {string} startDate - Start date in YYYY-MM-DD format
+ * @param {string} endDate - End date in YYYY-MM-DD format
+ * @returns {Promise<Object>} Updated task with related data
+ * @throws {Error} Throws if update fails
+ */
+export async function updateTaskDates(
+  taskId: string,
+  startDate: string | null,
+  endDate: string | null
+) {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({
+      start_date: startDate,
+      end_date: endDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .select(`
+      *,
+      assignee:users!tasks_user_id_fkey(id, name, email, image),
+      priorities(id, label, color)
+    `)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Fetches all tasks with dates for calendar view
+ * @param {string} boardId - ID of the board
+ * @returns {Promise<Array>} Tasks with date information
+ * @throws {Error} Throws if query fails
+ */
+export async function getTasksWithDates(boardId: string) {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(`
+      id,
+      title,
+      description,
+      priority,
+      start_date,
+      end_date,
+      column_id,
+      assignee:users!tasks_user_id_fkey(id, name, email, image),
+      priorities(id, label, color),
+      columns!inner(board_id)
+    `)
+    .eq("columns.board_id", boardId)
+    .not("start_date", "is", null);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
 }
 
 /**
