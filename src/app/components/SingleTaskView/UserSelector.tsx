@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown } from "react-icons/fa";
 import { User, UserSelectorProps } from "./types";
 import { getUserAvatar } from "./utils";
 import Avatar from "../Avatar/Avatar";
+import { useDropdownManager } from "../../hooks/useDropdownManager";
 
 /**
  * UserSelector component shows a dropdown to select a user.
@@ -18,7 +19,13 @@ const UserSelector = ({
   onUserSelect,
   label,
 }: UserSelectorProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  // Generate unique ID for this dropdown instance
+  const dropdownId = useMemo(
+    () => `user-selector-${Math.random().toString(36).substr(2, 9)}`,
+    []
+  );
+  const { isOpen, toggle, close } = useDropdownManager(dropdownId);
+
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,7 +47,14 @@ const UserSelector = ({
    */
   const handleUserSelect = async (userId: string | null) => {
     await onUserSelect(userId);
-    setIsOpen(false);
+    close();
+  };
+
+  /**
+   * Toggle dropdown open/close state
+   */
+  const handleToggle = () => {
+    toggle();
   };
 
   return (
@@ -51,7 +65,7 @@ const UserSelector = ({
       <motion.button
         whileHover={{ backgroundColor: "#374151" }}
         whileTap={{ scale: 0.98 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between p-3 border border-gray-600 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors"
       >
         <div className="flex items-center gap-3">
@@ -93,7 +107,7 @@ const UserSelector = ({
                 </div>
                 <span className="text-gray-400 italic">Unassign</span>
               </motion.button>
-              {/* Use a regular for loop to await inside */}
+              {/* Available users */}
               {availableUsers.map((user) => (
                 <motion.button
                   key={user.id}
@@ -103,6 +117,9 @@ const UserSelector = ({
                 >
                   <Avatar src={user.image || ""} alt={user.name} size={24} />
                   <span className="text-gray-200">{user.name}</span>
+                  {selectedUser?.id === user.id && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full ml-auto"></div>
+                  )}
                 </motion.button>
               ))}
             </div>
