@@ -8,6 +8,7 @@ import { getTasksWithDates, updateTaskDates } from "../../lib/api";
 import { CalendarProps, CalendarEvent } from "./types";
 import "../Calendar/calendar.css";
 import Loader from "../Loader";
+import Avatar from "../Avatar/Avatar"; // Import the Avatar component
 
 /**
  * Calendar component for displaying tasks with dates in a monthly/weekly view
@@ -138,18 +139,11 @@ const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
             <div className="event-title">{arg.event.title}</div>
             {arg.event.extendedProps.assignee && (
               <div className="event-assignee">
-                {arg.event.extendedProps.assignee.image ? (
-                  <img
-                    src={arg.event.extendedProps.assignee.image}
-                    alt={arg.event.extendedProps.assignee.name}
-                    className="event-avatar"
-                  />
-                ) : (
-                  <div className="event-avatar-placeholder">
-                    {arg.event.extendedProps.assignee.name?.[0]?.toUpperCase() ||
-                      "?"}
-                  </div>
-                )}
+                <Avatar
+                  src={arg.event.extendedProps.assignee.image || null}
+                  alt={arg.event.extendedProps.assignee.name}
+                  size={20}
+                />
                 <span className="event-assignee-name">
                   {arg.event.extendedProps.assignee.name}
                 </span>

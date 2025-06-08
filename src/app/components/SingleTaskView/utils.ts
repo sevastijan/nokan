@@ -2,7 +2,10 @@ import React from "react";
 import { User } from "./types";
 import { toast } from "react-toastify";
 
-export const getUserAvatar = (user: User) => {
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+export const getUserAvatar = async (user: User, retryCount = 0): Promise<string> => {
   if (user.image) {
     return user.image;
   }
@@ -14,9 +17,34 @@ export const getUserAvatar = (user: User) => {
     .toUpperCase()
     .slice(0, 2);
 
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
     initials
   )}&background=4285f4&color=ffffff&size=96`;
+
+  try {
+    const response = await fetch(avatarUrl);
+
+    if (response.status === 429) {
+      if (retryCount < MAX_RETRIES) {
+        console.warn(`Rate limited. Retrying in ${RETRY_DELAY}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        return getUserAvatar(user, retryCount + 1); // Recursive call to retry
+      } else {
+        console.error("Max retries reached. Failed to fetch avatar.");
+        return ""; // Return a default avatar or an empty string
+      }
+    }
+
+    if (!response.ok) {
+      console.error(`Failed to fetch avatar. Status: ${response.status}`);
+      return ""; // Return a default avatar or an empty string
+    }
+
+    return avatarUrl;
+  } catch (error) {
+    console.error("Error fetching avatar:", error);
+    return ""; // Return a default avatar or an empty string
+  }
 };
 
 export const formatDate = (dateString: string | null | undefined) => {

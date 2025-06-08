@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserAvatar } from "../SingleTaskView/utils";
-import { Option, CustomSelectProps } from "./types";
+import { CustomSelectProps } from "./types";
 
 const CustomSelect = ({
   options,
@@ -71,11 +71,20 @@ const CustomSelect = ({
                     src={
                       option?.image && option.image.length > 0
                         ? option.image
-                        : getUserAvatar({
-                            id: option?.value || "",
-                            name: option?.label || "",
-                            email: "",
-                          })
+                        : (() => {
+                            const avatar = getUserAvatar({
+                              id: option?.value || "",
+                              name: option?.label || "",
+                              email: "",
+                            });
+                            if (avatar instanceof Promise) {
+                              console.error(
+                                "getUserAvatar returned a Promise. Ensure it returns a string."
+                              );
+                              return "";
+                            }
+                            return avatar;
+                          })()
                     }
                     alt="Avatar"
                     className="h-6 w-6 rounded-full"
@@ -147,11 +156,20 @@ const CustomSelect = ({
                       src={
                         option.image && option.image.length > 0
                           ? option.image
-                          : getUserAvatar({
-                              id: option.value,
-                              name: option.label,
-                              email: "",
-                            })
+                          : (() => {
+                              const avatar = getUserAvatar({
+                                id: option.value,
+                                name: option.label,
+                                email: "",
+                              });
+                              if (avatar instanceof Promise) {
+                                console.error(
+                                  "getUserAvatar returned a Promise. Ensure it resolves synchronously."
+                                );
+                                return ""; // Fallback to an empty string
+                              }
+                              return avatar;
+                            })()
                       }
                       alt="Avatar"
                       className="h-6 w-6 rounded-full mr-2"

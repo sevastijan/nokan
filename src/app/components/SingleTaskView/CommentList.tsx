@@ -1,26 +1,10 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { FaTrash } from "react-icons/fa";
-import { Comment, User, TaskDetail } from "./types";
-import { getUserAvatar, formatDate } from "./utils";
+import { CommentListProps } from "./types";
+import { formatDate } from "./utils";
 import MarkdownContent from "./MarkdownContent";
-
-interface CommentListProps {
-  /** Array of comments related to the task */
-  comments: Comment[];
-
-  /** Currently logged-in user */
-  currentUser: User;
-
-  /** Details of the task the comments belong to */
-  task: TaskDetail;
-
-  /** Callback for deleting a specific comment */
-  onDeleteComment: (commentId: string) => Promise<void>;
-
-  /** Callback to handle image preview click from markdown */
-  onImagePreview: (url: string) => void;
-}
+import Avatar from "../Avatar/Avatar";
 
 /**
  * Renders a list of comments with user avatars, markdown content,
@@ -51,10 +35,10 @@ const CommentList = ({
           animate={{ opacity: 1, y: 0 }}
           className="flex items-start gap-2 p-2 bg-gray-700/50 rounded-md"
         >
-          <img
-            src={getUserAvatar(comment.author)}
+          <Avatar
+            src={comment.author.image || null}
             alt={comment.author.name}
-            className="w-5 h-5 rounded-full flex-shrink-0"
+            size={20}
           />
           <div className="flex-1">
             <div className="flex items-center gap-1 mb-1">

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useUserRole } from "../hooks/useUserRole";
+import Avatar from "../components/Avatar/Avatar";
 
 const sidebarVariants = {
   hidden: { x: "-100%" },
@@ -116,15 +117,11 @@ const Navbar = () => {
             ) : session?.user ? (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col items-center gap-3 p-4 bg-gray-800 rounded-lg">
-                  {session.user.image && (
-                    <img
-                      src={session.user.image}
-                      alt="User avatar"
-                      width={48}
-                      height={48}
-                      className="rounded-full w-12 h-12"
-                    />
-                  )}
+                  <Avatar
+                    src={session.user.image || null}
+                    alt="User avatar"
+                    size={48}
+                  />
                   <span className="text-gray-300 text-sm text-center">
                     {session.user.name || session.user.email}
                   </span>
@@ -204,15 +201,11 @@ const Navbar = () => {
                   ) : session?.user ? (
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-col items-center gap-3 p-4 bg-gray-800 rounded-lg">
-                        {session.user.image && (
-                          <img
-                            src={session.user.image}
-                            alt="User avatar"
-                            width={48}
-                            height={48}
-                            className="rounded-full w-12 h-12"
-                          />
-                        )}
+                        <Avatar
+                          src={session.user.image || null}
+                          alt="User avatar"
+                          size={48}
+                        />
                         <span className="text-gray-300 text-sm text-center">
                           {session.user.name || session.user.email}
                         </span>

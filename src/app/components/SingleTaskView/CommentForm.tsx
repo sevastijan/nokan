@@ -1,24 +1,10 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FaPaperclip } from "react-icons/fa";
-import { User } from "./types";
-import { getUserAvatar } from "./utils";
+import { User, CommentFormProps } from "./types";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
-
-interface CommentFormProps {
-  /** Currently logged-in user */
-  currentUser: User;
-
-  /** ID of the related task */
-  taskId: string;
-
-  /** Callback to add a comment to the task */
-  onAddComment: (content: string) => Promise<void>;
-
-  /** Callback to refresh task details after upload */
-  onRefreshTask: () => Promise<void>;
-}
+import Avatar from "../Avatar/Avatar";
 
 /**
  * CommentForm component allows users to add text comments
@@ -108,11 +94,9 @@ const CommentForm = ({
   return (
     <div className="border border-gray-600 rounded-lg p-4 mb-6">
       <div className="flex items-start gap-3">
-        <img
-          src={getUserAvatar(currentUser)}
-          alt={currentUser.name}
-          className="w-8 h-8 rounded-full flex-shrink-0"
-        />
+        <motion.div className="w-8 h-8 rounded-full flex-shrink-0">
+          <Avatar src={currentUser.image || null} alt={currentUser.name} />
+        </motion.div>
         <div className="flex-1">
           <form onSubmit={handleSubmit} className="space-y-3">
             <textarea
