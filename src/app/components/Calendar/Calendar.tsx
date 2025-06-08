@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, JSX } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { getTasksWithDates, updateTaskDates } from "../../lib/api";
 import { CalendarProps, CalendarEvent } from "./types";
 import "../Calendar/calendar.css";
+import Loader from "../Loader";
 
 /**
  * Calendar component for displaying tasks with dates in a monthly/weekly view
@@ -14,7 +15,7 @@ import "../Calendar/calendar.css";
  * @param {CalendarProps} props - Component props
  * @returns {JSX.Element} Calendar component
  */
-const Calendar = ({ boardId, onTaskClick }: CalendarProps) => {
+const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,7 +68,7 @@ const Calendar = ({ boardId, onTaskClick }: CalendarProps) => {
    * @param {string} [priorityColor] - Priority color from database
    * @returns {string} Color hex code
    */
-  const getPriorityColor = (priorityColor?: string) => {
+  const getPriorityColor = (priorityColor?: string): string => {
     return priorityColor || "#3788d8";
   };
 
@@ -105,7 +106,7 @@ const Calendar = ({ boardId, onTaskClick }: CalendarProps) => {
   };
 
   if (loading) {
-    return <div className="calendar-loading">Loading calendar...</div>;
+    return <Loader text="Loading calendar.." />;
   }
 
   return (
