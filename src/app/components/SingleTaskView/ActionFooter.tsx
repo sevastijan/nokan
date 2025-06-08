@@ -3,29 +3,8 @@
 import React, { useState } from "react";
 import { TaskDetail } from "./types";
 import ConfirmDialog from "./ConfirmDialog";
-
-interface ActionFooterProps {
-  /** Indicates if this is a new task */
-  isNewTask: boolean;
-
-  /** Indicates if there are unsaved changes */
-  hasUnsavedChanges: boolean;
-
-  /** Indicates if the save operation is currently in progress */
-  isSaving: boolean;
-
-  /** Callback function to handle save action */
-  onSave: () => void;
-
-  /** Callback function to handle close/cancel action */
-  onClose: () => void;
-
-  /** Optional callback function to handle delete action */
-  onDelete?: () => void;
-
-  /** The task being edited or viewed */
-  task?: TaskDetail;
-}
+import Button from "../Button/Button";
+import { ActionFooterProps } from "./types";
 
 /**
  * ActionFooter component renders action buttons for saving, canceling, or deleting a task.
@@ -71,39 +50,31 @@ const ActionFooter = ({
   return (
     <>
       <div className="border-t border-gray-600 p-3 bg-gray-800 flex justify-between items-center">
-        {" "}
         <div>
           {!isNewTask && onDelete && (
-            <button
+            <Button
+              variant="danger"
+              size="sm"
               onClick={handleDeleteClick}
               disabled={isSaving}
-              className="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors text-sm" // Smaller button
             >
               Delete
-            </button>
+            </Button>
           )}
         </div>
         <div className="flex space-x-2">
-          {" "}
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 border border-gray-500 text-gray-300 rounded-md hover:bg-gray-700 transition-colors text-sm" // Smaller button
-          >
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={onSave}
             disabled={!canSave || isSaving}
-            className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm" // Smaller button
+            loading={isSaving}
           >
-            {isSaving
-              ? isNewTask
-                ? "Creating..."
-                : "Saving..."
-              : isNewTask
-              ? "Create Task"
-              : "Save Changes"}
-          </button>
+            {isNewTask ? "Create Task" : "Save Changes"}
+          </Button>
         </div>
       </div>
 

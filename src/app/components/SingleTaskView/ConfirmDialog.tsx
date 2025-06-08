@@ -3,17 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { FaExclamationTriangle } from "react-icons/fa";
-
-interface ConfirmDialogProps {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  type?: "warning" | "danger" | "info";
-}
+import { ConfirmDialogProps } from "./types";
 
 /**
  * Modal dialog used to confirm user actions.

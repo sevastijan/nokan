@@ -1,33 +1,9 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
 import { FaClock, FaCalendarAlt } from "react-icons/fa";
-import { TaskDetail, User } from "./types";
 import { formatDate } from "./utils";
-
-interface TaskFooterProps {
-  /** Optional details of the task */
-  task?: TaskDetail;
-
-  /** Currently logged-in user */
-  currentUser: User;
-
-  /** Flag indicating if the task is new */
-  isNewTask?: boolean;
-
-  /** Flag indicating if there are unsaved changes */
-  hasUnsavedChanges?: boolean;
-
-  /** Flag indicating if the task is currently being saved */
-  isSaving?: boolean;
-
-  /** Callback function to save the task */
-  onSave?: () => void;
-
-  /** Callback function to close the task view */
-  onClose?: () => void;
-}
+import { TaskFooterProps } from "./types";
 
 /**
  * Renders the footer of a task, displaying creation/update dates and task ID.

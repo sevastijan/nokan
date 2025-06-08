@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FaPaperclip } from "react-icons/fa";
-import { User, CommentFormProps } from "./types";
+import { CommentFormProps } from "./types";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
 import Avatar from "../Avatar/Avatar";
+import Button from "../Button/Button";
 
 /**
  * CommentForm component allows users to add text comments
@@ -79,7 +80,10 @@ const CommentForm = ({
           const imageMarkdown = `![${fileName}](${signedUrlData.signedUrl})`;
           setNewComment(textBefore + imageMarkdown + textAfter);
 
-          await onRefreshTask();
+          if (onRefreshTask) {
+            await onRefreshTask();
+          }
+
           toast.success("Image uploaded successfully");
         } catch (error) {
           console.error("Error uploading image:", error);
@@ -115,23 +119,22 @@ const CommentForm = ({
                 Tip: Paste images directly into the comment
               </div>
               <div className="flex items-center gap-2">
-                <motion.button
+                <Button
                   type="button"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2 text-gray-400 hover:text-gray-200 rounded cursor-pointer"
-                >
-                  <FaPaperclip className="w-4 h-4" />
-                </motion.button>
-                <motion.button
+                  variant="ghost"
+                  size="sm"
+                  icon={<FaPaperclip />}
+                  className="text-gray-400 hover:text-gray-200 p-2"
+                />
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="md"
                   disabled={!newComment.trim() || uploading}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  loading={uploading}
                 >
-                  {uploading ? "Uploading..." : "Comment"}
-                </motion.button>
+                  Comment
+                </Button>
               </div>
             </div>
           </form>

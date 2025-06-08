@@ -1,16 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import { updateTaskDetails } from "../../lib/api";
-import {
-  TaskDetail,
-  User,
-  Priority,
-  Attachment,
-  SingleTaskViewProps,
-} from "./types";
+import { TaskDetail, Attachment, SingleTaskViewProps } from "./types";
 import TaskHeader from "./TaskHeader";
 import TaskContent from "./TaskContent";
 import CommentsSection from "./CommentsSection";
@@ -18,6 +12,8 @@ import AttachmentsList from "./AttachmentsList";
 import ActionFooter from "./ActionFooter";
 import TaskFooter from "./TaskFooter";
 import ImagePreviewModal from "./ImagePreviewModal";
+import Button from "../Button/Button";
+import { FaTimes } from "react-icons/fa";
 import { useTaskData } from "./hooks/useTaskData";
 import { useTaskComments } from "./hooks/useTaskComments";
 import { useAvailableUsers } from "./hooks/useAvailableUsers";
@@ -184,13 +180,15 @@ const SingleTaskView = ({
     return (
       <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-8 rounded-lg">
-          <div className="text-white">Task not found</div>
-          <button
+          <div className="text-white mb-4">Task not found</div>
+          <Button
+            variant="primary"
+            size="md"
             onClick={onClose}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+            icon={<FaTimes />}
           >
             Close
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -224,12 +222,12 @@ const SingleTaskView = ({
           ) : (
             <div className="flex justify-between items-center p-6 border-b border-gray-600">
               <h2 className="text-xl font-semibold text-white">New Task</h2>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleClose}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
+                icon={<FaTimes />}
+              />
             </div>
           )}
           <div className="flex-1 overflow-hidden flex flex-col">
@@ -298,15 +296,6 @@ const SingleTaskView = ({
                   onImagePreview={openImagePreview}
                 />
               )}
-              {!isNewTask && taskId && task && (
-                <AttachmentsList
-                  taskId={taskId}
-                  attachments={task.attachments || []}
-                  currentUser={currentUser}
-                  onTaskUpdate={fetchTaskData}
-                  onAttachmentsUpdate={updateAttachmentsLocally}
-                />
-              )}
             </div>
             {!isNewTask && <TaskFooter task={task} currentUser={currentUser} />}
           </div>
@@ -337,21 +326,23 @@ const SingleTaskView = ({
               You have unsaved changes. Are you sure you want to close?
             </p>
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
+                variant="ghost"
+                size="md"
                 onClick={hideUnsavedChangesAlert}
-                className="px-4 py-2 text-gray-300 border border-gray-500 rounded hover:bg-gray-700"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
+                size="md"
                 onClick={() => {
                   hideUnsavedChangesAlert();
                   onClose();
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
                 Close without saving
-              </button>
+              </Button>
             </div>
           </div>
         </div>

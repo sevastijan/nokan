@@ -1,11 +1,13 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskForm from "../TaskColumn/AddTaskForm";
 import Task from "../Task";
-import { FaGripVertical } from "react-icons/fa";
+import Button from "../Button/Button"; // ✅ Import Button
+import { FaGripVertical, FaPlus, FaTimes } from "react-icons/fa";
 import { JSX, useState } from "react";
 import {
   Column as ColumnType,
   Task as TaskType,
+  User,
 } from "../../types/useBoardTypes";
 
 interface ColumnProps {
@@ -14,36 +16,33 @@ interface ColumnProps {
   colIndex: number;
   onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
   onRemoveColumn: (columnId: string) => void;
-  onTaskAdded: (newTask: { id: string; title: string }) => void;
+  onTaskAdded?: (
+    columnId: string,
+    title: string,
+    priority?: string,
+    userId?: string
+  ) => Promise<TaskType>;
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskDetail: (taskId: string | null) => void;
   onTaskUpdate?: () => void;
-  currentUser: any;
+  currentUser: User;
   selectedTaskId?: string | null;
-  onOpenAddTask: (columnId: string | null) => void; // ✅ New prop
-  addTaskColumnId?: string | null; // ✅ New prop
+  onOpenAddTask: (columnId: string | null) => void;
+  addTaskColumnId?: string | null;
 }
 
-/**
- * Column component that displays a draggable column with tasks in a Kanban board
- */
 const Column = ({
   column,
-  onUpdateTask,
   colIndex,
   onUpdateColumnTitle,
   onRemoveColumn,
   onTaskAdded,
   onRemoveTask,
   onOpenTaskDetail,
-  onTaskUpdate,
   currentUser,
   selectedTaskId,
-  onOpenAddTask, // ✅ New prop
-  addTaskColumnId, // ✅ New prop
+  onOpenAddTask,
 }: ColumnProps): JSX.Element => {
-  const [isAdding, setIsAdding] = useState(false);
-
   return (
     <Draggable key={column.id} draggableId={column.id} index={colIndex}>
       {(provided, snapshot) => (
@@ -77,18 +76,24 @@ const Column = ({
               className="bg-transparent text-lg font-semibold w-full focus:outline-none focus:border-blue-500 ml-2"
               placeholder="Column Title"
             />
-            <button
+
+            <Button
+              variant="danger"
+              size="sm"
               onClick={() => onRemoveColumn(column.id)}
-              className="text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+              icon={<FaTimes />}
+              className="ml-2"
+            />
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => onOpenAddTask(column.id)}
+              icon={<FaPlus />}
+              className="ml-2"
             >
-              ×
-            </button>
-            <button
-              onClick={() => onOpenAddTask(column.id)} // ✅ Updated to use new prop
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors cursor-pointer"
-            >
-              + Add Task
-            </button>
+              Add Task
+            </Button>
           </div>
 
           <Droppable droppableId={column.id}>
@@ -116,10 +121,12 @@ const Column = ({
           </Droppable>
 
           <AddTaskForm
-            boardId={column.board_id || ""}
+            boardId={column.boardId || column.board_id || ""}
             columnId={column.id}
             onTaskAdded={onTaskAdded}
             currentUser={currentUser}
+            onOpenAddTask={onOpenAddTask}
+            selectedTaskId={selectedTaskId}
           />
         </div>
       )}
