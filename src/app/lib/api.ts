@@ -429,14 +429,19 @@ export async function getPriorities() {
  * @throws {Error} Throws if insert fails or no data returned
  */
 export async function addPriority(label: string, color: string) {
+  
+  // Generate a unique text ID
+  const id = `priority_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   const { data, error } = await supabase
     .from("priorities")
-    .insert([{ label, color }])
+    .insert([{ id, label, color }])
     .select()
     .single();
 
   if (error) {
-    throw new Error("Failed to add priority");
+    console.error("Supabase error details:", error);
+    throw new Error(`Failed to add priority: ${error.message}`);
   }
 
   if (!data) {
@@ -447,19 +452,79 @@ export async function addPriority(label: string, color: string) {
 }
 
 /**
- * Deletes a priority by its ID
+ * Updates a priority
  * @param {string} id - Priority ID
- * @throws {Error} Throws if deletion fails
+ * @param {string} label - Priority label
+ * @param {string} color - Priority color
+ * @returns {Promise<Object>} Updated priority
+ * @throws {Error} Throws if update fails
+ */
+export async function updatePriority(id: string, label: string, color: string) {
+  
+  const { data, error } = await supabase
+    .from("priorities")
+    .update({ label, color })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Supabase error details:", error);
+    throw new Error(`Failed to update priority: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error("No data returned from the database");
+  }
+
+  return data;
+}
+
+/**
+ * Checks if priority is used by any tasks
+ * @param {string} priorityId - Priority ID to check
+ * @returns {Promise<boolean>} True if priority is used by tasks
+ */
+export async function isPriorityInUse(priorityId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("priority", priorityId)
+    .limit(1);
+
+  if (error) {
+    console.error("Error checking priority usage:", error);
+    return true; // Assume it's in use to be safe
+  }
+
+  return (data && data.length > 0);
+}
+
+/**
+ * Deletes a priority by its ID - only if not used by any tasks
+ * @param {string} id - Priority ID
+ * @throws {Error} Throws if deletion fails or priority is in use
  */
 export async function deletePriority(id: string) {
+  console.log("Deleting priority with id:", id);
+  
+  // First check if priority is used by any tasks
+  const inUse = await isPriorityInUse(id);
+  if (inUse) {
+    throw new Error("Cannot delete priority - it is being used by one or more tasks");
+  }
+  
   const { error } = await supabase
     .from("priorities")
     .delete()
     .eq("id", id);
 
   if (error) {
-    throw new Error("Failed to delete priority");
+    console.error("Supabase error details:", error);
+    throw new Error(`Failed to delete priority: ${error.message}`);
   }
+  
+  console.log("Successfully deleted priority with id:", id);
 }
 
 /**
