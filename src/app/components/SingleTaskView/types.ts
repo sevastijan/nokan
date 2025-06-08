@@ -93,7 +93,6 @@ export interface TaskContentProps {
   ) => void;
 }
 
-
 export interface AttachmentsListProps {
   attachments: Attachment[];
   currentUser: User;
@@ -104,4 +103,22 @@ export interface AttachmentsListProps {
   onAttachmentsUpdate?: (
     updater: (attachments: Attachment[]) => Attachment[]
   ) => void;
+}
+
+export interface SingleTaskViewProps {
+  taskId?: string;
+  mode: "add" | "edit";
+  columnId?: string;
+  boardId?: string;
+  onClose: () => void;
+  onTaskUpdate?: () => void;
+  onTaskAdd?: (newTask: { id: string; title: string }) => void;
+  onTaskAdded?: (
+    columnId: string,
+    title: string,
+    priority?: number,
+    userId?: number
+  ) => Promise<any>;
+  currentUser: User;
+  priorities?: Array<{ id: string; label: string; color: string }>;
 }
