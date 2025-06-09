@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation";
 import BoardModal from "./BoardModal";
 import BoardDropdown from "./BoardDropdown";
 import Loader from "../Loader";
-import { getAllBoardsForUser } from "../../lib/api";
+import {
+  getAllBoardsForUser,
+  createBoardFromTemplate,
+  addBoard,
+} from "../../lib/api";
+import { BoardTemplate } from "../../types/useBoardTypes";
 
 interface Board {
   id: string;
@@ -63,32 +68,31 @@ const BoardList = () => {
   };
 
   /**
-   * Create a new board
+   * Create a new board with template support
    * @param title - The title of the new board
+   * @param template - Optional template to use for board creation
    */
-  const createBoard = async (title: string) => {
-    try {
-      const response = await fetch("/api/dashboards", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          owner: session?.user?.email,
-        }),
-      });
+  const createBoard = async (title: string, template?: BoardTemplate) => {
+    if (!session?.user?.email) return;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+      let newBoard;
+
+      if (template) {
+        // Create board from template
+        newBoard = await createBoardFromTemplate(
+          title,
+          template.id,
+          session.user.email
+        );
+      } else {
+        // Create basic board without template
+        newBoard = await addBoard({ title });
       }
 
-      const newBoard = await response.json();
-      setBoards([...boards, newBoard]);
       setCreateModalOpen(false);
-
       // Refresh boards to get updated list
-      fetchBoards();
+      await fetchBoards();
     } catch (error) {
       console.error("Error creating board:", error);
       setError("Failed to create board");
