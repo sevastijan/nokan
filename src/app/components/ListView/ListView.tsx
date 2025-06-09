@@ -8,7 +8,6 @@ interface ListViewProps {
   onRemoveTask: (columnId: string, taskId: string) => Promise<void>;
   priorities: Array<{ id: string; label: string; color: string }>;
 }
-
 const ListView = ({
   columns,
   onOpenTaskDetail,

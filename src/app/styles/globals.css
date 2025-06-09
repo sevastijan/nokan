@@ -13,6 +13,7 @@ html, body {
         padding-right: 16px;
         padding-top: 76px; /* Space for burger button + some extra */
         padding-bottom: 16px;
+        margin-left: 0 !important;
     }
 }
 
@@ -24,15 +25,18 @@ html, body {
     }
 }
 
+.main-content {
+    transition: margin-left 0.3s ease;
+}
 
 [data-rbd-drag-handle-draggable-id] {
     touch-action: none !important;
-  }
-  
-  .dragging-active {
+}
+
+.dragging-active {
     overflow: hidden !important;
-  }
-  
-  [data-rbd-drag-handle-draggable-id][style*="transform"] {
+}
+
+[data-rbd-drag-handle-draggable-id][style*="transform"] {
     z-index: 9999 !important;
-  }
+}

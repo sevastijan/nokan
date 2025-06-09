@@ -16,6 +16,16 @@ import ListView from "../../components/ListView/ListView";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiArrowLeft, FiHome } from "react-icons/fi";
+import {
+  FaArrowLeft,
+  FaColumns,
+  FaList,
+  FaCalendarAlt,
+  FaPlus,
+  FaSearch,
+  FaFilter,
+  FaTimes,
+} from "react-icons/fa";
 import { Column as ColumnType } from "../../types/useBoardTypes";
 import { User } from "../../components/SingleTaskView/types";
 import { useSession } from "next-auth/react";
@@ -63,6 +73,32 @@ const Page = (): JSX.Element => {
     Array<{ id: string; label: string; color: string }>
   >([]);
   const [viewMode, setViewMode] = useState<"columns" | "list">("columns");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    assignee: "",
+    priority: "",
+    dueDate: "",
+  });
+
+  /**
+   * Handle board title blur event
+   */
+  const handleBoardTitleBlur = () => {
+    if (localBoardTitle !== board?.title) {
+      handleUpdateBoardTitle(localBoardTitle);
+    }
+  };
+
+  /**
+   * Handle board title key down event
+   */
+  const handleBoardTitleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
+    }
+  };
 
   /**
    * Fetch task priorities from API or set default priorities on failure
@@ -433,6 +469,78 @@ const Page = (): JSX.Element => {
     }
   };
 
+  /**
+   * Filter tasks based on search query and filters
+   */
+  const filterTasks = (tasks: any[], searchQuery: string, filters: any) => {
+    return tasks.filter((task) => {
+      // Search by title and description
+      const matchesSearch =
+        !searchQuery ||
+        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Filter by assignee
+      const matchesAssignee =
+        !filters.assignee ||
+        (filters.assignee === "me" && task.assignee?.id === currentUser?.id) ||
+        (filters.assignee === "unassigned" && !task.assignee) ||
+        task.assignee?.name
+          ?.toLowerCase()
+          .includes(filters.assignee.toLowerCase());
+
+      // Filter by priority
+      const matchesPriority =
+        !filters.priority || task.priority === filters.priority;
+
+      // Filter by due date
+      const matchesDueDate =
+        !filters.dueDate ||
+        (() => {
+          if (!task.due_date) return filters.dueDate === "";
+
+          const dueDate = new Date(task.due_date);
+          const today = new Date();
+          const weekFromNow = new Date(
+            today.getTime() + 7 * 24 * 60 * 60 * 1000
+          );
+          const monthFromNow = new Date(
+            today.getTime() + 30 * 24 * 60 * 60 * 1000
+          );
+
+          switch (filters.dueDate) {
+            case "overdue":
+              return dueDate < today;
+            case "today":
+              return dueDate.toDateString() === today.toDateString();
+            case "week":
+              return dueDate <= weekFromNow;
+            case "month":
+              return dueDate <= monthFromNow;
+            default:
+              return true;
+          }
+        })();
+
+      return (
+        matchesSearch && matchesAssignee && matchesPriority && matchesDueDate
+      );
+    });
+  };
+
+  /**
+   * Filter board data before rendering
+   */
+  const filteredBoard = board
+    ? {
+        ...board,
+        columns: board.columns.map((column) => ({
+          ...column,
+          tasks: filterTasks(column.tasks, searchQuery, filters),
+        })),
+      }
+    : null;
+
   if (status === "loading") {
     return <Loader text="Loading session..." />;
   }
@@ -453,132 +561,331 @@ const Page = (): JSX.Element => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="h-screen flex flex-col">
-          {/* Header */}
-          <div className="flex-shrink-0">
-            <div className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 shadow-lg sticky top-0 z-40">
-              <div className="px-6 py-4 space-y-4">
-                {/* Breadcrumbs */}
-                <Breadcrumbs
-                  items={[
-                    {
-                      label: "Dashboard",
-                      href: "/dashboard",
-                      icon: <FiHome className="w-4 h-4" />,
-                    },
-                    {
-                      label: "Boards",
-                      href: "/dashboard",
-                    },
-                    {
-                      label: board?.title || "Loading...",
-                    },
-                  ]}
-                />
-
-                {/* Main Header Content */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+          {/* Header with board title and controls */}
+          <div className="flex-shrink-0 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 shadow-lg sticky top-0 z-40">
+            <div className="px-6 py-5 space-y-4">
+              {/* First row - Breadcrumbs and board title */}
+              <div className="flex items-center justify-between">
+                {/* Left side - Breadcrumbs and board title */}
+                <div className="flex items-center gap-6">
+                  {/* Breadcrumbs */}
+                  <div className="flex items-center gap-2 text-sm">
                     <button
-                      onClick={handleBackToDashboard}
-                      className="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200 group"
+                      onClick={() => router.push("/dashboard")}
+                      className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors duration-200"
                     >
-                      <FiArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                      <FaArrowLeft className="w-4 h-4" />
                       <span className="font-medium">Back</span>
                     </button>
-                    <div className="w-px h-6 bg-slate-600"></div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full shadow-sm"></div>
-                      <input
-                        type="text"
-                        value={localBoardTitle}
-                        onChange={(e) => setLocalBoardTitle(e.target.value)}
-                        className="text-2xl font-bold bg-transparent text-white border-none focus:outline-none focus:ring-0 p-0 hover:bg-slate-700/30 rounded px-3 py-2 transition-all duration-200 min-w-[200px] placeholder-slate-400"
-                        placeholder="Untitled Board"
-                      />
-                    </div>
+
+                    <span className="text-slate-500">/</span>
+
+                    <span className="text-slate-300 font-medium">Boards</span>
+
+                    <span className="text-slate-500">/</span>
+
+                    <span className="text-white font-medium truncate max-w-[200px]">
+                      {board?.title || "Board"}
+                    </span>
                   </div>
 
+                  <div className="w-px h-6 bg-slate-600"></div>
+
+                  {/* Board title with status indicator */}
                   <div className="flex items-center gap-3">
-                    <SearchAndFilters />
-                    <BoardViewToggle
-                      viewMode={viewMode}
-                      onViewChange={setViewMode}
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <input
+                      type="text"
+                      value={localBoardTitle}
+                      onChange={(e) => setLocalBoardTitle(e.target.value)}
+                      onBlur={handleBoardTitleBlur}
+                      onKeyDown={handleBoardTitleKeyDown}
+                      className="bg-transparent text-2xl font-bold text-white border-none outline-none focus:bg-slate-800/50 rounded-lg px-3 py-2 transition-colors min-w-[300px]"
+                      placeholder="Board Title"
                     />
-                    <ViewToggle
-                      showCalendar={showCalendar}
-                      setShowCalendar={setShowCalendar}
-                    />
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => setIsPopupOpen(true)}
-                      className="shadow-sm hover:shadow-md bg-indigo-600 hover:bg-indigo-700"
-                      icon={
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                          />
-                        </svg>
-                      }
-                    >
-                      Add Column
-                    </Button>
                   </div>
+                </div>
+
+                {/* Right side - Task Stats */}
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-slate-400">
+                    <span className="bg-slate-700/50 px-3 py-2 rounded-lg border border-slate-600/30">
+                      Total:{" "}
+                      {board?.columns?.reduce(
+                        (total, col) => total + col.tasks.length,
+                        0
+                      ) || 0}{" "}
+                      tasks
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Second row - Search and controls */}
+              <div className="flex items-center justify-between">
+                {/* Left side - Search and Filter */}
+                <div className="flex items-center gap-4">
+                  {/* Search */}
+                  <div className="relative">
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search tasks..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 pr-4 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-xl text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-72"
+                    />
+                  </div>
+
+                  {/* Filter Button */}
+                  <Button variant="ghost" size="sm" icon={<FaFilter />}>
+                    Filter
+                  </Button>
+                </div>
+
+                {/* Right side - View Toggle and Action Buttons */}
+                <div className="flex items-center gap-4">
+                  {/* View Toggle */}
+                  <div className="flex items-center bg-slate-700/50 rounded-xl p-1 border border-slate-600/30">
+                    <button
+                      onClick={() => setViewMode("columns")}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        viewMode === "columns"
+                          ? "bg-blue-600 text-white shadow-md"
+                          : "text-slate-300 hover:text-white hover:bg-slate-600/50"
+                      }`}
+                    >
+                      <FaColumns className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        viewMode === "list"
+                          ? "bg-blue-600 text-white shadow-md"
+                          : "text-slate-300 hover:text-white hover:bg-slate-600/50"
+                      }`}
+                    >
+                      <FaList className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="w-px h-8 bg-slate-600"></div>
+
+                  {/* Action Buttons */}
+                  <Button
+                    variant={showCalendar ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => {
+                      console.log(
+                        "Calendar button clicked, current state:",
+                        showCalendar
+                      );
+                      setShowCalendar(!showCalendar);
+                    }}
+                    icon={<FaCalendarAlt />}
+                    className={
+                      showCalendar ? "bg-blue-600 hover:bg-blue-700" : ""
+                    }
+                  >
+                    {showCalendar ? "Close Calendar" : "Calendar"}
+                  </Button>
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setIsPopupOpen(true)}
+                    icon={<FaPlus />}
+                  >
+                    Add Column
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Board Container */}
-          <div className="flex-1 p-6">
-            {viewMode === "columns" ? (
-              <Droppable
-                droppableId="board"
-                type="COLUMN"
-                direction="horizontal"
-              >
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="flex gap-6 h-full"
-                  >
-                    {board?.columns?.map((column, index) => (
-                      <Column
-                        key={column.id}
-                        column={column}
-                        colIndex={index}
-                        onUpdateColumnTitle={handleUpdateColumnTitle}
-                        onRemoveColumn={handleRemoveColumn}
-                        onTaskAdded={handleAddTask}
-                        onRemoveTask={handleRemoveTask}
-                        onOpenTaskDetail={setSelectedTaskId}
-                        currentUser={currentUser}
-                        selectedTaskId={selectedTaskId}
-                        onOpenAddTask={setAddTaskColumnId}
-                        priorities={priorities}
-                      />
-                    ))}
-                    {provided.placeholder}
+          {/* Board Content */}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full p-6">
+              {/* Calendar View */}
+              {showCalendar ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="h-full"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">
+                        Calendar View
+                      </h2>
+                      <p className="text-slate-400 mt-1">
+                        Drag tasks to change their dates • Click tasks to view
+                        details
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* View mode buttons */}
+                      <div className="flex items-center bg-slate-700/50 rounded-xl p-1 border border-slate-600/30">
+                        <button
+                          onClick={() => {
+                            setShowCalendar(false);
+                            setViewMode("columns");
+                          }}
+                          className="px-3 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white hover:bg-slate-600/50 flex items-center gap-2"
+                        >
+                          <FaColumns className="w-4 h-4" />
+                          <span>Columns</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowCalendar(false);
+                            setViewMode("list");
+                          }}
+                          className="px-3 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white hover:bg-slate-600/50 flex items-center gap-2"
+                        >
+                          <FaList className="w-4 h-4" />
+                          <span>List</span>
+                        </button>
+                      </div>
+
+                      {/* Close button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          console.log("Close calendar button clicked");
+                          setShowCalendar(false);
+                        }}
+                        className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                      >
+                        <FaTimes className="w-4 h-4 mr-2" />
+                        Close
+                      </Button>
+                    </div>
                   </div>
-                )}
-              </Droppable>
-            ) : (
-              <ListView
-                columns={board?.columns || []}
-                onOpenTaskDetail={setSelectedTaskId}
-                onRemoveTask={handleRemoveTask}
-                priorities={priorities}
-              />
-            )}
+                  <Calendar
+                    boardId={id as string}
+                    onTaskClick={handleCalendarTaskClick}
+                  />
+                </motion.div>
+              ) : viewMode === "columns" ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="h-full"
+                >
+                  <Droppable
+                    droppableId="board"
+                    type="COLUMN"
+                    direction="horizontal"
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="flex gap-6 h-full overflow-x-auto pb-4"
+                      >
+                        {filteredBoard?.columns?.map((column, index) => (
+                          <Column
+                            key={column.id}
+                            column={column}
+                            colIndex={index}
+                            onUpdateColumnTitle={handleUpdateColumnTitle}
+                            onRemoveColumn={handleRemoveColumn}
+                            onTaskAdded={async (
+                              columnId: string,
+                              title: string,
+                              priority?: string,
+                              userId?: string
+                            ) => {
+                              console.log("onTaskAdded called with:", {
+                                columnId,
+                                title,
+                                priority,
+                                userId,
+                              });
+                              try {
+                                const priorityId = priority || "medium";
+                                const assigneeId = userId;
+
+                                console.log("Processed values:", {
+                                  priorityId,
+                                  assigneeId,
+                                });
+
+                                const newTask = await handleAddTask(
+                                  columnId,
+                                  title,
+                                  priorityId,
+                                  assigneeId
+                                );
+
+                                console.log("New task created:", newTask);
+
+                                if (newTask && board) {
+                                  updateBoard({
+                                    ...board,
+                                    columns: board.columns.map(
+                                      (col: ColumnType) =>
+                                        col.id === addTaskColumnId
+                                          ? {
+                                              ...col,
+                                              tasks: [
+                                                ...col.tasks,
+                                                {
+                                                  ...newTask,
+                                                  order: col.tasks.length,
+                                                  column_id: addTaskColumnId,
+                                                  board_id: board.id,
+                                                  priority: priorityId,
+                                                },
+                                              ],
+                                            }
+                                          : col
+                                    ),
+                                  });
+                                }
+
+                                setAddTaskColumnId(null);
+                                return newTask;
+                              } catch (error) {
+                                console.error("Error adding task:", error);
+                                setAddTaskColumnId(null);
+                                throw error;
+                              }
+                            }}
+                            onRemoveTask={handleRemoveTask}
+                            onOpenTaskDetail={setSelectedTaskId}
+                            currentUser={currentUser}
+                            selectedTaskId={selectedTaskId}
+                            onOpenAddTask={setAddTaskColumnId}
+                            priorities={priorities}
+                          />
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="h-full"
+                >
+                  <ListView
+                    columns={filteredBoard?.columns || []}
+                    onOpenTaskDetail={setSelectedTaskId}
+                    onRemoveTask={handleRemoveTask}
+                    priorities={priorities}
+                  />
+                </motion.div>
+              )}
+            </div>
           </div>
         </div>
       </DragDropContext>
@@ -619,41 +926,50 @@ const Page = (): JSX.Element => {
             onTaskAdded={async (
               columnId: string,
               title: string,
-              priority?: number,
-              userId?: number
+              priority?: string,
+              userId?: string
             ) => {
-              const priorityNumber = priority || 2;
-              const userIdNumber = userId || parseInt(currentUser?.id || "0");
+              try {
+                const priorityId = priority || "medium";
+                const assigneeId = userId;
 
-              const newTask = await handleAddTask(
-                columnId,
-                title,
-                priorityNumber.toString(),
-                userIdNumber.toString()
-              );
+                const newTask = await handleAddTask(
+                  columnId,
+                  title,
+                  priorityId,
+                  assigneeId
+                );
 
-              updateBoard({
-                ...board,
-                columns: board.columns.map((col: ColumnType) =>
-                  col.id === addTaskColumnId
-                    ? {
-                        ...col,
-                        tasks: [
-                          ...col.tasks,
-                          {
-                            ...newTask,
-                            order: col.tasks.length,
-                            column_id: addTaskColumnId,
-                            board_id: board.id,
-                            priority: priorityNumber.toString(),
-                          },
-                        ],
-                      }
-                    : col
-                ),
-              });
-              setAddTaskColumnId(null);
-              return newTask;
+                if (newTask && board) {
+                  updateBoard({
+                    ...board,
+                    columns: board.columns.map((col: ColumnType) =>
+                      col.id === addTaskColumnId
+                        ? {
+                            ...col,
+                            tasks: [
+                              ...col.tasks,
+                              {
+                                ...newTask,
+                                order: col.tasks.length,
+                                column_id: addTaskColumnId,
+                                board_id: board.id,
+                                priority: priorityId,
+                              },
+                            ],
+                          }
+                        : col
+                    ),
+                  });
+                }
+
+                setAddTaskColumnId(null);
+                return newTask;
+              } catch (error) {
+                console.error("Error adding task:", error);
+                setAddTaskColumnId(null);
+                throw error;
+              }
             }}
             currentUser={currentUser}
             priorities={priorities}

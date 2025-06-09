@@ -3,20 +3,19 @@
 import { useState, useEffect, JSX } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { getTasksWithDates, updateTaskDates } from "../../lib/api";
-import { CalendarProps, CalendarEvent } from "./types";
+import { CalendarProps, CalendarEvent, ApiTask } from "./types";
 import "../Calendar/calendar.css";
 import Loader from "../Loader";
-import Avatar from "../Avatar/Avatar"; // Import the Avatar component
+import Avatar from "../Avatar/Avatar";
 
-/**
- * Calendar component for displaying tasks with dates in a monthly/weekly view
- * Supports drag-and-drop functionality to update task dates
- * @param {CalendarProps} props - Component props
- * @returns {JSX.Element} Calendar component
- */
-const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
+const Calendar = ({
+  boardId,
+  onTaskClick,
+  viewMode = "month",
+}: CalendarProps): JSX.Element => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -33,105 +32,157 @@ const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
   }, []);
 
   useEffect(() => {
-    loadCalendarEvents();
+    if (boardId) {
+      loadCalendarEvents();
+    }
   }, [boardId]);
 
-  /**
-   * Loads and transforms tasks with dates into calendar events
-   * Fetches tasks from the API and converts them to FullCalendar format
-   */
+  // Ładowanie eventów z API
   const loadCalendarEvents = async () => {
     try {
       setLoading(true);
-      const tasks = (await getTasksWithDates(boardId)) as any[];
+      const tasks = await getTasksWithDates(boardId); // Usuń : ApiTask[]
 
-      if (!tasks || tasks.length === 0) {
-        setEvents([]);
-        return;
-      }
+      console.log("Loaded tasks:", tasks); // Debug - sprawdź strukturę danych
 
-      const calendarEvents: CalendarEvent[] = tasks.map((task: any) => ({
-        id: task.id,
-        title: task.title,
-        start: task.start_date,
-        end: task.end_date
-          ? new Date(new Date(task.end_date).getTime() + 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0]
-          : undefined,
-        backgroundColor: getPriorityColor(task.priorities?.color),
-        borderColor: getPriorityColor(task.priorities?.color),
-        extendedProps: {
-          description: task.description,
-          priority: task.priorities?.label,
-          assignee: task.assignee,
-        },
-      }));
+      const calendarEvents: CalendarEvent[] = tasks
+        .filter((task) => task.start_date) // Filtruj tylko taski z datą rozpoczęcia
+        .map((task) => ({
+          id: task.id,
+          title: task.title || "Unnamed Task",
+          start: task.start_date,
+          end: task.end_date || task.start_date,
+          backgroundColor: getPriorityColor(task.priorities?.label || "low"),
+          borderColor: getPriorityColor(task.priorities?.label || "low"),
+          extendedProps: {
+            description: task.description || "",
+            priority: task.priorities?.label || "low",
+            status: "todo",
+            assignee: task.assignee,
+          },
+        }));
 
+      console.log("Calendar events:", calendarEvents); // Debug
       setEvents(calendarEvents);
     } catch (error) {
-      console.error("Error loading calendar events:", error);
+      console.error("Failed to load calendar events:", error);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Returns priority color or default blue if not provided
-   * @param {string} [priorityColor] - Priority color from database
-   * @returns {string} Color hex code
-   */
-  const getPriorityColor = (priorityColor?: string): string => {
-    return priorityColor || "#3788d8";
-  };
-
-  /**
-   * Handles drag-and-drop events to update task dates
-   * Updates both start and end dates when an event is moved
-   * @param {any} info - FullCalendar event drop information
-   */
+  // Obsługa przeciągania eventów
   const handleEventDrop = async (info: any) => {
     try {
-      const startDate = info.event.start.toISOString().split("T")[0];
-      const endDate = info.event.end
-        ? new Date(info.event.end.getTime() - 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0]
-        : startDate;
+      const taskId = info.event.id;
+      const newDate = info.event.start;
 
-      await updateTaskDates(info.event.id, startDate, endDate);
-      await loadCalendarEvents();
+      // Użyj updateTaskDates z dwoma parametrami
+      await updateTaskDates(
+        taskId,
+        newDate.toISOString(),
+        newDate.toISOString()
+      );
+
+      // Aktualizuj lokalny stan
+      setEvents((prevEvents) =>
+        prevEvents.map((event) =>
+          event.id === taskId
+            ? { ...event, start: newDate, end: newDate }
+            : event
+        )
+      );
     } catch (error) {
-      console.error("Error updating task dates:", error);
+      console.error("Failed to update task date:", error);
+      // Cofnij zmianę w przypadku błędu
       info.revert();
     }
   };
 
-  /**
-   * Handles click events on calendar tasks
-   * Triggers parent callback to open task details
-   * @param {any} info - FullCalendar event click information
-   */
+  // Obsługa kliknięcia w event
   const handleEventClick = (info: any) => {
     if (onTaskClick) {
       onTaskClick(info.event.id);
     }
   };
 
+  // Funkcja do określenia koloru na podstawie priorytetu
+  const getPriorityColor = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case "high":
+      case "urgent":
+        return "#ef4444"; // czerwony
+      case "medium":
+      case "normal":
+        return "#f59e0b"; // pomarańczowy
+      case "low":
+        return "#10b981"; // zielony
+      default:
+        return "#6b7280"; // szary
+    }
+  };
+
+  const getCalendarView = () => {
+    switch (viewMode) {
+      case "day":
+        return "timeGridDay";
+      case "week":
+        return "timeGridWeek";
+      case "month":
+      default:
+        return "dayGridMonth";
+    }
+  };
+
+  const getHeaderToolbar = () => {
+    const baseLeft = "prev,next today";
+    const baseCenter = "title";
+
+    if (isMobile) {
+      return {
+        left: "prev,next",
+        center: "title",
+        right: "",
+      };
+    }
+
+    switch (viewMode) {
+      case "day":
+        return {
+          left: baseLeft,
+          center: baseCenter,
+          right: "dayGridMonth,timeGridWeek,timeGridDay",
+        };
+      case "week":
+        return {
+          left: baseLeft,
+          center: baseCenter,
+          right: "dayGridMonth,timeGridWeek,timeGridDay",
+        };
+      case "month":
+      default:
+        return {
+          left: baseLeft,
+          center: baseCenter,
+          right: "dayGridMonth,timeGridWeek,timeGridDay",
+        };
+    }
+  };
+
   if (loading) {
-    return <Loader text="Loading calendar.." />;
+    return (
+      <div className="calendar-loading">
+        <Loader text="Loading calendar..." />
+      </div>
+    );
   }
 
   return (
     <div className="calendar-container">
-      <div className="calendar-header">
-        <h2>Task Calendar</h2>
-        <p>Drag tasks to change their dates</p>
-      </div>
-
       <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        initialView={getCalendarView()}
         events={events}
         editable={true}
         droppable={true}
@@ -139,31 +190,45 @@ const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
         eventClick={handleEventClick}
         height="auto"
         locale="en"
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,dayGridWeek",
-        }}
+        headerToolbar={getHeaderToolbar()}
         eventDisplay="block"
-        dayMaxEvents={false}
+        dayMaxEvents={viewMode === "month" ? 3 : false}
         moreLinkClick="popover"
+        firstDay={1}
+        weekends={true}
+        slotMinTime="06:00:00"
+        slotMaxTime="22:00:00"
+        allDaySlot={true}
+        nowIndicator={viewMode !== "month"}
         eventContent={(arg) => (
-          <div className="custom-event">
+          <div
+            className="custom-event"
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log("Event content clicked:", arg.event.id);
+              if (onTaskClick) {
+                onTaskClick(arg.event.id);
+              }
+            }}
+          >
             <div className="event-title">{arg.event.title}</div>
-            {arg.event.extendedProps.assignee && !isMobile && (
-              <div className="event-assignee">
-                <Avatar
-                  src={arg.event.extendedProps.assignee.image || null}
-                  alt={arg.event.extendedProps.assignee.name}
-                  size={isMobile ? 16 : 20}
-                />
-                <span className="event-assignee-name">
-                  {arg.event.extendedProps.assignee.name}
-                </span>
-              </div>
-            )}
+            {arg.event.extendedProps.assignee &&
+              !isMobile &&
+              viewMode === "month" && (
+                <div className="event-assignee">
+                  <Avatar
+                    src={arg.event.extendedProps.assignee.image || null}
+                    alt={arg.event.extendedProps.assignee.name}
+                    size={isMobile ? 16 : 20}
+                  />
+                  <span className="event-assignee-name">
+                    {arg.event.extendedProps.assignee.name}
+                  </span>
+                </div>
+              )}
           </div>
         )}
+        eventClassNames="calendar-event-clickable"
       />
     </div>
   );

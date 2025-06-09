@@ -30,7 +30,7 @@ import { Task, Column, Board } from "../types/useBoardTypes";
  *   handleUpdateTaskTitle: (columnId: string, taskId: string, newTitle: string) => Promise<void>,
  *   handleUpdateTask: (taskId: string, updatedTask: Partial<Task> & { column_id?: string }) => Promise<void>,
  *   handleRemoveTask: (columnId: string, taskId: string) => Promise<void>,
- *   handleAddTask: (columnId: string, title: string, priority?: string, userId?: string) => Promise<Task>
+ *   handleAddTask: (columnId: string, title: string, priority?: string, assigneeId?: string) => Promise<Task>
  * }}
  */
 export const useBoard = (boardId: string) => {
@@ -350,74 +350,62 @@ export const useBoard = (boardId: string) => {
   };
 
   /**
-   * Add a new task to a specified column with optional priority and user ID.
+   * Add a new task to a specified column with optional priority and assignee ID.
    * Throws if title is empty.
    * Updates local state after successful creation.
    * @param {string} columnId - ID of the column to add task to.
    * @param {string} title - Title of the new task.
    * @param {string} [priority] - Optional priority ID.
-   * @param {string} [userId] - Optional user ID (assignee).
+   * @param {string} [assigneeId] - Optional assignee ID.
    * @returns {Promise<Task>} The newly created task.
    * @throws Will throw if the title is empty or request fails.
    */
   const handleAddTask = async (
-    columnId: string, 
-    title: string, 
-    priority?: string, 
-    userId?: string
+    columnId: string,
+    title: string,
+    priority?: string,
+    assigneeId?: string
   ): Promise<Task> => {
-    if (!title.trim()) {
-      throw new Error("Title is required");
-    }
-
-    setLoading(true);
-    setError(null);
-
     try {
-      const column = getColumnById(columnId);
-      const order = column ? column.tasks.length : 0;
+      console.log("handleAddTask called with:", {
+        columnId,
+        title,
+        priority,
+        assigneeId,
+      });
 
-      const newTaskFromDB = await addTask(columnId, title.trim(), order, priority, userId);
+      const { data: newTask, error } = await supabase
+        .from("tasks")
+        .insert({
+          title,
+          column_id: columnId,
+          board_id: boardId,
+          priority: priority || "medium",
+          assignee: assigneeId,
+          order: 0,
+          completed: false,
+        })
+        .select(`
+          *,
+          assignee:assignee (
+            id,
+            name,
+            email,
+            image
+          )
+        `)
+        .single();
 
-      const newTask: Task = {
-        id: newTaskFromDB.id,
-        title: newTaskFromDB.title,
-        order: newTaskFromDB.order || 0,
-        column_id: columnId,
-        description: newTaskFromDB.description,
-        priority: newTaskFromDB.priority,
-        images: newTaskFromDB.images,
-        user_id: newTaskFromDB.user_id,
-        assignee: Array.isArray(newTaskFromDB.assignee)
-          ? newTaskFromDB.assignee[0]
-          : newTaskFromDB.assignee,
-        created_at: newTaskFromDB.created_at,
-        updated_at: newTaskFromDB.updated_at,
-      };
+      if (error) {
+        console.error("Error adding task:", error);
+        throw error;
+      }
 
-      setBoard((prev) =>
-        prev
-          ? {
-              ...prev,
-              columns: prev.columns.map((col) =>
-                col.id === columnId
-                  ? {
-                      ...col,
-                      tasks: [...col.tasks, newTask],
-                    }
-                  : col
-              ),
-            }
-          : prev
-      );
-
+      console.log("Task created successfully:", newTask);
       return newTask;
-    } catch (err) {
-      console.error("Error adding task:", err);
-      setError("Failed to add task. Please try again.");
-      throw err;
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Error in handleAddTask:", error);
+      throw error;
     }
   };
 

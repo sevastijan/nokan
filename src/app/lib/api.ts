@@ -397,6 +397,7 @@ export async function getTasksWithDates(boardId: string) {
     .not("start_date", "is", null);
 
   if (error) {
+    console.error("Error fetching tasks with dates:", error);
     throw error;
   }
 

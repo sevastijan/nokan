@@ -145,29 +145,32 @@ const Task = ({
     const rect = event.currentTarget.getBoundingClientRect();
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const menuWidth = 150;
-    const menuHeight = 100;
+    const menuWidth = 200; // Zwiększona szerokość dla lepszego wyglądu
+    const menuHeight = 120; // Zwiększona wysokość
 
-    let top = rect.top + window.scrollY - 10;
-    let left: number | undefined = rect.right + window.scrollX + 10;
+    // Domyślnie umieść menu nad przyciskiem
+    let top = rect.top + window.scrollY - menuHeight - 8;
+    let left: number | undefined = rect.left + window.scrollX;
     let right: number | undefined;
 
-    if (rect.right + menuWidth + 10 > screenWidth) {
+    // Jeśli menu wyjdzie poza górną krawędź, umieść pod przyciskiem
+    if (top < window.scrollY) {
+      top = rect.bottom + window.scrollY + 8;
+    }
+
+    // Jeśli menu wyjdzie poza prawą krawędź, wyrównaj do prawej
+    if (rect.left + menuWidth > screenWidth) {
       left = undefined;
-      right = screenWidth - rect.left + window.scrollX + 10;
+      right = screenWidth - rect.right + window.scrollX;
     }
 
-    if (rect.top + menuHeight > screenHeight) {
-      top = rect.bottom + window.scrollY - menuHeight - 10;
-    }
-
-    if (screenWidth < 400) {
-      left = screenWidth / 2 - menuWidth / 2;
-      right = undefined;
+    // Jeśli menu wyjdzie poza dolną krawędź, umieść nad przyciskiem
+    if (top + menuHeight > window.scrollY + screenHeight) {
+      top = rect.top + window.scrollY - menuHeight - 8;
     }
 
     setMenuPosition({ top, left, right });
-    setIsMenuOpen((prev) => !prev);
+    setIsMenuOpen(true);
   };
 
   const handleMenuClose = () => {
@@ -202,209 +205,224 @@ const Task = ({
   const priorityInfo = getPriorityInfo(task.priority, priorities);
 
   return (
-    <>
-      <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            {...provided.dragHandleProps}
-            style={{
-              ...provided.draggableProps.style,
-            }}
-            className={`bg-slate-800/60 backdrop-blur-sm border border-slate-700/30 rounded-xl p-4 cursor-pointer group ${
-              snapshot.isDragging
-                ? "shadow-2xl border-indigo-500/50 "
-                : "hover:shadow-lg hover:border-slate-600/50 transition-all duration-200"
-            }`}
-            onClick={snapshot.isDragging ? undefined : handleTaskClick}
-          >
-            {/* Task Header */}
-            <div className="flex items-start justify-between mb-3">
-              <h3 className="font-semibold text-slate-200 text-sm leading-relaxed group-hover:text-white transition-colors flex-1 pr-2">
-                {truncateText(task.title, 8)}
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleMenu}
-                className="!p-1.5 !text-slate-400 hover:!text-slate-200 hover:!bg-slate-700/50 !rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200"
-                icon={<FiMoreHorizontal className="w-4 h-4" />}
-              />
-            </div>
-
-            {/* Task Description */}
+    <div className="group relative">
+      {/* Task Card */}
+      <div
+        onClick={handleTaskClick}
+        className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/40 rounded-xl p-4 shadow-lg hover:shadow-xl hover:border-slate-600/60 transition-all duration-300 cursor-pointer hover:bg-slate-800/80 relative"
+      >
+        {/* Task Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-slate-100 font-semibold text-sm leading-snug mb-1 truncate">
+              {task.title}
+            </h3>
             {task.description && (
-              <p className="text-xs text-slate-400 mb-3 leading-relaxed">
-                {truncateText(task.description, 12)}
+              <p className="text-slate-400 text-xs leading-relaxed">
+                {truncateText(task.description, 15)}
               </p>
-            )}
-
-            {/* Priority Badge */}
-            {priorityInfo && (
-              <div
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium mb-3 border ${priorityInfo.bgColor} ${priorityInfo.textColor} ${priorityInfo.borderColor}`}
-              >
-                <FiFlag
-                  className="w-3 h-3"
-                  style={{ color: priorityInfo.color }}
-                />
-                {priorityInfo.label}
-              </div>
-            )}
-
-            {/* Task Footer */}
-            <div className="flex items-center justify-between">
-              {/* Task Metadata */}
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                {task.comments && task.comments.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    <FiMessageCircle className="w-3 h-3" />
-                    <span>{task.comments.length}</span>
-                  </div>
-                )}
-                {task.attachments && task.attachments.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    <FiPaperclip className="w-3 h-3" />
-                    <span>{task.attachments.length}</span>
-                  </div>
-                )}
-                {task.due_date && (
-                  <div className="flex items-center gap-1">
-                    <FiCalendar className="w-3 h-3" />
-                    <span>{new Date(task.due_date).toLocaleDateString()}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Assignee Avatar */}
-              <div className="flex items-center">
-                {task.assignee ? (
-                  <div className="relative">
-                    <img
-                      src={getUserAvatar(task.assignee)}
-                      alt={task.assignee.name}
-                      className="w-7 h-7 rounded-lg border-2 border-slate-600/50 hover:border-slate-500 transition-colors"
-                    />
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity"></div>
-                  </div>
-                ) : task.user_id ? (
-                  <div className="w-7 h-7 rounded-lg bg-slate-700/50 border border-slate-600/50 flex items-center justify-center">
-                    <FiUser className="w-3 h-3 text-slate-400" />
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Enhanced Context Menu - tylko gdy nie dragging */}
-            {isMenuOpen && !snapshot.isDragging && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                className="fixed z-50 bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 rounded-xl shadow-xl py-2 min-w-[150px]"
-                style={{
-                  top: menuPosition.top,
-                  left: menuPosition.left,
-                  right: menuPosition.right,
-                }}
-                onMouseLeave={handleMenuClose}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) =>
-                    handleMenuAction(e, () => onOpenTaskDetail(task.id))
-                  }
-                  className="w-full justify-start !text-slate-300 hover:!text-slate-100 hover:!bg-slate-700/50 !rounded-none !py-2 !px-4"
-                >
-                  Edit Task
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => handleMenuAction(e, handleDelete)}
-                  className="w-full justify-start !text-red-400 hover:!text-red-300 hover:!bg-red-500/10 !rounded-none !py-2 !px-4"
-                >
-                  Delete Task
-                </Button>
-              </motion.div>
             )}
           </div>
+
+          {/* Three Dots Menu Button */}
+          <button
+            onClick={toggleMenu}
+            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1.5 hover:bg-slate-700/60 rounded-lg text-slate-400 hover:text-slate-200 ml-2 flex-shrink-0"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Task Meta Information */}
+        <div className="flex items-center justify-between">
+          {/* Priority Badge */}
+          {priorityInfo && (
+            <div
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${priorityInfo.bgColor} ${priorityInfo.textColor} ${priorityInfo.borderColor}`}
+            >
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: priorityInfo.color }}
+              />
+              {priorityInfo.label}
+            </div>
+          )}
+
+          {/* Assignee Avatar */}
+          {task.assignee && (
+            <div className="flex items-center gap-2">
+              <img
+                src={getUserAvatar(task.assignee)}
+                alt={task.assignee.name || "User"}
+                className="w-6 h-6 rounded-full border-2 border-slate-600/50"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Due Date */}
+        {task.due_date && (
+          <div className="mt-3 pt-3 border-t border-slate-700/30">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              {new Date(task.due_date).toLocaleDateString()}
+            </div>
+          </div>
         )}
-      </Draggable>
+      </div>
+
+      {/* Enhanced Context Menu */}
+      {isMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-40" onClick={handleMenuClose} />
+
+          {/* Menu */}
+          <div
+            className="fixed z-50 bg-slate-800/95 backdrop-blur-lg border border-slate-600/50 rounded-xl shadow-2xl py-2 min-w-[200px] animate-in fade-in-0 zoom-in-95 duration-200"
+            style={{
+              top: `${menuPosition.top}px`,
+              left:
+                menuPosition.left !== undefined
+                  ? `${menuPosition.left}px`
+                  : undefined,
+              right:
+                menuPosition.right !== undefined
+                  ? `${menuPosition.right}px`
+                  : undefined,
+            }}
+          >
+            {/* Edit Task */}
+            <button
+              onClick={(e) =>
+                handleMenuAction(e, () => onOpenTaskDetail(task.id))
+              }
+              className="w-full px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-700/60 transition-colors duration-150 flex items-center gap-3"
+            >
+              <svg
+                className="w-4 h-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              <span className="font-medium">Edit Task</span>
+            </button>
+
+            {/* Divider */}
+            <div className="h-px bg-slate-700/50 my-1" />
+
+            {/* Delete Task */}
+            <button
+              onClick={(e) => handleMenuAction(e, handleDelete)}
+              className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors duration-150 flex items-center gap-3"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              <span className="font-medium">Delete Task</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Enhanced Delete Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-50"
-            onClick={cancelDelete}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 max-w-sm mx-4 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-red-500/10 rounded-xl">
-                  <svg
-                    className="w-6 h-6 text-red-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
+      {showDeleteConfirm && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            {/* Modal */}
+            <div className="bg-slate-800/95 backdrop-blur-lg border border-slate-600/50 rounded-2xl shadow-2xl max-w-md w-full mx-4 animate-in fade-in-0 zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="p-6 pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-red-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-100">
+                      Delete Task
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                      This action cannot be undone
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-slate-200 text-lg font-semibold">
-                  Delete Task
-                </h3>
               </div>
 
-              <p className="text-slate-400 mb-6 leading-relaxed">
-                Are you sure you want to delete{" "}
-                <span className="text-slate-200 font-medium">
-                  "{truncateText(task.title, 6)}"
-                </span>
-                ? This action cannot be undone.
-              </p>
+              {/* Content */}
+              <div className="px-6 pb-4">
+                <p className="text-slate-300">
+                  Are you sure you want to delete{" "}
+                  <span className="font-medium text-slate-100">
+                    "{task.title}"
+                  </span>
+                  ?
+                </p>
+              </div>
 
-              <div className="flex gap-3 justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-slate-700/50">
+                <button
                   onClick={cancelDelete}
-                  className="!text-slate-400 hover:!text-slate-200 hover:!bg-slate-700/50"
+                  className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-700/50 rounded-lg transition-colors duration-150"
                 >
                   Cancel
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
+                </button>
+                <button
                   onClick={confirmDelete}
-                  className="!bg-red-600 hover:!bg-red-700"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors duration-150 shadow-lg hover:shadow-xl"
                 >
                   Delete Task
-                </Button>
+                </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 

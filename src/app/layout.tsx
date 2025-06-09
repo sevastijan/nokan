@@ -14,7 +14,7 @@ export default function RootLayout({
       <body className="bg-gray-950 text-white">
         <Providers>
           <Navbar />
-          <main className="main-content min-h-screen">{children}</main>
+          <main className="main-content min-h-screen md:ml-64">{children}</main>
           <ToastContainer position="top-right" autoClose={3000} />
         </Providers>
       </body>

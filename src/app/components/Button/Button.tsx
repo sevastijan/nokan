@@ -14,22 +14,26 @@ const Button = ({
   ...props
 }: ButtonProps): JSX.Element => {
   const baseClasses =
-    "inline-flex items-center justify-center font-medium cursor-pointer rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center font-medium cursor-pointer rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm border";
 
   const variantClasses = {
-    primary: "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500",
-    secondary: "bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500",
-    success: "bg-green-600 hover:bg-green-700 text-white focus:ring-green-500",
-    danger: "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500",
+    primary:
+      "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-blue-500/50 focus:ring-blue-500 shadow-lg hover:shadow-xl",
+    secondary:
+      "bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border-slate-700/50 focus:ring-slate-500 shadow-md hover:shadow-lg",
+    success:
+      "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white border-emerald-500/50 focus:ring-emerald-500 shadow-lg hover:shadow-xl",
+    danger:
+      "bg-gradient-to-r from-red-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white border-red-500/50 focus:ring-red-500 shadow-lg hover:shadow-xl",
     warning:
-      "bg-yellow-600 hover:bg-yellow-700 text-white focus:ring-yellow-500",
+      "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white border-amber-500/50 focus:ring-amber-500 shadow-lg hover:shadow-xl",
     ghost:
-      "bg-transparent hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-600 focus:ring-gray-500",
+      "bg-transparent hover:bg-slate-800/60 text-slate-300 hover:text-white border-slate-600/50 hover:border-slate-500/50 focus:ring-slate-500",
   };
 
   const sizeClasses = {
-    sm: "px-3 py-1 text-sm",
-    md: "px-4 py-2 text-sm",
+    sm: "px-3 py-2 text-sm",
+    md: "px-4 py-2.5 text-sm",
     lg: "px-6 py-3 text-base",
   };
 

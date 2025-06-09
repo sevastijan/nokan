@@ -50,10 +50,11 @@ export interface Option {
 }
 
 export interface CustomSelectProps {
-  options: Option[];
+  options: { value: string; label: string; image?: string | null }[];
   value: string[];
-  onChange: (newValue: string[]) => void;
+  onChange: (value: string[]) => void;
   isMulti?: boolean;
+  onDropdownToggle?: (isOpen: boolean) => void;
 }
 
 export interface Board  {
