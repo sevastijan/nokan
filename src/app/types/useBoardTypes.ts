@@ -1,3 +1,5 @@
+import { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
+
 /**
  * Represents a single user.
  */
@@ -17,6 +19,14 @@ export interface Priority {
   color: string;
 }
 
+export interface Attachment {
+  id: string;
+  filename: string;
+  url: string;
+  task_id: string;
+  uploaded_at: string;
+}
+
 /**
  * Represents a single task in a column.
  */
@@ -24,14 +34,20 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  user_id?: string;
   priority?: string;
+  due_date?: string;
+  assignee?: any;
+  user_id?: string;
+  column_id: string;
+  board_id?: string;
+  order: number;
+  images?: any[]; // Dodaj tę właściwość
+  index?: number;
+  comments?: any[];
+  attachments?: any[];
   created_at?: string;
   updated_at?: string;
-  order?: number;
-  images?: string[];
-  assignee?: User;
-  priority_info?: Priority;
+  completed?: boolean; // Dodaj tę właściwość
 }
 
 /**
@@ -42,9 +58,11 @@ export interface Column {
   title: string;
   order: number;
   boardId: string;
-  board_id?: string; 
-  index?: number;    
+  board_id?: string;
   tasks: Task[];
+  index?: number;
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
+
 }
 
 /**

@@ -7,11 +7,27 @@ import Button from "./Button/Button";
 import { ColumnProps } from "./SingleTaskView/types";
 
 /**
- * Column component that displays a draggable column with tasks in a Kanban board
+ * Column component that represents a draggable column in a Kanban board.
+ * It contains a title input, a list of tasks (sorted by order),
+ * and a form for adding new tasks.
+ *
+ * @component
+ * @param {ColumnProps} props - The props for the Column component.
+ * @param {Object} props.column - The column data including tasks.
+ * @param {number} props.colIndex - Index of the column in the board.
+ * @param {Function} props.onUpdateColumnTitle - Handler to update column title.
+ * @param {Function} props.onRemoveColumn - Handler to remove the column.
+ * @param {Function} props.onTaskAdded - Handler when a new task is added.
+ * @param {Function} props.onRemoveTask - Handler to remove a task.
+ * @param {Function} props.onOpenTaskDetail - Handler to open task details.
+ * @param {string|null} props.selectedTaskId - Currently selected task ID.
+ * @param {Object} props.currentUser - The current logged-in user.
+ * @param {Function} props.onOpenAddTask - Handler to trigger task add modal.
+ * @param {Array} [props.priorities=[]] - Optional list of task priorities.
+ * @returns {JSX.Element} The rendered Column component.
  */
 const Column = ({
   column,
-  onUpdateTask,
   colIndex,
   onUpdateColumnTitle,
   onRemoveColumn,
@@ -19,7 +35,6 @@ const Column = ({
   onRemoveTask,
   onOpenTaskDetail,
   selectedTaskId,
-  onTaskUpdate,
   currentUser,
   onOpenAddTask,
   priorities = [],
@@ -40,6 +55,7 @@ const Column = ({
             snapshot.isDragging ? "transform scale-105" : ""
           }`}
         >
+          {/* Column header: drag handle, title input, and remove button */}
           <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
             <div
               {...provided.dragHandleProps}
@@ -65,7 +81,9 @@ const Column = ({
               className="p-2 text-red-400 hover:text-red-300"
             />
           </div>
-          <Droppable droppableId={column.id}>
+
+          {/* Droppable area for tasks */}
+          <Droppable droppableId={column.id} type="TASK">
             {(provided, snapshot) => (
               <div
                 ref={provided.innerRef}
@@ -74,21 +92,25 @@ const Column = ({
                   column.tasks.length === 0 ? "min-h-0" : ""
                 }`}
               >
-                {column.tasks.map((task, index) => (
-                  <Task
-                    key={task.id}
-                    task={task}
-                    taskIndex={index}
-                    columnId={column.id}
-                    onRemoveTask={onRemoveTask}
-                    onOpenTaskDetail={onOpenTaskDetail}
-                    priorities={priorities}
-                  />
-                ))}
+                {column.tasks
+                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                  .map((task, index) => (
+                    <Task
+                      key={task.id}
+                      task={task}
+                      taskIndex={index}
+                      columnId={column.id}
+                      onRemoveTask={onRemoveTask}
+                      onOpenTaskDetail={onOpenTaskDetail}
+                      priorities={priorities}
+                    />
+                  ))}
                 {provided.placeholder}
               </div>
             )}
           </Droppable>
+
+          {/* Form to add new tasks */}
           <AddTaskForm
             boardId={column.board_id || ""}
             columnId={column.id}

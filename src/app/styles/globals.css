@@ -23,3 +23,16 @@ html, body {
         /* Removed padding - content should touch the edges */
     }
 }
+
+
+[data-rbd-drag-handle-draggable-id] {
+    touch-action: none !important;
+  }
+  
+  .dragging-active {
+    overflow: hidden !important;
+  }
+  
+  [data-rbd-drag-handle-draggable-id][style*="transform"] {
+    z-index: 9999 !important;
+  }

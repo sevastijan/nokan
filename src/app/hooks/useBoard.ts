@@ -9,6 +9,7 @@ import {
   updateColumnTitle,
   updateTask,
   addTask,
+  supabase,
 } from "../lib/api";
 import { Task, Column, Board } from "../types/useBoardTypes";
 
@@ -27,7 +28,7 @@ import { Task, Column, Board } from "../types/useBoardTypes";
  *   handleRemoveColumn: (columnId: string) => Promise<void>,
  *   handleUpdateColumnTitle: (columnId: string, newTitle: string) => Promise<void>,
  *   handleUpdateTaskTitle: (columnId: string, taskId: string, newTitle: string) => Promise<void>,
- *   handleUpdateTask: (columnId: string, updatedTask: Task) => Promise<void>,
+ *   handleUpdateTask: (taskId: string, updatedTask: Partial<Task> & { column_id?: string }) => Promise<void>,
  *   handleRemoveTask: (columnId: string, taskId: string) => Promise<void>,
  *   handleAddTask: (columnId: string, title: string, priority?: string, userId?: string) => Promise<Task>
  * }}
@@ -62,6 +63,7 @@ export const useBoard = (boardId: string) => {
             title: task.title,
             order: task.order || 0,
             description: task.description,
+            column_id: task.column_id || col.id, 
             priority: task.priority,
             images: task.images,
             user_id: task.user_id,
@@ -255,40 +257,59 @@ export const useBoard = (boardId: string) => {
 
   /**
    * Update the full task object on the server and locally.
-   * @param {string} columnId - ID of the column containing the task.
-   * @param {Task} updatedTask - Updated task object.
+   * @param {string} taskId - ID of the task to update.
+   * @param {Partial<Task> & { column_id?: string }} updatedTask - Updated task object (partial).
    * @returns {Promise<void>}
    */
-  const handleUpdateTask = async (columnId: string, updatedTask: Task) => {
+  const handleUpdateTask = async (
+    taskId: string, 
+    updatedTask: Partial<Task> & { column_id?: string }
+  ) => {
+    if (!board) return;
+
     setLoading(true);
     setError(null);
 
     try {
-      await updateTask(updatedTask.id, {
-        title: updatedTask.title,
-        description: updatedTask.description,
-        priority: updatedTask.priority,
+      // Update local state immediately for better UX
+      const { column_id, ...taskUpdates } = updatedTask;
+      
+      const newColumns = board.columns.map(column => ({
+        ...column,
+        tasks: column.tasks.map(task =>
+          task.id === taskId ? { ...task, ...taskUpdates } : task
+        ),
+      }));
+
+      updateBoard({
+        ...board,
+        columns: newColumns,
       });
 
-      setBoard((prev) =>
-        prev
-          ? {
-              ...prev,
-              columns: prev.columns.map((col) =>
-                col.id === columnId
-                  ? {
-                      ...col,
-                      tasks: col.tasks.map((task) =>
-                        task.id === updatedTask.id ? { ...task, ...updatedTask } : task
-                      ),
-                    }
-                  : col
-              ),
-            }
-          : prev
-      );
+      // Then update server if we have task data to update
+      if (updatedTask.title || updatedTask.description || updatedTask.priority) {
+        await updateTask(taskId, {
+          title: updatedTask.title || '',
+          description: updatedTask.description,
+          priority: updatedTask.priority,
+        });
+      }
+
+      // If column_id changed, update that separately
+      if (updatedTask.column_id) {
+        const { error } = await supabase
+          .from("tasks")
+          .update({ column_id: updatedTask.column_id })
+          .eq("id", taskId);
+
+        if (error) throw error;
+      }
+
     } catch (err) {
+      console.error("Error updating task:", err);
       setError("Failed to update task. Please try again.");
+      // Revert local changes by refetching
+      await fetchBoardData();
     } finally {
       setLoading(false);
     }
@@ -362,6 +383,7 @@ export const useBoard = (boardId: string) => {
         id: newTaskFromDB.id,
         title: newTaskFromDB.title,
         order: newTaskFromDB.order || 0,
+        column_id: columnId,
         description: newTaskFromDB.description,
         priority: newTaskFromDB.priority,
         images: newTaskFromDB.images,

@@ -1,4 +1,6 @@
 import { Column as ColumnType, Task as TaskType } from "../../types/useBoardTypes";
+import { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
+
 
 export interface User {
   id: string;
@@ -154,6 +156,8 @@ export interface ColumnProps {
   currentUser: any;
   onOpenAddTask: (columnId: string) => void;
   priorities?: Array<{ id: string; label: string; color: string }>;
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
+
 }
 
 export interface TaskHeaderProps {

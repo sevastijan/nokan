@@ -1,22 +1,28 @@
 "use client";
 
-import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
+import { DragDropContext, DropResult, Droppable } from "@hello-pangea/dnd";
 import { useParams, useRouter } from "next/navigation";
 import { useBoard } from "../../hooks/useBoard";
 import Column from "../../components/Column";
 import AddColumnPopup from "../../components/TaskColumn/AddColumnPopup";
 import SingleTaskView from "../../components/SingleTaskView/SingleTaskView";
 import Calendar from "../../components/Calendar/Calendar";
+import SearchAndFilters from "../../components/SearchAndFilters/SearchAndFilters";
+import ViewToggle from "../../components/ViewToggle/ViewToggle";
+import Breadcrumbs from "../../components/Breadcrumbs/Breadcrumbs";
+import Button from "../../components/Button/Button";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiArrowLeft, FiCalendar } from "react-icons/fi";
-import { Column as ColumnType, Task } from "../../types/useBoardTypes";
+import { FiArrowLeft, FiHome } from "react-icons/fi";
+import { Column as ColumnType } from "../../types/useBoardTypes";
 import { User } from "../../components/SingleTaskView/types";
 import { useSession } from "next-auth/react";
 import Loader from "../../components/Loader";
 import { supabase } from "../../lib/supabase";
 import { extractIdFromUrl } from "../../lib/utils";
 import { getPriorities, getTeams } from "../../lib/api";
+import Task from "../../components/Task";
+import { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 
 /**
  * Board page component displaying a Kanban board with drag-and-drop support
@@ -191,83 +197,205 @@ const Page = (): JSX.Element => {
   }, []);
 
   /**
-   * Handle drag and drop events for tasks and columns
+   * Log board data when columns are loaded
+   */
+  useEffect(() => {
+    if (board?.columns) {
+      console.log("Board data loaded:");
+      board.columns.forEach((col) => {
+        console.log(
+          `Column ${col.title}:`,
+          col.tasks.map((t) => ({ id: t.id, title: t.title, order: t.order }))
+        );
+      });
+    }
+  }, [board]);
+
+  /**
+   * Enhanced drag and drop handler
    * @param result - Result object from drag-and-drop library
    */
-  const onDragEnd = (result: DropResult) => {
-    if (!board) return;
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, type } = result;
 
-    const { source, destination, type } = result;
-    if (!destination) return;
+    if (!destination || !board) return;
 
-    if (type === "TASK") {
-      const sourceCol = board.columns.find(
-        (col: ColumnType) => col.id === source.droppableId
-      );
-      const destCol = board.columns.find(
-        (col: ColumnType) => col.id === destination.droppableId
-      );
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
 
-      if (!sourceCol || !destCol) return;
+    if (type === "COLUMN") {
+      const reorderedColumns = Array.from(board.columns);
+      const [movedColumn] = reorderedColumns.splice(source.index, 1);
+      reorderedColumns.splice(destination.index, 0, movedColumn);
 
-      const taskToMove = sourceCol.tasks[source.index];
-
-      if (source.droppableId === destination.droppableId) {
-        // Reorder task within same column
-        const newTasks = [...sourceCol.tasks];
-        newTasks.splice(source.index, 1);
-        newTasks.splice(destination.index, 0, taskToMove);
-
-        updateBoard({
-          ...board,
-          columns: board.columns.map((col: ColumnType) =>
-            col.id === sourceCol.id ? { ...col, tasks: newTasks } : col
-          ),
-        });
-      } else {
-        // Move task between columns
-        const sourceTasks = [...sourceCol.tasks];
-        const destTasks = [...destCol.tasks];
-
-        sourceTasks.splice(source.index, 1);
-        destTasks.splice(destination.index, 0, taskToMove);
-
-        updateBoard({
-          ...board,
-          columns: board.columns.map((col: ColumnType) =>
-            col.id === sourceCol.id
-              ? { ...col, tasks: sourceTasks }
-              : col.id === destCol.id
-              ? { ...col, tasks: destTasks }
-              : col
-          ),
-        });
-      }
-    } else if (type === "COLUMN") {
-      // Reorder columns
-      const newColumns = [...board.columns];
-      const [movedColumn] = newColumns.splice(source.index, 1);
-      newColumns.splice(destination.index, 0, movedColumn);
+      const columnsWithNewOrder = reorderedColumns.map((column, index) => ({
+        ...column,
+        order: index,
+      }));
 
       updateBoard({
         ...board,
-        columns: newColumns,
+        columns: columnsWithNewOrder,
       });
-    }
-  };
 
-  /**
-   * Add a new column to the board after validating title
-   */
-  const addColumn = async () => {
-    if (!newColumnTitle.trim()) return;
-    setIsAddingColumn(true);
-    try {
-      await handleAddColumn(newColumnTitle);
-      setNewColumnTitle("");
-      setIsPopupOpen(false);
-    } finally {
-      setIsAddingColumn(false);
+      await Promise.all(
+        columnsWithNewOrder.map(async (column, index) => {
+          if (column.order !== index) {
+            try {
+              const { error } = await supabase
+                .from("columns")
+                .update({ order: index })
+                .eq("id", column.id);
+
+              if (error) {
+                console.error("Error updating column order:", error);
+              }
+            } catch (error) {
+              console.error("Error updating column order:", error);
+            }
+          }
+        })
+      );
+
+      return;
+    }
+
+    if (type === "TASK") {
+      const sourceColumn = board.columns.find(
+        (col) => col.id === source.droppableId
+      );
+      const destColumn = board.columns.find(
+        (col) => col.id === destination.droppableId
+      );
+
+      if (!sourceColumn || !destColumn) return;
+
+      if (source.droppableId === destination.droppableId) {
+        const sortedTasks = [...sourceColumn.tasks].sort(
+          (a, b) => (a.order || 0) - (b.order || 0)
+        );
+
+        console.log(
+          "Sorted tasks:",
+          sortedTasks.map((t) => ({ id: t.id, order: t.order }))
+        );
+
+        const [movedTask] = sortedTasks.splice(source.index, 1);
+        sortedTasks.splice(destination.index, 0, movedTask);
+
+        const tasksWithNewOrder = sortedTasks.map((task, index) => ({
+          ...task,
+          order: index,
+        }));
+
+        console.log(
+          "Tasks with new order:",
+          tasksWithNewOrder.map((t) => ({ id: t.id, order: t.order }))
+        );
+
+        const newColumns = board.columns.map((col) =>
+          col.id === sourceColumn.id
+            ? { ...col, tasks: tasksWithNewOrder }
+            : col
+        );
+
+        updateBoard({
+          ...board,
+          columns: newColumns,
+        });
+
+        await Promise.all(
+          tasksWithNewOrder.map(async (task, index) => {
+            try {
+              const { error } = await supabase
+                .from("tasks")
+                .update({ order: index })
+                .eq("id", task.id);
+
+              if (error) {
+                console.error("Error updating task order:", error);
+              }
+            } catch (error) {
+              console.error("Error updating task order:", error);
+            }
+          })
+        );
+      } else {
+        const sourceTasks = [...sourceColumn.tasks].sort(
+          (a, b) => (a.order || 0) - (b.order || 0)
+        );
+        const destTasks = [...destColumn.tasks].sort(
+          (a, b) => (a.order || 0) - (b.order || 0)
+        );
+
+        const [movedTask] = sourceTasks.splice(source.index, 1);
+        destTasks.splice(destination.index, 0, {
+          ...movedTask,
+          column_id: destination.droppableId,
+        });
+
+        const sourceTasksWithOrder = sourceTasks.map((task, index) => ({
+          ...task,
+          order: index,
+        }));
+
+        const destTasksWithOrder = destTasks.map((task, index) => ({
+          ...task,
+          order: index,
+        }));
+
+        const newColumns = board.columns.map((col) => {
+          if (col.id === sourceColumn.id) {
+            return { ...col, tasks: sourceTasksWithOrder };
+          }
+          if (col.id === destColumn.id) {
+            return { ...col, tasks: destTasksWithOrder };
+          }
+          return col;
+        });
+
+        updateBoard({
+          ...board,
+          columns: newColumns,
+        });
+
+        try {
+          await supabase
+            .from("tasks")
+            .update({
+              column_id: destination.droppableId,
+              order: destination.index,
+            })
+            .eq("id", movedTask.id);
+
+          const allTasksToUpdate = [
+            ...sourceTasksWithOrder.map((task, index) => ({
+              ...task,
+              order: index,
+            })),
+            ...destTasksWithOrder.map((task, index) => ({
+              ...task,
+              order: index,
+            })),
+          ];
+
+          for (const task of allTasksToUpdate) {
+            await supabase
+              .from("tasks")
+              .update({ order: task.order })
+              .eq("id", task.id);
+          }
+
+          console.log("Task moved successfully");
+        } catch (error) {
+          console.error("Error updating task positions:", error);
+          fetchBoardData();
+        }
+      }
     }
   };
 
@@ -283,6 +411,24 @@ const Page = (): JSX.Element => {
    */
   const handleCalendarTaskClick = (taskId: string) => {
     setSelectedTaskId(taskId);
+  };
+
+  /**
+   * Add a new column to the board after validating title
+   */
+  const addColumn = async () => {
+    if (newColumnTitle.trim()) {
+      setIsAddingColumn(true);
+      try {
+        await handleAddColumn(newColumnTitle.trim());
+        setNewColumnTitle("");
+        setIsPopupOpen(false);
+      } catch (error) {
+        console.error("Error adding column:", error);
+      } finally {
+        setIsAddingColumn(false);
+      }
+    }
   };
 
   if (status === "loading") {
@@ -302,127 +448,134 @@ const Page = (): JSX.Element => {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="p-4 sm:p-6 bg-gray-900 min-h-screen">
-          {/* Back to Dashboard Button */}
-          <div className="mb-4">
-            <button
-              onClick={handleBackToDashboard}
-              className="flex cursor-pointer items-center gap-2 text-gray-400 hover:text-white transition-colors group"
-            >
-              <FiArrowLeft className="group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Dashboard</span>
-            </button>
-          </div>
+        <div className="h-screen flex flex-col">
+          {/* Header */}
+          <div className="flex-shrink-0">
+            <div className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 shadow-lg sticky top-0 z-40">
+              <div className="px-6 py-4 space-y-4">
+                {/* Breadcrumbs */}
+                <Breadcrumbs
+                  items={[
+                    {
+                      label: "Dashboard",
+                      href: "/dashboard",
+                      icon: <FiHome className="w-4 h-4" />,
+                    },
+                    {
+                      label: "Boards",
+                      href: "/dashboard",
+                    },
+                    {
+                      label: board?.title || "Loading...",
+                    },
+                  ]}
+                />
 
-          {/* Board Header */}
-          <div className="mb-4 sm:mb-6 flex flex-col md:flex-row gap-4 md:items-center">
-            <input
-              type="text"
-              value={localBoardTitle}
-              onChange={(e) => setLocalBoardTitle(e.target.value)}
-              className="text-2xl sm:text-3xl font-bold bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="Board Title"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowCalendar(!showCalendar)}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200 ${
-                  showCalendar
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-gray-600 hover:bg-gray-700 text-white"
-                }`}
-              >
-                <FiCalendar />
-                {showCalendar ? "Ukryj Kalendarz" : "Pokaż Kalendarz"}
-              </button>
-              <button
-                onClick={() => setIsPopupOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200"
-              >
-                Add Column
-              </button>
+                {/* Main Header Content */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={handleBackToDashboard}
+                      className="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200 group"
+                    >
+                      <FiArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                      <span className="font-medium">Back</span>
+                    </button>
+                    <div className="w-px h-6 bg-slate-600"></div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full shadow-sm"></div>
+                      <input
+                        type="text"
+                        value={localBoardTitle}
+                        onChange={(e) => setLocalBoardTitle(e.target.value)}
+                        className="text-2xl font-bold bg-transparent text-white border-none focus:outline-none focus:ring-0 p-0 hover:bg-slate-700/30 rounded px-3 py-2 transition-all duration-200 min-w-[200px] placeholder-slate-400"
+                        placeholder="Untitled Board"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <SearchAndFilters />
+                    <ViewToggle
+                      showCalendar={showCalendar}
+                      setShowCalendar={setShowCalendar}
+                    />
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setIsPopupOpen(true)}
+                      className="shadow-sm hover:shadow-md bg-indigo-600 hover:bg-indigo-700"
+                      icon={
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                      }
+                    >
+                      Add Column
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Calendar View */}
-          <AnimatePresence>
-            {showCalendar && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mb-6"
-              >
-                <Calendar
-                  boardId={id as string}
-                  onTaskClick={handleCalendarTaskClick}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Board Columns */}
-          <Droppable droppableId="board" type="COLUMN" direction="horizontal">
-            {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="flex flex-wrap gap-4 sm:gap-6 overflow-x-auto pb-4 justify-center sm:justify-start"
-              >
-                <AnimatePresence>
-                  {board.columns.map((column: ColumnType, colIndex: number) => (
-                    <motion.div
+          {/* Board Container */}
+          <div className="flex-1 p-6">
+            <Droppable droppableId="board" type="COLUMN" direction="horizontal">
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="flex gap-6 h-full"
+                >
+                  {board?.columns?.map((column, index) => (
+                    <Column
                       key={column.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.3 }}
-                      className="w-full sm:w-auto min-w-[250px] sm:min-w-[300px]"
-                    >
-                      <Column
-                        column={column}
-                        onUpdateTask={handleUpdateTask}
-                        colIndex={colIndex}
-                        onUpdateColumnTitle={handleUpdateColumnTitle}
-                        onRemoveColumn={handleRemoveColumn}
-                        onTaskAdded={(
-                          columnId: string,
-                          title: string,
-                          priority?: string,
-                          userId?: string
-                        ) => handleAddTask(columnId, title, priority, userId)}
-                        onRemoveTask={handleRemoveTask}
-                        onOpenTaskDetail={setSelectedTaskId}
-                        onTaskUpdate={fetchBoardData}
-                        currentUser={currentUser}
-                        selectedTaskId={selectedTaskId}
-                        onOpenAddTask={setAddTaskColumnId}
-                        priorities={priorities}
-                      />
-                    </motion.div>
+                      column={column}
+                      onUpdateTask={handleUpdateTask}
+                      colIndex={index}
+                      onUpdateColumnTitle={handleUpdateColumnTitle}
+                      onRemoveColumn={handleRemoveColumn}
+                      onTaskAdded={handleAddTask}
+                      onRemoveTask={handleRemoveTask}
+                      onOpenTaskDetail={setSelectedTaskId}
+                      onTaskUpdate={fetchBoardData}
+                      currentUser={currentUser}
+                      selectedTaskId={selectedTaskId}
+                      onOpenAddTask={setAddTaskColumnId}
+                      priorities={priorities}
+                    />
                   ))}
-                </AnimatePresence>
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-
-          {/* Add Column Popup */}
-          <AddColumnPopup
-            isOpen={isPopupOpen}
-            onClose={() => setIsPopupOpen(false)}
-            onAddColumn={addColumn}
-            newColumnTitle={newColumnTitle}
-            setNewColumnTitle={setNewColumnTitle}
-            isAddingColumn={isAddingColumn}
-          />
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </div>
         </div>
       </DragDropContext>
 
-      {/* Single Task Detail View in Edit Mode */}
+      {/* Modals */}
+      <AddColumnPopup
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+        onAddColumn={addColumn}
+        newColumnTitle={newColumnTitle}
+        setNewColumnTitle={setNewColumnTitle}
+        isAddingColumn={isAddingColumn}
+      />
+
       <AnimatePresence>
         {selectedTaskId && !addTaskColumnId && (
           <SingleTaskView
@@ -439,7 +592,6 @@ const Page = (): JSX.Element => {
         )}
       </AnimatePresence>
 
-      {/* Single Task Detail View in Add Mode */}
       <AnimatePresence>
         {addTaskColumnId && !selectedTaskId && (
           <SingleTaskView
@@ -447,24 +599,51 @@ const Page = (): JSX.Element => {
             columnId={addTaskColumnId}
             boardId={id as string}
             onClose={() => setAddTaskColumnId(null)}
-            onTaskAdd={(newTask) => {
+            onTaskAdded={async (
+              columnId: string,
+              title: string,
+              priority?: number,
+              userId?: number
+            ) => {
+              const priorityNumber = priority || 2;
+              const userIdNumber = userId || parseInt(currentUser?.id || "0");
+
+              const newTask = await handleAddTask(
+                columnId,
+                title,
+                priorityNumber.toString(),
+                userIdNumber.toString()
+              );
+
               updateBoard({
                 ...board,
                 columns: board.columns.map((col: ColumnType) =>
                   col.id === addTaskColumnId
-                    ? { ...col, tasks: [...col.tasks, newTask] }
+                    ? {
+                        ...col,
+                        tasks: [
+                          ...col.tasks,
+                          {
+                            ...newTask,
+                            order: col.tasks.length,
+                            column_id: addTaskColumnId,
+                            board_id: board.id,
+                            priority: priorityNumber.toString(),
+                          },
+                        ],
+                      }
                     : col
                 ),
               });
               setAddTaskColumnId(null);
+              return newTask;
             }}
-            onTaskAdded={handleAddTask}
             currentUser={currentUser}
             priorities={priorities}
           />
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 };
 

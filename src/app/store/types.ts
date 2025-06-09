@@ -10,7 +10,11 @@ export interface Task {
   }
   
   export interface Board {
-    id: string;
-    title: string;
+    id?: string; // Zmień na opcjonalne
+    title?: string;
     columns: Column[];
+    createdAt?: string;
+    updatedAt?: string;
   }
+
+  
