@@ -139,7 +139,6 @@ export interface SingleTaskViewProps {
 
 export interface ColumnProps {
   column: ColumnType;
-  onUpdateTask: (columnId: string, task: TaskType) => void;
   colIndex: number;
   onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
   onRemoveColumn: (columnId: string) => void;

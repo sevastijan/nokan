@@ -11,6 +11,8 @@ import SearchAndFilters from "../../components/SearchAndFilters/SearchAndFilters
 import ViewToggle from "../../components/ViewToggle/ViewToggle";
 import Breadcrumbs from "../../components/Breadcrumbs/Breadcrumbs";
 import Button from "../../components/Button/Button";
+import BoardViewToggle from "../../components/BoardViewToggle/BoardViewToggle";
+import ListView from "../../components/ListView/ListView";
 import { JSX, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiArrowLeft, FiHome } from "react-icons/fi";
@@ -43,7 +45,6 @@ const Page = (): JSX.Element => {
     handleRemoveColumn,
     handleUpdateColumnTitle,
     handleRemoveTask,
-    handleUpdateTask,
     handleAddTask,
   } = useBoard(id as string);
 
@@ -61,6 +62,7 @@ const Page = (): JSX.Element => {
   const [priorities, setPriorities] = useState<
     Array<{ id: string; label: string; color: string }>
   >([]);
+  const [viewMode, setViewMode] = useState<"columns" | "list">("columns");
 
   /**
    * Fetch task priorities from API or set default priorities on failure
@@ -498,6 +500,10 @@ const Page = (): JSX.Element => {
 
                   <div className="flex items-center gap-3">
                     <SearchAndFilters />
+                    <BoardViewToggle
+                      viewMode={viewMode}
+                      onViewChange={setViewMode}
+                    />
                     <ViewToggle
                       showCalendar={showCalendar}
                       setShowCalendar={setShowCalendar}
@@ -533,35 +539,46 @@ const Page = (): JSX.Element => {
 
           {/* Board Container */}
           <div className="flex-1 p-6">
-            <Droppable droppableId="board" type="COLUMN" direction="horizontal">
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="flex gap-6 h-full"
-                >
-                  {board?.columns?.map((column, index) => (
-                    <Column
-                      key={column.id}
-                      column={column}
-                      onUpdateTask={handleUpdateTask}
-                      colIndex={index}
-                      onUpdateColumnTitle={handleUpdateColumnTitle}
-                      onRemoveColumn={handleRemoveColumn}
-                      onTaskAdded={handleAddTask}
-                      onRemoveTask={handleRemoveTask}
-                      onOpenTaskDetail={setSelectedTaskId}
-                      onTaskUpdate={fetchBoardData}
-                      currentUser={currentUser}
-                      selectedTaskId={selectedTaskId}
-                      onOpenAddTask={setAddTaskColumnId}
-                      priorities={priorities}
-                    />
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+            {viewMode === "columns" ? (
+              <Droppable
+                droppableId="board"
+                type="COLUMN"
+                direction="horizontal"
+              >
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="flex gap-6 h-full"
+                  >
+                    {board?.columns?.map((column, index) => (
+                      <Column
+                        key={column.id}
+                        column={column}
+                        colIndex={index}
+                        onUpdateColumnTitle={handleUpdateColumnTitle}
+                        onRemoveColumn={handleRemoveColumn}
+                        onTaskAdded={handleAddTask}
+                        onRemoveTask={handleRemoveTask}
+                        onOpenTaskDetail={setSelectedTaskId}
+                        currentUser={currentUser}
+                        selectedTaskId={selectedTaskId}
+                        onOpenAddTask={setAddTaskColumnId}
+                        priorities={priorities}
+                      />
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            ) : (
+              <ListView
+                columns={board?.columns || []}
+                onOpenTaskDetail={setSelectedTaskId}
+                onRemoveTask={handleRemoveTask}
+                priorities={priorities}
+              />
+            )}
           </div>
         </div>
       </DragDropContext>
