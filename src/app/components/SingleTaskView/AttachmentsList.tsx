@@ -237,7 +237,7 @@ const AttachmentsList = ({
         </div>
       ) : (
         <div className="text-center text-gray-400 py-6 border-2 border-dashed border-gray-600 rounded-lg">
-          <p>No attachments yet</p>
+          <p className="text-gray-400">No attachments yet</p>
           <p className="text-sm">
             Click "Add File" to upload your first attachment
           </p>

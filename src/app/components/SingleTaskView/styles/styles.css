@@ -1,0 +1,10 @@
+/* Stylowanie ikon kalendarzy dla input date */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: brightness(0) saturate(100%) invert(65%) sepia(8%) saturate(348%) hue-rotate(183deg) brightness(103%) contrast(89%);
+    cursor: pointer;
+}
+
+/* Dla Firefox */
+input[type="date"]::-moz-calendar-picker-indicator {
+    filter: brightness(0) saturate(100%) invert(65%) sepia(8%) saturate(348%) hue-rotate(183deg) brightness(103%) contrast(89%);
+}

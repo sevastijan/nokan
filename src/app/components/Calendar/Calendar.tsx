@@ -19,6 +19,18 @@ import Avatar from "../Avatar/Avatar"; // Import the Avatar component
 const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     loadCalendarEvents();
@@ -125,7 +137,7 @@ const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
         droppable={true}
         eventDrop={handleEventDrop}
         eventClick={handleEventClick}
-        height="600px"
+        height="auto"
         locale="en"
         headerToolbar={{
           left: "prev,next today",
@@ -133,16 +145,17 @@ const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
           right: "dayGridMonth,dayGridWeek",
         }}
         eventDisplay="block"
-        dayMaxEvents={3}
+        dayMaxEvents={false}
+        moreLinkClick="popover"
         eventContent={(arg) => (
           <div className="custom-event">
             <div className="event-title">{arg.event.title}</div>
-            {arg.event.extendedProps.assignee && (
+            {arg.event.extendedProps.assignee && !isMobile && (
               <div className="event-assignee">
                 <Avatar
                   src={arg.event.extendedProps.assignee.image || null}
                   alt={arg.event.extendedProps.assignee.name}
-                  size={20}
+                  size={isMobile ? 16 : 20}
                 />
                 <span className="event-assignee-name">
                   {arg.event.extendedProps.assignee.name}

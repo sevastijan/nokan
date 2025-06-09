@@ -8,7 +8,6 @@ import { TaskDetail, Attachment, SingleTaskViewProps } from "./types";
 import TaskHeader from "./TaskHeader";
 import TaskContent from "./TaskContent";
 import CommentsSection from "./CommentsSection";
-import AttachmentsList from "./AttachmentsList";
 import ActionFooter from "./ActionFooter";
 import TaskFooter from "./TaskFooter";
 import ImagePreviewModal from "./ImagePreviewModal";
@@ -22,6 +21,7 @@ import { useImagePreview } from "./hooks/useImagePreview";
 import { useUnsavedChanges } from "./hooks/useUnsavedChanges";
 import { useTaskDates } from "./hooks/useTaskDates";
 import { useTaskOperations } from "./hooks/useTaskOperations";
+import "./styles/styles.css";
 
 const SingleTaskView = ({
   taskId,
