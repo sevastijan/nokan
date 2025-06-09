@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { Task } from "../types/useBoardTypes";
+import { BoardTemplate, Task } from "../types/useBoardTypes";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -804,4 +804,206 @@ export async function getAllBoardsForUser(userEmail: string) {
   );
 
   return uniqueBoards;
+}
+
+/**
+ * Fetches all board templates
+ * @returns {Promise<Array>} List of all templates
+ * @throws {Error} Throws error if the query fails
+ */
+export async function getBoardTemplates(): Promise<BoardTemplate[]> {
+  const { data, error } = await supabase
+    .from("board_templates")
+    .select(`
+      id,
+      name,
+      description,
+      is_custom,
+      created_at,
+      updated_at,
+      template_columns (
+        id,
+        template_id,
+        title,
+        order
+      )
+    `)
+    .order('is_custom', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching board templates:", error);
+    throw error;
+  }
+
+  return data?.map(template => ({
+    ...template,
+    columns: template.template_columns || []
+  })) || [];
+}
+
+/**
+ * Adds a new board template
+ * @param {Object} templateData - Template data
+ * @param {string} templateData.name - Template name
+ * @param {string} templateData.description - Template description
+ * @param {Array} templateData.columns - Template columns
+ * @returns {Promise<Object>} Newly created template
+ * @throws {Error} Throws error if adding fails
+ */
+export async function addBoardTemplate(templateData: {
+  name: string;
+  description: string;
+  columns: { title: string; order: number }[];
+}): Promise<BoardTemplate> {
+  // Insert template
+  const { data: template, error: templateError } = await supabase
+    .from("board_templates")
+    .insert([{
+      name: templateData.name,
+      description: templateData.description,
+      is_custom: true
+    }])
+    .select()
+    .single();
+
+  if (templateError) {
+    console.error("Error adding board template:", templateError);
+    throw templateError;
+  }
+
+  // Insert template columns
+  const columnsToInsert = templateData.columns.map(col => ({
+    template_id: template.id,
+    title: col.title,
+    order: col.order
+  }));
+
+  const { data: columns, error: columnsError } = await supabase
+    .from("template_columns")
+    .insert(columnsToInsert)
+    .select();
+
+  if (columnsError) {
+    console.error("Error adding template columns:", columnsError);
+    throw columnsError;
+  }
+
+  return {
+    ...template,
+    columns: columns || []
+  };
+}
+
+/**
+ * Creates a board from a selected template
+ * @param {string} title - Board title
+ * @param {string} templateId - Template ID
+ * @param {string} userEmail - User email
+ * @returns {Promise<Object>} Newly created board
+ * @throws {Error} Throws error if creation fails
+ */
+export async function createBoardFromTemplate(
+  title: string,
+  templateId: string,
+  userEmail: string
+) {
+  // Fetch the template
+  const { data: template, error: templateError } = await supabase
+    .from("board_templates")
+    .select(`
+      id,
+      name,
+      template_columns (
+        title,
+        order
+      )
+    `)
+    .eq("id", templateId)
+    .single();
+
+  if (templateError) {
+    console.error("Error fetching template:", templateError);
+    throw templateError;
+  }
+
+  // Create board
+  const { data: board, error: boardError } = await supabase
+    .from("boards")
+    .insert([{ 
+      title,
+      owner: userEmail
+    }])
+    .select()
+    .single();
+
+  if (boardError) {
+    console.error("Error creating board:", boardError);
+    throw boardError;
+  }
+
+  // Insert columns from the template
+  if (template.template_columns && template.template_columns.length > 0) {
+    const columnsToInsert = template.template_columns.map((col: any) => ({
+      board_id: board.id,
+      title: col.title,
+      order: col.order
+    }));
+
+    const { error: columnsError } = await supabase
+      .from("columns")
+      .insert(columnsToInsert);
+
+    if (columnsError) {
+      console.error("Error creating columns:", columnsError);
+      throw columnsError;
+    }
+  }
+
+  return board;
+}
+
+/**
+ * Deletes a board template (only custom ones)
+ * @param {string} templateId - ID of the template to delete
+ * @throws {Error} Throws error if deletion fails
+ */
+export async function deleteBoardTemplate(templateId: string) {
+  // Check if the template is custom
+  const { data: template, error: checkError } = await supabase
+    .from("board_templates")
+    .select("is_custom")
+    .eq("id", templateId)
+    .single();
+
+  if (checkError) {
+    console.error("Error checking template:", checkError);
+    throw checkError;
+  }
+
+  if (!template.is_custom) {
+    throw new Error("Default templates cannot be deleted");
+  }
+
+  // Delete template columns
+  const { error: columnsError } = await supabase
+    .from("template_columns")
+    .delete()
+    .eq("template_id", templateId);
+
+  if (columnsError) {
+    console.error("Error deleting template columns:", columnsError);
+    throw columnsError;
+  }
+
+  // Delete the template
+  const { error: templateError } = await supabase
+    .from("board_templates")
+    .delete()
+    .eq("id", templateId);
+
+  if (templateError) {
+    console.error("Error deleting template:", templateError);
+    throw templateError;
+  }
 }
