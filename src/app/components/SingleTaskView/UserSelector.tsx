@@ -46,6 +46,10 @@ const UserSelector = ({
    * @param userId selected user ID or null to unassign
    */
   const handleUserSelect = async (userId: string | null) => {
+    console.log("=== DEBUG UserSelector handleUserSelect ===");
+    console.log("Selected user ID:", userId);
+    console.log("User ID type:", typeof userId);
+
     await onUserSelect(userId);
     close();
   };

@@ -541,6 +541,75 @@ const Page = (): JSX.Element => {
       }
     : null;
 
+  /**
+   * Handle task addition - extracted from inline function
+   */
+  const handleTaskAdded = async (
+    columnId: string,
+    title: string,
+    priority?: string,
+    userId?: string
+  ) => {
+    console.log("=== DEBUG handleTaskAdded ===");
+    console.log("handleTaskAdded called with:", {
+      columnId,
+      title,
+      priority,
+      userId,
+    });
+    console.log("userId type:", typeof userId);
+    console.log("userId is null/undefined:", userId == null);
+
+    try {
+      const priorityId = priority || "medium";
+      const assigneeId = userId;
+
+      console.log("Processed values:", {
+        priorityId,
+        assigneeId,
+      });
+
+      const newTask = await handleAddTask(
+        columnId,
+        title,
+        priorityId,
+        assigneeId
+      );
+
+      console.log("New task created:", newTask);
+
+      if (newTask && board) {
+        updateBoard({
+          ...board,
+          columns: board.columns.map((col: ColumnType) =>
+            col.id === addTaskColumnId
+              ? {
+                  ...col,
+                  tasks: [
+                    ...col.tasks,
+                    {
+                      ...newTask,
+                      order: col.tasks.length,
+                      column_id: addTaskColumnId,
+                      board_id: board.id,
+                      priority: priorityId,
+                    },
+                  ],
+                }
+              : col
+          ),
+        });
+      }
+
+      setAddTaskColumnId(null);
+      return newTask;
+    } catch (error) {
+      console.error("Error adding task:", error);
+      setAddTaskColumnId(null);
+      throw error;
+    }
+  };
+
   if (status === "loading") {
     return <Loader text="Loading session..." />;
   }
@@ -795,68 +864,7 @@ const Page = (): JSX.Element => {
                             colIndex={index}
                             onUpdateColumnTitle={handleUpdateColumnTitle}
                             onRemoveColumn={handleRemoveColumn}
-                            onTaskAdded={async (
-                              columnId: string,
-                              title: string,
-                              priority?: string,
-                              userId?: string
-                            ) => {
-                              console.log("onTaskAdded called with:", {
-                                columnId,
-                                title,
-                                priority,
-                                userId,
-                              });
-                              try {
-                                const priorityId = priority || "medium";
-                                const assigneeId = userId;
-
-                                console.log("Processed values:", {
-                                  priorityId,
-                                  assigneeId,
-                                });
-
-                                const newTask = await handleAddTask(
-                                  columnId,
-                                  title,
-                                  priorityId,
-                                  assigneeId
-                                );
-
-                                console.log("New task created:", newTask);
-
-                                if (newTask && board) {
-                                  updateBoard({
-                                    ...board,
-                                    columns: board.columns.map(
-                                      (col: ColumnType) =>
-                                        col.id === addTaskColumnId
-                                          ? {
-                                              ...col,
-                                              tasks: [
-                                                ...col.tasks,
-                                                {
-                                                  ...newTask,
-                                                  order: col.tasks.length,
-                                                  column_id: addTaskColumnId,
-                                                  board_id: board.id,
-                                                  priority: priorityId,
-                                                },
-                                              ],
-                                            }
-                                          : col
-                                    ),
-                                  });
-                                }
-
-                                setAddTaskColumnId(null);
-                                return newTask;
-                              } catch (error) {
-                                console.error("Error adding task:", error);
-                                setAddTaskColumnId(null);
-                                throw error;
-                              }
-                            }}
+                            onTaskAdded={handleTaskAdded} // Now just pass the function reference
                             onRemoveTask={handleRemoveTask}
                             onOpenTaskDetail={setSelectedTaskId}
                             currentUser={currentUser}
@@ -923,54 +931,7 @@ const Page = (): JSX.Element => {
             columnId={addTaskColumnId}
             boardId={id as string}
             onClose={() => setAddTaskColumnId(null)}
-            onTaskAdded={async (
-              columnId: string,
-              title: string,
-              priority?: string,
-              userId?: string
-            ) => {
-              try {
-                const priorityId = priority || "medium";
-                const assigneeId = userId;
-
-                const newTask = await handleAddTask(
-                  columnId,
-                  title,
-                  priorityId,
-                  assigneeId
-                );
-
-                if (newTask && board) {
-                  updateBoard({
-                    ...board,
-                    columns: board.columns.map((col: ColumnType) =>
-                      col.id === addTaskColumnId
-                        ? {
-                            ...col,
-                            tasks: [
-                              ...col.tasks,
-                              {
-                                ...newTask,
-                                order: col.tasks.length,
-                                column_id: addTaskColumnId,
-                                board_id: board.id,
-                                priority: priorityId,
-                              },
-                            ],
-                          }
-                        : col
-                    ),
-                  });
-                }
-
-                setAddTaskColumnId(null);
-                return newTask;
-              } catch (error) {
-                console.error("Error adding task:", error);
-                setAddTaskColumnId(null);
-                throw error;
-              }
-            }}
+            onTaskAdded={handleTaskAdded} // Same function reference
             currentUser={currentUser}
             priorities={priorities}
           />

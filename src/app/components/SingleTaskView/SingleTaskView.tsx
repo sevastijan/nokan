@@ -29,12 +29,14 @@ import { useUnsavedChanges } from "./hooks/useUnsavedChanges";
 import { useTaskDates } from "./hooks/useTaskDates";
 import { useTaskOperations } from "./hooks/useTaskOperations";
 import "./styles/styles.css";
+import { useBoard } from "../../hooks/useBoard";
+import { supabase } from "../../lib/supabase";
 
 const SingleTaskView = ({
   taskId,
   mode,
   columnId,
-  boardId,
+  boardId, // boardId is passed as a prop
   onClose,
   onTaskUpdate,
   onTaskAdd,
@@ -42,13 +44,96 @@ const SingleTaskView = ({
   currentUser,
 }: SingleTaskViewProps) => {
   const [isNewTask, setIsNewTask] = useState(mode === "add");
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
+    null
+  ); // Add state to track selected assignee
 
+  // Add debugging for assignee selection
+  const handleAssigneeChange = (assigneeId: string | null) => {
+    console.log("=== DEBUG SingleTaskView handleAssigneeChange ===");
+    console.log("Selected assignee ID:", assigneeId);
+    console.log("Assignee ID type:", typeof assigneeId);
+    console.log("Setting selectedAssigneeId to:", assigneeId);
+
+    setSelectedAssigneeId(assigneeId);
+
+    // Also update the task object immediately for live UI updates
+    if (assigneeId) {
+      const selectedUser = teamMembers?.find((user) => user.id === assigneeId);
+      console.log("Found selected user:", selectedUser);
+      if (selectedUser) {
+        setTask((prevTask) => {
+          if (!prevTask) return null;
+          const updatedTask = {
+            ...prevTask,
+            assignee: selectedUser,
+            user_id: assigneeId,
+          };
+          console.log("Updated task with new assignee:", updatedTask);
+          return updatedTask;
+        });
+      }
+    } else {
+      // Clear assignee
+      console.log("Clearing assignee");
+      setTask((prevTask) => {
+        if (!prevTask) return null;
+        const updatedTask = {
+          ...prevTask,
+          assignee: null,
+          user_id: null,
+        };
+        console.log("Updated task - cleared assignee:", updatedTask);
+        return updatedTask;
+      });
+    }
+
+    // Mark as changed for unsaved changes tracking
+    markAsChanged();
+  };
   // Use all the hooks
   const { task, loading, error, setTask, fetchTaskData } = useTaskData(
     taskId,
     mode,
     columnId
   );
+
+  // Add useEffect to sync selectedAssigneeId when task changes
+  useEffect(() => {
+    if (task?.assignee?.id && !selectedAssigneeId) {
+      setSelectedAssigneeId(task.assignee.id);
+    }
+  }, [task?.assignee?.id, selectedAssigneeId]);
+
+  const [teamId, setTeamId] = useState<string | null>(null); // Add teamId state
+
+  useEffect(() => {
+    const fetchTeamId = async () => {
+      const { data: teamData, error: teamError } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("board_id", boardId)
+        .single();
+
+      if (teamError) {
+        console.error("Error fetching team:", teamError);
+        return;
+      }
+
+      if (teamData) {
+        setTeamId(teamData.id);
+      }
+    };
+
+    fetchTeamId();
+  }, [boardId]);
+
+  useEffect(() => {
+    console.log("boardId in SingleTaskView:", boardId);
+  }, [boardId]);
+
+  // Use the useBoard hook to get teamMembers
+  const { teamMembers } = useBoard(teamId || ""); // Pass teamId to useBoard
 
   const { comments, fetchComments } = useTaskComments(taskId);
   const { availableUsers } = useAvailableUsers(boardId);
@@ -190,6 +275,45 @@ const SingleTaskView = ({
     }
   };
 
+  // Modify the task creation/save function
+  const handleSaveTask = async () => {
+    console.log("=== DEBUG Task Save ===");
+    console.log("Selected assignee ID before save:", selectedAssigneeId);
+    console.log("Task title:", task?.title);
+    console.log("Priority:", task?.priority);
+
+    if (mode === "add" && onTaskAdded) {
+      try {
+        // Convert selectedAssigneeId to number if it's a string
+        const assigneeId = selectedAssigneeId
+          ? parseInt(selectedAssigneeId, 10)
+          : undefined;
+
+        await onTaskAdded(
+          columnId || "",
+          task?.title || "",
+          task?.priority,
+          assigneeId // Pass as number or undefined
+        );
+        onClose(); // Close the modal after successful creation
+      } catch (error) {
+        console.error("Error in handleSaveTask:", error);
+      }
+    }
+  };
+
+  const getCurrentAssignee = () => {
+    // Priority: selectedAssigneeId > task.assignee
+    if (selectedAssigneeId) {
+      const selectedUser = teamMembers?.find(
+        (user) => user.id === selectedAssigneeId
+      );
+      return selectedUser || null;
+    }
+
+    return task?.assignee || null;
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
@@ -321,18 +445,23 @@ const SingleTaskView = ({
             <div className="flex-1 overflow-y-auto">
               <div className="p-6 space-y-6">
                 {/* Task Content */}
-                <TaskContent
-                  task={task}
-                  currentUser={currentUser}
-                  availableUsers={availableUsers}
-                  priorities={priorities}
-                  onUpdateTask={handleUpdateTask}
-                  taskId={taskId || ""}
-                  setHasUnsavedChanges={markAsChanged}
-                  isNewTask={isNewTask}
-                  onTaskUpdate={fetchTaskData}
-                  onAttachmentsUpdate={updateAttachmentsLocally}
-                />
+                {teamId && ( // Conditionally render TaskContent
+                  <TaskContent
+                    task={task}
+                    currentUser={currentUser}
+                    availableUsers={availableUsers}
+                    priorities={priorities}
+                    onUpdateTask={handleUpdateTask}
+                    taskId={taskId || ""}
+                    setHasUnsavedChanges={markAsChanged}
+                    isNewTask={isNewTask}
+                    onTaskUpdate={fetchTaskData}
+                    onAttachmentsUpdate={updateAttachmentsLocally}
+                    teamMembers={teamMembers} // Pass teamMembers here
+                    onAssigneeChange={handleAssigneeChange} // Add this line
+                    selectedAssigneeId={selectedAssigneeId} // Add this line too
+                  />
+                )}
 
                 {/* Enhanced Schedule Section */}
                 <div className="bg-slate-700/30 rounded-xl p-6 border border-slate-600/30">
@@ -426,35 +555,38 @@ const SingleTaskView = ({
                       <FaUser className="w-4 h-4" />
                       <span>Assignee</span>
                     </label>
-                    {task.assignee ? (
-                      <div className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/30">
-                        {task.assignee.image ? (
-                          <img
-                            src={task.assignee.image}
-                            alt={task.assignee.name}
-                            className="w-8 h-8 rounded-full border-2 border-slate-600"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-medium">
-                              {task.assignee.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div>
-                          <div className="text-white font-medium">
-                            {task.assignee.name}
-                          </div>
-                          <div className="text-slate-400 text-sm">
-                            {task.assignee.email}
+                    {(() => {
+                      const currentAssignee = getCurrentAssignee();
+                      return currentAssignee ? (
+                        <div className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/30">
+                          {currentAssignee.image ? (
+                            <img
+                              src={currentAssignee.image}
+                              alt={currentAssignee.name}
+                              className="w-8 h-8 rounded-full border-2 border-slate-600"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-medium">
+                                {currentAssignee.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <div className="text-white font-medium">
+                              {currentAssignee.name}
+                            </div>
+                            <div className="text-slate-400 text-sm">
+                              {currentAssignee.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-slate-700/30 border border-slate-600/30 rounded-lg text-slate-400 text-sm">
-                        No assignee set
-                      </div>
-                    )}
+                      ) : (
+                        <div className="p-3 bg-slate-700/30 border border-slate-600/30 rounded-lg text-slate-400 text-sm">
+                          No assignee set
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Creation Info */}
@@ -507,7 +639,7 @@ const SingleTaskView = ({
               isNewTask={isNewTask}
               hasUnsavedChanges={hasUnsavedChanges}
               isSaving={isSaving}
-              onSave={isNewTask ? handleSaveNewTask : handleSaveExistingTask}
+              onSave={isNewTask ? handleSaveTask : handleSaveExistingTask}
               onClose={handleClose}
               onDelete={!isNewTask ? handleDeleteTask : undefined}
               task={task}

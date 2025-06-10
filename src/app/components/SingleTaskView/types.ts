@@ -95,6 +95,7 @@ export interface CommentsSectionProps {
 export interface TaskContentProps {
   task: TaskDetail | null;
   currentUser: User;
+  
   availableUsers: User[];
   priorities: Priority[];
   onUpdateTask: (updates: Partial<TaskDetail>) => void;
@@ -105,6 +106,9 @@ export interface TaskContentProps {
   onAttachmentsUpdate?: (
     updater: (attachments: Attachment[]) => Attachment[]
   ) => void;
+  teamMembers: any[]; // Add this if not already present
+  onAssigneeChange?: (assigneeId: string | null) => void;
+  selectedAssigneeId?: string | null;
 }
 
 export interface AttachmentsListProps {

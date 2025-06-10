@@ -15,7 +15,7 @@ import { Task, Column, Board } from "../types/useBoardTypes";
 
 /**
  * Custom hook for managing board state and operations.
- * @param {string} boardId - The ID of the board to manage.
+ * @param {string | null} boardId - The ID of the board to manage.
  * @returns {{
  *   board: Board | null,
  *   loading: boolean,
@@ -30,13 +30,54 @@ import { Task, Column, Board } from "../types/useBoardTypes";
  *   handleUpdateTaskTitle: (columnId: string, taskId: string, newTitle: string) => Promise<void>,
  *   handleUpdateTask: (taskId: string, updatedTask: Partial<Task> & { column_id?: string }) => Promise<void>,
  *   handleRemoveTask: (columnId: string, taskId: string) => Promise<void>,
- *   handleAddTask: (columnId: string, title: string, priority?: string, assigneeId?: string) => Promise<Task>
+ *   handleAddTask: (columnId: string, title: string, priority?: string, assigneeId?: string) => Promise<Task>,
+ *   teamMembers: any[]
  * }}
  */
-export const useBoard = (boardId: string) => {
+export const useBoard = (boardId: string | null) => {
   const [board, setBoard] = useState<Board | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
+  /**
+   * Fetch team members associated with the board.
+   * @returns {Promise<void>}
+   */
+  const fetchTeamMembers = async () => {
+    if (!boardId) return; // Exit if boardId is null
+
+    try {
+      const { data: teamMembersData, error: teamMembersError } = await supabase
+        .from("team_members")
+        .select("user_id, users(id, name, email, image)") // Fetch user data
+        .eq("team_id", boardId);
+
+      if (teamMembersError) {
+        console.error("Error fetching team members:", teamMembersError);
+        setError("Failed to load team members. Please try again.");
+        return;
+      }
+
+      if (!teamMembersData || teamMembersData.length === 0) {
+        console.warn("No team members found for boardId:", boardId);
+        setTeamMembers([]);
+        return;
+      }
+
+      // Extract user data from the nested 'users' object
+      const members = teamMembersData.map((item) => ({
+        user_id: item.user_id,
+        ...item.users,
+      }));
+
+      setTeamMembers(members);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching team members:", err);
+      setError("Failed to load team members. Please try again.");
+    }
+  };
 
   /**
    * Fetch the board data from the API and update state.
@@ -63,7 +104,7 @@ export const useBoard = (boardId: string) => {
             title: task.title,
             order: task.order || 0,
             description: task.description,
-            column_id: task.column_id || col.id, 
+            column_id: task.column_id || col.id,
             priority: task.priority,
             images: task.images,
             user_id: task.user_id,
@@ -85,7 +126,12 @@ export const useBoard = (boardId: string) => {
   };
 
   useEffect(() => {
-    fetchBoardData();
+    const fetchData = async () => {
+      await fetchBoardData();
+      await fetchTeamMembers();
+    };
+
+    fetchData();
   }, [boardId]);
 
   /**
@@ -262,7 +308,7 @@ export const useBoard = (boardId: string) => {
    * @returns {Promise<void>}
    */
   const handleUpdateTask = async (
-    taskId: string, 
+    taskId: string,
     updatedTask: Partial<Task> & { column_id?: string }
   ) => {
     if (!board) return;
@@ -273,10 +319,10 @@ export const useBoard = (boardId: string) => {
     try {
       // Update local state immediately for better UX
       const { column_id, ...taskUpdates } = updatedTask;
-      
-      const newColumns = board.columns.map(column => ({
+
+      const newColumns = board.columns.map((column) => ({
         ...column,
-        tasks: column.tasks.map(task =>
+        tasks: column.tasks.map((task) =>
           task.id === taskId ? { ...task, ...taskUpdates } : task
         ),
       }));
@@ -289,7 +335,7 @@ export const useBoard = (boardId: string) => {
       // Then update server if we have task data to update
       if (updatedTask.title || updatedTask.description || updatedTask.priority) {
         await updateTask(taskId, {
-          title: updatedTask.title || '',
+          title: updatedTask.title || "",
           description: updatedTask.description,
           priority: updatedTask.priority,
         });
@@ -304,7 +350,6 @@ export const useBoard = (boardId: string) => {
 
         if (error) throw error;
       }
-
     } catch (err) {
       console.error("Error updating task:", err);
       setError("Failed to update task. Please try again.");
@@ -367,12 +412,15 @@ export const useBoard = (boardId: string) => {
     assigneeId?: string
   ): Promise<Task> => {
     try {
+      console.log("=== DEBUG handleAddTask ===");
       console.log("handleAddTask called with:", {
         columnId,
         title,
         priority,
         assigneeId,
       });
+      console.log("assigneeId type:", typeof assigneeId);
+      console.log("assigneeId is null/undefined:", assigneeId == null);
 
       const { data: newTask, error } = await supabase
         .from("tasks")
@@ -381,19 +429,11 @@ export const useBoard = (boardId: string) => {
           column_id: columnId,
           board_id: boardId,
           priority: priority || "medium",
-          assignee: assigneeId,
+          user_id: assigneeId, // This should be the user ID
           order: 0,
           completed: false,
         })
-        .select(`
-          *,
-          assignee:assignee (
-            id,
-            name,
-            email,
-            image
-          )
-        `)
+        .select("*")
         .single();
 
       if (error) {
@@ -402,6 +442,25 @@ export const useBoard = (boardId: string) => {
       }
 
       console.log("Task created successfully:", newTask);
+      console.log("newTask.user_id:", newTask.user_id); // Check if user_id was saved
+
+      // Fetch assignee data if assigneeId is provided
+      if (assigneeId && newTask) {
+        console.log("Fetching assignee data for ID:", assigneeId);
+        const { data: assigneeData, error: assigneeError } = await supabase
+          .from("users")
+          .select("id, name, email, image")
+          .eq("id", assigneeId)
+          .single();
+
+        if (assigneeError) {
+          console.error("Error fetching assignee data:", assigneeError);
+        } else {
+          console.log("Assignee data fetched:", assigneeData);
+          newTask.assignee = assigneeData;
+        }
+      }
+
       return newTask;
     } catch (error) {
       console.error("Error in handleAddTask:", error);
@@ -424,5 +483,6 @@ export const useBoard = (boardId: string) => {
     handleUpdateTask,
     handleRemoveTask,
     handleAddTask,
+    teamMembers,
   };
 };
