@@ -386,7 +386,7 @@ export const getTaskById = async (taskId: string): Promise<ApiTask | null> => {
 
   if (error) throw error;
 
-  //@ts-ignore
+  //@ig-ignore
   return {
     ...data,
     assignee: Array.isArray(data.assignee) ? data.assignee[0] : data.assignee,

@@ -327,6 +327,34 @@ export const apiSlice = createApi({
           : [{ type: "Board", id: boardId }],
     }),
 
+    /** Update a column’s order */
+    updateColumnOrder: builder.mutation<
+      { id: string; order: number },
+      { columnId: string; order: number }
+    >({
+      async queryFn({ columnId, order }) {
+        try {
+          const { data, error } = await supabase
+            .from("columns")
+            .update({ order })
+            .eq("id", columnId)
+            .select("id, order")
+            .single();
+          if (error || !data)
+            throw error || new Error("Update column order failed");
+          return { data };
+        } catch (err: any) {
+          console.error("[apiSlice.updateColumnOrder] error:", err);
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      invalidatesTags: (_result, _error, { columnId }) => [
+        { type: "Column" as const, id: columnId },
+        // you may also want to invalidate the Board tag so that the full board refetches:
+        { type: "Board" as const, id: "LIST" },
+      ],
+    }),
+
     /** 4) Add new board */
     addBoard: builder.mutation<Board, { title: string; user_id: string }>({
       async queryFn({ title, user_id }) {
@@ -460,55 +488,6 @@ export const apiSlice = createApi({
     }),
 
     /** 8) Update task (mapowanie order -> sort_order) */
-    updateTask: builder.mutation<
-      Task,
-      { taskId: string; data: Partial<TaskDetail> }
-    >({
-      async queryFn({ taskId, data }) {
-        try {
-          const dbPayload: any = { ...data };
-          if (dbPayload.order !== undefined) {
-            dbPayload.sort_order = dbPayload.order;
-            delete dbPayload.order;
-          }
-          const { data: updated, error } = await supabase
-            .from("tasks")
-            .update(dbPayload)
-            .eq("id", taskId)
-            .select("*")
-            .single();
-          if (error || !updated) throw error || new Error("Update failed");
-          const mapped: Task = {
-            id: updated.id,
-            title: updated.title,
-            description: updated.description,
-            column_id: updated.column_id,
-            board_id: updated.board_id,
-            priority: updated.priority,
-            user_id: updated.user_id ?? undefined,
-            order: updated.sort_order ?? 0,
-            completed: updated.completed,
-            created_at: updated.created_at ?? undefined,
-            updated_at: updated.updated_at ?? undefined,
-            images: updated.images ?? undefined,
-            assignee: undefined,
-            start_date: updated.start_date ?? undefined,
-            end_date: updated.end_date ?? undefined,
-            due_date: updated.due_date ?? undefined,
-            status: updated.status ?? undefined,
-          };
-          return { data: mapped };
-        } catch (err: any) {
-          console.error("[apiSlice.updateTask] error:", err);
-          return {
-            error: { status: "CUSTOM_ERROR", error: err.message },
-          };
-        }
-      },
-      invalidatesTags: (_result, _error, { taskId }) => [
-        { type: "Task", id: taskId },
-      ],
-    }),
 
     /** 9) Remove task */
     removeTask: builder.mutation<
@@ -694,6 +673,58 @@ export const apiSlice = createApi({
       },
       invalidatesTags: (_result, _error, { taskId }) => [
         { type: "Task", id: taskId },
+      ],
+    }),
+
+    updateTask: builder.mutation<
+      Task,
+      { taskId: string; data: Partial<TaskDetail> }
+    >({
+      async queryFn({ taskId, data }) {
+        try {
+          const dbPayload: any = { ...data };
+          if (dbPayload.order !== undefined) {
+            dbPayload.sort_order = dbPayload.order;
+            delete dbPayload.order;
+          }
+          const { data: updated, error } = await supabase
+            .from("tasks")
+            .update(dbPayload)
+            .eq("id", taskId)
+            .select("*")
+            .single();
+          if (error || !updated) throw error || new Error("Update failed");
+          const mapped: Task = {
+            id: updated.id,
+            title: updated.title,
+            description: updated.description,
+            column_id: updated.column_id,
+            board_id: updated.board_id,
+            priority: updated.priority,
+            user_id: updated.user_id ?? undefined,
+            order: updated.sort_order ?? 0,
+            completed: updated.completed,
+            created_at: updated.created_at ?? undefined,
+            updated_at: updated.updated_at ?? undefined,
+            images: updated.images ?? undefined,
+            assignee: undefined,
+            start_date: updated.start_date ?? undefined,
+            end_date: updated.end_date ?? undefined,
+            due_date: updated.due_date ?? undefined,
+            status: updated.status ?? undefined,
+            sort_order: 0,
+          };
+          return { data: mapped };
+        } catch (err: any) {
+          console.error("[apiSlice.updateTask] error:", err);
+          return {
+            error: { status: "CUSTOM_ERROR", error: err.message },
+          };
+        }
+      },
+      invalidatesTags: (_result, _error, { taskId, data }) => [
+        { type: "Task", id: taskId },
+        ...(data.column_id ? [{ type: "Column", id: data.column_id }] : []),
       ],
     }),
 
@@ -1310,6 +1341,7 @@ export const {
   useUpdateTaskDatesMutation,
   useUpdateTaskCompletionMutation,
   useGetMyBoardsQuery,
+  useUpdateColumnOrderMutation,
   useGetUserRoleQuery,
 
   // Team endpoints:

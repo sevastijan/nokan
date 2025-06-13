@@ -13,10 +13,6 @@ const AddTaskForm = ({
   columnId,
   onOpenAddTask,
 }: AddTaskFormProps): JSX.Element => {
-  useEffect(() => {
-    console.log("onOpenAddTask typeof:", typeof onOpenAddTask);
-  }, [onOpenAddTask]);
-
   return (
     <div className="mt-4">
       <Button
