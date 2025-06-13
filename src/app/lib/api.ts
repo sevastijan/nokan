@@ -33,7 +33,7 @@ export const getBoardById = async (boardId: string): Promise<Board | null> => {
       .from("columns")
       .select("*, tasks(*)")
       .eq("board_id", boardId)
-      .order("order", { ascending: true });
+      .order("order", { foreignTable: "tasks", ascending: true });
 
     if (colError) throw colError;
 

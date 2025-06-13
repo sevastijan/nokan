@@ -71,9 +71,7 @@ const Column = ({
 
   return (
     <div className="bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] flex flex-col gap-4 h-full">
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
-        {/* ← attach dragHandleProps here */}
         <div
           className="text-gray-400 hover:text-gray-200 cursor-grab"
           {...dragHandleProps}
@@ -104,7 +102,7 @@ const Column = ({
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="space-y-2 flex-grow overflow-y-auto"
+            className="space-y-2 flex-grow overflow-y-auto min-h-[400px] p-2"
           >
             {localTasks.map((task, idx) => (
               <Draggable key={task.id} draggableId={task.id} index={idx}>

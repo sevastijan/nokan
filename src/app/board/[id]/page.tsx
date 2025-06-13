@@ -1,4 +1,3 @@
-// src/app/(protected)/board/[id]/page.tsx
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -59,14 +58,14 @@ const Page: React.FC = () => {
   useEffect(() => {
     if (!board) return;
     setBoardTitle(board.title);
-    const sortedCols = [...board.columns]
+    const sortedCols = board.columns
       .map((c) => ({
         ...c,
-        tasks: [...(c.tasks || [])].sort(
-          (a, b) => (a.order || 0) - (b.order || 0)
-        ),
+        tasks: (c.tasks || [])
+          .map((t) => ({ ...t, order: t.sort_order ?? 0 }))
+          .sort((a, b) => a.order - b.order),
       }))
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     setLocalColumns(sortedCols);
   }, [board]);
 
@@ -221,17 +220,15 @@ const Page: React.FC = () => {
         const sourceTasks = Array.from(cols[srcIdx].tasks || []);
         const [movedTask] = sourceTasks.splice(source.index, 1);
 
-        if (source.droppableId === destination.droppableId) {
+        if (srcIdx === dstIdx) {
           // Same‐column reorder
           sourceTasks.splice(destination.index, 0, movedTask);
-          // Update local order
-          const updatedTasks = sourceTasks.map((t, i) => ({ ...t, order: i }));
-          cols[srcIdx] = { ...cols[srcIdx], tasks: updatedTasks };
+          const updated = sourceTasks.map((t, i) => ({ ...t, order: i }));
+          cols[srcIdx].tasks = updated;
           setLocalColumns(cols);
 
-          // Persist sort_order
           await Promise.all(
-            updatedTasks.map((t) =>
+            updated.map((t) =>
               supabase
                 .from("tasks")
                 .update({ sort_order: t.order })
@@ -243,47 +240,33 @@ const Page: React.FC = () => {
           const destTasks = Array.from(cols[dstIdx].tasks || []);
           destTasks.splice(destination.index, 0, movedTask);
 
-          // Update local order for both columns
-          const updatedSourceTasks = sourceTasks.map((t, i) => ({
-            ...t,
-            order: i,
-          }));
-          const updatedDestTasks = destTasks.map((t, i) => ({
-            ...t,
-            order: i,
-          }));
-          cols[srcIdx] = { ...cols[srcIdx], tasks: updatedSourceTasks };
-          cols[dstIdx] = { ...cols[dstIdx], tasks: updatedDestTasks };
+          const updatedSrc = sourceTasks.map((t, i) => ({ ...t, order: i }));
+          const updatedDst = destTasks.map((t, i) => ({ ...t, order: i }));
+
+          cols[srcIdx].tasks = updatedSrc;
+          cols[dstIdx].tasks = updatedDst;
           setLocalColumns(cols);
 
-          // Persist both sides: source tasks
           await Promise.all([
-            ...updatedSourceTasks.map((t) =>
+            ...updatedSrc.map((t) =>
               supabase
                 .from("tasks")
                 .update({ sort_order: t.order })
                 .eq("id", t.id)
             ),
-            // dest tasks (include column_id for the moved task)
-            ...updatedDestTasks.map((t) => {
-              if (t.id === movedTask.id) {
-                return supabase
-                  .from("tasks")
-                  .update({
-                    sort_order: t.order,
-                    column_id: destination.droppableId,
-                  })
-                  .eq("id", t.id);
-              }
-              return supabase
+            ...updatedDst.map((t) =>
+              supabase
                 .from("tasks")
-                .update({ sort_order: t.order })
-                .eq("id", t.id);
-            }),
+                .update({
+                  sort_order: t.order,
+                  column_id: destination.droppableId,
+                })
+                .eq("id", t.id)
+            ),
           ]);
         }
 
-        fetchBoardData();
+        await fetchBoardData();
       }
     },
     [localColumns, fetchBoardData]
@@ -363,7 +346,7 @@ const Page: React.FC = () => {
                     <div
                       ref={prov.innerRef}
                       {...prov.draggableProps}
-                      style={{ ...prov.draggableProps.style, height: "100%" }}
+                      style={prov.draggableProps.style}
                       className="flex-shrink-0 flex h-full"
                     >
                       <Column
