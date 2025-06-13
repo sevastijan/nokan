@@ -6,7 +6,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
-import { DragDropContext, DropResult } from "@hello-pangea/dnd";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 
 import { supabase } from "@/app/lib/supabase";
 import { extractTaskIdFromUrl } from "@/app/utils/helpers";
@@ -53,7 +58,7 @@ const Page = () => {
     handleReorderTasks,
   } = useBoard(id as string);
 
-  // Stan lokalny do optymistycznej zmiany UI
+  // Stan lokalny do optymistycznego UI
   const [localBoardTitle, setLocalBoardTitle] = useState(board?.title || "");
   const [localColumns, setLocalColumns] = useState<ColumnType[]>([]);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -69,10 +74,9 @@ const Page = () => {
   >([]);
   const [viewMode, setViewMode] = useState<"columns" | "list">("columns");
 
-  // Synchronizacja localColumns, gdy board.columns się zmienia
+  // Synchronizacja localColumns po fetchu z backendu
   useEffect(() => {
     if (board?.columns) {
-      // Sortujemy po polu `order`, klonujemy tablice głęboko, by nie dzielić referencji
       const sorted = [...board.columns]
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
         .map((col) => ({
@@ -83,7 +87,7 @@ const Page = () => {
     }
   }, [board?.columns]);
 
-  // Synchronizacja tytułu z board
+  // Synchronizacja tytułu
   useEffect(() => {
     if (board?.title && board.title !== localBoardTitle) {
       setLocalBoardTitle(board.title);
@@ -103,7 +107,7 @@ const Page = () => {
     }
   };
 
-  // Load priorities once
+  // Load priorities
   useEffect(() => {
     const loadPriorities = async () => {
       try {
@@ -121,7 +125,7 @@ const Page = () => {
     loadPriorities();
   }, []);
 
-  // Fetch or create current user from session
+  // Fetch/create current user
   useEffect(() => {
     const fetchUser = async () => {
       if (session?.user?.email) {
@@ -175,7 +179,7 @@ const Page = () => {
     }
   }, [status, router]);
 
-  // Jeśli w URL jest ?task=<id>, otwórz task
+  // Jeśli w URL jest task id
   useEffect(() => {
     if (typeof window !== "undefined") {
       const idFromUrl = extractTaskIdFromUrl(window.location.href);
@@ -200,7 +204,7 @@ const Page = () => {
     }
   };
 
-  // Otwórz formularz dodawania zadania
+  // Otwórz AddTaskForm
   const handleOpenAddTask = useCallback((columnId: string) => {
     setAddTaskColumnId(columnId);
   }, []);
@@ -234,7 +238,7 @@ const Page = () => {
     }
   };
 
-  // Jeśli loading lub brak odpowiednich danych
+  // Spr. loading / error
   if (
     status === "loading" ||
     !session ||
@@ -262,7 +266,7 @@ const Page = () => {
     );
   }
 
-  // Pomocnicza funkcja reorder dla tablicy
+  // Pomocnicza funkcja reorder
   const reorderArray = <T,>(
     list: T[],
     startIndex: number,
@@ -274,141 +278,134 @@ const Page = () => {
     return result;
   };
 
-  // Obsługa drag&drop zadań: intra- i inter-column
+  // Obsługa DragEnd
   const handleDragEnd = async (result: DropResult) => {
-    const { source, destination } = result;
+    const { source, destination, type } = result;
     if (!destination) return;
 
-    const srcColId = source.droppableId;
-    const dstColId = destination.droppableId;
-    const fromIdx = source.index;
-    const toIdx = destination.index;
+    // 1) Drag kolumny
+    if (type === "COLUMN") {
+      const fromIdx = source.index;
+      const toIdx = destination.index;
+      if (fromIdx === toIdx) return;
 
-    // Jeśli ten sam column i ten sam index: nic nie robimy
-    if (srcColId === dstColId && fromIdx === toIdx) {
-      return;
-    }
+      // Optymistyczny reorder UI
+      const newColsOrder = reorderArray(localColumns, fromIdx, toIdx);
+      setLocalColumns(newColsOrder);
 
-    // Znajdź indeksy kolumn w localColumns
-    const srcColIndex = localColumns.findIndex((c) => c.id === srcColId);
-    const dstColIndex = localColumns.findIndex((c) => c.id === dstColId);
-    if (srcColIndex < 0 || dstColIndex < 0) {
-      console.warn(
-        "Nieznane droppableId w drag&drop:",
-        source.droppableId,
-        destination.droppableId
-      );
-      return;
-    }
-
-    // Przypadek intra-column reorder
-    if (srcColId === dstColId) {
-      const colIndex = srcColIndex;
-      const currentTasks = Array.from(localColumns[colIndex].tasks || []);
-      console.log(
-        "DEBUG intra-column reorder, before:",
-        currentTasks.map((t) => t.id)
-      );
-      const newTasksOrder = reorderArray(currentTasks, fromIdx, toIdx);
-      console.log(
-        "DEBUG intra-column reorder, after:",
-        newTasksOrder.map((t) => t.id)
-      );
-      // Optymistyczne UI
-      const newLocalCols = Array.from(localColumns);
-      newLocalCols[colIndex] = {
-        ...newLocalCols[colIndex],
-        tasks: newTasksOrder,
-      };
-      setLocalColumns(newLocalCols);
-
-      // Backend: aktualizacja sort_order
+      // Backend: update `order` pola w tabeli columns
       try {
-        await handleReorderTasks(srcColId, newTasksOrder);
+        await Promise.all(
+          newColsOrder.map(async (col, idx) => {
+            const { error } = await supabase
+              .from("columns")
+              .update({ order: idx })
+              .eq("id", col.id);
+            if (error) throw error;
+          })
+        );
+        await fetchBoardData();
       } catch (e) {
-        console.error("Błąd handleReorderTasks intra-column:", e);
+        console.error("Błąd aktualizacji kolejności kolumn:", e);
+        // rollback do fetchu
+        await fetchBoardData();
+      }
+      return;
+    }
+
+    // 2) Drag zadań
+    if (type === "TASK") {
+      const srcColId = source.droppableId;
+      const dstColId = destination.droppableId;
+      const fromIdx = source.index;
+      const toIdx = destination.index;
+
+      const srcColIndex = localColumns.findIndex((c) => c.id === srcColId);
+      const dstColIndex = localColumns.findIndex((c) => c.id === dstColId);
+      if (srcColIndex < 0 || dstColIndex < 0) {
+        console.warn("Nieznane droppableId w drag TASK:", srcColId, dstColId);
+        return;
+      }
+
+      // Intra-column
+      if (srcColId === dstColId) {
+        const colIndex = srcColIndex;
+        const currentTasks = Array.from(localColumns[colIndex].tasks || []);
+        const newTasksOrder = reorderArray(currentTasks, fromIdx, toIdx);
+        const newLocalCols = Array.from(localColumns);
+        newLocalCols[colIndex] = {
+          ...newLocalCols[colIndex],
+          tasks: newTasksOrder,
+        };
+        setLocalColumns(newLocalCols);
+
+        // Backend reorder zadań
+        try {
+          await handleReorderTasks(srcColId, newTasksOrder);
+        } catch (e) {
+          console.error("Błąd handleReorderTasks intra-column:", e);
+          await fetchBoardData();
+          return;
+        }
+        try {
+          await fetchBoardData();
+        } catch {}
+        return;
+      }
+
+      // Inter-column
+      const srcTasks = Array.from(localColumns[srcColIndex].tasks || []);
+      const dstTasks = Array.from(localColumns[dstColIndex].tasks || []);
+      const [movedTask] = srcTasks.splice(fromIdx, 1);
+      if (!movedTask) {
+        console.warn("Brak movedTask inter-column:", srcColId, fromIdx);
+        return;
+      }
+      dstTasks.splice(toIdx, 0, movedTask);
+
+      // Optymistyczny UI
+      const updatedColumns = Array.from(localColumns);
+      updatedColumns[srcColIndex] = {
+        ...updatedColumns[srcColIndex],
+        tasks: srcTasks,
+      };
+      updatedColumns[dstColIndex] = {
+        ...updatedColumns[dstColIndex],
+        tasks: dstTasks,
+      };
+      setLocalColumns(updatedColumns);
+
+      // Backend: update przeniesionego zadania
+      try {
+        await handleUpdateTask(movedTask.id, {
+          column_id: dstColId,
+          order: toIdx,
+        });
+      } catch (e) {
+        console.error("Błąd handleUpdateTask inter-column:", e);
         await fetchBoardData();
         return;
       }
-      // Fetch finalny
+      // reorder source
+      try {
+        await handleReorderTasks(srcColId, srcTasks);
+      } catch (e) {
+        console.error("Błąd handleReorderTasks source inter:", e);
+        await fetchBoardData();
+        return;
+      }
+      // reorder dest
+      try {
+        await handleReorderTasks(dstColId, dstTasks);
+      } catch (e) {
+        console.error("Błąd handleReorderTasks dest inter:", e);
+        await fetchBoardData();
+        return;
+      }
       try {
         await fetchBoardData();
-      } catch {
-        // ignore
-      }
+      } catch {}
       return;
-    }
-
-    // Przypadek inter-column move
-    // Klonujemy tablice niezależnie
-    const srcTasks = Array.from(localColumns[srcColIndex].tasks || []);
-    const dstTasks = Array.from(localColumns[dstColIndex].tasks || []);
-
-    console.log(
-      "DEBUG inter-column move, before src:",
-      srcTasks.map((t) => t.id),
-      "dst:",
-      dstTasks.map((t) => t.id)
-    );
-    // Wyjmij zadanie z srcTasks
-    const [movedTask] = srcTasks.splice(fromIdx, 1);
-    if (!movedTask) {
-      console.warn("Brak movedTask w inter-column:", srcColId, fromIdx);
-      return;
-    }
-    // Wstaw do dstTasks
-    dstTasks.splice(toIdx, 0, movedTask);
-    console.log(
-      "DEBUG inter-column move, after src:",
-      srcTasks.map((t) => t.id),
-      "dst:",
-      dstTasks.map((t) => t.id)
-    );
-
-    // Optymistyczne UI: zaktualizuj oba kolumny w localColumns
-    const updatedColumns = Array.from(localColumns);
-    updatedColumns[srcColIndex] = {
-      ...updatedColumns[srcColIndex],
-      tasks: srcTasks,
-    };
-    updatedColumns[dstColIndex] = {
-      ...updatedColumns[dstColIndex],
-      tasks: dstTasks,
-    };
-    setLocalColumns(updatedColumns);
-
-    // Backend: 1) update przeniesionego zadania: column_id i order
-    try {
-      await handleUpdateTask(movedTask.id, {
-        column_id: dstColId,
-        order: toIdx,
-      });
-    } catch (e) {
-      console.error("Błąd handleUpdateTask inter-column:", e);
-      await fetchBoardData();
-      return;
-    }
-    // Backend: 2) reorder source
-    try {
-      await handleReorderTasks(srcColId, srcTasks);
-    } catch (e) {
-      console.error("Błąd handleReorderTasks source inter:", e);
-      await fetchBoardData();
-      return;
-    }
-    // Backend: 3) reorder dest
-    try {
-      await handleReorderTasks(dstColId, dstTasks);
-    } catch (e) {
-      console.error("Błąd handleReorderTasks dest inter:", e);
-      await fetchBoardData();
-      return;
-    }
-    // Fetch finalny
-    try {
-      await fetchBoardData();
-    } catch {
-      // ignore
     }
   };
 
@@ -552,35 +549,61 @@ const Page = () => {
                 className="h-full"
               >
                 <DragDropContext onDragEnd={handleDragEnd}>
-                  <div className="flex gap-6 h-full overflow-x-auto pb-4">
-                    <AnimatePresence initial={false}>
-                      {localColumns.map((column, idx) => (
-                        <motion.div
-                          key={column.id}
-                          initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                          animate={{ opacity: 1, x: 0, scale: 1 }}
-                          exit={{ opacity: 0, x: -20, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex-shrink-0"
-                        >
-                          <Column
-                            column={column}
-                            colIndex={idx}
-                            onUpdateColumnTitle={handleUpdateColumnTitle}
-                            onRemoveColumn={handleRemoveColumn}
-                            onTaskAdded={handleTaskAdded}
-                            selectedTaskId={selectedTaskId}
-                            onRemoveTask={onRemoveTaskLocal}
-                            onOpenTaskDetail={setSelectedTaskId}
-                            onOpenAddTask={handleOpenAddTask}
-                            currentUser={currentUser}
-                            priorities={priorities}
-                            onReorderTasks={handleReorderTasks}
-                          />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
+                  <Droppable
+                    droppableId="all-columns"
+                    direction="horizontal"
+                    type="COLUMN"
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="flex gap-6 h-full overflow-x-auto pb-4"
+                      >
+                        <AnimatePresence initial={false}>
+                          {localColumns.map((column, idx) => (
+                            <Draggable
+                              key={column.id}
+                              draggableId={column.id}
+                              index={idx}
+                            >
+                              {(prov, snapshot) => (
+                                <div
+                                  ref={prov.innerRef}
+                                  {...prov.draggableProps}
+                                  {...prov.dragHandleProps}
+                                  style={{
+                                    ...prov.draggableProps.style,
+                                    // opcjonalnie cursor
+                                    // cursor: snapshot.isDragging ? 'grabbing' : 'grab',
+                                  }}
+                                  className="flex-shrink-0"
+                                >
+                                  <Column
+                                    column={column}
+                                    colIndex={idx}
+                                    onUpdateColumnTitle={
+                                      handleUpdateColumnTitle
+                                    }
+                                    onRemoveColumn={handleRemoveColumn}
+                                    onTaskAdded={handleTaskAdded}
+                                    selectedTaskId={selectedTaskId}
+                                    onRemoveTask={onRemoveTaskLocal}
+                                    onOpenTaskDetail={setSelectedTaskId}
+                                    onOpenAddTask={handleOpenAddTask}
+                                    currentUser={currentUser}
+                                    priorities={priorities}
+                                    onReorderTasks={handleReorderTasks}
+                                  />
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </Droppable>
                 </DragDropContext>
               </motion.div>
             ) : (
