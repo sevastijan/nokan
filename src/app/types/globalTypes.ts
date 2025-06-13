@@ -81,6 +81,7 @@ export interface Comment {
 }
 
 export interface Task {
+  sort_order: number;
   id: string;
   title: string;
   description: string;

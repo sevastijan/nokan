@@ -2,14 +2,21 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Reorder, AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { useBoard } from "@/app/hooks/useBoard"; // adjust path
+import { useSession } from "next-auth/react";
+import { toast } from "react-toastify";
+import { DragDropContext, DropResult } from "@hello-pangea/dnd";
+
+import { supabase } from "@/app/lib/supabase";
+import { extractTaskIdFromUrl } from "@/app/utils/helpers";
+import { getPriorities } from "@/app/lib/api";
+import Loader from "@/app/components/Loader";
+import Button from "@/app/components/Button/Button";
 import Column from "@/app/components/Column";
 import AddColumnPopup from "@/app/components/TaskColumn/AddColumnPopup";
 import SingleTaskView from "@/app/components/SingleTaskView/SingleTaskView";
 import Calendar from "@/app/components/Calendar/Calendar";
-import Button from "@/app/components/Button/Button";
 import ListView from "@/app/components/ListView/ListView";
 import {
   FaArrowLeft,
@@ -19,18 +26,12 @@ import {
   FaPlus,
   FaTimes,
 } from "react-icons/fa";
-import { useSession } from "next-auth/react";
-import Loader from "@/app/components/Loader";
-import { supabase } from "@/app/lib/supabase";
-import { extractTaskIdFromUrl } from "@/app/utils/helpers";
-import { getPriorities } from "@/app/lib/api";
 import {
   Column as ColumnType,
   Task as TaskType,
   User,
-  Priority,
 } from "@/app/types/globalTypes";
-import { toast } from "react-toastify";
+import { useBoard } from "@/app/hooks/useBoard";
 
 const Page = () => {
   const { id } = useParams();
@@ -48,10 +49,17 @@ const Page = () => {
     handleUpdateColumnTitle,
     handleRemoveTask,
     handleAddTask,
+    handleUpdateTask,
+    handleReorderTasks,
   } = useBoard(id as string);
 
+  // Stan lokalny do optymistycznej zmiany UI
   const [localBoardTitle, setLocalBoardTitle] = useState(board?.title || "");
+  const [localColumns, setLocalColumns] = useState<ColumnType[]>([]);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState("");
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [addTaskColumnId, setAddTaskColumnId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -61,21 +69,21 @@ const Page = () => {
   >([]);
   const [viewMode, setViewMode] = useState<"columns" | "list">("columns");
 
-  // Local state for columns ordering
-  const [localColumns, setLocalColumns] = useState<ColumnType[]>([]);
-
-  // Sync columns when board.columns changes
+  // Synchronizacja localColumns, gdy board.columns się zmienia
   useEffect(() => {
     if (board?.columns) {
-      // sort by order property
-      const sorted = [...board.columns].sort(
-        (a, b) => (a.order ?? 0) - (b.order ?? 0)
-      );
+      // Sortujemy po polu `order`, klonujemy tablice głęboko, by nie dzielić referencji
+      const sorted = [...board.columns]
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((col) => ({
+          ...col,
+          tasks: Array.isArray(col.tasks) ? [...col.tasks] : [],
+        }));
       setLocalColumns(sorted);
     }
   }, [board?.columns]);
 
-  // Board title editing handlers
+  // Synchronizacja tytułu z board
   useEffect(() => {
     if (board?.title && board.title !== localBoardTitle) {
       setLocalBoardTitle(board.title);
@@ -83,7 +91,7 @@ const Page = () => {
   }, [board?.title]);
 
   const handleBoardTitleBlur = () => {
-    if (localBoardTitle.trim() !== board?.title) {
+    if (localBoardTitle.trim() && localBoardTitle.trim() !== board?.title) {
       handleUpdateBoardTitle(localBoardTitle.trim());
     }
   };
@@ -99,8 +107,8 @@ const Page = () => {
   useEffect(() => {
     const loadPriorities = async () => {
       try {
-        const fetchedPriorities = await getPriorities();
-        setPriorities(fetchedPriorities);
+        const fetched = await getPriorities();
+        setPriorities(fetched);
       } catch {
         setPriorities([
           { id: "low", label: "Low", color: "#10b981" },
@@ -122,7 +130,6 @@ const Page = () => {
           .select("*")
           .eq("email", session.user.email)
           .single();
-
         if (userData && !error) {
           setCurrentUser({
             id: userData.id,
@@ -168,7 +175,7 @@ const Page = () => {
     }
   }, [status, router]);
 
-  // If URL has ?task=<id>, open that task
+  // Jeśli w URL jest ?task=<id>, otwórz task
   useEffect(() => {
     if (typeof window !== "undefined") {
       const idFromUrl = extractTaskIdFromUrl(window.location.href);
@@ -176,9 +183,7 @@ const Page = () => {
     }
   }, []);
 
-  // Add Column
-  const [newColumnTitle, setNewColumnTitle] = useState("");
-  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  // Dodawanie kolumny
   const addColumn = async () => {
     if (newColumnTitle.trim()) {
       setIsAddingColumn(true);
@@ -187,15 +192,15 @@ const Page = () => {
         setNewColumnTitle("");
         setIsPopupOpen(false);
         await fetchBoardData();
-      } catch {
-        // logged inside useBoard
+      } catch (e) {
+        console.error("Błąd dodawania kolumny:", e);
       } finally {
         setIsAddingColumn(false);
       }
     }
   };
 
-  // Open Add Task in Column
+  // Otwórz formularz dodawania zadania
   const handleOpenAddTask = useCallback((columnId: string) => {
     setAddTaskColumnId(columnId);
   }, []);
@@ -211,9 +216,10 @@ const Page = () => {
       await fetchBoardData();
       setAddTaskColumnId(null);
       return newTask;
-    } catch {
+    } catch (e) {
       setAddTaskColumnId(null);
-      throw new Error("Failed to add task");
+      console.error("Błąd dodawania zadania:", e);
+      throw e;
     }
   };
 
@@ -228,6 +234,7 @@ const Page = () => {
     }
   };
 
+  // Jeśli loading lub brak odpowiednich danych
   if (
     status === "loading" ||
     !session ||
@@ -255,62 +262,154 @@ const Page = () => {
     );
   }
 
-  /**
-   * Handle reorder of columns (horizontal).
-   * Framer Motion passes new ordered array of ColumnType.
-   * We update localColumns immediately, then sync sort_order in DB, then refetch.
-   */
-  const handleReorderColumns = async (newOrder: ColumnType[]) => {
-    setLocalColumns(newOrder);
-    // Update sort_order in Supabase for each column
-    try {
-      await Promise.all(
-        newOrder.map(async (col, idx) => {
-          await supabase
-            .from("columns")
-            .update({ sort_order: idx })
-            .eq("id", col.id);
-        })
-      );
-      await fetchBoardData();
-    } catch (error) {
-      console.error("Error updating column order:", error);
-      toast.error("Failed to save column order");
-      // Optionally: refetch to restore UI
-      fetchBoardData();
-    }
+  // Pomocnicza funkcja reorder dla tablicy
+  const reorderArray = <T,>(
+    list: T[],
+    startIndex: number,
+    endIndex: number
+  ): T[] => {
+    const result = Array.from(list);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed!);
+    return result;
   };
 
-  /**
-   * Handle reorder of tasks within a column.
-   * Called by Column via prop onReorderTasks.
-   */
-  const handleReorderTasks = async (
-    columnId: string,
-    newTasksOrder: TaskType[]
-  ) => {
-    // newTasksOrder is sorted array of TaskType in new order
-    // Update sort_order in DB for each
-    try {
-      await Promise.all(
-        newTasksOrder.map(async (task, idx) => {
-          await supabase
-            .from("tasks")
-            .update({ sort_order: idx })
-            .eq("id", task.id);
-        })
-      );
-      await fetchBoardData();
-    } catch (error) {
-      console.error("Error updating task order:", error);
-      toast.error("Failed to save task order");
-      fetchBoardData();
-    }
-  };
+  // Obsługa drag&drop zadań: intra- i inter-column
+  const handleDragEnd = async (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination) return;
 
-  // Calendar click handler
-  const handleCalendarTaskClick = (taskId: string) => {
-    setSelectedTaskId(taskId);
+    const srcColId = source.droppableId;
+    const dstColId = destination.droppableId;
+    const fromIdx = source.index;
+    const toIdx = destination.index;
+
+    // Jeśli ten sam column i ten sam index: nic nie robimy
+    if (srcColId === dstColId && fromIdx === toIdx) {
+      return;
+    }
+
+    // Znajdź indeksy kolumn w localColumns
+    const srcColIndex = localColumns.findIndex((c) => c.id === srcColId);
+    const dstColIndex = localColumns.findIndex((c) => c.id === dstColId);
+    if (srcColIndex < 0 || dstColIndex < 0) {
+      console.warn(
+        "Nieznane droppableId w drag&drop:",
+        source.droppableId,
+        destination.droppableId
+      );
+      return;
+    }
+
+    // Przypadek intra-column reorder
+    if (srcColId === dstColId) {
+      const colIndex = srcColIndex;
+      const currentTasks = Array.from(localColumns[colIndex].tasks || []);
+      console.log(
+        "DEBUG intra-column reorder, before:",
+        currentTasks.map((t) => t.id)
+      );
+      const newTasksOrder = reorderArray(currentTasks, fromIdx, toIdx);
+      console.log(
+        "DEBUG intra-column reorder, after:",
+        newTasksOrder.map((t) => t.id)
+      );
+      // Optymistyczne UI
+      const newLocalCols = Array.from(localColumns);
+      newLocalCols[colIndex] = {
+        ...newLocalCols[colIndex],
+        tasks: newTasksOrder,
+      };
+      setLocalColumns(newLocalCols);
+
+      // Backend: aktualizacja sort_order
+      try {
+        await handleReorderTasks(srcColId, newTasksOrder);
+      } catch (e) {
+        console.error("Błąd handleReorderTasks intra-column:", e);
+        await fetchBoardData();
+        return;
+      }
+      // Fetch finalny
+      try {
+        await fetchBoardData();
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    // Przypadek inter-column move
+    // Klonujemy tablice niezależnie
+    const srcTasks = Array.from(localColumns[srcColIndex].tasks || []);
+    const dstTasks = Array.from(localColumns[dstColIndex].tasks || []);
+
+    console.log(
+      "DEBUG inter-column move, before src:",
+      srcTasks.map((t) => t.id),
+      "dst:",
+      dstTasks.map((t) => t.id)
+    );
+    // Wyjmij zadanie z srcTasks
+    const [movedTask] = srcTasks.splice(fromIdx, 1);
+    if (!movedTask) {
+      console.warn("Brak movedTask w inter-column:", srcColId, fromIdx);
+      return;
+    }
+    // Wstaw do dstTasks
+    dstTasks.splice(toIdx, 0, movedTask);
+    console.log(
+      "DEBUG inter-column move, after src:",
+      srcTasks.map((t) => t.id),
+      "dst:",
+      dstTasks.map((t) => t.id)
+    );
+
+    // Optymistyczne UI: zaktualizuj oba kolumny w localColumns
+    const updatedColumns = Array.from(localColumns);
+    updatedColumns[srcColIndex] = {
+      ...updatedColumns[srcColIndex],
+      tasks: srcTasks,
+    };
+    updatedColumns[dstColIndex] = {
+      ...updatedColumns[dstColIndex],
+      tasks: dstTasks,
+    };
+    setLocalColumns(updatedColumns);
+
+    // Backend: 1) update przeniesionego zadania: column_id i order
+    try {
+      await handleUpdateTask(movedTask.id, {
+        column_id: dstColId,
+        order: toIdx,
+      });
+    } catch (e) {
+      console.error("Błąd handleUpdateTask inter-column:", e);
+      await fetchBoardData();
+      return;
+    }
+    // Backend: 2) reorder source
+    try {
+      await handleReorderTasks(srcColId, srcTasks);
+    } catch (e) {
+      console.error("Błąd handleReorderTasks source inter:", e);
+      await fetchBoardData();
+      return;
+    }
+    // Backend: 3) reorder dest
+    try {
+      await handleReorderTasks(dstColId, dstTasks);
+    } catch (e) {
+      console.error("Błąd handleReorderTasks dest inter:", e);
+      await fetchBoardData();
+      return;
+    }
+    // Fetch finalny
+    try {
+      await fetchBoardData();
+    } catch {
+      // ignore
+    }
   };
 
   return (
@@ -442,7 +541,7 @@ const Page = () => {
                 </div>
                 <Calendar
                   boardId={id as string}
-                  onTaskClick={handleCalendarTaskClick}
+                  onTaskClick={(taskId: string) => setSelectedTaskId(taskId)}
                 />
               </motion.div>
             ) : viewMode === "columns" ? (
@@ -452,42 +551,37 @@ const Page = () => {
                 transition={{ duration: 0.3 }}
                 className="h-full"
               >
-                {/* Reorder.Group for columns, axis="x" for horizontal */}
-                <Reorder.Group
-                  axis="x"
-                  values={localColumns}
-                  onReorder={handleReorderColumns}
-                  className="flex gap-6 h-full overflow-x-auto pb-4"
-                >
-                  <AnimatePresence initial={false}>
-                    {localColumns.map((column, index) => (
-                      <Reorder.Item
-                        key={column.id}
-                        value={column}
-                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: -20, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex-shrink-0"
-                      >
-                        <Column
-                          column={column}
-                          colIndex={index}
-                          onUpdateColumnTitle={handleUpdateColumnTitle}
-                          onRemoveColumn={handleRemoveColumn}
-                          onTaskAdded={handleTaskAdded}
-                          selectedTaskId={selectedTaskId}
-                          onRemoveTask={onRemoveTaskLocal}
-                          onOpenTaskDetail={setSelectedTaskId}
-                          onOpenAddTask={handleOpenAddTask}
-                          currentUser={currentUser}
-                          priorities={priorities}
-                          onReorderTasks={handleReorderTasks}
-                        />
-                      </Reorder.Item>
-                    ))}
-                  </AnimatePresence>
-                </Reorder.Group>
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <div className="flex gap-6 h-full overflow-x-auto pb-4">
+                    <AnimatePresence initial={false}>
+                      {localColumns.map((column, idx) => (
+                        <motion.div
+                          key={column.id}
+                          initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          exit={{ opacity: 0, x: -20, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex-shrink-0"
+                        >
+                          <Column
+                            column={column}
+                            colIndex={idx}
+                            onUpdateColumnTitle={handleUpdateColumnTitle}
+                            onRemoveColumn={handleRemoveColumn}
+                            onTaskAdded={handleTaskAdded}
+                            selectedTaskId={selectedTaskId}
+                            onRemoveTask={onRemoveTaskLocal}
+                            onOpenTaskDetail={setSelectedTaskId}
+                            onOpenAddTask={handleOpenAddTask}
+                            currentUser={currentUser}
+                            priorities={priorities}
+                            onReorderTasks={handleReorderTasks}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </DragDropContext>
               </motion.div>
             ) : (
               <motion.div

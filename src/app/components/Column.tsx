@@ -1,8 +1,8 @@
 // src/app/components/Column.tsx
 "use client";
 
-import React, { useState, useEffect, JSX } from "react";
-import { Reorder, AnimatePresence, motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskForm from "./TaskColumn/AddTaskForm";
 import Task from "./Task";
 import { FaGripVertical, FaTimes } from "react-icons/fa";
@@ -13,8 +13,6 @@ import {
   User,
   Priority,
 } from "@/app/types/globalTypes";
-import { supabase } from "@/app/lib/supabase";
-import { toast } from "react-toastify";
 
 interface ColumnProps {
   column: ColumnType;
@@ -33,13 +31,11 @@ interface ColumnProps {
   currentUser: User;
   onOpenAddTask: (columnId: string) => void;
   priorities?: Priority[];
-  // New prop: callback to notify parent o reorderze zadań
   onReorderTasks: (columnId: string, newOrder: TaskType[]) => void;
 }
 
 const Column = ({
   column,
-  colIndex,
   onUpdateColumnTitle,
   onRemoveColumn,
   onTaskAdded,
@@ -50,52 +46,51 @@ const Column = ({
   onOpenAddTask,
   priorities = [],
   onReorderTasks,
-}: ColumnProps): JSX.Element => {
-  // Local state for tasks ordering inside this column
+}: ColumnProps) => {
   const [localTasks, setLocalTasks] = useState<TaskType[]>([]);
 
-  // Sync localTasks when column.tasks prop changes
+  // Synchronizacja localTasks przy zmianie column.tasks
   useEffect(() => {
-    // sort by order (sort_order)
-    const sorted = [...(column.tasks || [])].sort(
+    const tasksArr = Array.isArray(column.tasks) ? column.tasks : [];
+    // 1) filter null/undefined
+    const filtered: TaskType[] = tasksArr.filter((t) => {
+      if (t == null) {
+        console.warn("Column.tasks contains null/undefined", column.id, t);
+        return false;
+      }
+      return true;
+    });
+    // 2) sort by order
+    const sorted = [...filtered].sort(
       (a, b) => (a.order ?? 0) - (b.order ?? 0)
     );
-    setLocalTasks(sorted);
-  }, [column.tasks]);
-
-  /**
-   * Handle reorder within this column.
-   * Framer Motion passes new ordered array;
-   * we update local state immediately, then call parent callback to sync backend.
-   */
-  const handleReorder = (newOrder: TaskType[]) => {
-    setLocalTasks(newOrder);
-    onReorderTasks(column.id, newOrder);
-  };
+    // 3) dedupe by id
+    const seen = new Set<string>();
+    const deduped: TaskType[] = [];
+    for (const t of sorted) {
+      if (seen.has(t.id)) {
+        console.warn(
+          `Duplicate task id "${t.id}" in column "${column.id}", odrzucam duplikat.`
+        );
+        continue;
+      }
+      seen.add(t.id);
+      deduped.push(t);
+    }
+    setLocalTasks(deduped);
+  }, [column.tasks, column.id]);
 
   return (
-    <motion.div
-      // Animation for column entry
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2 }}
-      className="bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] min-h-[200px] max-h-[80vh] flex flex-col gap-4"
-    >
+    <div className="bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] min-h-[200px] max-h-[80vh] flex flex-col gap-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
-        <div
-          className="cursor-move text-gray-400 hover:text-gray-200"
-          // Optionally, you could wrap column in Reorder for columns reorder - handled in parent
-          role="button"
-          tabIndex={0}
-          aria-label="Drag handle"
-        >
-          <FaGripVertical size={20} />
+        {/* Ikona uchwytu bez funkcji drag kolumny */}
+        <div className="text-gray-400 hover:text-gray-200">
+          <FaGripVertical size={20} className="opacity-50" />
         </div>
         <input
           type="text"
-          defaultValue={column.title ?? ""}
+          defaultValue={column.title}
           onBlur={(e) => onUpdateColumnTitle(column.id, e.target.value.trim())}
           className="bg-transparent text-lg font-semibold w-full focus:outline-none focus:border-blue-500 ml-2"
           placeholder="Column Title"
@@ -109,37 +104,41 @@ const Column = ({
         />
       </div>
 
-      {/* Tasks list with Reorder.Group */}
-      <Reorder.Group
-        axis="y"
-        values={localTasks}
-        onReorder={handleReorder}
-        className="space-y-2 flex-1 overflow-y-auto"
-      >
-        <AnimatePresence>
-          {localTasks.map((task, index) => (
-            <Reorder.Item
-              key={task.id}
-              value={task}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Task
-                task={task}
-                taskIndex={index}
-                columnId={column.id}
-                onRemoveTask={onRemoveTask}
-                onOpenTaskDetail={onOpenTaskDetail}
-                priorities={priorities}
-              />
-            </Reorder.Item>
-          ))}
-        </AnimatePresence>
-      </Reorder.Group>
+      {/* Lista zadań: Droppable */}
+      <Droppable droppableId={column.id} type="TASK">
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className="space-y-2 flex-1 overflow-y-auto"
+          >
+            {localTasks.map((task, idx) => (
+              <Draggable key={task.id} draggableId={task.id} index={idx}>
+                {(prov) => (
+                  <div
+                    ref={prov.innerRef}
+                    {...prov.draggableProps}
+                    {...prov.dragHandleProps}
+                    style={prov.draggableProps.style}
+                  >
+                    <Task
+                      task={task}
+                      taskIndex={idx}
+                      columnId={column.id}
+                      onRemoveTask={onRemoveTask}
+                      onOpenTaskDetail={onOpenTaskDetail}
+                      priorities={priorities}
+                    />
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
 
-      {/* Add Task Button/Form */}
+      {/* Formularz / przycisk dodawania zadania */}
       <AddTaskForm
         boardId={column.boardId}
         columnId={column.id}
@@ -148,7 +147,7 @@ const Column = ({
         selectedTaskId={selectedTaskId}
         onOpenAddTask={onOpenAddTask}
       />
-    </motion.div>
+    </div>
   );
 };
 

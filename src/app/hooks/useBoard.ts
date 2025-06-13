@@ -12,14 +12,16 @@ import {
   useUpdateTaskMutation,
   useUpdateBoardTitleMutation,
 } from "@/app/store/apiSlice";
-import { Board, Task } from "@/app/types/globalTypes";
+import { Board, Task, Column as ColumnType } from "@/app/types/globalTypes";
+import { supabase } from "@/app/lib/supabase"; // dodane dla reorder
+import { toast } from "react-toastify";
 
 /**
  * Hook to manage a board via RTK Query.
  *
  * - Fetch board data via useGetBoardQuery.
  * - Provide handler functions for mutations:
- *   add/remove columns, add/remove tasks, update columns/tasks, update board title, etc.
+ *   add/remove columns, add/remove tasks, update columns/tasks, update board title, reorder, etc.
  */
 export const useBoard = (boardId: string | null) => {
   // Fetch the board data; skip query if boardId is falsy
@@ -161,6 +163,65 @@ export const useBoard = (boardId: string | null) => {
     [updateTaskMutation, fetchBoardData]
   );
 
+  /**
+   * Handler do zmiany kolejności kolumn.
+   * newColumns: tablica ColumnType w nowej kolejności.
+   * Aktualizuje w Supabase pole `order` dla każdej kolumny zgodnie z indexem w tablicy.
+   * Po udanej aktualizacji odświeża board.
+   */
+  const handleReorderColumns = useCallback(
+    async (newColumns: ColumnType[]) => {
+      try {
+        await Promise.all(
+          newColumns.map(async (col, idx) => {
+            // Zakładamy pole `order` w tabeli columns. Jeśli masz `sort_order`, zmień na { sort_order: idx }.
+            const { error } = await supabase
+              .from("columns")
+              .update({ order: idx })
+              .eq("id", col.id);
+            if (error) throw error;
+          })
+        );
+        // odświeżenie danych
+        fetchBoardData();
+      } catch (err: any) {
+        console.error("[useBoard.handleReorderColumns] error:", err);
+        toast.error("Failed to save column order");
+        // cofnięcie: ponowne pobranie, by UI wróciło do stanu z serwera
+        fetchBoardData();
+      }
+    },
+    [fetchBoardData]
+  );
+
+  /**
+   * Handler do zmiany kolejności zadań w obrębie jednej kolumny.
+   * newTasksOrder: tablica Task w nowej kolejności.
+   * Aktualizuje w Supabase pole `sort_order` (zakładając, że tak nazywa się kolumna w tabeli tasks).
+   * Po udanej aktualizacji odświeża board.
+   */
+  const handleReorderTasks = useCallback(
+    async (columnId: string, newTasksOrder: Task[]) => {
+      try {
+        await Promise.all(
+          newTasksOrder.map(async (task, idx) => {
+            const { error } = await supabase
+              .from("tasks")
+              .update({ sort_order: idx })
+              .eq("id", task.id);
+            if (error) throw error;
+          })
+        );
+        fetchBoardData();
+      } catch (err: any) {
+        console.error("[useBoard.handleReorderTasks] error:", err);
+        toast.error("Failed to save task order");
+        fetchBoardData();
+      }
+    },
+    [fetchBoardData]
+  );
+
   return {
     board, // Board | undefined
     loading: isLoading, // boolean indicating loading state
@@ -173,5 +234,7 @@ export const useBoard = (boardId: string | null) => {
     handleUpdateColumnTitle, // (columnId, newTitle) => Promise<void>
     handleRemoveTask, // (columnId, taskId) => Promise<void>
     handleUpdateTask, // (taskId, data) => Promise<void>
+    handleReorderColumns, // (newColumns: ColumnType[]) => Promise<void>
+    handleReorderTasks, // (columnId: string, newTasksOrder: Task[]) => Promise<void>
   };
 };
