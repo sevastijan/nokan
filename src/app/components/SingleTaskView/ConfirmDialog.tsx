@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { FaExclamationTriangle } from "react-icons/fa";
-import { ConfirmDialogProps } from "./types";
+import { ConfirmDialogProps } from "@/app/types/globalTypes";
 
 /**
  * Modal dialog used to confirm user actions.

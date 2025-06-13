@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
-import { Board } from "../types";
+import { Board } from "../../types/types";
 
 interface BoardsState {
   boards: Board[];

@@ -26,7 +26,7 @@ import {
 } from "react-icons/fa";
 
 const CalendarPage = () => {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession({ required: false });
   const router = useRouter();
   const { refreshKey, refreshCalendar } = useCalendar();
   const {
@@ -337,6 +337,7 @@ const CalendarPage = () => {
       {selectedTaskId && currentUser && (
         <SingleTaskView
           taskId={selectedTaskId}
+          key={`edit-${selectedTaskId}`}
           mode="edit"
           onClose={handleCloseTask}
           onTaskUpdate={handleTaskUpdate}

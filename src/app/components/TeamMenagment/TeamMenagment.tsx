@@ -11,12 +11,12 @@ import {
   deleteTeam,
   getAllBoardsForUser,
 } from "../../lib/api";
-import { User } from "../SingleTaskView/types";
+import { User } from "@/app/types/globalTypes";
 import { supabase } from "../../lib/supabase";
 import DOMPurify from "dompurify";
 import TeamList from "./TeamList";
 import TeamFormModal from "./TeamFormModal";
-import { Team, Board } from "./types";
+import { Team, Board } from "@/app/types/globalTypes";
 
 const TeamManagement = () => {
   const { data: session, status } = useSession();

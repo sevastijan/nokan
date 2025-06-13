@@ -1,32 +1,33 @@
-import { useState, useEffect } from 'react';
-import { getUserIdByEmail } from '../lib/api';
-import { User } from '../types/useBoardTypes'; 
-import { Session } from 'next-auth';
+import { useState, useEffect } from "react";
+import { fetchOrCreateUserFromSession } from "../lib/api";
+import { User } from "@/app/types/globalTypes";
+import { Session } from "next-auth";
 
 export const useCurrentUser = (session: Session | null) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (session?.user?.email) {
-      fetchCurrentUser(session.user.email);
+    if (session) {
+      getUserFromSession(session);
     }
   }, [session]);
 
-  const fetchCurrentUser = async (userEmail: string) => {
+  const getUserFromSession = async (session: Session) => {
     try {
       setLoading(true);
-      const userId = await getUserIdByEmail(userEmail);
-      if (userId && session?.user) {
+      const user = await fetchOrCreateUserFromSession(session);
+      if (user) {
         setCurrentUser({
-          id: userId,
-          name: session.user.name || session.user.email || "",
-          email: session.user.email || "",
-          image: session.user.image || undefined, 
+          id: user.id,
+          name: user.name || user.email,
+          email: user.email,
+          image: user.image || undefined,
         });
       }
     } catch (error) {
-      console.error("Error fetching current user:", error);
+      console.error("Error in useCurrentUser:", error);
+      setCurrentUser(null);
     } finally {
       setLoading(false);
     }
@@ -35,6 +36,6 @@ export const useCurrentUser = (session: Session | null) => {
   return {
     currentUser,
     loading,
-    refetchUser: () => session?.user?.email && fetchCurrentUser(session.user.email)
+    refetchUser: () => session && getUserFromSession(session),
   };
 };

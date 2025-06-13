@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { TaskDetail } from "./types";
+import { useState } from "react";
+import { TaskDetail } from "@/app/types/globalTypes";
 import ConfirmDialog from "./ConfirmDialog";
 import Button from "../Button/Button";
-import { ActionFooterProps } from "./types";
+import { ActionFooterProps } from "@/app/types/globalTypes";
 
 /**
  * ActionFooter component renders action buttons for saving, canceling, or deleting a task.

@@ -1,6 +1,6 @@
 import { FiList } from "react-icons/fi";
 import Image from "next/image";
-import { Column as ColumnType } from "../../types/useBoardTypes";
+import { Column as ColumnType } from "@/app/types/globalTypes";
 
 interface ListViewProps {
   columns: ColumnType[];

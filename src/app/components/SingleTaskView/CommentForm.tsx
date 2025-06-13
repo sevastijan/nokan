@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FaPaperclip } from "react-icons/fa";
-import { CommentFormProps } from "./types";
+import { CommentFormProps } from "@/app/types/globalTypes";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
 import Avatar from "../Avatar/Avatar";
@@ -98,9 +98,14 @@ const CommentForm = ({
   return (
     <div className="border border-gray-600 rounded-lg p-4 mb-6">
       <div className="flex items-start gap-3">
-        <motion.div className="w-8 h-8 rounded-full flex-shrink-0">
-          <Avatar src={currentUser.image || null} alt={currentUser.name} />
-        </motion.div>
+        {currentUser && (
+          <motion.div className="w-8 h-8 rounded-full flex-shrink-0">
+            <Avatar
+              src={currentUser.image || undefined}
+              alt={currentUser.name}
+            />
+          </motion.div>
+        )}
         <div className="flex-1">
           <form onSubmit={handleSubmit} className="space-y-3">
             <textarea

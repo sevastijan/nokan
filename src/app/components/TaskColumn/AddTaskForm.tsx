@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX } from "react";
+import { JSX, useEffect } from "react";
 import Button from "../Button/Button";
 import { FaPlus } from "react-icons/fa";
 import { AddTaskFormProps } from "./types";
@@ -13,13 +13,20 @@ const AddTaskForm = ({
   columnId,
   onOpenAddTask,
 }: AddTaskFormProps): JSX.Element => {
+  useEffect(() => {
+    console.log("onOpenAddTask typeof:", typeof onOpenAddTask);
+  }, [onOpenAddTask]);
+
   return (
     <div className="mt-4">
       <Button
         variant="success"
         size="md"
         fullWidth={true}
-        onClick={() => onOpenAddTask(columnId)}
+        onClick={() => {
+          console.log("Add Task button clicked");
+          onOpenAddTask(columnId);
+        }}
         icon={<FaPlus />}
       >
         Add Task

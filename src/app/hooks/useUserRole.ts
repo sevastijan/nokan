@@ -1,53 +1,40 @@
-import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-
-export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER';
+import { useSession } from "next-auth/react";
+import { useGetUserRoleQuery, UserRole } from "@/app/store/apiSlice";
 
 export const useUserRole = () => {
-  const { data: session } = useSession();
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+  // Extract email from session; if undefined, pass empty string and skip query
+  const email = session?.user?.email || "";
 
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!session?.user?.email) {
-        setLoading(false);
-        return;
-      }
+  // Use RTK Query to fetch role; skip if no email
+  const {
+    data: roleFromApi,
+    error: roleError,
+    isLoading: roleLoading,
+    isFetching,
+  } = useGetUserRoleQuery(email, {
+    skip: !email,
+  });
 
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('role')
-          .eq('email', session.user.email)
-          .single();
+  // Determine final userRole: if email empty, null; else from API (could be undefined until fetched)
+  const userRole: UserRole | null = email ? roleFromApi ?? null : null;
 
-        if (error) {
-          console.error('Error fetching user role:', error);
-        } else {
-          setUserRole(data?.role || 'MEMBER');
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Combine NextAuth loading and RTK Query loading
+  const loading =
+    status === "loading" || (email !== "" && (roleLoading || isFetching));
 
-    fetchUserRole();
-  }, [session]);
-
+  // Access check functions
   const hasManagementAccess = () => {
-    return userRole === 'OWNER' || userRole === 'PROJECT_MANAGER';
+    return userRole === "OWNER" || userRole === "PROJECT_MANAGER";
   };
 
   return {
-    userRole,
-    loading,
-    hasManagementAccess,
-    isOwner: userRole === 'OWNER',
-    isProjectManager: userRole === 'PROJECT_MANAGER',
-    isMember: userRole === 'MEMBER'
+    userRole, // UserRole | null
+    loading, // boolean, true while fetching session or role
+    hasManagementAccess, // () => boolean
+    isOwner: userRole === "OWNER",
+    isProjectManager: userRole === "PROJECT_MANAGER",
+    isMember: userRole === "MEMBER",
+    error: roleError, // possibly expose error for UI
   };
 };

@@ -8,12 +8,14 @@ import BoardDropdown from "./BoardDropdown";
 import Loader from "../Loader";
 import {
   getAllBoardsForUser,
+  addBoardTemplate,
   createBoardFromTemplate,
   addBoard,
 } from "../../lib/api";
-import { BoardTemplate } from "../../types/useBoardTypes";
+import { BoardTemplate } from "@/app/types/globalTypes";
 import { FaTasks, FaUsers, FaArrowRight, FaPlus } from "react-icons/fa";
 import Button from "../../components/Button/Button";
+import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 
 interface Board {
   id: string;
@@ -31,6 +33,7 @@ interface BoardListProps {
  */
 const BoardList = ({ searchQuery = "" }: BoardListProps) => {
   const { data: session, status } = useSession();
+  const { currentUser, loading: userLoading } = useCurrentUser(session);
   const router = useRouter();
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,32 +82,32 @@ const BoardList = ({ searchQuery = "" }: BoardListProps) => {
    * @param template - Optional template to use for board creation
    */
   const createBoard = async (title: string, template?: BoardTemplate) => {
-    if (!session?.user?.email) return;
+    if (!currentUser) return;
 
     try {
       let newBoard;
 
       if (template) {
-        // Create board from template
         newBoard = await createBoardFromTemplate(
           title,
           template.id,
-          session.user.email
+          currentUser.email
         );
       } else {
-        // Create basic board without template
-        newBoard = await addBoard({ title });
+        newBoard = await addBoard({
+          title,
+          owner: currentUser.email,
+          userId: currentUser.id,
+        });
       }
 
       setCreateModalOpen(false);
-      // Refresh boards to get updated list
       await fetchBoards();
     } catch (error) {
       console.error("Error creating board:", error);
       setError("Failed to create board");
     }
   };
-
   /**
    * Edit an existing board
    * @param title - The new title for the board

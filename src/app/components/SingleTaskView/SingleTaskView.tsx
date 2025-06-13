@@ -1,17 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { updateTaskDetails } from "../../lib/api";
-import { TaskDetail, Attachment, SingleTaskViewProps } from "./types";
-import TaskHeader from "./TaskHeader";
-import TaskContent from "./TaskContent";
-import CommentsSection from "./CommentsSection";
-import ActionFooter from "./ActionFooter";
-import TaskFooter from "./TaskFooter";
-import ImagePreviewModal from "./ImagePreviewModal";
-import Button from "../Button/Button";
 import {
   FaTimes,
   FaCalendarAlt,
@@ -19,686 +10,451 @@ import {
   FaUser,
   FaFlag,
   FaLink,
+  FaEdit,
+  FaPaperclip,
 } from "react-icons/fa";
-import { useTaskData } from "./hooks/useTaskData";
-import { useTaskComments } from "./hooks/useTaskComments";
-import { useAvailableUsers } from "./hooks/useAvailableUsers";
-import { usePriorities } from "./hooks/usePriorities";
-import { useImagePreview } from "./hooks/useImagePreview";
-import { useUnsavedChanges } from "./hooks/useUnsavedChanges";
-import { useTaskDates } from "./hooks/useTaskDates";
-import { useTaskOperations } from "./hooks/useTaskOperations";
-import "./styles/styles.css";
-import { useBoard } from "../../hooks/useBoard";
-import { supabase } from "../../lib/supabase";
 
+import { useTaskManagement } from "@/app/components/SingleTaskView/hooks/useTaskManagement";
+import { supabase } from "@/app/lib/supabase";
+import { useSession } from "next-auth/react";
+
+import CommentsSection from "@/app/components/SingleTaskView/CommentsSection";
+import ActionFooter from "@/app/components/SingleTaskView/ActionFooter";
+import ImagePreviewModal from "@/app/components/SingleTaskView/ImagePreviewModal";
+import Button from "@/app/components/Button/Button";
+import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+
+import { SingleTaskViewProps, TaskDetail, User } from "@/app/types/globalTypes";
+import { useGetTeamMembersByBoardIdQuery } from "@/app/store/apiSlice";
+
+import "@/app/components/SingleTaskView/styles/styles.css";
+
+import UserSelector from "@/app/components/SingleTaskView/UserSelector";
 const SingleTaskView = ({
   taskId,
   mode,
   columnId,
-  boardId, // boardId is passed as a prop
+  boardId,
   onClose,
   onTaskUpdate,
   onTaskAdd,
   onTaskAdded,
-  currentUser,
 }: SingleTaskViewProps) => {
-  const [isNewTask, setIsNewTask] = useState(mode === "add");
+  const { data: session } = useSession();
+  const { currentUser, loading: userLoading } = useCurrentUser(session);
+
+  const [tempTitle, setTempTitle] = useState("");
+  const [tempDescription, setTempDescription] = useState("");
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
     null
-  ); // Add state to track selected assignee
+  );
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isEditingTitle, setIsEditingTitle] = useState(mode === "add");
+  const [waitBeforeError, setWaitBeforeError] = useState(true);
 
-  // Add debugging for assignee selection
-  const handleAssigneeChange = (assigneeId: string | null) => {
-    console.log("=== DEBUG SingleTaskView handleAssigneeChange ===");
-    console.log("Selected assignee ID:", assigneeId);
-    console.log("Assignee ID type:", typeof assigneeId);
-    console.log("Setting selectedAssigneeId to:", assigneeId);
-
-    setSelectedAssigneeId(assigneeId);
-
-    // Also update the task object immediately for live UI updates
-    if (assigneeId) {
-      const selectedUser = teamMembers?.find((user) => user.id === assigneeId);
-      console.log("Found selected user:", selectedUser);
-      if (selectedUser) {
-        setTask((prevTask) => {
-          if (!prevTask) return null;
-          const updatedTask = {
-            ...prevTask,
-            assignee: selectedUser,
-            user_id: assigneeId,
-          };
-          console.log("Updated task with new assignee:", updatedTask);
-          return updatedTask;
-        });
-      }
-    } else {
-      // Clear assignee
-      console.log("Clearing assignee");
-      setTask((prevTask) => {
-        if (!prevTask) return null;
-        const updatedTask = {
-          ...prevTask,
-          assignee: null,
-          user_id: null,
-        };
-        console.log("Updated task - cleared assignee:", updatedTask);
-        return updatedTask;
-      });
+  const { data: teamMembers = [] } = useGetTeamMembersByBoardIdQuery(
+    boardId || "",
+    {
+      skip: !boardId,
     }
+  );
 
-    // Mark as changed for unsaved changes tracking
-    markAsChanged();
-  };
-  // Use all the hooks
-  const { task, loading, error, setTask, fetchTaskData } = useTaskData(
+  const availableUsers: User[] = useMemo(
+    () => teamMembers.map((tm) => tm.user),
+    [teamMembers]
+  );
+
+  const {
+    task,
+    loading,
+    saving,
+    error,
+    hasUnsavedChanges,
+    isNewTask,
+    updateTask,
+    saveNewTask,
+    saveExistingTask,
+    deleteTask,
+    fetchTaskData,
+    uploadAttachment,
+    fetchedTask,
+  } = useTaskManagement({
     taskId,
     mode,
-    columnId
-  );
-
-  // Add useEffect to sync selectedAssigneeId when task changes
-  useEffect(() => {
-    if (task?.assignee?.id && !selectedAssigneeId) {
-      setSelectedAssigneeId(task.assignee.id);
-    }
-  }, [task?.assignee?.id, selectedAssigneeId]);
-
-  const [teamId, setTeamId] = useState<string | null>(null); // Add teamId state
-
-  useEffect(() => {
-    const fetchTeamId = async () => {
-      const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .select("id")
-        .eq("board_id", boardId)
-        .single();
-
-      if (teamError) {
-        console.error("Error fetching team:", teamError);
-        return;
-      }
-
-      if (teamData) {
-        setTeamId(teamData.id);
-      }
-    };
-
-    fetchTeamId();
-  }, [boardId]);
-
-  useEffect(() => {
-    console.log("boardId in SingleTaskView:", boardId);
-  }, [boardId]);
-
-  // Use the useBoard hook to get teamMembers
-  const { teamMembers } = useBoard(teamId || ""); // Pass teamId to useBoard
-
-  const { comments, fetchComments } = useTaskComments(taskId);
-  const { availableUsers } = useAvailableUsers(boardId);
-  const { priorities } = usePriorities();
-  const { imagePreview, openImagePreview, closeImagePreview } =
-    useImagePreview();
-
-  const {
-    hasUnsavedChanges,
-    showUnsavedAlert,
-    markAsChanged,
-    markAsSaved,
-    showUnsavedChangesAlert,
-    hideUnsavedChangesAlert,
-  } = useUnsavedChanges(isNewTask);
-
-  const { startDate, endDate, handleDateChange } = useTaskDates(
-    (task as any)?.start_date || "",
-    (task as any)?.end_date || ""
-  );
-
-  // Create adapter function for task creation
-  const handleTaskCreation = useCallback(
-    async (
-      columnId: string,
-      title: string,
-      priority?: number,
-      userId?: number
-    ) => {
-      if (onTaskAdded) {
-        return await onTaskAdded(columnId, title, priority, userId);
-      } else if (onTaskAdd) {
-        const newTask = { id: "temp-id", title };
-        await onTaskAdd(newTask);
-        return newTask;
-      }
-      throw new Error("No task creation callback provided");
-    },
-    [onTaskAdded, onTaskAdd]
-  );
-
-  const {
-    isSaving,
-    handleSaveExistingTask,
-    handleSaveNewTask,
-    handleDeleteTask,
-  } = useTaskOperations({
-    task,
-    taskId,
     columnId,
-    isNewTask,
-    startDate,
-    endDate,
+    boardId: boardId!,
+    currentUser: currentUser || undefined,
     onTaskUpdate,
-    onTaskAdded: handleTaskCreation,
+    onTaskAdded: (task: TaskDetail) => {
+      onTaskAdded?.({
+        ...task,
+        column_id: columnId || "",
+        board_id: boardId || "",
+      });
+    },
     onClose,
-    markAsSaved,
   });
 
   useEffect(() => {
-    setIsNewTask(mode === "add");
-  }, [mode]);
-
-  /**
-   * Updates an existing task in the database
-   * Handles field validation and error recovery
-   */
-  const handleUpdateTask = async (updates: Partial<TaskDetail>) => {
-    if (!task) return;
-
-    setTask((prev) => (prev ? { ...prev, ...updates } : null));
-
-    if (isNewTask) {
-      markAsChanged();
-    } else {
-      try {
-        if (task.id) {
-          await updateTaskDetails(task.id, updates);
-          onTaskUpdate?.();
-          toast.success("Task updated successfully!");
-        }
-      } catch (error) {
-        console.error("Error updating task:", error);
-        toast.error("Error updating task");
-      }
+    if (task) {
+      setTempTitle(task.title || "");
+      setTempDescription(task.description || "");
+      setSelectedAssigneeId(task.assignee?.id || task.user_id || null);
+      setStartDate(task.start_date || "");
+      setEndDate(task.end_date || "");
     }
-  };
-
-  /**
-   * Handles modal close with unsaved changes check
-   * Shows confirmation dialog for tasks with unsaved changes
-   */
-  const handleClose = () => {
-    if (hasUnsavedChanges) {
-      showUnsavedChangesAlert();
-    } else {
-      onClose();
-    }
-  };
-
-  /**
-   * Handle date changes with unsaved changes tracking
-   */
-  const handleDateChangeWithTracking = (
-    dateType: "start" | "end",
-    value: string
-  ) => {
-    handleDateChange(dateType, value, markAsChanged);
-  };
-
-  // Add function for local attachment updates
-  const updateAttachmentsLocally = useCallback(
-    (updater: (attachments: Attachment[]) => Attachment[]) => {
-      setTask((prevTask) => {
-        if (!prevTask) return prevTask;
-        return {
-          ...prevTask,
-          attachments: updater(prevTask.attachments || []),
-        };
-      });
+  }, [task]);
+  const handleTitleChange = useCallback(
+    (newTitle: string) => {
+      setTempTitle(newTitle);
+      updateTask({ title: newTitle });
     },
-    [setTask]
+    [updateTask]
   );
 
-  /**
-   * Copy task link to clipboard
-   */
-  const handleCopyLink = async () => {
-    if (!task?.id) return;
+  useEffect(() => {
+    const timeout = setTimeout(() => setWaitBeforeError(false), 500);
+    return () => clearTimeout(timeout);
+  }, []);
 
-    const taskUrl = `${window.location.origin}${window.location.pathname}?task=${task.id}`;
+  const handleDescriptionChange = useCallback(
+    (desc: string) => {
+      setTempDescription(desc);
+      updateTask({ description: desc });
+    },
+    [updateTask]
+  );
 
-    try {
-      await navigator.clipboard.writeText(taskUrl);
-      toast.success("Task link copied to clipboard!");
-    } catch (error) {
-      console.error("Failed to copy link:", error);
-      toast.error("Failed to copy link");
-    }
-  };
+  const handleAssigneeChange = useCallback(
+    async (assigneeId: string | null) => {
+      setSelectedAssigneeId(assigneeId);
 
-  // Modify the task creation/save function
-  const handleSaveTask = async () => {
-    console.log("=== DEBUG Task Save ===");
-    console.log("Selected assignee ID before save:", selectedAssigneeId);
-    console.log("Task title:", task?.title);
-    console.log("Priority:", task?.priority);
-
-    if (mode === "add" && onTaskAdded) {
-      try {
-        // Convert selectedAssigneeId to number if it's a string
-        const assigneeId = selectedAssigneeId
-          ? parseInt(selectedAssigneeId, 10)
-          : undefined;
-
-        await onTaskAdded(
-          columnId || "",
-          task?.title || "",
-          task?.priority,
-          assigneeId // Pass as number or undefined
-        );
-        onClose(); // Close the modal after successful creation
-      } catch (error) {
-        console.error("Error in handleSaveTask:", error);
+      if (!assigneeId) {
+        await updateTask({ user_id: null, assignee: null });
+        return;
       }
+
+      const selectedUser = availableUsers.find((u) => u.id === assigneeId);
+      if (!selectedUser) {
+        await updateTask({ user_id: null, assignee: null });
+        return;
+      }
+
+      await updateTask({
+        user_id: assigneeId,
+        assignee: selectedUser,
+      });
+    },
+    [availableUsers, updateTask]
+  );
+
+  console.log("🚀 boardId:", boardId, "teamMembers:", teamMembers);
+
+  const handleDateChange = useCallback(
+    (type: "start" | "end", value: string) => {
+      if (type === "start") setStartDate(value);
+      else setEndDate(value);
+      updateTask({
+        start_date: type === "start" ? value : task?.start_date || null,
+        end_date: type === "end" ? value : task?.end_date || null,
+      });
+    },
+    [task, updateTask]
+  );
+
+  const handleAttachmentUpload = useCallback(
+    async (files: File[]) => {
+      setAttachments((prev) => [...prev, ...files]);
+      for (const file of files) {
+        const result = await uploadAttachment(file);
+        if (!result) {
+          toast.error("Upload failed");
+        } else {
+          const newAttachments = task?.attachments
+            ? [...task.attachments, result]
+            : [result];
+          updateTask({ attachments: newAttachments });
+        }
+      }
+    },
+    [task?.attachments, uploadAttachment, updateTask]
+  );
+  const handleSave = useCallback(async () => {
+    const success = isNewTask ? await saveNewTask() : await saveExistingTask();
+
+    if (success) {
+      onClose();
+      toast.success(isNewTask ? "Task created" : "Task updated");
     }
+  }, [isNewTask, saveNewTask, saveExistingTask, onClose]);
+
+  const handleClose = () => {
+    if (
+      hasUnsavedChanges &&
+      !confirm("You have unsaved changes. Close anyway?")
+    )
+      return;
+    onClose();
   };
 
-  const getCurrentAssignee = () => {
-    // Priority: selectedAssigneeId > task.assignee
-    if (selectedAssigneeId) {
-      const selectedUser = teamMembers?.find(
-        (user) => user.id === selectedAssigneeId
-      );
-      return selectedUser || null;
-    }
-
-    return task?.assignee || null;
+  const getPriorityColor = (priority: string) => {
+    const map: Record<string, string> = {
+      urgent: "bg-red-500/20 text-red-400 border-red-500/30",
+      high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+      medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      low: "bg-green-500/20 text-green-400 border-green-500/30",
+    };
+    return (
+      map[priority] || "bg-slate-500/20 text-slate-400 border-slate-500/30"
+    );
   };
 
   if (loading) {
     return (
-      <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
-        <div className="bg-slate-800/90 border border-slate-700/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
-          <div className="flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            <div className="text-slate-200 font-medium">Loading task...</div>
-          </div>
+      <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+        <div className="p-4 bg-slate-800 rounded-lg border border-slate-600 text-white">
+          Loading task...
         </div>
       </div>
     );
   }
 
-  if (!task) {
+  if (error) {
     return (
-      <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
-        <div className="bg-slate-800/90 border border-slate-700/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
-          <div className="text-slate-200 mb-4 font-medium">Task not found</div>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={onClose}
-            icon={<FaTimes />}
-          >
-            Close
-          </Button>
+      <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+        <div className="p-4 bg-slate-800 rounded-lg border border-slate-600 text-red-400">
+          Error: {error}
         </div>
       </div>
     );
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-500/20 text-red-400 border-red-500/30";
-      case "high":
-        return "bg-orange-500/20 text-orange-400 border-orange-500/30";
-      case "medium":
-        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-      case "low":
-        return "bg-green-500/20 text-green-400 border-green-500/30";
-      default:
-        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
-    }
-  };
+  if (userLoading || !currentUser) {
+    return <div className="text-white p-4">Loading user...</div>;
+  }
 
+  if (!isNewTask && !loading && !task) return null;
+  if (!isNewTask && !fetchedTask) return null;
+
+  if (!isNewTask && !loading && !task && !waitBeforeError) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+        <div className="p-4 bg-slate-800 rounded-lg border border-slate-600 text-white">
+          Task not found
+        </div>
+      </div>
+    );
+  }
   return (
     <>
       <motion.div
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+        onClick={(e) => e.target === e.currentTarget && handleClose()}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) handleClose();
-        }}
       >
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+          className="bg-slate-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-xl border border-slate-600"
+          initial={{ scale: 0.95 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0.95 }}
         >
-          {/* Enhanced Header */}
-          <div className="flex-shrink-0 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50">
-            <div className="flex items-center justify-between p-6">
-              <div className="flex items-center space-x-4">
-                {/* Task Status Indicator */}
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-
-                {/* Task ID and Title */}
-                <div className="flex items-center space-x-3">
-                  <span className="text-slate-400 text-sm font-mono bg-slate-700/50 px-2 py-1 rounded-md">
-                    #{task.id?.slice(-8) || "NEW"}
-                  </span>
-                  <h1 className="text-xl font-semibold text-white">
-                    {isNewTask ? "New Task" : task.title}
-                  </h1>
-                </div>
-
-                {/* Priority Badge */}
-                {task.priority && (
-                  <div
-                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getPriorityColor(
-                      task.priority
-                    )}`}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <FaFlag className="w-3 h-3" />
-                      <span className="capitalize">{task.priority}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-3">
-                {hasUnsavedChanges && (
-                  <div className="flex items-center space-x-2 text-amber-400 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">
-                    <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium">Unsaved changes</span>
-                  </div>
-                )}
-
-                {/* Copy Link Button */}
-                {!isNewTask && task?.id && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyLink}
-                    icon={<FaLink />}
-                    className="text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 transition-colors"
-                    title="Copy task link"
-                  />
-                )}
-
+          {/* Header */}
+          <div className="flex justify-between items-center p-4 border-b border-slate-600">
+            <div className="flex items-center gap-3 text-white">
+              <span className="bg-slate-700 px-2 py-1 rounded text-xs font-mono">
+                #{task?.id?.slice(-6) || "NEW"}
+              </span>
+              <h1 className="text-lg font-semibold">
+                {isNewTask ? "New Task" : tempTitle || "Untitled"}
+              </h1>
+              {task?.priority && (
+                <span
+                  className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(
+                    task.priority
+                  )}`}
+                >
+                  <FaFlag className="inline mr-1" />
+                  {task.priority}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {!isNewTask && task?.id && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleClose}
-                  icon={<FaTimes />}
-                  className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                  icon={<FaLink />}
+                  onClick={() => {
+                    const url = `${window.location.origin}${window.location.pathname}?task=${task.id}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Link copied");
+                  }}
+                />
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<FaTimes />}
+                onClick={handleClose}
+              />
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
+            {/* Title */}
+            <div>
+              <label className="text-sm">Title</label>
+              <input
+                type="text"
+                className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded"
+                value={tempTitle}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="Enter task title"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-sm">Description</label>
+              <textarea
+                className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded resize-none"
+                value={tempDescription}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
+                placeholder="Describe the task..."
+                rows={4}
+              />
+            </div>
+
+            {/* Priority */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm">Priority</label>
+                <select
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded"
+                  value={task?.priority || ""}
+                  onChange={(e) =>
+                    updateTask({ priority: e.target.value || null })
+                  }
+                >
+                  <option value="">None</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+
+              <UserSelector
+                selectedUser={
+                  availableUsers.find((u) => u.id === selectedAssigneeId) ||
+                  null
+                }
+                availableUsers={availableUsers}
+                onUserSelect={handleAssigneeChange}
+                label="Assignee"
+              />
+            </div>
+
+            {/* Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm flex items-center gap-1">
+                  <FaClock className="text-green-400" /> Start Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded"
+                  value={startDate}
+                  onChange={(e) => handleDateChange("start", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm flex items-center gap-1">
+                  <FaClock className="text-red-400" /> End Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded"
+                  value={endDate}
+                  min={startDate}
+                  onChange={(e) => handleDateChange("end", e.target.value)}
                 />
               </div>
             </div>
-          </div>
 
-          <div className="flex-1 overflow-hidden flex">
-            {/* Main Content */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-6 space-y-6">
-                {/* Task Content */}
-                {teamId && ( // Conditionally render TaskContent
-                  <TaskContent
-                    task={task}
-                    currentUser={currentUser}
-                    availableUsers={availableUsers}
-                    priorities={priorities}
-                    onUpdateTask={handleUpdateTask}
-                    taskId={taskId || ""}
-                    setHasUnsavedChanges={markAsChanged}
-                    isNewTask={isNewTask}
-                    onTaskUpdate={fetchTaskData}
-                    onAttachmentsUpdate={updateAttachmentsLocally}
-                    teamMembers={teamMembers} // Pass teamMembers here
-                    onAssigneeChange={handleAssigneeChange} // Add this line
-                    selectedAssigneeId={selectedAssigneeId} // Add this line too
-                  />
-                )}
+            {/* Comments */}
+            {taskId && (
+              <CommentsSection
+                taskId={taskId}
+                comments={task?.comments || []}
+                currentUser={currentUser!}
+                task={task}
+                onRefreshComments={async () => {
+                  await fetchTaskData();
+                }}
+                onImagePreview={(url: string) =>
+                  updateTask({ imagePreview: url })
+                }
+              />
+            )}
 
-                {/* Enhanced Schedule Section */}
-                <div className="bg-slate-700/30 rounded-xl p-6 border border-slate-600/30">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <FaCalendarAlt className="w-5 h-5 text-blue-400" />
-                    <h3 className="text-lg font-semibold text-white">
-                      Schedule
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2 text-sm font-medium text-slate-300">
-                        <FaClock className="w-4 h-4 text-green-400" />
-                        <span>Start Date</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) =>
-                          handleDateChangeWithTracking("start", e.target.value)
-                        }
-                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2 text-sm font-medium text-slate-300">
-                        <FaClock className="w-4 h-4 text-red-400" />
-                        <span>Due Date</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) =>
-                          handleDateChangeWithTracking("end", e.target.value)
-                        }
-                        min={startDate}
-                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Date Range Indicator */}
-                  {startDate && endDate && (
-                    <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                      <div className="flex items-center space-x-2 text-blue-400 text-sm">
-                        <FaCalendarAlt className="w-4 h-4" />
-                        <span>
-                          Duration:{" "}
-                          {Math.ceil(
-                            (new Date(endDate).getTime() -
-                              new Date(startDate).getTime()) /
-                              (1000 * 60 * 60 * 24)
-                          )}{" "}
-                          days
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Comments Section */}
-                {!isNewTask && taskId && task && (
-                  <div className="bg-slate-700/30 rounded-xl border border-slate-600/30 overflow-hidden">
-                    <CommentsSection
-                      taskId={taskId}
-                      comments={comments}
-                      currentUser={currentUser}
-                      task={task}
-                      onRefreshComments={fetchComments}
-                      onImagePreview={openImagePreview}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Enhanced Sidebar */}
-            <div className="w-80 bg-slate-800/50 border-l border-slate-700/50 overflow-y-auto">
-              <div className="p-6 space-y-6">
-                {/* Task Info */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
-                    Task Details
-                  </h3>
-
-                  {/* Assignee */}
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2 text-sm font-medium text-slate-400">
-                      <FaUser className="w-4 h-4" />
-                      <span>Assignee</span>
-                    </label>
-                    {(() => {
-                      const currentAssignee = getCurrentAssignee();
-                      return currentAssignee ? (
-                        <div className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600/30">
-                          {currentAssignee.image ? (
-                            <img
-                              src={currentAssignee.image}
-                              alt={currentAssignee.name}
-                              className="w-8 h-8 rounded-full border-2 border-slate-600"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                              <span className="text-white text-sm font-medium">
-                                {currentAssignee.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          <div>
-                            <div className="text-white font-medium">
-                              {currentAssignee.name}
-                            </div>
-                            <div className="text-slate-400 text-sm">
-                              {currentAssignee.email}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-3 bg-slate-700/30 border border-slate-600/30 rounded-lg text-slate-400 text-sm">
-                          No assignee set
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Creation Info */}
-                  <div className="space-y-3 p-4 bg-slate-700/30 rounded-lg border border-slate-600/30">
-                    <h4 className="text-sm font-medium text-slate-300">
-                      Created
-                    </h4>
-                    <div className="text-sm text-slate-400">
-                      {task.created_at
-                        ? new Date(task.created_at).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )
-                        : "Unknown"}
-                    </div>
-                    {task.updated_at && (
-                      <>
-                        <h4 className="text-sm font-medium text-slate-300 mt-3">
-                          Last Updated
-                        </h4>
-                        <div className="text-sm text-slate-400">
-                          {new Date(task.updated_at).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
+            {/* Attachments */}
+            <div>
+              <label className="text-sm flex items-center gap-2">
+                <FaPaperclip /> Attachments
+              </label>
+              <input
+                type="file"
+                multiple
+                onChange={(e) =>
+                  handleAttachmentUpload(Array.from(e.target.files || []))
+                }
+                className="mt-1"
+              />
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {task?.attachments?.map((att, idx) => (
+                  <a
+                    key={idx}
+                    href={
+                      supabase.storage
+                        .from("attachments")
+                        .getPublicUrl(att.file_path).data.publicUrl
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    {att.file_name}
+                  </a>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Enhanced Footer */}
-          <div className="flex-shrink-0 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700/50 p-6">
-            <ActionFooter
-              isNewTask={isNewTask}
-              hasUnsavedChanges={hasUnsavedChanges}
-              isSaving={isSaving}
-              onSave={isNewTask ? handleSaveTask : handleSaveExistingTask}
-              onClose={handleClose}
-              onDelete={!isNewTask ? handleDeleteTask : undefined}
-              task={task}
-            />
-          </div>
+          {/* Footer */}
+          <ActionFooter
+            isNewTask={isNewTask}
+            hasUnsavedChanges={hasUnsavedChanges}
+            isSaving={saving}
+            onSave={handleSave}
+            onClose={handleClose}
+            onDelete={!isNewTask ? deleteTask : undefined}
+            task={task ?? undefined}
+          />
         </motion.div>
       </motion.div>
 
-      {/* Image Preview Modal */}
-      {imagePreview && (
+      {/* Image Preview */}
+      {task?.imagePreview && (
         <ImagePreviewModal
-          imageUrl={imagePreview}
-          onClose={closeImagePreview}
+          imageUrl={task.imagePreview}
+          onClose={() => updateTask({ imagePreview: null })}
         />
-      )}
-
-      {/* Enhanced Unsaved Changes Dialog */}
-      {showUnsavedAlert && (
-        <div className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-[60]">
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 p-6 rounded-xl max-w-md shadow-2xl"
-          >
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center">
-                <FaClock className="w-5 h-5 text-amber-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">
-                Unsaved Changes
-              </h3>
-            </div>
-
-            <p className="text-slate-300 mb-6 leading-relaxed">
-              You have unsaved changes that will be lost. Are you sure you want
-              to close without saving?
-            </p>
-
-            <div className="flex justify-end space-x-3">
-              <Button
-                variant="ghost"
-                size="md"
-                onClick={hideUnsavedChangesAlert}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                size="md"
-                onClick={() => {
-                  hideUnsavedChangesAlert();
-                  onClose();
-                }}
-              >
-                Close without saving
-              </Button>
-            </div>
-          </motion.div>
-        </div>
       )}
     </>
   );

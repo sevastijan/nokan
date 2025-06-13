@@ -3,7 +3,7 @@ import { FiX } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
 import TemplateSelector from "./TemplateSelector";
 import CreateTemplateModal from "./CreateTemplateModal";
-import { BoardTemplate, DEFAULT_TEMPLATES } from "../../types/useBoardTypes";
+import { BoardTemplate, DEFAULT_TEMPLATES } from "@/app/types/globalTypes";
 import { getBoardTemplates } from "../../lib/api";
 
 interface BoardModalProps {

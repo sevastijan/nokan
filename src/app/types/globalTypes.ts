@@ -1,0 +1,415 @@
+// === Core Types ===
+
+type SingleTaskMode = "edit" | "add";
+
+export interface User {
+  id?: string;
+  name: string;
+  email: string;
+  image?: string;
+  role?: "OWNER" | "PROJECT_MANAGER" | "MEMBER";
+  created_at?: string;
+  user_id?: string; // for compatibility in some components
+}
+
+export interface Priority {
+  id: string;
+  label: string;
+  color: string;
+}
+
+export interface Attachment {
+  id: string;
+  task_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_by: string;
+  created_at: string;
+}
+
+export interface Comment {
+  id: string;
+  task_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at?: string;
+  author: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string;
+  };
+}
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  column_id: string;
+  board_id: string;
+  priority: string;
+  user_id?: string;
+  order: number;
+  completed: boolean;
+  created_at?: string;
+  updated_at?: string;
+  images?: any[];
+  assignee?: User | null;
+  start_date?: string;
+  end_date?: string;
+  due_date?: string;
+  status?: string;
+}
+
+export interface TaskDetail {
+  id?: string;
+  title: string | null;
+  description?: string | null;
+  column_id: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  priority?: string | null;
+  images?: string[] | null;
+  priority_info?: Priority | null;
+  user_id?: string | null;
+  assignee?: User | null;
+  attachments?: Attachment[];
+  order?: number;
+  start_date?: string | null;
+  end_date?: string | null;
+  due_date?: string | null;
+  status?: string | null;
+  board_id?: string | null;
+  imagePreview?: string | null;
+  comments?: Comment[];
+  hasUnsavedChanges?: boolean;
+  completed?: boolean;
+}
+
+export interface Column {
+  id: string;
+  boardId: string;
+  title: string;
+  order: number;
+  tasks: Task[];
+}
+
+export interface Board {
+  id: string;
+  title: string;
+  owner: string;
+  columns: Column[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TeamMember {
+  id: string;
+  team_id: string;
+  user_id: string;
+  created_at?: string;
+  user: User;
+  name?: string;
+  email?: string;
+  image?: string;
+  joined_at?: string;
+}
+
+export interface ApiTask {
+  id: string;
+  title: string;
+  description?: string;
+  start_date?: string;
+  end_date?: string;
+  completed?: boolean;
+
+  priority?: {
+    label: string;
+    color: string;
+  } | null;
+
+  assignee?: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string | null;
+  } | null;
+
+  attachments?: {
+    id: string;
+    task_id: string;
+    file_name: string;
+    file_path: string;
+    created_at: string;
+  }[];
+
+  comments?: {
+    id: string;
+    task_id: string;
+    user_id: string;
+    content: string;
+    created_at: string;
+    user?: {
+      id: string;
+      name: string;
+      email: string;
+      image?: string | null;
+    };
+  }[];
+}
+
+// === Props ===
+
+export interface TaskContentProps {
+  task: TaskDetail | null;
+  currentUser: User;
+  availableUsers: User[];
+  priorities: Priority[];
+  onUpdateTask: (updates: Partial<TaskDetail>) => void;
+  taskId: string;
+  setHasUnsavedChanges: (value: boolean) => void;
+  isNewTask?: boolean;
+  onTaskUpdate?: () => Promise<void>;
+  onAttachmentsUpdate?: (
+    updater: (attachments: Attachment[]) => Attachment[]
+  ) => void;
+  teamMembers: TeamMember[];
+  onAssigneeChange?: (assigneeId: string | null) => void;
+  selectedAssigneeId?: string | null;
+}
+
+export interface UserSelectorProps {
+  selectedUser: User | null;
+  availableUsers: User[];
+  onUserSelect: (userId: string | null) => void;
+  label?: string;
+}
+
+export interface TaskHeaderProps {
+  task: TaskDetail | null;
+  onClose: () => void;
+  onUpdateTask: (updates: Partial<TaskDetail>) => void;
+  hasUnsavedChanges?: boolean;
+  onUnsavedChangesAlert?: () => void;
+}
+
+export interface TaskFooterProps {
+  task?: TaskDetail;
+  currentUser: User;
+  isNewTask?: boolean;
+  hasUnsavedChanges?: boolean;
+  isSaving?: boolean;
+  onSave?: () => void;
+  onClose?: () => void;
+}
+
+export interface SingleTaskViewProps {
+  taskId?: string;
+  mode: SingleTaskMode;
+  columnId?: string;
+  boardId?: string;
+  onClose: () => void;
+  onTaskUpdate?: (task: TaskDetail) => void;
+  onTaskAdd?: () => void;
+  onTaskAdded?: (task: TaskDetail) => void;
+  currentUser?: User;
+}
+
+export interface TemplateColumn {
+  id: string;
+  template_id: string;
+  title: string;
+  order: number;
+}
+
+export interface BoardTemplate {
+  id: string;
+  name: string;
+  description: string;
+  is_custom: boolean;
+  created_at?: string;
+  updated_at?: string;
+  columns: TemplateColumn[];
+}
+
+export interface TemplateSelectorProps {
+  selectedTemplate: BoardTemplate | null;
+  onTemplateSelect: (template: BoardTemplate) => void;
+  onCreateTemplate: () => void;
+  disabled?: boolean;
+  refreshTrigger?: number;
+}
+
+export interface CreateTemplateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onTemplateCreated: () => void;
+}
+
+export interface ImagePreviewModalProps {
+  imageUrl: string | null;
+  onClose: () => void;
+}
+
+export interface CommentListProps {
+  comments: Comment[];
+  currentUser: User;
+  task: TaskDetail;
+  onDeleteComment: (commentId: string) => Promise<void>;
+  onImagePreview: (url: string) => void;
+}
+
+export interface CommentsSectionProps {
+  taskId: string;
+  comments: Comment[];
+  currentUser: User;
+  task: TaskDetail | null;
+  onRefreshComments: () => Promise<void>;
+  onImagePreview: (url: string) => void;
+}
+
+export interface CommentFormProps {
+  currentUser: User;
+  taskId: string;
+  onAddComment: (content: string) => Promise<void>;
+  onRefreshTask?: () => Promise<void>;
+}
+
+export interface AttachmentsListProps {
+  attachments: Attachment[];
+  currentUser: User;
+  taskId: string;
+  onTaskUpdate?: () => Promise<void>;
+  onAttachmentsUpdate?: (
+    updater: (attachments: Attachment[]) => Attachment[]
+  ) => void;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string | Date;
+  end: string | Date;
+  backgroundColor: string;
+  borderColor: string;
+  extendedProps: {
+    description: string;
+    priority: string;
+    status: string;
+    assignee: {
+      id: string;
+      name: string;
+      email: string;
+      image?: string | null;
+    } | null;
+  };
+}
+
+export interface CalendarProps {
+  boardId: string;
+  onTaskClick?: (taskId: string) => void;
+  viewMode?: "month" | "week" | "day";
+}
+
+export interface ConfirmDialogProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  type?: "warning" | "danger" | "info";
+}
+
+export interface ActionFooterProps {
+  isNewTask: boolean;
+  hasUnsavedChanges: boolean;
+  isSaving: boolean;
+  onSave: () => void;
+  onClose: () => void;
+  onDelete?: () => void;
+  task?: TaskDetail;
+}
+
+export const DEFAULT_TEMPLATES: Omit<
+  BoardTemplate,
+  "id" | "created_at" | "updated_at"
+>[] = [
+  {
+    name: "Basic Kanban",
+    description: "Prosty układ trzech kolumn",
+    is_custom: false,
+    columns: [
+      { id: "temp-1", template_id: "", title: "To Do", order: 0 },
+      { id: "temp-2", template_id: "", title: "In Progress", order: 1 },
+      { id: "temp-3", template_id: "", title: "Done", order: 2 },
+    ],
+  },
+  {
+    name: "Development Workflow",
+    description: "Szablon dla zespołów deweloperskich",
+    is_custom: false,
+    columns: [
+      { id: "temp-4", template_id: "", title: "Backlog", order: 0 },
+      { id: "temp-5", template_id: "", title: "In Development", order: 1 },
+      { id: "temp-6", template_id: "", title: "Code Review", order: 2 },
+      { id: "temp-7", template_id: "", title: "Testing", order: 3 },
+      { id: "temp-8", template_id: "", title: "Done", order: 4 },
+    ],
+  },
+  {
+    name: "Marketing Campaign",
+    description: "Szablon dla kampanii marketingowych",
+    is_custom: false,
+    columns: [
+      { id: "temp-9", template_id: "", title: "Ideas", order: 0 },
+      { id: "temp-10", template_id: "", title: "Planning", order: 1 },
+      { id: "temp-11", template_id: "", title: "In Progress", order: 2 },
+      { id: "temp-12", template_id: "", title: "Review", order: 3 },
+      { id: "temp-13", template_id: "", title: "Published", order: 4 },
+    ],
+  },
+];
+
+export interface UseTaskManagementProps {
+  taskId?: string;
+  mode: "add" | "edit";
+  columnId?: string;
+  boardId: string;
+  currentUser?: User;
+  onTaskUpdate?: (task: TaskDetail) => void;
+  onTaskAdded?: (task: TaskDetail) => void;
+  onClose: () => void;
+}
+
+export interface UseTaskManagementReturn {
+  task: TaskDetail | null;
+  loading: boolean;
+  saving: boolean;
+  error: string | null;
+  hasUnsavedChanges: boolean;
+  isNewTask: boolean;
+  teamMembers: TeamMember[];
+  updateTask: (updates: Partial<TaskDetail>) => void;
+  updateTitle: (title: string) => void;
+  updateDescription: (desc: string) => void;
+  updatePriority: (priority: string | null) => Promise<void>;
+  updateAssignee: (id: string | null, data?: User | null) => Promise<void>;
+  updateDates: (dates: {
+    start_date?: string | null;
+    end_date?: string | null;
+    due_date?: string | null;
+  }) => Promise<void>;
+  updateImages: (images: string[] | null) => Promise<void>;
+  saveNewTask: () => Promise<boolean>;
+  saveExistingTask: () => Promise<boolean>;
+  deleteTask: () => Promise<boolean>;
+  markAsChanged: () => void;
+  markAsSaved: () => void;
+  fetchTaskData: () => Promise<void>;
+  setTask: React.Dispatch<React.SetStateAction<TaskDetail | null>>;
+  uploadAttachment: (file: File) => Promise<Attachment | null>;
+}

@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { CommentsSectionProps } from "./types";
+import { CommentsSectionProps } from "@/app/types/globalTypes";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
-import { formatDate } from "./utils";
+import { formatDate } from "@/app/utils/helpers";
 import Avatar from "../Avatar/Avatar";
 
 /**
@@ -69,16 +69,21 @@ const CommentsSection = ({
 
   return (
     <div className="border-t border-gray-600 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Avatar
-          src={currentUser.image || null}
-          alt={currentUser.name}
-          size={24}
-        />
-        <span className="text-xs text-gray-400">
-          {currentUser.name} created this task on {formatDate(task.created_at)}
-        </span>
-      </div>
+      {currentUser && (
+        <div className="flex items-center gap-2 mb-3">
+          <Avatar
+            src={currentUser.image || undefined}
+            alt={currentUser.name}
+            size={24}
+          />
+          {task?.created_at && (
+            <span className="text-xs text-gray-400">
+              {currentUser.name} created this task on{" "}
+              {formatDate(task.created_at)}
+            </span>
+          )}
+        </div>
+      )}
       <CommentForm
         currentUser={currentUser}
         taskId={taskId}

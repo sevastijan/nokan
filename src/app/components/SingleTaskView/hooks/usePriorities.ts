@@ -1,29 +1,39 @@
-import { useState, useEffect } from 'react';
-import { getPriorities } from '../../../lib/api';
-import { Priority } from '../types';
+import { useQuery } from "@tanstack/react-query";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { getPriorities } from "@/app/lib/api";
+import {
+  setPriorities,
+  setLoading,
+  setError,
+} from "@/app/store/slices/prioritiesSlice";
+import { Priority } from "@/app/components/SingleTaskView/types";
 
 export const usePriorities = () => {
-  const [priorities, setPriorities] = useState<Priority[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const { priorities, loading, error } = useAppSelector(
+    (state) => state.priorities
+  );
 
-  useEffect(() => {
-    const fetchPriorities = async () => {
+  const { isLoading, error: queryError } = useQuery<Priority[], Error>({
+    queryKey: ["priorities"],
+    queryFn: async () => {
+      dispatch(setLoading());
       try {
-        setLoading(true);
-        const prioritiesData = await getPriorities();
-        setPriorities(prioritiesData);
-        setError(null);
-      } catch (error) {
-        console.error("Error fetching priorities:", error);
-        setError("Failed to fetch priorities");
-      } finally {
-        setLoading(false);
+        const data = await getPriorities(); // Zakładamy, że getPriorities zwraca Priority[]
+        dispatch(setPriorities(data));
+        return data;
+      } catch (err: any) {
+        dispatch(setError(err.message || "Failed to fetch priorities"));
+        throw err;
       }
-    };
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+  });
 
-    fetchPriorities();
-  }, []);
-
-  return { priorities, loading, error };
+  return {
+    priorities,
+    loading: loading || isLoading,
+    error: error || queryError?.message,
+  };
 };

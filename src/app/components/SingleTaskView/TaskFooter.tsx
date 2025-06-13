@@ -2,8 +2,8 @@
 
 import React from "react";
 import { FaClock, FaCalendarAlt } from "react-icons/fa";
-import { formatDate } from "./utils";
-import { TaskFooterProps } from "./types";
+import { formatDate } from "@/app/utils/helpers";
+import { TaskFooterProps } from "@/app/types/globalTypes";
 
 /**
  * Renders the footer of a task, displaying creation/update dates and task ID.

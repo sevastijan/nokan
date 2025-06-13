@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaEdit, FaLink } from "react-icons/fa";
-import { TaskDetail } from "./types";
+import { TaskDetail, TaskHeaderProps } from "@/app/types/globalTypes";
 import ConfirmDialog from "./ConfirmDialog";
-import { copyTaskUrlToClipboard } from "./utils";
+import { copyTaskUrlToClipboard } from "@/app/utils/helpers";
 import Button from "../Button/Button";
-import { TaskHeaderProps } from "./types";
 
 /**
  * TaskHeader component shows the task title with edit and close options.

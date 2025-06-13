@@ -1,7 +1,7 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiChevronDown, FiPlus, FiTrash2 } from "react-icons/fi";
-import { BoardTemplate } from "../../types/useBoardTypes";
+import { BoardTemplate } from "@/app/types/globalTypes";
 import { getBoardTemplates, deleteBoardTemplate } from "../../lib/api";
 import { TemplateSelectorProps } from "./types";
 
@@ -33,14 +33,17 @@ const TemplateSelector = forwardRef<
     const [isOpen, setIsOpen] = useState(false);
     const [templates, setTemplates] = useState<BoardTemplate[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const loadTemplates = async () => {
       try {
         setLoading(true);
+        setError(null);
         const fetchedTemplates = await getBoardTemplates();
         setTemplates(fetchedTemplates);
       } catch (error) {
         console.error("Error loading templates:", error);
+        setError("Failed to load templates");
       } finally {
         setLoading(false);
       }
@@ -69,11 +72,11 @@ const TemplateSelector = forwardRef<
         await loadTemplates();
 
         if (selectedTemplate?.id === templateId) {
-          onTemplateSelect(templates[0]);
+          onTemplateSelect(templates[0] || null); // Fallback to null if no templates remain
         }
       } catch (error) {
         console.error("Error deleting template:", error);
-        alert("Failed to delete the template");
+        setError("Failed to delete the template");
       }
     };
 
@@ -92,9 +95,11 @@ const TemplateSelector = forwardRef<
             <span className="font-medium">
               {loading
                 ? "Loading..."
+                : error
+                ? "Error loading templates"
                 : selectedTemplate?.name || "Select a template"}
             </span>
-            {selectedTemplate && (
+            {selectedTemplate && !error && (
               <span className="text-xs text-gray-400 mt-1">
                 {selectedTemplate.description}
               </span>
@@ -107,8 +112,12 @@ const TemplateSelector = forwardRef<
           />
         </button>
 
+        {error && (
+          <div className="mt-2 text-red-400 text-xs text-center">{error}</div>
+        )}
+
         <AnimatePresence>
-          {isOpen && !loading && (
+          {isOpen && !loading && !error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -157,7 +166,9 @@ const TemplateSelector = forwardRef<
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       Columns:{" "}
-                      {template.columns.map((col) => col.title).join(", ")}
+                      {template.template_columns
+                        .map((col) => col.title)
+                        .join(", ") || "None"}
                     </div>
                   </div>
 

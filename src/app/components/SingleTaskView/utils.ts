@@ -1,61 +1,60 @@
-import React from "react";
-import { User } from "./types";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { setAvatar } from "@/app/store/slices/avatarSlice";
+import { User } from "@/app/types/globalTypes";
 import { toast } from "react-toastify";
+import { useEffect, useMemo, useState } from "react";
 
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+const RETRY_DELAY = 1000;
 
-export const getUserAvatar = async (user: User, retryCount = 0): Promise<string> => {
-  if (user.image) {
-    return user.image;
-  }
+export const getAvatarUrl = (user: User | null): string | null => {
+  if (!user) return null;
+
+  if (user.image) return user.image;
 
   const initials = user.name
     .split(" ")
-    .map((name) => name[0])
+    .map((n) => n[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
 
-  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
     initials
   )}&background=4285f4&color=ffffff&size=96`;
-
-  try {
-    const response = await fetch(avatarUrl);
-
-    if (response.status === 429) {
-      if (retryCount < MAX_RETRIES) {
-        console.warn(`Rate limited. Retrying in ${RETRY_DELAY}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        return getUserAvatar(user, retryCount + 1); // Recursive call to retry
-      } else {
-        console.error("Max retries reached. Failed to fetch avatar.");
-        return ""; // Return a default avatar or an empty string
-      }
-    }
-
-    if (!response.ok) {
-      console.error(`Failed to fetch avatar. Status: ${response.status}`);
-      return ""; // Return a default avatar or an empty string
-    }
-
-    return avatarUrl;
-  } catch (error) {
-    console.error("Error fetching avatar:", error);
-    return ""; // Return a default avatar or an empty string
-  }
 };
+export const useUserAvatar = (user: User | null): string | null => {
+  const dispatch = useAppDispatch();
+  const cache = useAppSelector((state) => state.avatars.cache);
+  const key = user?.email || user?.id || "";
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-export const formatDate = (dateString: string | null | undefined) => {
+  useEffect(() => {
+    if (!user || !key) return;
+
+    // Jeśli avatar w cache — użyj
+    if (cache[key]) {
+      setAvatarUrl(cache[key]);
+      return;
+    }
+
+    // Wygeneruj nowy avatar
+    const url = getAvatarUrl(user);
+    if (url) {
+      dispatch(setAvatar({ key, url }));
+      setAvatarUrl(url);
+    }
+  }, [user, key, cache, dispatch]);
+
+  return avatarUrl;
+};
+// Formatowanie daty na polski zapis
+export const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return "Unknown date";
 
   try {
     const date = new Date(dateString);
-
-    if (isNaN(date.getTime())) {
-      return "Invalid date";
-    }
+    if (isNaN(date.getTime())) return "Invalid date";
 
     return date.toLocaleDateString("pl-PL", {
       year: "numeric",
@@ -71,6 +70,7 @@ export const formatDate = (dateString: string | null | undefined) => {
   }
 };
 
+// Formatowanie rozmiaru pliku
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
@@ -79,7 +79,8 @@ export const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-export const getFileIcon = (mimeType: string) => {
+// Dobór ikony do typu pliku
+export const getFileIcon = (mimeType: string): string => {
   if (mimeType.startsWith("image/")) return "🖼️";
   if (mimeType.startsWith("video/")) return "🎥";
   if (mimeType.startsWith("audio/")) return "🎵";
@@ -91,16 +92,15 @@ export const getFileIcon = (mimeType: string) => {
   return "📁";
 };
 
-export const copyTaskUrlToClipboard = async (taskId: string) => {
+// Kopiowanie linku do taska
+export const copyTaskUrlToClipboard = async (taskId: string): Promise<void> => {
   const currentUrl = new URL(window.location.href);
   currentUrl.searchParams.set("id", taskId);
 
   try {
     await navigator.clipboard.writeText(currentUrl.toString());
-
     toast("Link copied to clipboard!");
   } catch (error) {
     console.error("Error during copying task url:", error);
   }
 };
-

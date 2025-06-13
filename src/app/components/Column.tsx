@@ -1,31 +1,37 @@
+"use client";
+
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import AddTaskForm from "./TaskColumn/AddTaskForm";
 import Task from "./Task";
 import { FaGripVertical, FaTimes } from "react-icons/fa";
 import { JSX } from "react";
 import Button from "./Button/Button";
-import { ColumnProps } from "./SingleTaskView/types";
+import {
+  Column as ColumnType,
+  Task as TaskType,
+  User,
+  Priority,
+} from "@/app/types/globalTypes";
 
-/**
- * Column component that represents a draggable column in a Kanban board.
- * It contains a title input, a list of tasks (sorted by order),
- * and a form for adding new tasks.
- *
- * @component
- * @param {ColumnProps} props - The props for the Column component.
- * @param {Object} props.column - The column data including tasks.
- * @param {number} props.colIndex - Index of the column in the board.
- * @param {Function} props.onUpdateColumnTitle - Handler to update column title.
- * @param {Function} props.onRemoveColumn - Handler to remove the column.
- * @param {Function} props.onTaskAdded - Handler when a new task is added.
- * @param {Function} props.onRemoveTask - Handler to remove a task.
- * @param {Function} props.onOpenTaskDetail - Handler to open task details.
- * @param {string|null} props.selectedTaskId - Currently selected task ID.
- * @param {Object} props.currentUser - The current logged-in user.
- * @param {Function} props.onOpenAddTask - Handler to trigger task add modal.
- * @param {Array} [props.priorities=[]] - Optional list of task priorities.
- * @returns {JSX.Element} The rendered Column component.
- */
+interface ColumnProps {
+  column: ColumnType;
+  colIndex: number;
+  onUpdateColumnTitle: (columnId: string, newTitle: string) => void;
+  onRemoveColumn: (columnId: string) => void;
+  onTaskAdded: (
+    columnId: string,
+    title: string,
+    priority?: string,
+    userId?: string
+  ) => void;
+  onRemoveTask: (columnId: string, taskId: string) => void;
+  onOpenTaskDetail: (taskId: string) => void;
+  selectedTaskId: string | null;
+  currentUser: User;
+  onOpenAddTask: (columnId: string) => void;
+  priorities?: Priority[];
+}
+
 const Column = ({
   column,
   colIndex,
@@ -55,7 +61,7 @@ const Column = ({
             snapshot.isDragging ? "transform scale-105" : ""
           }`}
         >
-          {/* Column header: drag handle, title input, and remove button */}
+          {/* Header */}
           <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
             <div
               {...provided.dragHandleProps}
@@ -68,7 +74,7 @@ const Column = ({
             </div>
             <input
               type="text"
-              defaultValue={column.title}
+              defaultValue={column.title ?? ""}
               onBlur={(e) => onUpdateColumnTitle(column.id, e.target.value)}
               className="bg-transparent text-lg font-semibold w-full focus:outline-none focus:border-blue-500 ml-2"
               placeholder="Column Title"
@@ -82,7 +88,7 @@ const Column = ({
             />
           </div>
 
-          {/* Droppable area for tasks */}
+          {/* Tasks */}
           <Droppable droppableId={column.id} type="TASK">
             {(provided, snapshot) => (
               <div
@@ -92,8 +98,9 @@ const Column = ({
                   column.tasks.length === 0 ? "min-h-0" : ""
                 }`}
               >
-                {column.tasks
-                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                {[...column.tasks]
+                  .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+
                   .map((task, index) => (
                     <Task
                       key={task.id}
@@ -110,9 +117,9 @@ const Column = ({
             )}
           </Droppable>
 
-          {/* Form to add new tasks */}
+          {/* Add Task Button */}
           <AddTaskForm
-            boardId={column.board_id || ""}
+            boardId={column.boardId} // from updated types.ts
             columnId={column.id}
             onTaskAdded={onTaskAdded}
             currentUser={currentUser}

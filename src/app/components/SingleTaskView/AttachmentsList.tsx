@@ -1,18 +1,13 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { motion } from "framer-motion";
 import { FaPlus, FaDownload, FaTrash, FaEye } from "react-icons/fa";
-import { Attachment, User, AttachmentsListProps } from "./types";
+import { Attachment, AttachmentsListProps } from "@/app/types/globalTypes";
 import { formatFileSize, getFileIcon } from "./utils";
 import { supabase } from "../../lib/api";
 import { toast } from "react-toastify";
 import Button from "../Button/Button";
 
-/**
- * AttachmentsList component provides functionality to upload, preview, download, and delete
- * attachments related to a specific task. It uses Supabase for file storage and metadata management.
- */
 const AttachmentsList = ({
   attachments,
   currentUser,
@@ -23,9 +18,6 @@ const AttachmentsList = ({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /**
-   * Handles uploading a file to Supabase storage and saving metadata in the database.
-   */
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -48,7 +40,7 @@ const AttachmentsList = ({
 
       if (uploadError) throw uploadError;
 
-      const { data: newAttachment, error: dbError } = await supabase
+      const { data: newAttachment } = await supabase
         .from("task_attachments")
         .insert({
           task_id: taskId,
@@ -61,12 +53,9 @@ const AttachmentsList = ({
         .select()
         .single();
 
-      if (dbError) throw dbError;
-
-      if (onAttachmentsUpdate && newAttachment) {
-        onAttachmentsUpdate((prev) => [newAttachment, ...prev]);
-      } else if (onTaskUpdate) {
-        await onTaskUpdate();
+      if (newAttachment) {
+        onAttachmentsUpdate?.((prev) => [newAttachment, ...prev]);
+        onTaskUpdate?.();
       }
 
       toast.success("File uploaded successfully");
@@ -75,15 +64,10 @@ const AttachmentsList = ({
       toast.error("Error uploading file");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  /**
-   * Handles downloading an attachment from Supabase storage.
-   */
   const handleDownload = async (attachment: Attachment) => {
     try {
       const { data, error } = await supabase.storage
@@ -106,9 +90,6 @@ const AttachmentsList = ({
     }
   };
 
-  /**
-   * Handles deleting an attachment from both storage and database.
-   */
   const handleDelete = async (attachment: Attachment) => {
     if (!confirm("Are you sure you want to delete this attachment?")) return;
 
@@ -126,13 +107,10 @@ const AttachmentsList = ({
 
       if (dbError) throw dbError;
 
-      if (onAttachmentsUpdate) {
-        onAttachmentsUpdate((prev) =>
-          prev.filter((att) => att.id !== attachment.id)
-        );
-      } else if (onTaskUpdate) {
-        await onTaskUpdate();
-      }
+      onAttachmentsUpdate?.((prev) =>
+        prev.filter((att) => att.id !== attachment.id)
+      );
+      onTaskUpdate?.();
 
       toast.success("Attachment deleted");
     } catch (error) {
@@ -141,9 +119,6 @@ const AttachmentsList = ({
     }
   };
 
-  /**
-   * Previews image attachments in a new tab, or downloads non-image files.
-   */
   const handlePreview = async (attachment: Attachment) => {
     if (attachment.mime_type.startsWith("image/")) {
       try {

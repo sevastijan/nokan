@@ -6,7 +6,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { getTasksWithDates, updateTaskDates } from "../../lib/api";
-import { CalendarProps, CalendarEvent, ApiTask } from "./types";
+import { CalendarProps, CalendarEvent } from "@/app/types/globalTypes";
 import "../Calendar/calendar.css";
 import Loader from "../Loader";
 import Avatar from "../Avatar/Avatar";
@@ -41,24 +41,22 @@ const Calendar = ({
   const loadCalendarEvents = async () => {
     try {
       setLoading(true);
-      const tasks = await getTasksWithDates(boardId); // Usuń : ApiTask[]
-
-      console.log("Loaded tasks:", tasks); // Debug - sprawdź strukturę danych
+      const tasks = await getTasksWithDates(boardId);
 
       const calendarEvents: CalendarEvent[] = tasks
-        .filter((task) => task.start_date) // Filtruj tylko taski z datą rozpoczęcia
+        .filter((task) => !!task.start_date)
         .map((task) => ({
           id: task.id,
-          title: task.title || "Unnamed Task",
-          start: task.start_date,
-          end: task.end_date || task.start_date,
-          backgroundColor: getPriorityColor(task.priorities?.label || "low"),
-          borderColor: getPriorityColor(task.priorities?.label || "low"),
+          title: task.title ?? "Unnamed Task",
+          start: task.start_date ?? new Date().toISOString(),
+          end: task.end_date ?? task.start_date ?? new Date().toISOString(),
+          backgroundColor: getPriorityColor(task.priorities?.label ?? "low"),
+          borderColor: getPriorityColor(task.priorities?.label ?? "low"),
           extendedProps: {
-            description: task.description || "",
-            priority: task.priorities?.label || "low",
+            description: task.description ?? "",
+            priority: task.priorities?.label ?? "low",
             status: "todo",
-            assignee: task.assignee,
+            assignee: task.assignee ?? null,
           },
         }));
 

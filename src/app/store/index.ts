@@ -1,21 +1,25 @@
-import { configureStore } from '@reduxjs/toolkit';
-import boardReducer from './slices/boardSlice';
+// store.ts
+import { configureStore } from "@reduxjs/toolkit";
+import taskReducer from "./slices/taskSlice";
+import boardReducer from "./slices/boardSlice";
+import prioritiesReducer from "./slices/prioritiesSlice";
+import templatesReducer from "./slices/templatesSlice";
+import avatarReducer from "./slices/avatarSlice";
+import { apiSlice } from "./apiSlice";
 
-/**
- * Configures the Redux store with the board reducer.
- */
-export const store = configureStore({
+const store = configureStore({
   reducer: {
-    boards: boardReducer,
+    task: taskReducer,
+    board: boardReducer,
+    priorities: prioritiesReducer,
+    templates: templatesReducer,
+    avatars: avatarReducer,
+    [apiSlice.reducerPath]: apiSlice.reducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(apiSlice.middleware),
 });
 
-/**
- * Type representing the root state of the Redux store.
- */
 export type RootState = ReturnType<typeof store.getState>;
-
-/**
- * Type representing the dispatch function of the Redux store.
- */
 export type AppDispatch = typeof store.dispatch;
+export default store;
