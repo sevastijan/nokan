@@ -1,3 +1,4 @@
+// src/app/components/SingleTaskView/PrioritySelector.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -16,201 +17,161 @@ import {
   addPriority,
   updatePriority,
   deletePriority,
-} from "../../lib/api";
-import { PrioritySelectorProps, Priority } from "./types";
-import { useDropdownManager } from "../../hooks/useDropdownManager";
+} from "@/app/lib/api";
+import { PrioritySelectorProps, Priority } from "@/app/types/globalTypes";
+import { useDropdownManager } from "@/app/hooks/useDropdownManager";
 
 /**
- * PrioritySelector component allows user to select a priority from a dropdown list.
- * It fetches priorities from an API if not provided externally, supports loading state,
- * and calls callbacks on selection change and dropdown toggle.
- * Users can add, edit, and delete custom priorities.
+ * PrioritySelector: pozwala wybrać priorytet flagą. Wspiera:
+ * - przekazanie listy priorytetów z zewnątrz (props.priorities)
+ * - lub automatyczne pobranie z API getPriorities()
+ * - callback onChange(newId)
+ * - callback onDropdownToggle(isOpen)
+ * - dodawanie / edycję / usuwanie priorytetów (opcjonalnie)
  */
-const PrioritySelector = ({
+const PrioritySelector: React.FC<PrioritySelectorProps> = ({
   selectedPriority,
   onChange,
   onDropdownToggle,
   priorities: externalPriorities,
-}: PrioritySelectorProps) => {
-  // Generate unique ID for this dropdown instance
+}) => {
+  // unikalne ID dropdownu (dla hooka useDropdownManager)
   const dropdownId = useMemo(
     () => `priority-selector-${Math.random().toString(36).substr(2, 9)}`,
     []
   );
   const { isOpen, toggle, close } = useDropdownManager(dropdownId);
 
-  /** Stores list of priorities to display */
+  // Stan priorytetów i tryb ładowania
   const [priorities, setPriorities] = useState<Priority[]>([]);
-  /** Indicates whether priorities are being loaded */
-  const [loading, setLoading] = useState(true);
-  /** Controls add new priority mode */
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  /** Stores ID of priority being edited */
+  const [loading, setLoading] = useState<boolean>(true);
+  // Tryb dodawania/edycji
+  const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  /** Form data for new/edited priority */
-  const [formData, setFormData] = useState({ label: "", color: "#10b981" });
-  /** Loading state for operations */
-  const [operationLoading, setOperationLoading] = useState(false);
+  const [formData, setFormData] = useState<{ label: string; color: string }>({
+    label: "",
+    color: "#10b981",
+  });
+  const [operationLoading, setOperationLoading] = useState<boolean>(false);
 
+  // Fetchowanie priorytetów lub ustawienie z zewnątrz
   useEffect(() => {
-    /** Loads priorities from external prop or API, falls back to defaults on error */
-    const loadPriorities = async () => {
+    const load = async () => {
       try {
         if (externalPriorities) {
           setPriorities(externalPriorities);
-          setLoading(false);
         } else {
-          const fetchedPriorities = await getPriorities();
-          setPriorities(fetchedPriorities);
-          setLoading(false);
+          const fetched = await getPriorities();
+          setPriorities(fetched);
         }
-      } catch (error) {
-        console.error("Error loading priorities:", error);
-        const defaultPriorities = [
+      } catch (err) {
+        console.error("Error loading priorities:", err);
+        // fallback do domyślnych
+        setPriorities([
           { id: "low", label: "Low", color: "#10b981" },
           { id: "medium", label: "Medium", color: "#f59e0b" },
           { id: "high", label: "High", color: "#ef4444" },
           { id: "urgent", label: "Urgent", color: "#dc2626" },
-        ];
-        setPriorities(defaultPriorities);
+        ]);
+      } finally {
         setLoading(false);
       }
     };
-
-    loadPriorities();
+    load();
   }, [externalPriorities]);
 
-  // Reset forms when dropdown closes
+  // reset form po zamknięciu
   useEffect(() => {
     if (!isOpen) {
       setIsAddingNew(false);
       setEditingId(null);
       setFormData({ label: "", color: "#10b981" });
     }
-  }, [isOpen]);
-
-  // Notify parent component when dropdown toggles
-  useEffect(() => {
+    // notify parent
     onDropdownToggle?.(isOpen);
   }, [isOpen, onDropdownToggle]);
 
-  /** Finds the selected priority object from the list - memoized for better performance */
-  const selectedPriorityObj = useMemo(() => {
+  // Znalezienie obiektu wybranego priorytetu
+  const selectedObj = useMemo<Priority | null>(() => {
     if (!selectedPriority) return null;
     return priorities.find((p) => p.id === selectedPriority) || null;
-  }, [priorities, selectedPriority]);
+  }, [selectedPriority, priorities]);
 
-  /** Toggles dropdown open state */
-  const handleToggle = () => {
-    toggle();
-  };
-
-  /** Handles selection of a priority: updates state and calls change callback */
-  const handlePrioritySelect = (priority: Priority) => {
-    if (typeof onChange === "function") {
-      onChange(priority.id);
-    }
+  // Handlery:
+  const handleSelect = (p: Priority) => {
+    onChange(p.id);
     close();
   };
-
-  /** Clears selected priority, closes dropdown, and calls change callback */
-  const handleClearPriority = () => {
-    if (typeof onChange === "function") {
-      onChange(null);
-    }
+  const handleClear = () => {
+    onChange(null);
     close();
   };
-
-  /** Starts adding new priority mode */
-  const handleStartAddNew = () => {
+  const handleStartAdd = () => {
     setIsAddingNew(true);
     setEditingId(null);
     setFormData({ label: "", color: "#10b981" });
   };
-
-  /** Starts editing existing priority */
-  const handleStartEdit = (priority: Priority) => {
-    setEditingId(priority.id);
+  const handleStartEdit = (p: Priority) => {
+    setEditingId(p.id);
     setIsAddingNew(false);
-    setFormData({ label: priority.label, color: priority.color });
+    setFormData({ label: p.label, color: p.color });
   };
-
-  /** Saves new or edited priority */
-  const handleSavePriority = async () => {
-    if (!formData.label.trim() || operationLoading) return;
-
+  const handleCancel = () => {
+    setIsAddingNew(false);
+    setEditingId(null);
+    setFormData({ label: "", color: "#10b981" });
+  };
+  const handleSave = async () => {
+    if (!formData.label.trim()) return;
     setOperationLoading(true);
     try {
       if (isAddingNew) {
-        const newPriority = await addPriority(
-          formData.label.trim(),
-          formData.color
-        );
-        setPriorities((prev) => [...prev, newPriority]);
+        const newP = await addPriority(formData.label.trim(), formData.color);
+        setPriorities((prev) => [...prev, newP]);
       } else if (editingId) {
-        const updatedPriority = await updatePriority(
+        const upd = await updatePriority(
           editingId,
           formData.label.trim(),
           formData.color
         );
         setPriorities((prev) =>
-          prev.map((p) => (p.id === editingId ? updatedPriority : p))
+          prev.map((p) => (p.id === editingId ? upd : p))
         );
-
-        // Force re-render by updating state if this priority is currently selected
+        // jeśli edytowany był aktualnie wybrany, odśwież callback
         if (selectedPriority === editingId) {
-          onChange?.(selectedPriority);
+          onChange(editingId);
         }
       }
-
-      // Reset form
+      // reset
       setIsAddingNew(false);
       setEditingId(null);
       setFormData({ label: "", color: "#10b981" });
-    } catch (error) {
-      console.error("Error saving priority:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      alert(`Error saving priority: ${errorMessage}`);
+    } catch (err) {
+      console.error("Error saving priority:", err);
+      alert(
+        "Error saving priority: " +
+          (err instanceof Error ? err.message : String(err))
+      );
     } finally {
       setOperationLoading(false);
     }
   };
-
-  /** Cancels add/edit mode */
-  const handleCancelEdit = () => {
-    setIsAddingNew(false);
-    setEditingId(null);
-    setFormData({ label: "", color: "#10b981" });
-  };
-
-  /** Deletes a priority */
-  const handleDeletePriority = async (priorityId: string) => {
-    if (operationLoading) return;
-
-    if (!confirm("Are you sure you want to delete this priority?")) {
-      return;
-    }
-
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this priority?")) return;
     setOperationLoading(true);
     try {
-      await deletePriority(priorityId);
-      setPriorities((prev) => prev.filter((p) => p.id !== priorityId));
-
-      if (selectedPriority === priorityId) {
-        onChange?.(null);
+      await deletePriority(id);
+      setPriorities((prev) => prev.filter((p) => p.id !== id));
+      if (selectedPriority === id) {
+        onChange(null);
       }
-    } catch (error) {
-      console.error("Error deleting priority:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-
-      if (errorMessage.includes("being used by")) {
-        alert(
-          "Cannot delete this priority because it's being used by one or more tasks. Please remove it from all tasks first."
-        );
+    } catch (err: any) {
+      console.error("Error deleting priority:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("being used")) {
+        alert("Cannot delete: priority is used by existing tasks.");
       } else {
-        alert(`Error deleting priority: ${errorMessage}`);
+        alert("Error deleting priority: " + msg);
       }
     } finally {
       setOperationLoading(false);
@@ -220,10 +181,8 @@ const PrioritySelector = ({
   if (loading) {
     return (
       <div className="relative">
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Priority
-        </label>
-        <div className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-gray-400">
+        <label className="block text-sm text-slate-300 mb-1">Priority</label>
+        <div className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-slate-400">
           Loading priorities...
         </div>
       </div>
@@ -231,197 +190,216 @@ const PrioritySelector = ({
   }
 
   return (
-    <div className="relative">
-      <label className="block text-sm font-medium text-gray-300 mb-2">
-        Priority
-      </label>
-      <motion.button
+    <div className="relative w-full">
+      <label className="block text-sm text-slate-300 mb-1">Priority</label>
+      <button
         type="button"
-        whileHover={{ backgroundColor: "#374151" }}
-        whileTap={{ scale: 0.98 }}
-        onClick={handleToggle}
-        className="w-full flex items-center justify-between p-3 border border-gray-600 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors"
+        onClick={toggle}
+        className={`
+          w-full flex items-center justify-between px-3 py-2 
+          bg-slate-700 border rounded-lg text-slate-200 
+          transition-colors duration-150
+          ${
+            isOpen
+              ? "border-purple-500 ring-1 ring-purple-500"
+              : "border-slate-600 hover:border-slate-500"
+          }
+        `}
       >
-        <div className="flex items-center gap-3">
-          {selectedPriorityObj ? (
+        <div className="flex items-center gap-2 truncate">
+          {selectedObj ? (
             <>
               <FaFlag
                 className="w-4 h-4"
-                style={{ color: selectedPriorityObj.color }}
+                style={{ color: selectedObj.color }}
               />
-              <span>{selectedPriorityObj.label}</span>
+              <span className="truncate">{selectedObj.label}</span>
             </>
           ) : (
             <>
-              <FaFlag className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-400">Select priority</span>
+              <FaFlag className="w-4 h-4 text-slate-400" />
+              <span className="text-slate-400 truncate">Select priority</span>
             </>
           )}
         </div>
         <FaChevronDown
-          className={`w-4 h-4 transition-transform ${
+          className={`w-4 h-4 text-slate-400 transition-transform ${
             isOpen ? "transform rotate-180" : ""
           }`}
         />
-      </motion.button>
+      </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-y-auto"
+            exit={{ opacity: 0, y: -5 }}
+            className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
           >
-            <motion.button
+            {/* Brak priorytetu */}
+            <button
               type="button"
-              whileHover={{ backgroundColor: "#4B5563" }}
-              onClick={handleClearPriority}
-              className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-600 transition-colors border-b border-gray-600"
+              onClick={handleClear}
+              className={`
+                w-full flex items-center gap-2 px-3 py-2 text-left 
+                hover:bg-slate-700 transition-colors duration-150
+                ${selectedObj === null ? "bg-purple-600/30" : ""}
+              `}
             >
-              <FaFlag className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-400">No priority</span>
-            </motion.button>
+              <FaTimes className="w-4 h-4 text-slate-400" />
+              <span className="text-slate-200">No priority</span>
+            </button>
 
-            {priorities.map((priority) => (
-              <div key={priority.id} className="relative group">
-                {editingId === priority.id ? (
-                  <div className="p-3 border-b border-gray-600 bg-gray-600">
-                    <div className="flex items-center gap-2 mb-2">
+            <hr className="border-slate-600 my-1" />
+
+            {priorities.length === 0 && (
+              <div className="px-3 py-2 text-slate-400 text-sm text-center">
+                No priorities available
+              </div>
+            )}
+
+            {priorities.map((p) => {
+              const isSel = selectedObj?.id === p.id;
+              const editing = editingId === p.id;
+              return (
+                <div key={p.id} className="relative group">
+                  {editing ? (
+                    <div className="p-3 bg-slate-700 border-b border-slate-600">
                       <input
                         type="text"
                         value={formData.label}
                         onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            label: e.target.value,
-                          }))
+                          setFormData((f) => ({ ...f, label: e.target.value }))
                         }
-                        className="flex-1 px-2 py-1 text-sm bg-gray-800 border border-gray-500 rounded text-white"
-                        placeholder="Priority name"
+                        className="w-full mb-2 px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-sm"
+                        placeholder="Name"
                         disabled={operationLoading}
                       />
-                      <input
-                        type="color"
-                        value={formData.color}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            color: e.target.value,
-                          }))
-                        }
-                        className="w-8 h-8 rounded border border-gray-500"
-                        disabled={operationLoading}
-                      />
+                      <div className="flex items-center gap-2 mb-2">
+                        <input
+                          type="color"
+                          value={formData.color}
+                          onChange={(e) =>
+                            setFormData((f) => ({
+                              ...f,
+                              color: e.target.value,
+                            }))
+                          }
+                          className="w-8 h-8 rounded border border-slate-500"
+                          disabled={operationLoading}
+                        />
+                        <FaFlag
+                          className="w-4 h-4"
+                          style={{ color: formData.color }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSave}
+                          disabled={!formData.label.trim() || operationLoading}
+                          className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white text-xs rounded"
+                        >
+                          <FaCheck className="w-3 h-3" />
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancel}
+                          disabled={operationLoading}
+                          className="flex items-center gap-1 px-2 py-1 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white text-xs rounded"
+                        >
+                          <FaTimes className="w-3 h-3" />
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                  ) : (
+                    <div className="flex items-center border-b border-slate-600 last:border-b-0">
                       <button
-                        onClick={handleSavePriority}
-                        disabled={operationLoading || !formData.label.trim()}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 rounded text-white transition-colors"
+                        type="button"
+                        onClick={() => handleSelect(p)}
+                        className={`
+                          w-full flex items-center gap-2 px-3 py-2 text-left 
+                          hover:bg-slate-700 transition-colors duration-150
+                          ${isSel ? "bg-purple-600/30" : ""}
+                        `}
                       >
-                        <FaCheck className="w-3 h-3" />
-                        {operationLoading ? "Saving..." : "Save"}
+                        <FaFlag
+                          className="w-4 h-4"
+                          style={{ color: p.color }}
+                        />
+                        <span className="text-slate-200 truncate">
+                          {p.label}
+                        </span>
                       </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        disabled={operationLoading}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-500 hover:bg-gray-600 disabled:opacity-50 rounded text-white transition-colors"
-                      >
-                        <FaTimes className="w-3 h-3" />
-                        Cancel
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity p-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEdit(p);
+                          }}
+                          disabled={operationLoading}
+                          className="p-1 text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                        >
+                          <FaEdit className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(p.id);
+                          }}
+                          disabled={operationLoading}
+                          className="p-1 text-red-400 hover:text-red-300 disabled:opacity-50"
+                        >
+                          <FaTrash className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center border-b border-gray-600 last:border-b-0">
-                    <motion.div
-                      whileHover={{ backgroundColor: "#4B5563" }}
-                      onClick={() =>
-                        !operationLoading && handlePrioritySelect(priority)
-                      }
-                      className="flex-1 flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-600 transition-colors"
-                    >
-                      <FaFlag
-                        className="w-4 h-4"
-                        style={{ color: priority.color }}
-                      />
-                      <span className="text-gray-200 flex-1">
-                        {priority.label}
-                      </span>
-                      {selectedPriorityObj?.id === priority.id && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      )}
-                    </motion.div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity p-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartEdit(priority);
-                        }}
-                        disabled={operationLoading}
-                        className="p-1 text-blue-400 cursor-pointer hover:text-blue-300 disabled:opacity-50 transition-colors"
-                      >
-                        <FaEdit className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePriority(priority.id);
-                        }}
-                        disabled={operationLoading}
-                        className="p-1 text-red-400 hover:text-red-300 cursor-pointer disabled:opacity-50 transition-colors"
-                      >
-                        <FaTrash className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
 
             {isAddingNew ? (
-              <div className="p-3 bg-gray-600">
+              <div className="p-3 bg-slate-700 border-t border-slate-600">
+                <input
+                  type="text"
+                  value={formData.label}
+                  onChange={(e) =>
+                    setFormData((f) => ({ ...f, label: e.target.value }))
+                  }
+                  className="w-full mb-2 px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-sm"
+                  placeholder="New priority name"
+                  disabled={operationLoading}
+                />
                 <div className="flex items-center gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={formData.label}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        label: e.target.value,
-                      }))
-                    }
-                    className="flex-1 px-2 py-1 text-sm bg-gray-800 border border-gray-500 rounded text-white"
-                    placeholder="Priority name"
-                    disabled={operationLoading}
-                  />
                   <input
                     type="color"
                     value={formData.color}
                     onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        color: e.target.value,
-                      }))
+                      setFormData((f) => ({ ...f, color: e.target.value }))
                     }
-                    className="w-8 h-8 rounded border border-gray-500"
+                    className="w-8 h-8 rounded border border-slate-500"
                     disabled={operationLoading}
+                  />
+                  <FaFlag
+                    className="w-4 h-4"
+                    style={{ color: formData.color }}
                   />
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={handleSavePriority}
-                    disabled={operationLoading || !formData.label.trim()}
-                    className="flex items-center gap-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 rounded text-white transition-colors"
+                    onClick={handleSave}
+                    disabled={!formData.label.trim() || operationLoading}
+                    className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white text-xs rounded"
                   >
-                    <FaCheck className="w-3 h-3" />
-                    {operationLoading ? "Adding..." : "Add"}
+                    <FaPlus className="w-3 h-3" />
+                    Add
                   </button>
                   <button
-                    onClick={handleCancelEdit}
+                    onClick={handleCancel}
                     disabled={operationLoading}
-                    className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-500 hover:bg-gray-600 disabled:opacity-50 rounded text-white transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white text-xs rounded"
                   >
                     <FaTimes className="w-3 h-3" />
                     Cancel
@@ -429,16 +407,15 @@ const PrioritySelector = ({
                 </div>
               </div>
             ) : (
-              <motion.button
+              <button
                 type="button"
-                whileHover={{ backgroundColor: "#4B5563" }}
-                onClick={handleStartAddNew}
+                onClick={handleStartAdd}
                 disabled={operationLoading}
-                className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-600 transition-colors text-blue-400 hover:text-blue-300 disabled:opacity-50 rounded-b-lg"
+                className="w-full flex items-center gap-2 px-3 py-2 text-left text-blue-400 hover:bg-slate-700 hover:text-blue-300 transition-colors duration-150"
               >
                 <FaPlus className="w-4 h-4" />
-                <span>Add new priority</span>
-              </motion.button>
+                <span className="text-sm">Add new priority</span>
+              </button>
             )}
           </motion.div>
         )}

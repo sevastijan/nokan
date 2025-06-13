@@ -1,3 +1,4 @@
+// src/app/hooks/useBoard.ts
 "use client";
 
 import { useCallback } from "react";
@@ -48,6 +49,7 @@ export const useBoard = (boardId: string | null) => {
     async (newTitle: string) => {
       if (!boardId) throw new Error("Board ID is missing");
       await updateBoardTitleMutation({ boardId, title: newTitle }).unwrap();
+      // refetch to get fresh data (e.g. updated title)
       fetchBoardData();
     },
     [boardId, updateBoardTitleMutation, fetchBoardData]
@@ -70,17 +72,24 @@ export const useBoard = (boardId: string | null) => {
       if (!title.trim()) {
         throw new Error("Title is required");
       }
+      // Compute next order based on current tasks in that column (if available)
+      const nextOrder =
+        board?.columns?.find((col) => col.id === columnId)?.tasks?.length ?? 0;
+
       const newTask = await addTaskMutation({
         column_id: columnId,
         title,
         board_id: boardId,
         priority: priority ?? null,
         user_id: userId ?? null,
+        order: nextOrder,
       }).unwrap();
+
+      // refetch board so UI updates
       fetchBoardData();
       return newTask;
     },
-    [boardId, addTaskMutation, fetchBoardData]
+    [boardId, addTaskMutation, board?.columns, fetchBoardData]
   );
 
   /**
@@ -92,6 +101,7 @@ export const useBoard = (boardId: string | null) => {
       if (!boardId) {
         throw new Error("Board ID is missing");
       }
+      // next order = current number of columns
       const nextOrder = board?.columns?.length ?? 0;
       await addColumnMutation({
         board_id: boardId,

@@ -1,21 +1,57 @@
+// src/app/types/globalTypes.ts
+
 // === Core Types ===
 
-type SingleTaskMode = "edit" | "add";
+export type SingleTaskMode = "edit" | "add";
+
+// === Core Types ===
 
 export interface User {
-  id?: string;
+  id: string;
   name: string;
   email: string;
   image?: string;
   role?: "OWNER" | "PROJECT_MANAGER" | "MEMBER";
   created_at?: string;
-  user_id?: string; // for compatibility in some components
 }
 
 export interface Priority {
   id: string;
   label: string;
   color: string;
+}
+
+export interface PrioritySelectorProps {
+  selectedPriority: string | null;
+  onChange: (newPriorityId: string | null) => void;
+  onDropdownToggle?: (isOpen: boolean) => void;
+  priorities?: Priority[];
+}
+
+export interface ApiTask {
+  id: string;
+  title: string;
+  description?: string | null;
+  column_id: string;
+  board_id: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  due_date?: string | null;
+  completed: boolean;
+  assignee?: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string | null;
+  } | null;
+  priority?: {
+    id: string;
+    label: string;
+    color: string;
+  } | null;
+  user_id?: string | null;
+  status?: string | null;
+  images?: string[] | null;
 }
 
 export interface Attachment {
@@ -43,6 +79,7 @@ export interface Comment {
     image?: string;
   };
 }
+
 export interface Task {
   id: string;
   title: string;
@@ -76,6 +113,7 @@ export interface TaskDetail {
   user_id?: string | null;
   assignee?: User | null;
   attachments?: Attachment[];
+  comments?: Comment[];
   order?: number;
   start_date?: string | null;
   end_date?: string | null;
@@ -83,7 +121,6 @@ export interface TaskDetail {
   status?: string | null;
   board_id?: string | null;
   imagePreview?: string | null;
-  comments?: Comment[];
   hasUnsavedChanges?: boolean;
   completed?: boolean;
 }
@@ -99,10 +136,17 @@ export interface Column {
 export interface Board {
   id: string;
   title: string;
-  owner: string;
+  user_id: string;
+  ownerName?: string;
+  ownerEmail?: string;
   columns: Column[];
   created_at?: string;
   updated_at?: string;
+  _count?: {
+    tasks: number;
+    teamMembers: number;
+    completedTasks?: number;
+  };
 }
 
 export interface TeamMember {
@@ -111,56 +155,117 @@ export interface TeamMember {
   user_id: string;
   created_at?: string;
   user: User;
-  name?: string;
-  email?: string;
-  image?: string;
-  joined_at?: string;
 }
 
-export interface ApiTask {
+export interface Team {
+  id: string;
+  name: string;
+  board_id?: string | null;
+  owner_id?: string;
+  users: TeamMember[];
+  created_at?: string;
+}
+
+// Option for CustomSelect
+export interface CustomSelectOption {
+  value: string;
+  label: string;
+  image?: string;
+}
+export interface CustomSelectProps {
+  options: CustomSelectOption[];
+  value: string[];
+  onChange: (val: string[]) => void;
+  isMulti?: boolean;
+  placeholder?: string;
+  label?: string;
+  disabled?: boolean;
+}
+
+// === Props Interfaces ===
+
+// Team Management:
+export interface TeamFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: () => void;
+  isCreatingTeam: boolean;
+  editingTeamId: string | null;
+  newTeamName: string;
+  setNewTeamName: (name: string) => void;
+  newTeamMembers: string[];
+  setNewTeamMembers: (members: string[]) => void;
+  editedTeamName: string;
+  setEditedTeamName: (name: string) => void;
+  editedTeamMembers: string[];
+  setEditedTeamMembers: (members: string[]) => void;
+  availableUsers: User[];
+  boards: { id: string; title: string }[];
+  selectedBoardId: string;
+  setSelectedBoardId: (id: string) => void;
+}
+
+export interface TeamListProps {
+  teams: Team[];
+  onEditTeam: (team: Team) => void;
+  onDeleteTeam: (teamId: string) => void;
+  availableUsers: User[];
+}
+
+export interface TeamListItemProps {
+  team: Team;
+  onEditTeam: (team: Team) => void;
+  onDeleteTeam: (teamId: string) => void;
+  availableUsers: User[];
+}
+
+// Board List:
+export interface BoardListItemType {
   id: string;
   title: string;
-  description?: string;
-  start_date?: string;
-  end_date?: string;
-  completed?: boolean;
-
-  priority?: {
-    label: string;
-    color: string;
-  } | null;
-
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-    image?: string | null;
-  } | null;
-
-  attachments?: {
-    id: string;
-    task_id: string;
-    file_name: string;
-    file_path: string;
-    created_at: string;
-  }[];
-
-  comments?: {
-    id: string;
-    task_id: string;
-    user_id: string;
-    content: string;
-    created_at: string;
-    user?: {
-      id: string;
-      name: string;
-      email: string;
-      image?: string | null;
-    };
-  }[];
+  owner: string;
+  _count?: {
+    tasks: number;
+    teamMembers: number;
+  };
+}
+export interface BoardListProps {
+  boards: BoardListItemType[];
+  onEdit: (boardId: string) => void;
+  onDelete: (boardId: string) => void;
 }
 
-// === Props ===
+// Template selector / templates:
+export interface TemplateColumn {
+  id: string;
+  template_id: string;
+  title: string;
+  order: number;
+}
+export interface BoardTemplate {
+  id: string;
+  name: string;
+  description: string;
+  is_custom: boolean;
+  created_at?: string;
+  updated_at?: string;
+  template_columns: TemplateColumn[]; // matching query naming
+}
+export interface TemplateSelectorProps {
+  selectedTemplate: BoardTemplate | null;
+  onTemplateSelect: (template: BoardTemplate | null) => void;
+  onCreateTemplate: () => void;
+  disabled?: boolean;
+  refreshTrigger?: number;
+}
+
+export interface CreateTemplateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onTemplateCreated: () => void;
+}
+
+// === Task-related component props ===
 
 export interface TaskContentProps {
   task: TaskDetail | null;
@@ -180,13 +285,6 @@ export interface TaskContentProps {
   selectedAssigneeId?: string | null;
 }
 
-export interface UserSelectorProps {
-  selectedUser: User | null;
-  availableUsers: User[];
-  onUserSelect: (userId: string | null) => void;
-  label?: string;
-}
-
 export interface TaskHeaderProps {
   task: TaskDetail | null;
   onClose: () => void;
@@ -203,6 +301,7 @@ export interface TaskFooterProps {
   isSaving?: boolean;
   onSave?: () => void;
   onClose?: () => void;
+  onDelete?: () => void;
 }
 
 export interface SingleTaskViewProps {
@@ -217,40 +316,22 @@ export interface SingleTaskViewProps {
   currentUser?: User;
 }
 
-export interface TemplateColumn {
-  id: string;
-  template_id: string;
-  title: string;
-  order: number;
+export interface AttachmentsListProps {
+  attachments: Attachment[];
+  currentUser: User;
+  taskId: string;
+  onTaskUpdate?: () => Promise<void>;
+  onAttachmentsUpdate?: (
+    updater: (attachments: Attachment[]) => Attachment[]
+  ) => void;
 }
 
-export interface BoardTemplate {
-  id: string;
-  name: string;
-  description: string;
-  is_custom: boolean;
-  created_at?: string;
-  updated_at?: string;
-  columns: TemplateColumn[];
-}
-
-export interface TemplateSelectorProps {
-  selectedTemplate: BoardTemplate | null;
-  onTemplateSelect: (template: BoardTemplate) => void;
-  onCreateTemplate: () => void;
-  disabled?: boolean;
-  refreshTrigger?: number;
-}
-
-export interface CreateTemplateModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onTemplateCreated: () => void;
-}
-
-export interface ImagePreviewModalProps {
-  imageUrl: string | null;
-  onClose: () => void;
+// Inne propsy, które wymieniałeś:
+export interface UserSelectorProps {
+  selectedUser: User | null;
+  availableUsers: User[];
+  onUserSelect: (userId: string | null) => void;
+  label?: string;
 }
 
 export interface CommentListProps {
@@ -277,14 +358,9 @@ export interface CommentFormProps {
   onRefreshTask?: () => Promise<void>;
 }
 
-export interface AttachmentsListProps {
-  attachments: Attachment[];
-  currentUser: User;
-  taskId: string;
-  onTaskUpdate?: () => Promise<void>;
-  onAttachmentsUpdate?: (
-    updater: (attachments: Attachment[]) => Attachment[]
-  ) => void;
+export interface ImagePreviewModalProps {
+  imageUrl: string | null;
+  onClose: () => void;
 }
 
 export interface CalendarEvent {
@@ -332,8 +408,10 @@ export interface ActionFooterProps {
   onClose: () => void;
   onDelete?: () => void;
   task?: TaskDetail;
+  tempTitle?: string;
 }
 
+// Przykładowe domyślne szablony:
 export const DEFAULT_TEMPLATES: Omit<
   BoardTemplate,
   "id" | "created_at" | "updated_at"
@@ -342,7 +420,7 @@ export const DEFAULT_TEMPLATES: Omit<
     name: "Basic Kanban",
     description: "Prosty układ trzech kolumn",
     is_custom: false,
-    columns: [
+    template_columns: [
       { id: "temp-1", template_id: "", title: "To Do", order: 0 },
       { id: "temp-2", template_id: "", title: "In Progress", order: 1 },
       { id: "temp-3", template_id: "", title: "Done", order: 2 },
@@ -352,7 +430,7 @@ export const DEFAULT_TEMPLATES: Omit<
     name: "Development Workflow",
     description: "Szablon dla zespołów deweloperskich",
     is_custom: false,
-    columns: [
+    template_columns: [
       { id: "temp-4", template_id: "", title: "Backlog", order: 0 },
       { id: "temp-5", template_id: "", title: "In Development", order: 1 },
       { id: "temp-6", template_id: "", title: "Code Review", order: 2 },
@@ -364,7 +442,7 @@ export const DEFAULT_TEMPLATES: Omit<
     name: "Marketing Campaign",
     description: "Szablon dla kampanii marketingowych",
     is_custom: false,
-    columns: [
+    template_columns: [
       { id: "temp-9", template_id: "", title: "Ideas", order: 0 },
       { id: "temp-10", template_id: "", title: "Planning", order: 1 },
       { id: "temp-11", template_id: "", title: "In Progress", order: 2 },

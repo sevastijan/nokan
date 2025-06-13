@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { TaskDetail } from "@/app/components/SingleTaskView/types";
+import { TaskDetail } from "@/app/types/globalTypes";
 
 interface TaskState {
   task: TaskDetail | null;

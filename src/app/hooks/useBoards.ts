@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { useGetBoardUsersQuery } from "@/app/store/apiSlice";
+import { useGetTeamMembersByBoardIdQuery } from "@/app/store/apiSlice";
+
 import { Board } from "@/app/types/globalTypes";
 
 export const useBoards = (userEmail: string | null) => {
@@ -8,7 +9,7 @@ export const useBoards = (userEmail: string | null) => {
     data: boards = [],
     isLoading: loading,
     refetch: refetchBoards,
-  } = useGetBoardUsersQuery(userEmail ?? "", { skip });
+  } = useGetTeamMembersByBoardIdQuery(userEmail ?? "", { skip });
 
   const selectedBoardId = useMemo(() => boards[0]?.id ?? "", [boards]);
 

@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { FaPlus, FaDownload, FaTrash, FaEye } from "react-icons/fa";
+import {
+  FaPlus,
+  FaDownload,
+  FaTrash,
+  FaEye,
+  FaPaperclip,
+} from "react-icons/fa";
 import { Attachment, AttachmentsListProps } from "@/app/types/globalTypes";
 import { formatFileSize, getFileIcon } from "./utils";
 import { supabase } from "../../lib/api";
@@ -37,10 +43,9 @@ const AttachmentsList = ({
       const { error: uploadError } = await supabase.storage
         .from("attachments")
         .upload(filePath, file);
-
       if (uploadError) throw uploadError;
 
-      const { data: newAttachment } = await supabase
+      const { data: newAttachment, error: insertError } = await supabase
         .from("task_attachments")
         .insert({
           task_id: taskId,
@@ -52,6 +57,7 @@ const AttachmentsList = ({
         })
         .select()
         .single();
+      if (insertError) throw insertError;
 
       if (newAttachment) {
         onAttachmentsUpdate?.((prev) => [newAttachment, ...prev]);
@@ -73,7 +79,6 @@ const AttachmentsList = ({
       const { data, error } = await supabase.storage
         .from("attachments")
         .download(attachment.file_path);
-
       if (error) throw error;
 
       const url = URL.createObjectURL(data);
@@ -97,14 +102,12 @@ const AttachmentsList = ({
       const { error: storageError } = await supabase.storage
         .from("attachments")
         .remove([attachment.file_path]);
-
       if (storageError) throw storageError;
 
       const { error: dbError } = await supabase
         .from("task_attachments")
         .delete()
         .eq("id", attachment.id);
-
       if (dbError) throw dbError;
 
       onAttachmentsUpdate?.((prev) =>
@@ -125,9 +128,7 @@ const AttachmentsList = ({
         const { data, error } = await supabase.storage
           .from("attachments")
           .createSignedUrl(attachment.file_path, 60 * 60);
-
         if (error) throw error;
-
         window.open(data.signedUrl, "_blank");
       } catch (error) {
         console.error("Error creating preview:", error);
@@ -139,9 +140,10 @@ const AttachmentsList = ({
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-200">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+          <FaPaperclip className="w-5 h-5 text-slate-300" />
           Attachments ({attachments.length})
         </h3>
         <Button
@@ -169,17 +171,17 @@ const AttachmentsList = ({
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600"
+              className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg border border-slate-600"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span className="text-2xl flex items-center justify-center w-8 h-8">
                   {getFileIcon(attachment.mime_type)}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-200 truncate">
+                  <p className="text-sm font-medium text-slate-200 truncate">
                     {attachment.file_name}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-slate-400">
                     {formatFileSize(attachment.file_size)}
                   </p>
                 </div>
@@ -190,14 +192,14 @@ const AttachmentsList = ({
                   size="sm"
                   onClick={() => handlePreview(attachment)}
                   icon={<FaEye />}
-                  className="text-blue-400 hover:text-blue-300 p-2"
+                  className="text-slate-200 hover:text-white p-2"
                 />
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDownload(attachment)}
                   icon={<FaDownload />}
-                  className="text-green-400 hover:text-green-300 p-2"
+                  className="text-slate-200 hover:text-white p-2"
                 />
                 <Button
                   variant="ghost"
@@ -211,9 +213,9 @@ const AttachmentsList = ({
           ))}
         </div>
       ) : (
-        <div className="text-center text-gray-400 py-6 border-2 border-dashed border-gray-600 rounded-lg">
-          <p className="text-gray-400">No attachments yet</p>
-          <p className="text-sm">
+        <div className="text-center text-slate-400 py-6 border-2 border-dashed border-slate-600 rounded-lg">
+          <p className="text-slate-400">No attachments yet</p>
+          <p className="text-sm text-slate-500">
             Click "Add File" to upload your first attachment
           </p>
         </div>

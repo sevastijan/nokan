@@ -1,237 +1,197 @@
-import { motion, AnimatePresence } from "framer-motion";
+"use client";
+import React, { useState, useEffect, useRef } from "react";
 import { FiX } from "react-icons/fi";
-import { useState, useEffect, useRef } from "react";
-import TemplateSelector from "./TemplateSelector";
-import CreateTemplateModal from "./CreateTemplateModal";
-import { BoardTemplate, DEFAULT_TEMPLATES } from "@/app/types/globalTypes";
-import { getBoardTemplates } from "../../lib/api";
+import DOMPurify from "dompurify";
+import TemplateSelector from "@/app/components/Board/TemplateSelector";
+import { BoardTemplate } from "@/app/types/globalTypes";
 
 interface BoardModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (title: string, template?: BoardTemplate) => void;
-  onDelete?: () => void;
+  mode: "create" | "edit" | "delete";
   initialTitle?: string;
-  title?: string;
-  mode?: "create" | "edit" | "delete";
+  boardId?: string;
+  onClose: () => void;
+  onSave: (title: string, templateId?: string | null) => void;
+  onDelete: () => void;
 }
 
-/**
- * Modal component for board operations (create, edit, delete)
- */
-const BoardModal = ({
+const BoardModal: React.FC<BoardModalProps> = ({
   isOpen,
-  onClose,
-  onSubmit,
-  onDelete,
+  mode,
   initialTitle = "",
-  title = "Add Board",
-  mode = "create",
-}: BoardModalProps) => {
-  const [input, setInput] = useState(initialTitle);
-  const [loading, setLoading] = useState(false);
+  boardId,
+  onClose,
+  onSave,
+  onDelete,
+}) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [title, setTitle] = useState(initialTitle);
   const [selectedTemplate, setSelectedTemplate] =
     useState<BoardTemplate | null>(null);
-  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const templateSelectorRef = useRef<{ refreshTemplates: () => void }>(null);
+  const [refreshTemplatesTrigger, setRefreshTemplatesTrigger] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Load default template when opening modal in create mode
-   */
+  // Reset stanu przy otwarciu lub zmianie trybu:
   useEffect(() => {
-    const loadDefaultTemplate = async () => {
-      if (mode === "create" && isOpen && !selectedTemplate) {
-        try {
-          const templates = await getBoardTemplates();
-          const basicTemplate = templates.find(
-            (t) => t.name === "Basic Kanban"
-          );
-          if (basicTemplate) {
-            setSelectedTemplate(basicTemplate);
-          }
-        } catch (error) {
-          console.error("Error loading templates:", error);
-        }
+    if (isOpen) {
+      setTitle(initialTitle);
+      setError(null);
+      if (mode === "create") {
+        setSelectedTemplate(null);
+        // wymuś odświeżenie selectorów:
+        setRefreshTemplatesTrigger((prev) => prev + 1);
+      }
+    }
+  }, [isOpen, mode, initialTitle]);
+
+  // Zamknięcie ESC i klik poza:
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        isOpen &&
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node)
+      ) {
+        onClose();
       }
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
 
-    loadDefaultTemplate();
-  }, [mode, isOpen, selectedTemplate]);
+  if (!isOpen) return null;
 
-  /**
-   * Handle form submission
-   */
-  const handleSave = async () => {
-    if (input.trim()) {
-      setLoading(true);
-      try {
-        await onSubmit(
-          input.trim(),
-          mode === "create" ? selectedTemplate || undefined : undefined
-        );
-        setInput("");
-        setSelectedTemplate(null);
-      } catch (error) {
-        console.error("Error saving:", error);
-      } finally {
-        setLoading(false);
+  const handleSubmit = () => {
+    if (mode === "create") {
+      if (!title.trim()) {
+        setError("Podaj nazwę tablicy.");
+        return;
       }
-    }
-  };
-
-  /**
-   * Handle board deletion
-   */
-  const handleDelete = async () => {
-    if (onDelete) {
-      setLoading(true);
-      try {
-        await onDelete();
-      } catch (error) {
-        console.error("Error deleting:", error);
-      } finally {
-        setLoading(false);
+      const safeTitle = DOMPurify.sanitize(title.trim());
+      onSave(safeTitle, selectedTemplate?.id || null);
+    } else if (mode === "edit") {
+      if (!title.trim()) {
+        setError("Podaj nazwę tablicy.");
+        return;
       }
-    }
-  };
-
-  /**
-   * Refresh template list after creating a new one
-   */
-  const handleTemplateCreated = async () => {
-    setShowCreateTemplate(false);
-    // Refresh templates via ref
-    if (templateSelectorRef.current) {
-      templateSelectorRef.current.refreshTemplates();
-    }
-  };
-
-  /**
-   * Update input when initialTitle or modal state changes
-   */
-  useEffect(() => {
-    setInput(initialTitle);
-  }, [initialTitle, isOpen]);
-
-  /**
-   * Handle outside click to close modal
-   */
-  const handleOutsideClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
+      const safeTitle = DOMPurify.sanitize(title.trim());
+      onSave(safeTitle, null);
     }
   };
 
   return (
-    <>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center z-50 p-4"
-            onClick={handleOutsideClick}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <motion.div
-              className="bg-gray-800 text-white rounded-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md mx-4"
-              initial={{ scale: 0.8, opacity: 0, y: 50 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 50 }}
-              transition={{ duration: 0.3 }}
-              onClick={(e) => e.stopPropagation()}
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-full p-4 text-center">
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+        />
+
+        {/* Modal */}
+        <div
+          ref={modalRef}
+          className="relative transform overflow-visible rounded-2xl bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-white">
+              {mode === "create"
+                ? "Utwórz nową tablicę"
+                : mode === "edit"
+                ? "Edytuj tablicę"
+                : "Usuń tablicę"}
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-200"
             >
-              <h2 className="text-lg sm:text-xl font-bold mb-4">
-                {mode === "create" && "Create New Board"}
-                {mode === "edit" && "Edit Board"}
-                {mode === "delete" && "Delete Board"}
-              </h2>
+              <FiX className="w-5 h-5" />
+            </button>
+          </div>
 
-              <div className="space-y-4">
-                {mode === "delete" ? (
-                  <div className="text-center">
-                    <p className="text-gray-300 mb-2">
-                      Are you sure you want to delete this board?
-                    </p>
-                    <p className="text-white font-semibold">"{initialTitle}"</p>
-                    <p className="text-red-400 text-xs mt-2">
-                      This action cannot be undone.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Board Title:
-                      </label>
-                      <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
-                        placeholder="Enter board title"
-                        autoFocus
-                      />
-                    </div>
-
-                    {/* Template Selector - only for create mode */}
-                    {mode === "create" && (
-                      <TemplateSelector
-                        ref={templateSelectorRef}
-                        selectedTemplate={selectedTemplate}
-                        onTemplateSelect={setSelectedTemplate}
-                        onCreateTemplate={() => setShowCreateTemplate(true)}
-                        disabled={loading}
-                      />
-                    )}
-                  </>
+          {/* Content */}
+          <div className="p-6 space-y-4">
+            {mode === "delete" ? (
+              <p className="text-white">
+                Czy na pewno chcesz usunąć tę tablicę?
+              </p>
+            ) : (
+              <>
+                {/* Tytuł */}
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-white">
+                    Nazwa tablicy
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Wprowadź tytuł..."
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+                {/* Wybór szablonu tylko przy tworzeniu */}
+                {mode === "create" && (
+                  <TemplateSelector
+                    selectedTemplate={selectedTemplate}
+                    onTemplateSelect={setSelectedTemplate}
+                    onCreateTemplate={() => {
+                      // opcjonalnie: otwórz modal tworzenia szablonu
+                      console.log("Create template callback");
+                    }}
+                    disabled={false}
+                    refreshTrigger={refreshTemplatesTrigger}
+                  />
                 )}
-              </div>
+                {error && <div className="text-red-400 text-sm">{error}</div>}
+              </>
+            )}
+          </div>
 
-              <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
-                <button
-                  onClick={onClose}
-                  className="w-full sm:w-auto bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer duration-200 order-2 sm:order-1"
-                >
-                  Cancel
-                </button>
-
-                {mode === "delete" ? (
-                  <button
-                    onClick={handleDelete}
-                    disabled={loading}
-                    className="w-full sm:w-auto cursor-pointer bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
-                  >
-                    {loading ? "Deleting..." : "Delete"}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSave}
-                    disabled={!input.trim() || loading}
-                    className="w-full sm:w-auto cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
-                  >
-                    {loading
-                      ? "Saving..."
-                      : mode === "create"
-                      ? "Create"
-                      : "Save"}
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Create Template Modal */}
-      <CreateTemplateModal
-        isOpen={showCreateTemplate}
-        onClose={() => setShowCreateTemplate(false)}
-        onTemplateCreated={handleTemplateCreated}
-      />
-    </>
+          {/* Footer */}
+          <div className="bg-slate-800/50 px-6 py-4 border-t border-slate-700/50 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-xl transition-all duration-200 border border-slate-600 hover:border-slate-500"
+            >
+              Anuluj
+            </button>
+            {mode === "delete" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onDelete();
+                  onClose();
+                }}
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-all duration-200"
+              >
+                Usuń
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!title.trim()}
+              >
+                {mode === "create" ? "Utwórz" : "Zapisz"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,4 +1,6 @@
-import { TeamListProps } from "./types";
+// src/app/components/TeamManagement/TeamList.tsx
+import React from "react";
+import { TeamListProps } from "@/app/types/globalTypes";
 import TeamListItem from "./TeamListItem";
 
 const TeamList = ({
@@ -7,7 +9,7 @@ const TeamList = ({
   onDeleteTeam,
   availableUsers,
 }: TeamListProps) => {
-  if (teams.length === 0) {
+  if (!teams || teams.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">👥</div>
@@ -25,7 +27,6 @@ const TeamList = ({
         <span className="w-2 h-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full"></span>
         Your Teams ({teams.length})
       </h3>
-      {/* Zmieniam grid na szerszy layout - mniej kolumn, więcej miejsca */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {teams.map((team) => (
           <TeamListItem

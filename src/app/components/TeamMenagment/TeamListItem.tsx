@@ -1,8 +1,9 @@
+// src/app/components/TeamManagement/TeamListItem.tsx
 import React from "react";
-import { TeamListItemProps } from "./types";
 import DOMPurify from "dompurify";
 import { FiEdit3, FiTrash2, FiUsers } from "react-icons/fi";
 import Avatar from "../Avatar/Avatar";
+import { TeamListItemProps } from "@/app/types/globalTypes";
 
 const TeamListItem = ({
   team,
@@ -10,13 +11,14 @@ const TeamListItem = ({
   onDeleteTeam,
   availableUsers,
 }: TeamListItemProps) => {
+  // Filtrujemy availableUsers, by znaleźć tych w team.users
   const teamMembers = availableUsers.filter((user) =>
-    team.users.find((member) => member.user_id === user.id)
+    team.users.some((member) => member.user_id === user.id)
   );
 
   return (
     <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-200 group hover:shadow-xl hover:shadow-purple-500/10 min-h-[280px] flex flex-col">
-      {/* Team Header */}
+      {/* Nagłówek */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl">
@@ -30,13 +32,13 @@ const TeamListItem = ({
               }}
             />
             <p className="text-slate-400 text-sm mt-1">
-              {teamMembers.length} members
+              {teamMembers.length} member{teamMembers.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Team Members - Expanduje żeby wypełnić przestrzeń */}
+      {/* Lista członków */}
       <div className="flex-1 mb-6">
         <p className="text-slate-400 text-sm font-medium mb-4">Team Members</p>
         <div className="space-y-3">
@@ -45,7 +47,11 @@ const TeamListItem = ({
               key={user.id}
               className="flex items-center gap-3 bg-slate-700/30 rounded-xl px-4 py-3 hover:bg-slate-700/50 transition-colors"
             >
-              <Avatar src={user.image} alt={user.name} size={32} />
+              {user.image ? (
+                <Avatar src={user.image} alt={user.name} size={32} />
+              ) : (
+                <div className="w-8 h-8 bg-slate-600 rounded-full" />
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">
                   {user.name}
@@ -57,7 +63,7 @@ const TeamListItem = ({
           {teamMembers.length > 4 && (
             <div className="flex items-center justify-center bg-slate-700/30 rounded-xl px-4 py-3">
               <span className="text-slate-400 text-sm font-medium">
-                +{teamMembers.length - 4} more members
+                +{teamMembers.length - 4} more
               </span>
             </div>
           )}
@@ -69,7 +75,7 @@ const TeamListItem = ({
         </div>
       </div>
 
-      {/* Actions - Na dole */}
+      {/* Akcje */}
       <div className="flex gap-3 pt-4 border-t border-slate-700/50">
         <button
           onClick={() => onEditTeam(team)}

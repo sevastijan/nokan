@@ -1,15 +1,17 @@
+// src/app/(protected)/board/[id]/page.tsx
 "use client";
+
 import { useEffect, useState, useCallback } from "react";
 import { DragDropContext, DropResult, Droppable } from "@hello-pangea/dnd";
 import { useParams, useRouter } from "next/navigation";
-import { useBoard } from "../../hooks/useBoard";
-import Column from "../../components/Column";
-import AddColumnPopup from "../../components/TaskColumn/AddColumnPopup";
-import SingleTaskView from "../../components/SingleTaskView/SingleTaskView";
-import Calendar from "../../components/Calendar/Calendar";
-import Button from "../../components/Button/Button";
-import ListView from "../../components/ListView/ListView";
-import { motion, AnimatePresence } from "framer-motion";
+import { useBoard } from "@/app/hooks/useBoard"; // adjust path
+import Column from "@/app/components/Column";
+import AddColumnPopup from "@/app/components/TaskColumn/AddColumnPopup";
+import SingleTaskView from "@/app/components/SingleTaskView/SingleTaskView";
+import Calendar from "@/app/components/Calendar/Calendar";
+import Button from "@/app/components/Button/Button";
+import ListView from "@/app/components/ListView/ListView";
+import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import {
   FaArrowLeft,
@@ -20,10 +22,10 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { useSession } from "next-auth/react";
-import Loader from "../../components/Loader";
-import { supabase } from "../../lib/supabase";
+import Loader from "@/app/components/Loader";
+import { supabase } from "@/app/lib/supabase";
 import { extractTaskIdFromUrl } from "@/app/utils/helpers";
-import { getPriorities } from "../../lib/api";
+import { getPriorities } from "@/app/lib/api";
 
 const Page = () => {
   const { id } = useParams();
@@ -35,7 +37,6 @@ const Page = () => {
     loading: boardLoading,
     error: boardError,
     fetchBoardData,
-    updateBoard,
     handleUpdateBoardTitle,
     handleAddColumn,
     handleRemoveColumn,
@@ -49,7 +50,7 @@ const Page = () => {
   const [localBoardTitle, setLocalBoardTitle] = useState(board?.title || "");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [addTaskColumnId, setAddTaskColumnId] = useState<string | null>(null); // Reintroduced
+  const [addTaskColumnId, setAddTaskColumnId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [priorities, setPriorities] = useState<
@@ -57,12 +58,12 @@ const Page = () => {
   >([]);
   const [viewMode, setViewMode] = useState<"columns" | "list">("columns");
 
+  // Board title editing
   const handleBoardTitleBlur = () => {
     if (localBoardTitle !== board?.title) {
       handleUpdateBoardTitle(localBoardTitle);
     }
   };
-
   const handleBoardTitleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
@@ -71,6 +72,7 @@ const Page = () => {
     }
   };
 
+  // Load priorities once
   useEffect(() => {
     const loadPriorities = async () => {
       try {
@@ -88,6 +90,7 @@ const Page = () => {
     loadPriorities();
   }, []);
 
+  // Fetch or create current user from session
   useEffect(() => {
     const fetchUser = async () => {
       if (session?.user?.email) {
@@ -141,12 +144,14 @@ const Page = () => {
     }
   }, [status, router]);
 
+  // Sync localBoardTitle when board data arrives
   useEffect(() => {
     if (board?.title && board.title !== localBoardTitle) {
       setLocalBoardTitle(board.title);
     }
-  }, [board?.title, localBoardTitle]);
+  }, [board?.title]);
 
+  // Debounced auto-save on board title
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (localBoardTitle !== board?.title) {
@@ -156,17 +161,23 @@ const Page = () => {
     return () => clearTimeout(timeoutId);
   }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
 
+  // If URL has ?task=<id>, open that task
   useEffect(() => {
     const idFromUrl = extractTaskIdFromUrl(window.location.href);
-    console.debug("[DEBUG] Extracted taskId from URL:", idFromUrl);
     if (idFromUrl) setSelectedTaskId(idFromUrl);
   }, []);
 
+  /**
+   * onDragEnd: handle reordering columns or tasks.
+   * For columns: update sort_order in DB.
+   * For tasks: update sort_order or column_id accordingly.
+   */
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, type } = result;
 
     if (!destination || !board) return;
 
+    // no-op if location unchanged
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
@@ -174,31 +185,37 @@ const Page = () => {
       return;
     }
 
+    // Reorder columns
     if (type === "COLUMN") {
       const reorderedColumns = Array.from(board.columns);
       const [movedColumn] = reorderedColumns.splice(source.index, 1);
       reorderedColumns.splice(destination.index, 0, movedColumn);
 
+      // assign new `order` values in JS for UI
       const columnsWithNewOrder = reorderedColumns.map((column, index) => ({
         ...column,
         order: index,
       }));
+      // Update UI state
+      // If you used a context or setter: updateBoard({ ...board, columns: columnsWithNewOrder });
+      // But since we rely on RTK Query refetch after mutation, we can simply perform DB updates then refetch.
+      // For immediate UI feedback you might optimistically update local state here if you manage board in React state.
 
-      updateBoard({ ...board, columns: columnsWithNewOrder });
-
+      // Update each column in DB: rename order → sort_order
       await Promise.all(
-        columnsWithNewOrder.map(async (column, index) => {
-          if (column.order !== index) {
-            await supabase
-              .from("columns")
-              .update({ order: index })
-              .eq("id", column.id);
-          }
+        columnsWithNewOrder.map(async (column) => {
+          await supabase
+            .from("columns")
+            .update({ sort_order: column.order })
+            .eq("id", column.id);
         })
       );
+      // Refetch board
+      fetchBoardData();
       return;
     }
 
+    // Reorder tasks
     if (type === "TASK") {
       const sourceColumn = board.columns.find(
         (col) => col.id === source.droppableId
@@ -206,46 +223,42 @@ const Page = () => {
       const destColumn = board.columns.find(
         (col) => col.id === destination.droppableId
       );
-
       if (!sourceColumn || !destColumn) return;
 
+      // Moving within same column
       if (source.droppableId === destination.droppableId) {
         const sortedTasks = [...sourceColumn.tasks].sort(
-          (a, b) => (a.order || 0) - (b.order || 0)
+          (a, b) => (a.order ?? 0) - (b.order ?? 0)
         );
         const [movedTask] = sortedTasks.splice(source.index, 1);
         sortedTasks.splice(destination.index, 0, movedTask);
 
+        // Assign new order in JS
         const tasksWithNewOrder = sortedTasks.map((task, index) => ({
           ...task,
           order: index,
         }));
-
-        const newColumns = board.columns.map((col) =>
-          col.id === sourceColumn.id
-            ? { ...col, tasks: tasksWithNewOrder }
-            : col
-        );
-
-        updateBoard({ ...board, columns: newColumns });
-
+        // Update each in DB: rename order → sort_order
         await Promise.all(
-          tasksWithNewOrder.map(async (task, index) => {
+          tasksWithNewOrder.map(async (task) => {
             await supabase
               .from("tasks")
-              .update({ order: index })
+              .update({ sort_order: task.order })
               .eq("id", task.id);
           })
         );
+        fetchBoardData();
       } else {
+        // Moving between columns
         const sourceTasks = [...sourceColumn.tasks].sort(
-          (a, b) => (a.order || 0) - (b.order || 0)
+          (a, b) => (a.order ?? 0) - (b.order ?? 0)
         );
         const destTasks = [...destColumn.tasks].sort(
-          (a, b) => (a.order || 0) - (b.order || 0)
+          (a, b) => (a.order ?? 0) - (b.order ?? 0)
         );
 
         const [movedTask] = sourceTasks.splice(source.index, 1);
+        // Insert into dest at destination.index
         destTasks.splice(destination.index, 0, {
           ...movedTask,
           column_id: destination.droppableId,
@@ -255,42 +268,39 @@ const Page = () => {
           ...task,
           order: index,
         }));
-
         const destTasksWithOrder = destTasks.map((task, index) => ({
           ...task,
           order: index,
         }));
 
-        const newColumns = board.columns.map((col) => {
-          if (col.id === sourceColumn.id)
-            return { ...col, tasks: sourceTasksWithOrder };
-          if (col.id === destColumn.id)
-            return { ...col, tasks: destTasksWithOrder };
-          return col;
-        });
-
-        updateBoard({ ...board, columns: newColumns });
-
+        // Update movedTask column_id and sort_order
         await supabase
           .from("tasks")
           .update({
             column_id: destination.droppableId,
-            order: destination.index,
+            sort_order: destination.index,
           })
           .eq("id", movedTask.id);
 
+        // Update all others' sort_order
         await Promise.all(
-          [...sourceTasksWithOrder, ...destTasksWithOrder].map(async (task) => {
+          [
+            ...sourceTasksWithOrder.map((t) => ({ id: t.id, order: t.order })),
+            ...destTasksWithOrder.map((t) => ({ id: t.id, order: t.order })),
+          ].map(async ({ id: tId, order }) => {
             await supabase
               .from("tasks")
-              .update({ order: task.order })
-              .eq("id", task.id);
+              .update({ sort_order: order })
+              .eq("id", tId);
           })
         );
+
+        fetchBoardData();
       }
     }
   };
 
+  // When calendar view is open and user clicks a task:
   const handleCalendarTaskClick = (taskId: string) => {
     setSelectedTaskId(taskId);
   };
@@ -303,7 +313,7 @@ const Page = () => {
         setNewColumnTitle("");
         setIsPopupOpen(false);
       } catch {
-        // Error handled in console.log within handleAddColumn
+        // logged inside useBoard
       } finally {
         setIsAddingColumn(false);
       }
@@ -327,16 +337,17 @@ const Page = () => {
         priority || "medium",
         userId
       );
+      // After adding, refetch board and reset popup
       await fetchBoardData();
-      setAddTaskColumnId(null); // Reset after adding task
+      setAddTaskColumnId(null);
       return newTask;
     } catch {
-      setAddTaskColumnId(null); // Reset even on error
+      setAddTaskColumnId(null);
       throw new Error("Failed to add task");
     }
   };
 
-  const onRemoveTask = async (columnId: string, taskId: string) => {
+  const onRemoveTaskLocal = async (columnId: string, taskId: string) => {
     try {
       await handleRemoveTask(columnId, taskId);
       await fetchBoardData();
@@ -362,7 +373,7 @@ const Page = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-400 text-xl mb-4">Error loading board</div>
-          <div className="text-slate-400 mb-6">{boardError}</div>
+          <div className="text-slate-400 mb-6">{String(boardError)}</div>
           <Button
             variant="primary"
             onClick={() => router.push("/dashboard")}
@@ -379,7 +390,8 @@ const Page = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="h-screen flex flex-col">
-          <div className="flex-shrink-0 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 shadow-lg sticky top-0 z-40">
+          {/* Header */}
+          <div className="flex-shrink-0 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-40">
             <div className="px-6 py-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-6">
@@ -468,6 +480,8 @@ const Page = () => {
               </div>
             </div>
           </div>
+
+          {/* Body */}
           <div className="flex-1 overflow-hidden">
             <div className="h-full p-6">
               {showCalendar ? (
@@ -532,7 +546,7 @@ const Page = () => {
                             onRemoveColumn={handleRemoveColumn}
                             onTaskAdded={handleTaskAdded}
                             selectedTaskId={selectedTaskId}
-                            onRemoveTask={onRemoveTask}
+                            onRemoveTask={onRemoveTaskLocal}
                             onOpenTaskDetail={setSelectedTaskId}
                             onOpenAddTask={handleOpenAddTask}
                             currentUser={currentUser}

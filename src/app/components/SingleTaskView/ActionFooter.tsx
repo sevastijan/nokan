@@ -1,15 +1,11 @@
+// src/app/components/SingleTaskView/ActionFooter.tsx
 "use client";
 
 import { useState } from "react";
-import { TaskDetail } from "@/app/types/globalTypes";
 import ConfirmDialog from "./ConfirmDialog";
 import Button from "../Button/Button";
 import { ActionFooterProps } from "@/app/types/globalTypes";
 
-/**
- * ActionFooter component renders action buttons for saving, canceling, or deleting a task.
- * It conditionally displays the delete button and a confirmation dialog if required.
- */
 const ActionFooter = ({
   isNewTask,
   hasUnsavedChanges,
@@ -18,23 +14,26 @@ const ActionFooter = ({
   onClose,
   onDelete,
   task,
+  tempTitle, // nowy prop
 }: ActionFooterProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   /**
-   * Determines if the Save button should be enabled.
-   * For new tasks, the title must not be empty and there must be unsaved changes.
+   * Determines if the Save/Create button should be enabled.
+   * Dla nowego zadania: wymagamy, żeby tempTitle było niepuste oraz aby były zmiany.
+   * Dla edycji: można wymagać tylko hasUnsavedChanges, a ew. też non-empty title (opcjonalnie).
    */
-  const canSave = isNewTask
-    ? task?.title?.trim() && hasUnsavedChanges
-    : hasUnsavedChanges;
+  const titleNotEmpty = Boolean(tempTitle && tempTitle.trim().length > 0);
 
-  /** Handles the click event for the Delete button by showing the confirmation dialog */
+  const canSave = isNewTask
+    ? titleNotEmpty && hasUnsavedChanges
+    : hasUnsavedChanges && (task?.title ? task.title.trim().length > 0 : true);
+  // lub: hasUnsavedChanges && titleNotEmpty, jeśli chcesz także przy edycji wymagać, by tytuł finalnie nie był pusty
+
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
   };
 
-  /** Handles the confirmation of deletion */
   const handleDeleteConfirm = () => {
     setShowDeleteConfirm(false);
     if (onDelete) {
@@ -42,7 +41,6 @@ const ActionFooter = ({
     }
   };
 
-  /** Cancels the delete confirmation dialog */
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);
   };
