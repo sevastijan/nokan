@@ -1,4 +1,4 @@
-// src/app/(your-folder)/page.tsx
+// src/app/(protected)/board/[id]/page.tsx
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -15,24 +15,28 @@ import { useBoard } from "@/app/hooks/useBoard";
 import Column from "@/app/components/Column";
 import AddColumnPopup from "@/app/components/TaskColumn/AddColumnPopup";
 import SingleTaskView from "@/app/components/SingleTaskView/SingleTaskView";
+import ListView from "@/app/components/ListView/ListView";
 import Loader from "@/app/components/Loader";
 import { extractTaskIdFromUrl } from "@/app/utils/helpers";
 import { getPriorities } from "@/app/lib/api";
 import {
   Column as ColumnType,
-  Task as TaskType,
   User,
   Priority,
+  Task as TaskType,
 } from "@/app/types/globalTypes";
-import { FaArrowLeft, FaPlus, FaColumns } from "react-icons/fa";
+import { FaArrowLeft } from "react-icons/fa";
 import Button from "@/app/components/Button/Button";
 import { toast } from "react-toastify";
 
-const Page: React.FC = () => {
+import BoardHeader from "@/app/components/Board/BoardHeader";
+
+const Page = () => {
   const { id } = useParams();
   const router = useRouter();
   const { data: session, status } = useSession();
 
+  // useBoard hook for data & actions
   const {
     board,
     loading: boardLoading,
@@ -44,8 +48,11 @@ const Page: React.FC = () => {
     handleUpdateColumnTitle,
     handleAddTask,
     handleRemoveTask,
+    handleReorderTasks,
+    handleUpdateTask,
   } = useBoard(id!);
 
+  // Local state
   const [localColumns, setLocalColumns] = useState<ColumnType[]>([]);
   const [boardTitle, setBoardTitle] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -55,6 +62,12 @@ const Page: React.FC = () => {
   const [addTaskColumnId, setAddTaskColumnId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [priorities, setPriorities] = useState<Priority[]>([]);
+  const [viewMode, setViewMode] = useState<"columns" | "list">("columns");
+
+  // New: search + filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterPriority, setFilterPriority] = useState<string | null>(null);
+  const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
 
   // Sync localColumns when board updates
   useEffect(() => {
@@ -71,7 +84,7 @@ const Page: React.FC = () => {
     setLocalColumns(sortedCols);
   }, [board]);
 
-  // Load priorities
+  // Load priorities once
   useEffect(() => {
     getPriorities()
       .then(setPriorities)
@@ -85,7 +98,7 @@ const Page: React.FC = () => {
       );
   }, []);
 
-  // Ensure user record exists
+  // Ensure user record exists in Supabase
   useEffect(() => {
     if (!session?.user?.email) return;
     (async () => {
@@ -99,7 +112,7 @@ const Page: React.FC = () => {
           id: data.id,
           name: data.name!,
           email: data.email,
-          image: data.image!,
+          image: data.image || undefined,
           created_at: data.created_at!,
         });
       } else {
@@ -116,14 +129,14 @@ const Page: React.FC = () => {
           id: d2.id,
           name: d2.name!,
           email: d2.email,
-          image: d2.image!,
+          image: d2.image || undefined,
           created_at: d2.created_at!,
         });
       }
     })();
   }, [session]);
 
-  // Redirect if not authenticated
+  // Redirect if unauthenticated
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/signin");
   }, [status, router]);
@@ -135,16 +148,18 @@ const Page: React.FC = () => {
     if (t) setSelectedTaskId(t);
   }, []);
 
-  // Handlers for board title
-  const onBoardTitleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+  // Board title edit
+  const onBoardTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBoardTitle(e.target.value);
+  };
   const onBoardTitleBlur = () => {
-    if (boardTitle.trim() !== board?.title) {
-      handleUpdateBoardTitle(boardTitle.trim());
+    const trimmed = boardTitle.trim();
+    if (trimmed && trimmed !== board?.title) {
+      handleUpdateBoardTitle(trimmed);
     }
   };
 
-  // Add column popup
+  // Add Column popup
   const openAddColumn = () => setIsPopupOpen(true);
   const closeAddColumn = () => setIsPopupOpen(false);
   const onAddColumn = async () => {
@@ -153,11 +168,11 @@ const Page: React.FC = () => {
     await handleAddColumn(newColumnTitle.trim());
     setNewColumnTitle("");
     closeAddColumn();
-    fetchBoardData();
+    await fetchBoardData();
     setIsAddingColumn(false);
   };
 
-  // Add task
+  // Add Task
   const openAddTask = (colId: string) => setAddTaskColumnId(colId);
   const onTaskAdded = async (
     columnId: string,
@@ -166,6 +181,7 @@ const Page: React.FC = () => {
     userId?: string
   ) => {
     const t = await handleAddTask(columnId, title, priority, userId);
+    // Update localColumns immediately
     setLocalColumns((cols) =>
       cols.map((c) =>
         c.id === columnId ? { ...c, tasks: [...(c.tasks || []), t] } : c
@@ -175,7 +191,7 @@ const Page: React.FC = () => {
     return t;
   };
 
-  // Remove task
+  // Remove Task
   const onTaskRemoved = async (columnId: string, taskId: string) => {
     await handleRemoveTask(columnId, taskId);
     setLocalColumns((cols) =>
@@ -194,22 +210,21 @@ const Page: React.FC = () => {
       const { source, destination, type } = result;
       if (!destination) return;
 
-      // COLUMN reorder
       if (type === "COLUMN") {
         const cols = Array.from(localColumns);
         const [m] = cols.splice(source.index, 1);
         cols.splice(destination.index, 0, m);
         setLocalColumns(cols);
+        // Persist
         await Promise.all(
           cols.map((c, i) =>
             supabase.from("columns").update({ order: i }).eq("id", c.id)
           )
         );
-        fetchBoardData();
+        await fetchBoardData();
         return;
       }
 
-      // TASK reorder or move
       if (type === "TASK") {
         const cols = Array.from(localColumns);
         const srcIdx = cols.findIndex((c) => c.id === source.droppableId);
@@ -218,13 +233,14 @@ const Page: React.FC = () => {
 
         const srcTasks = Array.from(cols[srcIdx].tasks || []);
         const [moved] = srcTasks.splice(source.index, 1);
+        if (!moved) return;
 
         if (srcIdx === dstIdx) {
-          // same column
           srcTasks.splice(destination.index, 0, moved);
           const updated = srcTasks.map((t, i) => ({ ...t, order: i }));
           cols[srcIdx].tasks = updated;
           setLocalColumns(cols);
+          // Persist sort_order
           await Promise.all(
             updated.map((t) =>
               supabase
@@ -234,7 +250,6 @@ const Page: React.FC = () => {
             )
           );
         } else {
-          // cross-column
           const dstTasks = Array.from(cols[dstIdx].tasks || []);
           dstTasks.splice(destination.index, 0, moved);
 
@@ -245,6 +260,7 @@ const Page: React.FC = () => {
           cols[dstIdx].tasks = updatedDst;
           setLocalColumns(cols);
 
+          // Persist both
           await Promise.all([
             ...updatedSrc.map((t) =>
               supabase
@@ -264,13 +280,13 @@ const Page: React.FC = () => {
           ]);
         }
 
-        fetchBoardData();
+        await fetchBoardData();
       }
     },
     [localColumns, fetchBoardData]
   );
 
-  // Loading / error states
+  // Loading / error
   if (
     status === "loading" ||
     !session ||
@@ -298,87 +314,146 @@ const Page: React.FC = () => {
     );
   }
 
+  // Compute totalTasks
+  const totalTasks = board.columns.reduce(
+    (sum, col) => sum + (col.tasks?.length || 0),
+    0
+  );
+
+  // Extract unique assignees
+  const assigneesList: AssigneeOption[] = [];
+  board.columns.forEach((col) => {
+    (col.tasks || []).forEach((task) => {
+      if (task.assignee && task.assignee.id) {
+        if (!assigneesList.find((u) => u.id === task.assignee.id)) {
+          assigneesList.push({
+            id: task.assignee.id,
+            name: task.assignee.name,
+          });
+        }
+      }
+    });
+  });
+
+  // Filter columns/tasks
+  const filteredColumns: ColumnType[] = localColumns.map((col) => {
+    const filteredTasks = (col.tasks || []).filter((task) => {
+      // Search
+      if (searchTerm.trim()) {
+        const term = searchTerm.trim().toLowerCase();
+        const inTitle = task.title?.toLowerCase().includes(term);
+        const inDesc = task.description?.toLowerCase().includes(term);
+        if (!inTitle && !inDesc) return false;
+      }
+      // Priority filter
+      if (filterPriority) {
+        if (task.priority !== filterPriority) return false;
+      }
+      // Assignee filter
+      if (filterAssignee) {
+        if (!task.assignee || task.assignee.id !== filterAssignee) return false;
+      }
+      return true;
+    });
+    return { ...col, tasks: filteredTasks };
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      {/* HEADER */}
-      <header className="sticky top-0 z-10 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 px-6 py-4 flex items-center gap-4">
-        <FaColumns className="text-white text-2xl" />
-        <input
-          className="bg-transparent text-white text-2xl font-semibold w-full focus:outline-none"
-          value={boardTitle}
-          onChange={onBoardTitleChange}
-          onBlur={onBoardTitleBlur}
-          placeholder="Board title…"
-        />
-        <Button
-          variant="ghost"
-          icon={<FaPlus />}
-          onClick={openAddColumn}
-          className="text-green-400 hover:text-green-300"
-        >
-          Add Column
-        </Button>
-      </header>
+      {/* Header */}
+      <BoardHeader
+        boardTitle={boardTitle}
+        onTitleChange={onBoardTitleChange}
+        onTitleBlur={onBoardTitleBlur}
+        onAddColumn={openAddColumn}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        totalTasks={totalTasks}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        priorities={priorities.map((p) => ({
+          id: p.id,
+          label: p.label,
+          color: p.color,
+        }))}
+        filterPriority={filterPriority}
+        onFilterPriorityChange={setFilterPriority}
+        assignees={assigneesList}
+        filterAssignee={filterAssignee}
+        onFilterAssigneeChange={setFilterAssignee}
+      />
 
-      {/* BODY */}
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable
-          droppableId="all-columns"
-          direction="horizontal"
-          type="COLUMN"
-        >
-          {(provider) => (
-            <div
-              ref={provider.innerRef}
-              {...provider.droppableProps}
-              className="flex-1 flex overflow-x-auto p-6 gap-6 h-full"
-            >
-              {localColumns.map((col, idx) => (
-                <Draggable key={col.id} draggableId={col.id} index={idx}>
-                  {(prov) => (
-                    <div
-                      ref={prov.innerRef}
-                      {...prov.draggableProps}
-                      style={prov.draggableProps.style}
-                      className="flex-shrink-0 flex h-full p-1"
-                    >
-                      {/* Glass wrapper without backdrop-filter */}
+      {/* Body */}
+      {viewMode === "columns" ? (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable
+            droppableId="all-columns"
+            direction="horizontal"
+            type="COLUMN"
+          >
+            {(provider) => (
+              <div
+                ref={provider.innerRef}
+                {...provider.droppableProps}
+                className="flex-1 flex overflow-x-auto p-6 gap-6 h-full"
+              >
+                {filteredColumns.map((col, idx) => (
+                  <Draggable key={col.id} draggableId={col.id} index={idx}>
+                    {(prov) => (
                       <div
-                        className="
-                        bg-white/10 dark:bg-gray-900/20
-                        rounded-lg
-                        border border-white/30 dark:border-gray-700/30
-                        ring-1 ring-white/10 ring-offset-1 ring-offset-transparent
-                        shadow-md
-                        transition
-                      "
+                        ref={prov.innerRef}
+                        {...prov.draggableProps}
+                        style={prov.draggableProps.style}
+                        className="flex-shrink-0 flex h-full p-1"
                       >
-                        <Column
-                          column={col}
-                          colIndex={idx}
-                          onUpdateColumnTitle={handleUpdateColumnTitle}
-                          onRemoveColumn={handleRemoveColumn}
-                          onTaskAdded={onTaskAdded}
-                          onRemoveTask={onTaskRemoved}
-                          onOpenTaskDetail={setSelectedTaskId}
-                          selectedTaskId={selectedTaskId}
-                          currentUser={currentUser}
-                          onOpenAddTask={openAddTask}
-                          priorities={priorities}
-                          dragHandleProps={prov.dragHandleProps}
-                        />
+                        {/* Glass-like wrapper */}
+                        <div
+                          className="
+                            bg-white/10 dark:bg-gray-900/20
+                            rounded-lg
+                            border border-white/30 dark:border-gray-700/30
+                            ring-1 ring-white/10 ring-offset-1 ring-offset-transparent
+                            shadow-md
+                            transition
+                          "
+                        >
+                          <Column
+                            column={col}
+                            colIndex={idx}
+                            onUpdateColumnTitle={handleUpdateColumnTitle}
+                            onRemoveColumn={handleRemoveColumn}
+                            onTaskAdded={onTaskAdded}
+                            onRemoveTask={onTaskRemoved}
+                            onOpenTaskDetail={setSelectedTaskId}
+                            selectedTaskId={selectedTaskId}
+                            currentUser={currentUser}
+                            onOpenAddTask={openAddTask}
+                            priorities={priorities}
+                            dragHandleProps={prov.dragHandleProps}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provider.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+                    )}
+                  </Draggable>
+                ))}
+                {provider.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      ) : (
+        // List view
+        <div className="flex-1 overflow-auto p-6">
+          <ListView
+            columns={filteredColumns}
+            onOpenTaskDetail={setSelectedTaskId}
+            onRemoveTask={onTaskRemoved}
+            priorities={priorities}
+          />
+        </div>
+      )}
 
-      {/* Popups & Modals */}
+      {/* Add Column Popup */}
       <AddColumnPopup
         isOpen={isPopupOpen}
         onClose={closeAddColumn}
@@ -388,6 +463,7 @@ const Page: React.FC = () => {
         isAddingColumn={isAddingColumn}
       />
 
+      {/* SingleTaskView modal */}
       {(selectedTaskId || addTaskColumnId) && (
         <SingleTaskView
           key={selectedTaskId ?? `add-${addTaskColumnId}`}

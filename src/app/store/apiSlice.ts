@@ -479,6 +479,7 @@ export const apiSlice = createApi({
             end_date: data.end_date ?? undefined,
             due_date: data.due_date ?? undefined,
             status: data.status ?? undefined,
+            sort_order: 0,
           };
           return { data: mapped };
         } catch (err: any) {
@@ -753,6 +754,7 @@ export const apiSlice = createApi({
           };
         }
       },
+      //@ts-ignore
       invalidatesTags: (_result, _error, { taskId, data }) => [
         { type: "Task", id: taskId },
         ...(data.column_id ? [{ type: "Column", id: data.column_id }] : []),

@@ -58,7 +58,8 @@ const SingleTaskView = ({
   onClose,
   onTaskUpdate,
   onTaskAdded,
-}: SingleTaskViewProps) => {
+}: // Optionally you may want to pass more props (e.g. breadcrumbs, etc.)
+SingleTaskViewProps) => {
   const { data: session } = useSession();
   const { currentUser, loading: userLoading } = useCurrentUser(session);
 
@@ -88,7 +89,7 @@ const SingleTaskView = ({
     onClose,
   });
 
-  // Local previews
+  // Local previews for attachments before creation
   const [localFilePreviews, setLocalFilePreviews] = useState<
     LocalFilePreview[]
   >([]);
@@ -97,12 +98,13 @@ const SingleTaskView = ({
   const [isVisible, setIsVisible] = useState(true);
   const [waitBeforeError, setWaitBeforeError] = useState(true);
 
+  // Delay before showing not-found error in edit mode
   useEffect(() => {
     const timeout = setTimeout(() => setWaitBeforeError(false), 500);
     return () => clearTimeout(timeout);
   }, []);
 
-  // Form fields
+  // Form fields state
   const [tempTitle, setTempTitle] = useState("");
   const [tempDescription, setTempDescription] = useState("");
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
@@ -111,6 +113,7 @@ const SingleTaskView = ({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
+  // Sync form fields when task loads/updates
   useEffect(() => {
     if (task) {
       setTempTitle(task.title || "");
@@ -121,11 +124,11 @@ const SingleTaskView = ({
     }
   }, [task]);
 
-  // Refs for outside-click and overlay
+  // Refs for outside click detection
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Escape key to close
+  // Handle Escape key to close
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -140,15 +143,15 @@ const SingleTaskView = ({
     };
   }, [isVisible, hasUnsavedChanges, tempTitle]);
 
-  //@ts-ignore
-  // Outside click closes
+  // Close when clicking outside modalRef
+  // @ts-expect-error: useOutsideClick handles HTMLElement types safely
   useOutsideClick([modalRef], () => {
     if (isVisible) {
       handleClose();
     }
   });
 
-  // Handlers for title, desc, assignee, dates, files...
+  // Handlers
   const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTempTitle(newTitle);
@@ -192,7 +195,7 @@ const SingleTaskView = ({
     }
   };
 
-  // File previews
+  // File attachment previews
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleFileSelectClick = () => {
     fileInputRef.current?.click();
@@ -243,7 +246,7 @@ const SingleTaskView = ({
       }
       return result;
     } catch (err) {
-      console.error("Attach error:", err);
+      console.error("Attachment upload error:", err);
       toast.error(`Upload error: ${file.name}`);
       return null;
     }
@@ -258,6 +261,7 @@ const SingleTaskView = ({
       const success = await saveNewTask();
       if (success) {
         toast.success("Task created");
+        // upload previews after creation
         if (localFilePreviews.length > 0 && task?.id) {
           for (const local of localFilePreviews) {
             await handleUploadAttachment(local.file);
@@ -279,6 +283,7 @@ const SingleTaskView = ({
 
   const handleClose = () => {
     if (hasUnsavedChanges) {
+      // confirm only if there are unsaved changes
       const confirmClose = confirm("You have unsaved changes. Close anyway?");
       if (!confirmClose) return;
     }
@@ -296,18 +301,18 @@ const SingleTaskView = ({
   };
 
   const handleDeleteConfirm = async () => {
-    setShowDeleteConfirm(false); // Hide confirmation dialog immediately
+    setShowDeleteConfirm(false);
     try {
-      await deleteTask(); // Wait for deletion to complete
-      setIsVisible(false); // Close the modal only after deletion
+      await deleteTask();
+      setIsVisible(false);
     } catch (err) {
       console.error("deleteTask error:", err);
       toast.error("Failed to delete task");
-      setShowDeleteConfirm(true); // Re-show dialog if deletion fails
+      // Optionally re-show confirm or handle differently
     }
   };
 
-  // Early returns
+  // Early loading / error UI
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
@@ -336,9 +341,11 @@ const SingleTaskView = ({
     );
   }
   if (!isNewTask && !loading && !task && !waitBeforeError) {
+    // edit mode but task not found
     return null;
   }
 
+  // Priority badge for header if needed
   const headerPriorityBadge =
     !isNewTask && task?.priority ? (
       <span
@@ -357,7 +364,7 @@ const SingleTaskView = ({
     <AnimatePresence initial={false} onExitComplete={onAnimationCompleteExit}>
       {isVisible && (
         <motion.div
-          key="modal" // Unique key for the modal
+          key="modal"
           ref={overlayRef}
           className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4"
           onClick={(e) => {
@@ -371,14 +378,18 @@ const SingleTaskView = ({
         >
           <motion.div
             ref={modalRef}
-            className="bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl border border-slate-600"
+            className="
+              bg-slate-800 rounded-xl w-full max-w-lg md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden
+              flex flex-col
+              shadow-xl border border-slate-600
+            "
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1, transition: { duration: 0.2 } }}
             exit={{ scale: 0.95, opacity: 0, transition: { duration: 0.15 } }}
           >
-            {/* Header */}
+            {/* HEADER */}
             <div className="flex justify-between items-center px-6 py-3 border-b border-slate-600">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 {isNewTask ? (
                   <span className="bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded">
                     New
@@ -390,7 +401,7 @@ const SingleTaskView = ({
                 ) : null}
                 <input
                   type="text"
-                  className="bg-transparent text-lg font-semibold text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="bg-transparent text-lg font-semibold text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 truncate min-w-0"
                   placeholder="Task title (required)"
                   value={tempTitle}
                   onChange={handleTitleChange}
@@ -406,6 +417,7 @@ const SingleTaskView = ({
                     size="sm"
                     icon={<FaLink />}
                     onClick={handleCopyLink}
+                    className="text-slate-300 hover:text-white"
                   />
                 )}
                 <Button
@@ -413,15 +425,16 @@ const SingleTaskView = ({
                   size="sm"
                   icon={<FaTimes />}
                   onClick={handleClose}
+                  className="text-slate-300 hover:text-white"
                 />
               </div>
             </div>
 
-            {/* Body */}
-            <div className="flex-1 overflow-hidden flex">
+            {/* BODY: form + sidebar */}
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
               {/* Left pane: form */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
-                {/* Assignee & Priority */}
+                {/* Assignee & Priority selectors */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <UserSelector
                     selectedUser={
@@ -432,19 +445,20 @@ const SingleTaskView = ({
                     onUserSelect={handleAssigneeChange}
                     label="Assignee"
                   />
-                  <div>
-                    <PrioritySelector
-                      selectedPriority={task?.priority || null}
-                      onChange={(newId) => updateTask({ priority: newId })}
-                    />
-                  </div>
+                  <PrioritySelector
+                    selectedPriority={task?.priority || null}
+                    onChange={(newId) => updateTask({ priority: newId })}
+                  />
                 </div>
 
                 {/* Description */}
                 <div>
                   <label className="text-sm text-slate-300">Description</label>
                   <textarea
-                    className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="
+                      mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400
+                      resize-none focus:outline-none focus:ring-2 focus:ring-purple-500
+                    "
                     value={tempDescription}
                     onChange={handleDescriptionChange}
                     placeholder="Describe the task..."
@@ -452,30 +466,38 @@ const SingleTaskView = ({
                   />
                 </div>
 
-                {/* Dates */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                {/* Dates: responsive */}
+                <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
+                  <div className="flex-1">
                     <label className="text-sm flex items-center gap-1 text-slate-300">
-                      <FaClock className="text-green-400 w-4 h-4" />
+                      {/* White clock icon */}
+                      <FaClock className="text-white w-4 h-4" />
                       Start Date
                     </label>
                     <input
                       type="date"
-                      className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="
+                        mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded
+                        text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500
+                      "
                       value={startDate}
                       onChange={(e) =>
                         handleDateChange("start", e.target.value)
                       }
                     />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <label className="text-sm flex items-center gap-1 text-slate-300">
-                      <FaClock className="text-red-400 w-4 h-4" />
+                      {/* White clock icon */}
+                      <FaClock className="text-white w-4 h-4" />
                       Due Date
                     </label>
                     <input
                       type="date"
-                      className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="
+                        mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded
+                        text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500
+                      "
                       value={endDate}
                       min={startDate || undefined}
                       onChange={(e) => handleDateChange("end", e.target.value)}
@@ -483,13 +505,18 @@ const SingleTaskView = ({
                   </div>
                 </div>
 
-                {/* Duration display */}
+                {/* Duration display if both dates */}
                 {(() => {
                   const dur = calculateDuration(startDate, endDate);
                   if (dur === null) return null;
                   return (
-                    <div className="mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200 flex items-center gap-2">
-                      <FaCalendarAlt className="text-slate-300 w-4 h-4" />
+                    <div
+                      className="
+                      mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200
+                      flex items-center gap-2
+                    "
+                    >
+                      <FaCalendarAlt className="text-white w-4 h-4" />
                       <span className="font-medium">
                         Duration: {dur} {dur === 1 ? "day" : "days"}
                       </span>
@@ -500,16 +527,19 @@ const SingleTaskView = ({
                 {/* Attachments */}
                 <div className="mt-4">
                   <label className="text-sm text-slate-300 flex items-center gap-1">
-                    <FaPaperclip className="w-4 h-4" />
+                    <FaPaperclip className="w-4 h-4 text-white" />
                     Attachments
                   </label>
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="mt-1 flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
-                      className="inline-flex items-center px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="
+                        inline-flex items-center px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white
+                        hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500
+                      "
                       onClick={handleFileSelectClick}
                     >
-                      <FaPaperclip className="mr-1" />
+                      <FaPaperclip className="mr-1 text-white" />
                       {isNewTask
                         ? localFilePreviews.length > 0
                           ? "Add more files"
@@ -529,7 +559,7 @@ const SingleTaskView = ({
                     ref={fileInputRef}
                     onChange={handleFilesSelected}
                   />
-                  {/* Local previews */}
+                  {/* Local previews list */}
                   {isNewTask && localFilePreviews.length > 0 && (
                     <ul className="mt-2 space-y-1">
                       {localFilePreviews.map((lp) => (
@@ -554,7 +584,7 @@ const SingleTaskView = ({
                       ))}
                     </ul>
                   )}
-                  {/* Existing attachments */}
+                  {/* Existing attachments in edit mode */}
                   {!isNewTask && task?.attachments && (
                     <div className="mt-4">
                       <AttachmentsList
@@ -591,28 +621,26 @@ const SingleTaskView = ({
                 )}
               </div>
 
-              {/* Separator */}
-              <div className="hidden lg:block w-px bg-slate-600/50"></div>
-
-              {/* Sidebar */}
-              <aside className="w-full lg:w-72 bg-slate-800/60 border-l border-slate-600 overflow-y-auto p-6 text-white">
-                {/* Assignee info */}
+              {/* Sidebar: on small screens it appears below; on md+ it sits on right */}
+              <aside className="w-full md:w-72 bg-slate-800/70 border-t border-slate-600 md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0">
+                {/* Assignee with avatar */}
                 <div className="mb-6">
-                  <h3 className="text-sm text-slate-400 uppercase mb-2">
+                  <h3 className="text-sm text-slate-300 uppercase mb-2">
                     Assignee
                   </h3>
                   {task?.assignee ? (
-                    <div className="flex items-center gap-3 bg-slate-700 p-3 rounded-lg">
+                    <div className="flex items-center bg-slate-700 p-3 rounded-lg">
                       <Avatar
                         src={getAvatarUrl(task.assignee) || ""}
                         alt={task.assignee.name}
                         size={32}
+                        className="mr-3 border-2 border-white/20"
                       />
-                      <div className="flex flex-col text-white">
-                        <span className="font-medium">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-white font-medium truncate">
                           {task.assignee.name}
                         </span>
-                        <span className="text-slate-400 text-sm">
+                        <span className="text-slate-400 text-sm truncate">
                           {task.assignee.email}
                         </span>
                       </div>
@@ -624,7 +652,7 @@ const SingleTaskView = ({
 
                 {/* Created */}
                 <div className="mb-6">
-                  <h3 className="text-sm text-slate-400 uppercase mb-2">
+                  <h3 className="text-sm text-slate-300 uppercase mb-2">
                     Created
                   </h3>
                   <div
@@ -638,7 +666,7 @@ const SingleTaskView = ({
 
                 {/* Last Updated */}
                 <div className="mb-6">
-                  <h3 className="text-sm text-slate-400 uppercase mb-2">
+                  <h3 className="text-sm text-slate-300 uppercase mb-2">
                     Last Updated
                   </h3>
                   <div
@@ -672,18 +700,25 @@ const SingleTaskView = ({
               </aside>
             </div>
 
-            {/* Footer */}
-            <div className="flex justify-end items-center px-6 py-4 border-t border-slate-600 gap-3">
+            {/* FOOTER */}
+            <div className="flex flex-col sm:flex-row justify-end items-center px-6 py-4 border-t border-slate-600 gap-3">
+              {/* Delete only in edit mode */}
               {!isNewTask && (
                 <Button
                   variant="destructive"
                   size="md"
                   onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full sm:w-auto"
                 >
                   Delete
                 </Button>
               )}
-              <Button variant="secondary" size="md" onClick={handleClose}>
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={handleClose}
+                className="w-full sm:w-auto"
+              >
                 Cancel
               </Button>
               <Button
@@ -691,6 +726,7 @@ const SingleTaskView = ({
                 size="md"
                 onClick={handleSave}
                 disabled={saving || !tempTitle.trim()}
+                className="w-full sm:w-auto"
               >
                 {isNewTask ? "Create Task" : "Save Changes"}
               </Button>
@@ -699,13 +735,14 @@ const SingleTaskView = ({
         </motion.div>
       )}
 
+      {/* Delete confirmation */}
       {showDeleteConfirm && (
         <motion.div
-          key="confirm-dialog" // Unique key for the confirmation dialog
+          key="confirm-dialog"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="fixed inset-0 flex items-center justify-center z-60 p-4"
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
         >
           <ConfirmDialog
             isOpen={showDeleteConfirm}
