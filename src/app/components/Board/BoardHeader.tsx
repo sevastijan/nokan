@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, ChangeEvent, KeyboardEvent } from "react";
+import { useState, useRef, ChangeEvent, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiArrowLeft,
@@ -10,34 +10,7 @@ import {
   FiPlus,
 } from "react-icons/fi";
 import { useOutsideClick } from "@/app/hooks/useOutsideClick";
-
-interface PriorityOption {
-  id: string;
-  label: string;
-  color: string;
-}
-interface AssigneeOption {
-  id: string;
-  name: string;
-}
-
-interface BoardHeaderProps {
-  boardTitle: string;
-  onTitleChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onTitleBlur: () => void;
-  onAddColumn: () => void;
-  viewMode: "columns" | "list";
-  onViewModeChange: (mode: "columns" | "list") => void;
-  totalTasks: number;
-  searchTerm: string;
-  onSearchChange: (term: string) => void;
-  priorities: PriorityOption[];
-  filterPriority: string | null;
-  onFilterPriorityChange: (prio: string | null) => void;
-  assignees: AssigneeOption[];
-  filterAssignee: string | null;
-  onFilterAssigneeChange: (assigneeId: string | null) => void;
-}
+import { BoardHeaderProps } from "@/app/types/globalTypes";
 
 const BoardHeader = ({
   boardTitle,
@@ -61,6 +34,7 @@ const BoardHeader = ({
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
+  //@ts-ignore
   useOutsideClick([filterRef], () => {
     if (filterOpen) setFilterOpen(false);
   });

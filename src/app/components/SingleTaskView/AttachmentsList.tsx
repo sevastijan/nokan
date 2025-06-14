@@ -1,7 +1,7 @@
 // src/app/components/SingleTaskView/AttachmentsList.tsx
 "use client";
 
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import {
   FaPlus,
   FaDownload,

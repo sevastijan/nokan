@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { FaPaperclip } from "react-icons/fa";
 import { CommentFormProps } from "@/app/types/globalTypes";

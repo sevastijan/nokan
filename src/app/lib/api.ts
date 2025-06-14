@@ -1,22 +1,27 @@
 import { createClient } from "@supabase/supabase-js";
-import {
-  Attachment,
-  Board,
-  Column,
-  TeamMember,
-  User,
-  Priority,
-  Task,
-  ApiTask,
-  Team,
-} from "@/app/types/globalTypes";
 import { Session } from "next-auth";
 import { v4 as uuidv4 } from "uuid";
+import {
+  ApiTask,
+  Board,
+  Column,
+  Priority,
+  Task,
+  User,
+} from "@/app/types/globalTypes";
 
+// ---- Supabase Client ----
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// -------------------------------------
+// ------- Board CRUD / Templates ------
+// -------------------------------------
+
+/**
+ * Get a board by its ID with all its columns and tasks.
+ */
 export const getBoardById = async (boardId: string): Promise<Board | null> => {
   try {
     const { data: board, error: boardError } = await supabase
@@ -31,10 +36,11 @@ export const getBoardById = async (boardId: string): Promise<Board | null> => {
       .from("columns")
       .select("*, tasks(*)")
       .eq("board_id", boardId)
-      .order("order", { foreignTable: "tasks", ascending: true });
+      .order("order", { ascending: true });
 
     if (colError) throw colError;
 
+    // Sort tasks in each column
     const columnsWithTasks: Column[] = (columns || []).map((col) => ({
       id: col.id,
       boardId: col.board_id,
@@ -46,6 +52,9 @@ export const getBoardById = async (boardId: string): Promise<Board | null> => {
       ) as Task[],
     }));
 
+    // Sort columns by 'order'
+    columnsWithTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
     return {
       ...board,
       columns: columnsWithTasks,
@@ -56,28 +65,9 @@ export const getBoardById = async (boardId: string): Promise<Board | null> => {
   }
 };
 
-export const getPriorities = async (): Promise<
-  { id: string; label: string; color: string }[]
-> => {
-  const { data, error } = await supabase
-    .from("priorities")
-    .select("id, label, color")
-    .order("id");
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (
-    data || [
-      { id: "low", label: "Low", color: "#10b981" },
-      { id: "medium", label: "Medium", color: "#f59e0b" },
-      { id: "high", label: "High", color: "#ef4444" },
-      { id: "urgent", label: "Urgent", color: "#dc2626" },
-    ]
-  );
-};
-
+/**
+ * Create a new board for a user.
+ */
 export const addBoard = async ({
   title,
   owner,
@@ -92,11 +82,13 @@ export const addBoard = async ({
     .insert([{ title, owner, user_id: userId }])
     .select()
     .single();
-
   if (error) throw error;
   return data;
 };
 
+/**
+ * Get all boards belonging to a user by their email.
+ */
 export const getAllBoardsForUser = async (email: string): Promise<Board[]> => {
   try {
     const { data: user, error: userError } = await supabase
@@ -106,7 +98,6 @@ export const getAllBoardsForUser = async (email: string): Promise<Board[]> => {
       .single();
 
     if (userError || !user) throw userError || new Error("User not found");
-
     const userId = user.id;
 
     const { data: ownedBoards, error: ownedError } = await supabase
@@ -116,8 +107,7 @@ export const getAllBoardsForUser = async (email: string): Promise<Board[]> => {
 
     if (ownedError) throw ownedError;
 
-    // Opcjonalnie: jeżeli w przyszłości będziecie mieli tabelę board_access do współdzielenia,
-    // możecie dodać tu odpowiednie selecty. Tutaj pozostawiamy podstawową logikę:
+    // Sort by most recently created
     return (ownedBoards || []).sort(
       (a, b) =>
         new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime()
@@ -128,6 +118,9 @@ export const getAllBoardsForUser = async (email: string): Promise<Board[]> => {
   }
 };
 
+/**
+ * Create a new board based on a template (copies columns).
+ */
 export const createBoardFromTemplate = async (
   title: string,
   templateId: string,
@@ -145,21 +138,21 @@ export const createBoardFromTemplate = async (
     ])
     .select()
     .single();
-
   if (boardError || !newBoard)
     throw boardError || new Error("Board creation failed");
 
+  // Get template columns
   const { data: templateColumns, error: templateError } = await supabase
     .from("template_columns")
     .select("*")
     .eq("template_id", templateId);
-
   if (templateError) throw templateError;
 
   if (!templateColumns || templateColumns.length === 0) {
     return newBoard;
   }
 
+  // Insert columns into new board
   const columnsToInsert = templateColumns.map((col) => ({
     id: uuidv4(),
     title: col.title,
@@ -170,12 +163,18 @@ export const createBoardFromTemplate = async (
   const { error: insertColsError } = await supabase
     .from("columns")
     .insert(columnsToInsert);
-
   if (insertColsError) throw insertColsError;
 
   return newBoard;
 };
 
+// -------------------------------------
+// -------- Board Templates CRUD -------
+// -------------------------------------
+
+/**
+ * Get all board templates, including their columns.
+ */
 export async function getBoardTemplates() {
   const { data, error } = await supabase
     .from("board_templates")
@@ -209,6 +208,9 @@ export async function getBoardTemplates() {
   );
 }
 
+/**
+ * Add a new board template with columns.
+ */
 export async function addBoardTemplate(templateData: {
   name: string;
   description: string | null;
@@ -245,6 +247,9 @@ export async function addBoardTemplate(templateData: {
   };
 }
 
+/**
+ * Delete a board template and its columns.
+ */
 export async function deleteBoardTemplate(templateId: string) {
   const { error: columnsError } = await supabase
     .from("template_columns")
@@ -261,153 +266,38 @@ export async function deleteBoardTemplate(templateId: string) {
   if (templateError) throw new Error(templateError.message);
 }
 
-export async function getUserIdByEmail(email: string): Promise<string | null> {
+// -------------------------------------
+// ---------- Priorities CRUD ----------
+// -------------------------------------
+
+/**
+ * Get all priorities, or fallback to defaults.
+ */
+export const getPriorities = async (): Promise<
+  { id: string; label: string; color: string }[]
+> => {
   const { data, error } = await supabase
-    .from("users")
-    .select("id")
-    .eq("email", email)
-    .single();
+    .from("priorities")
+    .select("id, label, color")
+    .order("id");
 
   if (error) {
-    console.error("getUserIdByEmail error:", error.message);
-    return null;
+    throw new Error(error.message);
   }
 
-  return data?.id || null;
-}
-
-export async function fetchOrCreateUserFromSession(
-  session: Session
-): Promise<User | null> {
-  const email = session.user?.email;
-
-  if (!email) return null;
-
-  try {
-    const { data: existingUser, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .single();
-
-    if (existingUser) return existingUser;
-
-    if (error?.code === "PGRST116" || error?.message.includes("No rows")) {
-      const { data: newUser, error: insertError } = await supabase
-        .from("users")
-        .insert({
-          email,
-          name: session.user.name || "Unknown User",
-          image: session.user.image || null,
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      return newUser;
-    }
-
-    throw error;
-  } catch (err) {
-    console.error("fetchOrCreateUserFromSession error:", err);
-    return null;
-  }
-}
-
-export const getTasksWithDates = async (
-  boardId: string
-): Promise<ApiTask[]> => {
-  const { data, error } = await supabase
-    .from("tasks")
-    .select(
-      `
-      id,
-      title,
-      description,
-      start_date,
-      end_date,
-      due_date,
-      completed,
-      assignee:user_id(id, name, email, image),
-      priorities:priority(id, label, color)
-    `
-    )
-    .eq("board_id", boardId);
-
-  if (error) throw error;
-
-  const normalized: ApiTask[] = (data ?? []).map((task: any) => {
-    const assignee =
-      Array.isArray(task.assignee) && task.assignee.length > 0
-        ? task.assignee[0]
-        : task.assignee ?? null;
-
-    const priority =
-      Array.isArray(task.priorities) && task.priorities.length > 0
-        ? task.priorities[0]
-        : task.priorities ?? null;
-
-    return {
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      start_date: task.start_date,
-      end_date: task.end_date,
-      due_date: task.due_date,
-      completed: task.completed,
-      assignee,
-      priorities: priority,
-    };
-  });
-
-  return normalized;
-};
-export const getTaskById = async (taskId: string): Promise<ApiTask | null> => {
-  const { data, error } = await supabase
-    .from("tasks")
-    .select(
-      `
-      id,
-      title,
-      description,
-      start_date,
-      end_date,
-      completed,
-      priority_data:priority(id, label, color),
-      assignee:user_id(id, name, email, image), 
-      attachments,
-      comments(*)
-    `
-    )
-    .eq("id", taskId)
-    .single();
-
-  if (error) throw error;
-
-  //@ig-ignore
-  return {
-    ...data,
-    assignee: Array.isArray(data.assignee) ? data.assignee[0] : data.assignee,
-    priority: Array.isArray(data.priority_data)
-      ? data.priority_data[0]
-      : data.priority_data,
-  };
+  return (
+    data || [
+      { id: "low", label: "Low", color: "#10b981" },
+      { id: "medium", label: "Medium", color: "#f59e0b" },
+      { id: "high", label: "High", color: "#ef4444" },
+      { id: "urgent", label: "Urgent", color: "#dc2626" },
+    ]
+  );
 };
 
-export const updateTaskDates = async (
-  taskId: string,
-  startDate: string | null,
-  endDate: string | null
-) => {
-  const { error } = await supabase
-    .from("tasks")
-    .update({ start_date: startDate, end_date: endDate })
-    .eq("id", taskId);
-
-  if (error) throw error;
-};
-
+/**
+ * Add a new priority.
+ */
 export const addPriority = async (
   label: string,
   color: string
@@ -443,8 +333,194 @@ export const updatePriority = async (
   return data;
 };
 
+/**
+ * Delete a priority by ID.
+ */
 export const deletePriority = async (id: string): Promise<void> => {
   const { error } = await supabase.from("priorities").delete().eq("id", id);
-
   if (error) throw new Error(error.message);
 };
+
+// -------------------------------------
+// ------------- Tasks -----------------
+// -------------------------------------
+
+/**
+ * Get all tasks for a board, normalized to ApiTask.
+ */
+export const getTasksWithDates = async (
+  boardId: string
+): Promise<ApiTask[]> => {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(
+      `
+      id,
+      title,
+      description,
+      column_id,
+      board_id,
+      start_date,
+      end_date,
+      due_date,
+      completed,
+      user_id,
+      status,
+      images,
+      assignee:user_id(id, name, email, image),
+      priority:priority(id, label, color)
+    `
+    )
+    .eq("board_id", boardId);
+
+  if (error) throw error;
+
+  const normalized: ApiTask[] = (data ?? []).map((task: any) => ({
+    id: task.id,
+    title: task.title,
+    description: task.description ?? null,
+    column_id: task.column_id,
+    board_id: task.board_id,
+    start_date: task.start_date ?? null,
+    end_date: task.end_date ?? null,
+    due_date: task.due_date ?? null,
+    completed: task.completed,
+    assignee:
+      Array.isArray(task.assignee) && task.assignee.length > 0
+        ? task.assignee[0]
+        : task.assignee ?? null,
+    priority:
+      Array.isArray(task.priority) && task.priority.length > 0
+        ? task.priority[0]
+        : task.priority ?? null,
+    user_id: task.user_id ?? null,
+    status: task.status ?? null,
+    images: task.images ?? null,
+  }));
+
+  // Sort tasks by due_date, earliest first (example)
+  return normalized.sort((a, b) => {
+    if (!a.due_date) return 1;
+    if (!b.due_date) return -1;
+    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+  });
+};
+
+/**
+ * Get a single task by its ID (ApiTask + extras).
+ */
+export const getTaskById = async (taskId: string): Promise<ApiTask | null> => {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(
+      `
+      id,
+      title,
+      description,
+      column_id,
+      board_id,
+      start_date,
+      end_date,
+      due_date,
+      completed,
+      user_id,
+      status,
+      images,
+      priority_data:priority(id, label, color),
+      assignee:user_id(id, name, email, image), 
+      attachments,
+      comments(*)
+    `
+    )
+    .eq("id", taskId)
+    .single();
+
+  if (error) throw error;
+
+  return {
+    ...data,
+    assignee: Array.isArray(data.assignee) ? data.assignee[0] : data.assignee,
+    priority: Array.isArray(data.priority_data)
+      ? data.priority_data[0]
+      : data.priority_data,
+  } as ApiTask;
+};
+
+/**
+ * Update start and end dates for a task.
+ */
+export const updateTaskDates = async (
+  taskId: string,
+  startDate: string | null,
+  endDate: string | null
+) => {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ start_date: startDate, end_date: endDate })
+    .eq("id", taskId);
+  if (error) throw error;
+};
+
+// -------------------------------------
+// ------------- Users -----------------
+// -------------------------------------
+
+/**
+ * Get a user's ID by their email.
+ */
+export async function getUserIdByEmail(email: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", email)
+    .single();
+
+  if (error) {
+    console.error("getUserIdByEmail error:", error.message);
+    return null;
+  }
+
+  return data?.id || null;
+}
+
+/**
+ * Ensure user exists in the DB for a given session.
+ */
+export async function fetchOrCreateUserFromSession(
+  session: Session
+): Promise<User | null> {
+  const email = session.user?.email;
+
+  if (!email) return null;
+
+  try {
+    const { data: existingUser, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (existingUser) return existingUser;
+
+    if (error?.code === "PGRST116" || error?.message?.includes("No rows")) {
+      const { data: newUser, error: insertError } = await supabase
+        .from("users")
+        .insert({
+          email,
+          name: session.user.name || "Unknown User",
+          image: session.user.image || null,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      return newUser;
+    }
+
+    throw error;
+  } catch (err) {
+    console.error("fetchOrCreateUserFromSession error:", err);
+    return null;
+  }
+}

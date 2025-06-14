@@ -1,5 +1,4 @@
 // src/app/components/TeamManagement/TeamListItem.tsx
-import React from "react";
 import DOMPurify from "dompurify";
 import { FiEdit3, FiTrash2, FiUsers } from "react-icons/fi";
 import Avatar from "../Avatar/Avatar";

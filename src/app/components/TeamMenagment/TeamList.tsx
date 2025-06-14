@@ -1,5 +1,4 @@
 // src/app/components/TeamManagement/TeamList.tsx
-import React from "react";
 import { TeamListProps } from "@/app/types/globalTypes";
 import TeamListItem from "./TeamListItem";
 

@@ -1,4 +1,3 @@
-// src/app/components/SingleTaskView/hooks/useDescriptionChange.ts
 import { useState, useEffect } from "react";
 import { TaskDetail } from "@/app/types/globalTypes";
 

@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { FaTrash } from "react-icons/fa";
 import { CommentListProps } from "@/app/types/globalTypes";

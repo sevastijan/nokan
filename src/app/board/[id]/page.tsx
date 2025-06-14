@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -22,6 +22,7 @@ import {
   Column as ColumnType,
   User,
   Priority,
+  AssigneeOption,
   Task as TaskType,
 } from "@/app/types/globalTypes";
 import { FaArrowLeft } from "react-icons/fa";
@@ -32,8 +33,13 @@ import BoardHeader from "@/app/components/Board/BoardHeader";
 
 const Page = () => {
   const { id } = useParams();
+  const boardId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { data: session, status } = useSession();
+
+  if (!boardId) {
+    return <div>Missing boardId in URL!</div>;
+  }
 
   // useBoard hook for data & actions
   const {
@@ -47,9 +53,7 @@ const Page = () => {
     handleUpdateColumnTitle,
     handleAddTask,
     handleRemoveTask,
-    handleReorderTasks,
-    handleUpdateTask,
-  } = useBoard(id!);
+  } = useBoard(boardId);
 
   // Local state
   const [localColumns, setLocalColumns] = useState<ColumnType[]>([]);
@@ -324,9 +328,10 @@ const Page = () => {
   board.columns.forEach((col) => {
     (col.tasks || []).forEach((task) => {
       if (task.assignee && task.assignee.id) {
-        if (!assigneesList.find((u) => u.id === task.assignee.id)) {
+        const assigneeId = task.assignee.id;
+        if (!assigneesList.find((u) => u.id === assigneeId)) {
           assigneesList.push({
-            id: task.assignee.id,
+            id: assigneeId,
             name: task.assignee.name,
           });
         }
@@ -416,20 +421,22 @@ const Page = () => {
                             transition
                           "
                         >
-                          <Column
-                            column={col}
-                            colIndex={idx}
-                            onUpdateColumnTitle={handleUpdateColumnTitle}
-                            onRemoveColumn={handleRemoveColumn}
-                            onTaskAdded={onTaskAdded}
-                            onRemoveTask={onTaskRemoved}
-                            onOpenTaskDetail={setSelectedTaskId}
-                            selectedTaskId={selectedTaskId}
-                            currentUser={currentUser}
-                            onOpenAddTask={openAddTask}
-                            priorities={priorities}
-                            dragHandleProps={prov.dragHandleProps}
-                          />
+                          {prov.dragHandleProps && (
+                            <Column
+                              column={col}
+                              colIndex={idx}
+                              onUpdateColumnTitle={handleUpdateColumnTitle}
+                              onRemoveColumn={handleRemoveColumn}
+                              onTaskAdded={onTaskAdded}
+                              onRemoveTask={onTaskRemoved}
+                              onOpenTaskDetail={setSelectedTaskId}
+                              selectedTaskId={selectedTaskId}
+                              currentUser={currentUser}
+                              onOpenAddTask={openAddTask}
+                              priorities={priorities}
+                              dragHandleProps={prov.dragHandleProps}
+                            />
+                          )}
                         </div>
                       </div>
                     )}
@@ -468,7 +475,7 @@ const Page = () => {
           key={selectedTaskId ?? `add-${addTaskColumnId}`}
           taskId={selectedTaskId!}
           mode={selectedTaskId ? "edit" : "add"}
-          boardId={id!}
+          boardId={boardId}
           columnId={addTaskColumnId || undefined}
           onClose={() => {
             setSelectedTaskId(null);

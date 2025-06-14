@@ -24,7 +24,6 @@ export interface CalendarEvent {
   };
 }
 
-// Typ dla danych zwracanych z API getTasksWithDates
 export interface ApiTask {
   id: string;
   title: string;

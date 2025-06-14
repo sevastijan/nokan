@@ -1,6 +1,4 @@
-import React from "react";
 import { FaPen, FaTrash } from "react-icons/fa";
-import { Board } from "@/app/types/globalTypes";
 import type { BoardWithCounts } from "@/app/store/apiSlice";
 
 interface BoardListProps {

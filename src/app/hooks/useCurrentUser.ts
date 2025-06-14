@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { fetchOrCreateUserFromSession } from "@/app/lib/api"; // adjust path if needed
+import { fetchOrCreateUserFromSession } from "@/app/lib/api";
 import { User } from "@/app/types/globalTypes";
 import { Session } from "next-auth";
 

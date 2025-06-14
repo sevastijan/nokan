@@ -89,13 +89,15 @@ const CommentsSection = ({
         taskId={taskId}
         onAddComment={addComment}
       />
-      <CommentList
-        comments={comments}
-        currentUser={currentUser}
-        task={task}
-        onDeleteComment={deleteComment}
-        onImagePreview={onImagePreview}
-      />
+      {task && (
+        <CommentList
+          comments={comments}
+          currentUser={currentUser}
+          task={task}
+          onDeleteComment={deleteComment}
+          onImagePreview={onImagePreview}
+        />
+      )}
     </div>
   );
 };

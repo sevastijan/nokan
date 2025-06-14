@@ -440,7 +440,7 @@ export const apiSlice = createApi({
           const newBoard: Board = {
             id: data.id,
             title: data.title,
-            user_id: data.user_id,
+            owner_id: data.user_id,
             ownerName: undefined,
             ownerEmail: undefined,
             columns: [],
@@ -521,6 +521,7 @@ export const apiSlice = createApi({
             end_date: data.end_date ?? undefined,
             due_date: data.due_date ?? undefined,
             status: data.status ?? undefined,
+            sort_order: 0,
           };
           return { data: mapped };
         } catch (err: any) {

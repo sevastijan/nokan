@@ -1,18 +1,10 @@
 "use client";
-import React, {
-  useState,
-  useEffect,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
+
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiChevronDown, FiPlus, FiTrash2, FiX, FiMove } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiX, FiMove } from "react-icons/fi";
 import { BoardTemplate } from "@/app/types/globalTypes";
-import {
-  getBoardTemplates,
-  deleteBoardTemplate,
-  addBoardTemplate,
-} from "@/app/lib/api";
+import { addBoardTemplate } from "@/app/lib/api";
 import { CreateTemplateModalProps } from "@/app/types/globalTypes";
 interface TemplateColumn {
   id: string;

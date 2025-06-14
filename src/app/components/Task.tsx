@@ -1,7 +1,7 @@
 // src/app/components/Task.tsx
 "use client";
 
-import React, {
+import {
   useState,
   useRef,
   useEffect,
@@ -26,6 +26,7 @@ interface TaskProps {
   onRemoveTask: (columnId: string, taskId: string) => void;
   onOpenTaskDetail: (taskId: string) => void;
   priorities?: Array<{ id: string; label: string; color: string }>;
+  taskIndex: number;
 }
 
 const Task = ({

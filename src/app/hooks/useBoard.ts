@@ -1,4 +1,3 @@
-// src/app/hooks/useBoard.ts
 "use client";
 
 import { useCallback } from "react";

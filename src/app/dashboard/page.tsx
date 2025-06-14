@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
@@ -20,7 +20,6 @@ import {
   FaSearch,
   FaFilter,
   FaCalendarAlt,
-  FaArrowRight,
   FaUserFriends,
   FaEllipsisV,
   FaEdit,

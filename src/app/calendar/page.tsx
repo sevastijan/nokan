@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Loader from "@/app/components/Loader";
 import Button from "@/app/components/Button/Button";
 import Calendar from "@/app/components/Calendar/Calendar";
 import SingleTaskView from "@/app/components/SingleTaskView/SingleTaskView";
-import BoardSelect from "@/app/components/Calendar/BoardSelect"; // NEW!
+import BoardSelect from "@/app/components/Calendar/BoardSelect";
 import {
   useGetCurrentUserQuery,
   useGetMyBoardsQuery,
@@ -160,8 +160,7 @@ const CalendarPage = () => {
               <BoardSelect
                 value={selectedBoardId}
                 onChange={setSelectedBoardId}
-                options={boardOptions}
-                placeholder="Select a board..."
+                boards={boards || []}
                 className="w-full"
               />
             </div>

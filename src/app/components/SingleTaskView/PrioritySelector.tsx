@@ -1,7 +1,6 @@
-// src/app/components/SingleTaskView/PrioritySelector.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaChevronDown,
@@ -22,12 +21,11 @@ import { PrioritySelectorProps, Priority } from "@/app/types/globalTypes";
 import { useDropdownManager } from "@/app/hooks/useDropdownManager";
 
 /**
- * PrioritySelector: pozwala wybrać priorytet flagą. Wspiera:
- * - przekazanie listy priorytetów z zewnątrz (props.priorities)
- * - lub automatyczne pobranie z API getPriorities()
- * - callback onChange(newId)
- * - callback onDropdownToggle(isOpen)
- * - dodawanie / edycję / usuwanie priorytetów (opcjonalnie)
+ * PrioritySelector:
+ * Dropdown for selecting, adding, editing, and deleting priorities (e.g. Low, Medium, High).
+ * - Uses priorities from props if provided, otherwise fetches via API.
+ * - Supports custom priority creation & editing in dropdown.
+ * - Notifies parent on value change or dropdown open/close.
  */
 const PrioritySelector: React.FC<PrioritySelectorProps> = ({
   selectedPriority,
@@ -35,17 +33,18 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
   onDropdownToggle,
   priorities: externalPriorities,
 }) => {
-  // unikalne ID dropdownu (dla hooka useDropdownManager)
+  // Unique dropdown ID (for focus management, etc.)
   const dropdownId = useMemo(
     () => `priority-selector-${Math.random().toString(36).substr(2, 9)}`,
     []
   );
   const { isOpen, toggle, close } = useDropdownManager(dropdownId);
 
-  // Stan priorytetów i tryb ładowania
+  // Priority list state (either fetched or from props)
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  // Tryb dodawania/edycji
+
+  // State for add/edit forms
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{ label: string; color: string }>({
@@ -54,7 +53,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
   });
   const [operationLoading, setOperationLoading] = useState<boolean>(false);
 
-  // Fetchowanie priorytetów lub ustawienie z zewnątrz
+  // Load priorities from API or props on mount or prop change
   useEffect(() => {
     const load = async () => {
       try {
@@ -66,7 +65,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
         }
       } catch (err) {
         console.error("Error loading priorities:", err);
-        // fallback do domyślnych
+        // Fallback to default priorities if fetch fails
         setPriorities([
           { id: "low", label: "Low", color: "#10b981" },
           { id: "medium", label: "Medium", color: "#f59e0b" },
@@ -80,47 +79,52 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
     load();
   }, [externalPriorities]);
 
-  // reset form po zamknięciu
+  // Reset form state when dropdown closes, notify parent of open/close state
   useEffect(() => {
     if (!isOpen) {
       setIsAddingNew(false);
       setEditingId(null);
       setFormData({ label: "", color: "#10b981" });
     }
-    // notify parent
+    // Optionally inform parent about open/close
     onDropdownToggle?.(isOpen);
   }, [isOpen, onDropdownToggle]);
 
-  // Znalezienie obiektu wybranego priorytetu
+  // Find the currently selected priority object
   const selectedObj = useMemo<Priority | null>(() => {
     if (!selectedPriority) return null;
     return priorities.find((p) => p.id === selectedPriority) || null;
   }, [selectedPriority, priorities]);
 
-  // Handlery:
+  // Select a priority (calls parent)
   const handleSelect = (p: Priority) => {
     onChange(p.id);
     close();
   };
+  // Clear selection (no priority)
   const handleClear = () => {
     onChange(null);
     close();
   };
+  // Start add new priority form
   const handleStartAdd = () => {
     setIsAddingNew(true);
     setEditingId(null);
     setFormData({ label: "", color: "#10b981" });
   };
+  // Start editing an existing priority
   const handleStartEdit = (p: Priority) => {
     setEditingId(p.id);
     setIsAddingNew(false);
     setFormData({ label: p.label, color: p.color });
   };
+  // Cancel add/edit mode
   const handleCancel = () => {
     setIsAddingNew(false);
     setEditingId(null);
     setFormData({ label: "", color: "#10b981" });
   };
+  // Save new or edited priority (API call)
   const handleSave = async () => {
     if (!formData.label.trim()) return;
     setOperationLoading(true);
@@ -137,12 +141,12 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
         setPriorities((prev) =>
           prev.map((p) => (p.id === editingId ? upd : p))
         );
-        // jeśli edytowany był aktualnie wybrany, odśwież callback
+        // If user is editing currently selected priority, trigger onChange
         if (selectedPriority === editingId) {
           onChange(editingId);
         }
       }
-      // reset
+      // Reset form
       setIsAddingNew(false);
       setEditingId(null);
       setFormData({ label: "", color: "#10b981" });
@@ -156,6 +160,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
       setOperationLoading(false);
     }
   };
+  // Delete a priority (API call)
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this priority?")) return;
     setOperationLoading(true);
@@ -178,6 +183,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
     }
   };
 
+  // Show loading skeleton if priorities not loaded yet
   if (loading) {
     return (
       <div className="relative">
@@ -189,9 +195,11 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
     );
   }
 
+  // --- MAIN DROPDOWN RENDER ---
   return (
     <div className="relative w-full">
       <label className="block text-sm text-slate-300 mb-1">Priority</label>
+      {/* Dropdown button */}
       <button
         type="button"
         onClick={toggle}
@@ -206,6 +214,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
           }
         `}
       >
+        {/* Selected priority preview */}
         <div className="flex items-center gap-2 truncate">
           {selectedObj ? (
             <>
@@ -229,6 +238,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
         />
       </button>
 
+      {/* Dropdown list (animated) */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -237,7 +247,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
             exit={{ opacity: 0, y: -5 }}
             className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
           >
-            {/* Brak priorytetu */}
+            {/* Option for "no priority" */}
             <button
               type="button"
               onClick={handleClear}
@@ -253,18 +263,21 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
 
             <hr className="border-slate-600 my-1" />
 
+            {/* If no priorities exist */}
             {priorities.length === 0 && (
               <div className="px-3 py-2 text-slate-400 text-sm text-center">
                 No priorities available
               </div>
             )}
 
+            {/* Priority list */}
             {priorities.map((p) => {
               const isSel = selectedObj?.id === p.id;
               const editing = editingId === p.id;
               return (
                 <div key={p.id} className="relative group">
                   {editing ? (
+                    // Edit mode
                     <div className="p-3 bg-slate-700 border-b border-slate-600">
                       <input
                         type="text"
@@ -314,6 +327,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
                       </div>
                     </div>
                   ) : (
+                    // Default (select/edit/delete) mode
                     <div className="flex items-center border-b border-slate-600 last:border-b-0">
                       <button
                         type="button"
@@ -332,6 +346,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
                           {p.label}
                         </span>
                       </button>
+                      {/* Edit & delete icons (only visible on hover) */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity p-2">
                         <button
                           onClick={(e) => {
@@ -360,6 +375,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
               );
             })}
 
+            {/* Add new priority form/button */}
             {isAddingNew ? (
               <div className="p-3 bg-slate-700 border-t border-slate-600">
                 <input

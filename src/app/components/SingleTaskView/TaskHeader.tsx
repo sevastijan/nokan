@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { FaTimes, FaEdit, FaLink } from "react-icons/fa";
-import { TaskDetail, TaskHeaderProps } from "@/app/types/globalTypes";
+import { TaskHeaderProps } from "@/app/types/globalTypes";
 import ConfirmDialog from "./ConfirmDialog";
 import { copyTaskUrlToClipboard } from "@/app/utils/helpers";
 import Button from "../Button/Button";
@@ -140,7 +140,7 @@ const TaskHeader = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => task && copyTaskUrlToClipboard(task.id)}
+                onClick={() => task?.id && copyTaskUrlToClipboard(task.id)}
                 icon={<FaLink />}
                 className="p-2 text-gray-400 hover:text-gray-200"
               />

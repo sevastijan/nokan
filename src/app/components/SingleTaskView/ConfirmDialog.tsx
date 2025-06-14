@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { motion } from "framer-motion";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { ConfirmDialogProps } from "@/app/types/globalTypes";

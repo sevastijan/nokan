@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX, useEffect } from "react";
+import { JSX } from "react";
 import Button from "../Button/Button";
 import { FaPlus } from "react-icons/fa";
 import { AddTaskFormProps } from "./types";

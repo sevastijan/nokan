@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback } from "react";
 
 export const useDebounce = (func: (...args: any[]) => void, delay: number) => {
-  const timeoutRef = useRef<number | undefined>();
+  const timeoutRef = useRef<number | undefined>(undefined);
   const funcRef = useRef(func);
 
   // keep latest callback

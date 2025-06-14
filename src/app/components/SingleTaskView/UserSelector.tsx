@@ -1,29 +1,32 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiChevronDown, FiX } from "react-icons/fi";
-import Avatar from "../Avatar/Avatar"; // dostosuj ścieżkę importu
+import Avatar from "../Avatar/Avatar";
 import { UserSelectorProps, User } from "@/app/types/globalTypes";
 
 /**
- * UserSelector: dropdown wyboru użytkownika.
- * Styl: ciemne tło, zaokrąglone rogi, avatar + nazwa, opcja "Unassign" gdy jest wybrany.
+ * UserSelector: Dropdown for selecting a user.
+ * - Dark theme, rounded corners.
+ * - Shows avatar and name.
+ * - Offers "Unassign" if a user is already selected.
  */
-const UserSelector: React.FC<UserSelectorProps> = ({
+const UserSelector = ({
   selectedUser,
   availableUsers,
   onUserSelect,
   label = "Assignee",
-}) => {
+}: UserSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
 
+  // Toggle dropdown open/close
   const toggleOpen = () => {
     setIsOpen((prev) => !prev);
   };
 
-  // Obsługa kliknięcia poza dropdownem oraz ESC
+  // Close dropdown on outside click or ESC key
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -44,7 +47,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
     };
   }, [isOpen]);
 
-  // Kliknięcie na opcję
+  // Handle selecting a user or unassigning
   const handleOptionClick = useCallback(
     (userId: string | null) => {
       onUserSelect(userId);
@@ -53,11 +56,10 @@ const UserSelector: React.FC<UserSelectorProps> = ({
     [onUserSelect]
   );
 
-  // Render przycisku pokazującego aktualny wybór
-  // Gdy brak selectedUser, wyświetlamy placeholder "Select user..."
+  // Render the main button showing the selected user or a placeholder
   return (
     <div className="relative w-full" ref={selectRef}>
-      {/* Etykieta */}
+      {/* Label */}
       <label className="block text-sm text-slate-300 mb-1">{label}</label>
       <button
         type="button"
@@ -71,7 +73,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
         onClick={toggleOpen}
       >
         <div className="flex items-center justify-between">
-          {/* Wybrany user lub placeholder */}
+          {/* Selected user or placeholder */}
           <div className="flex items-center gap-3 min-w-0">
             {selectedUser ? (
               <>
@@ -100,7 +102,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
         </div>
       </button>
 
-      {/* Dropdown lista */}
+      {/* Dropdown list */}
       <AnimatePresence>
         {isOpen && (
           <motion.ul
@@ -111,7 +113,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
             transition={{ duration: 0.2 }}
             role="listbox"
           >
-            {/* Jeśli jest aktualnie wybrany, daj opcję "Unassign" */}
+            {/* "Unassign" option if a user is selected */}
             {selectedUser && (
               <li
                 className="px-4 py-2 cursor-pointer text-slate-300 hover:bg-slate-700 flex items-center gap-2"
@@ -124,7 +126,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
             )}
             {/* Separator */}
             {selectedUser && <hr className="border-slate-700 my-1" />}
-            {/* Lista userów */}
+            {/* User list */}
             {availableUsers.length === 0 ? (
               <li className="px-4 py-2 text-slate-500 text-sm text-center">
                 No users
@@ -147,7 +149,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
                     <Avatar src={user.image || ""} alt={user.name} size={20} />
                     <div className="flex flex-col truncate">
                       <span className="truncate">{user.name}</span>
-                      {/* Możesz dodać email w mniejszym tekście, jeśli pasuje design */}
+                      {/* Show email in smaller text if you want */}
                       <span className="text-slate-400 text-xs truncate">
                         {user.email}
                       </span>

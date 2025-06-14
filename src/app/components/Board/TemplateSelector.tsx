@@ -1,10 +1,5 @@
 "use client";
-import React, {
-  useState,
-  useEffect,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiChevronDown, FiPlus, FiTrash2 } from "react-icons/fi";
 import { BoardTemplate } from "@/app/types/globalTypes";

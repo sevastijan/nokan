@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import TemplateSelector from "@/app/components/Board/TemplateSelector";
 import CreateTemplateModal from "@/app/components/Board/CreateTemplateModal";
@@ -11,7 +11,6 @@ interface BoardModalProps {
   mode: "create" | "edit" | "delete";
   initialTitle?: string;
   boardId?: string;
-  // onClose: closes the modal
   onClose: () => void;
   /**
    * onSave:

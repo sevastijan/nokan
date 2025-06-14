@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FaFilter } from "react-icons/fa";
 import clsx from "clsx";
 import { useOutsideClick } from "@/app/hooks/useOutsideClick";
@@ -8,7 +8,7 @@ import { useOutsideClick } from "@/app/hooks/useOutsideClick";
 export interface PriorityOption {
   id: string;
   label: string;
-  color: string; // hex lub tailwind color
+  color: string; // hex or tailwind color
 }
 
 export interface AssigneeOption {
@@ -25,6 +25,13 @@ interface FilterDropdownProps {
   onFilterAssigneeChange: (assigneeId: string | null) => void;
 }
 
+/**
+ * FilterDropdown: A dropdown to filter tasks by priority and assignee.
+ * Features:
+ * - Closes on outside click or when ESC is pressed.
+ * - Lists all available priorities and assignees with radio inputs.
+ * - Calls provided callbacks when filters are changed.
+ */
 const FilterDropdown = ({
   priorities,
   assignees,
@@ -36,13 +43,13 @@ const FilterDropdown = ({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Close the dropdown when clicking outside of it
   //@ts-ignore
-  // Zamknięcie dropdownu po kliknięciu poza
   useOutsideClick([ref], () => {
     if (open) setOpen(false);
   });
 
-  // ewentualnie Esc też może zamknąć:
+  // Close the dropdown when ESC key is pressed
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape" && open) {
@@ -55,6 +62,7 @@ const FilterDropdown = ({
 
   return (
     <div className="relative" ref={ref}>
+      {/* Button that toggles the filter dropdown */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -69,15 +77,17 @@ const FilterDropdown = ({
         <span className="hidden sm:inline text-sm">Filters</span>
       </button>
 
+      {/* Dropdown content */}
       {open && (
         <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
           <div className="p-3 space-y-3">
-            {/* Sekcja Priority */}
+            {/* Priority filter section */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
                 Priority
               </h4>
               <ul className="space-y-1 max-h-40 overflow-auto">
+                {/* Option for all priorities */}
                 <li>
                   <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
                     <input
@@ -91,6 +101,7 @@ const FilterDropdown = ({
                     <span>All</span>
                   </label>
                 </li>
+                {/* List all priority options */}
                 {priorities.map((p) => (
                   <li key={p.id}>
                     <label className="flex items-center gap-2 text-sm">
@@ -119,12 +130,13 @@ const FilterDropdown = ({
 
             <hr className="border-gray-200 dark:border-gray-700" />
 
-            {/* Sekcja Assignee */}
+            {/* Assignee filter section */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
                 Assignee
               </h4>
               <ul className="space-y-1 max-h-40 overflow-auto">
+                {/* Option for all assignees */}
                 <li>
                   <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
                     <input
@@ -138,6 +150,7 @@ const FilterDropdown = ({
                     <span>All</span>
                   </label>
                 </li>
+                {/* List all assignee options */}
                 {assignees.map((u) => (
                   <li key={u.id}>
                     <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">

@@ -1,7 +1,7 @@
 // src/app/components/TeamManagement/TeamFormModal.tsx
 "use client";
 
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { FiX, FiUsers, FiSettings } from "react-icons/fi";
 import Select from "react-select";
 import CustomSelect from "./CustomSelect";

@@ -1,4 +1,4 @@
-// src/app/types/globalTypes.ts
+import { ChangeEvent } from "react";
 
 // === Core Types ===
 
@@ -92,6 +92,7 @@ export interface Task {
   order: number;
   completed: boolean;
   created_at?: string;
+  taskIndex?: number;
   updated_at?: string;
   images?: any[];
   assignee?: User | null;
@@ -137,7 +138,7 @@ export interface Column {
 export interface Board {
   id: string;
   title: string;
-  user_id: string;
+  owner_id: string;
   ownerName?: string;
   ownerEmail?: string;
   columns: Column[];
@@ -148,6 +149,35 @@ export interface Board {
     teamMembers: number;
     completedTasks?: number;
   };
+}
+
+export interface BoardHeaderProps {
+  boardTitle: string;
+  onTitleChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  onTitleBlur: () => void;
+  onAddColumn: () => void;
+  viewMode: "columns" | "list";
+  onViewModeChange: (mode: "columns" | "list") => void;
+  totalTasks: number;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  priorities: PriorityOption[];
+  filterPriority: string | null;
+  onFilterPriorityChange: (prio: string | null) => void;
+  assignees: AssigneeOption[];
+  filterAssignee: string | null;
+  onFilterAssigneeChange: (assigneeId: string | null) => void;
+}
+
+export interface AssigneeOption {
+  id: string;
+  name: string;
+}
+
+export interface PriorityOption {
+  id: string;
+  label: string;
+  color: string;
 }
 
 export interface TeamMember {

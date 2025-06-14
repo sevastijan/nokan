@@ -19,6 +19,7 @@ export const useTeamMembersForBoard = (
   });
 
   return {
+    //@ts-ignore
     teamMembers,
     loading: isFetching,
     error: queryError ? (queryError as Error).message : null,
