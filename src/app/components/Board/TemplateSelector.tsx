@@ -1,4 +1,3 @@
-// src/app/components/TemplateSelector.tsx
 "use client";
 import React, {
   useState,
@@ -64,7 +63,7 @@ const TemplateSelector = forwardRef<
         await deleteBoardTemplate(templateId);
         await loadTemplates();
         if (selectedTemplate?.id === templateId) {
-          onTemplateSelect(null);
+          onTemplateSelect?.(null);
         }
       } catch (err) {
         console.error("Error deleting template:", err);
@@ -118,7 +117,7 @@ const TemplateSelector = forwardRef<
             >
               <button
                 onClick={() => {
-                  onCreateTemplate();
+                  onCreateTemplate?.();
                   setIsOpen(false);
                 }}
                 className="w-full p-3 text-left hover:bg-slate-600 transition-colors border-b border-slate-600 flex items-center gap-2 text-blue-400"
@@ -139,7 +138,7 @@ const TemplateSelector = forwardRef<
                     selectedTemplate?.id === template.id ? "bg-slate-600" : ""
                   }`}
                   onClick={() => {
-                    onTemplateSelect(template);
+                    onTemplateSelect?.(template);
                     setIsOpen(false);
                   }}
                 >

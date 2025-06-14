@@ -246,15 +246,24 @@ export interface TemplateColumn {
 export interface BoardTemplate {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   is_custom: boolean;
-  created_at?: string;
-  updated_at?: string;
-  template_columns: TemplateColumn[]; // matching query naming
+  template_columns: Array<{
+    id: string;
+    template_id: string;
+    title: string;
+    order: number;
+    created_at?: string;
+  }>;
 }
+
+/**
+ * Props for TemplateSelector.
+ * selectedTemplate can be null or undefined if nothing selected.
+ */
 export interface TemplateSelectorProps {
-  selectedTemplate: BoardTemplate | null;
-  onTemplateSelect: (template: BoardTemplate | null) => void;
+  selectedTemplate?: BoardTemplate | null;
+  onTemplateSelect: (tpl: BoardTemplate | null) => void;
   onCreateTemplate: () => void;
   disabled?: boolean;
   refreshTrigger?: number;
@@ -263,7 +272,11 @@ export interface TemplateSelectorProps {
 export interface CreateTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onTemplateCreated: () => void;
+  /**
+   * Called after a new template is created.
+   * Receives the created BoardTemplate.
+   */
+  onTemplateCreated: (newTpl: BoardTemplate) => void;
 }
 
 // === Task-related component props ===
@@ -385,9 +398,9 @@ export interface CalendarEvent {
 }
 
 export interface CalendarProps {
-  boardId: string;
-  onTaskClick?: (taskId: string) => void;
-  viewMode?: "month" | "week" | "day";
+  events: ApiTask[];
+  viewMode: "month" | "week" | "day";
+  onTaskClick: (taskId: string) => void;
 }
 
 export interface ConfirmDialogProps {
