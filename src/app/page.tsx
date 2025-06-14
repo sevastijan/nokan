@@ -5,7 +5,7 @@ import AuthButton from "./GoogleLogin/AuthButton";
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-950 via-purple-900 to-gray-950">
-      <div className="bg-black/50 rounded-3xl shadow-2xl p-10 flex flex-col items-center gap-8 max-w-xl w-full">
+      <div className="bg-black/50 rounded-3xl shadow-2xl p-10 flex flex-col items-center gap-8 max-w-[430] w-full]">
         <h1 className="text-4xl md:text-5xl font-extrabold text-white text-center drop-shadow-lg">
           Nokan Taskboard
         </h1>
