@@ -40,3 +40,12 @@ html, body {
 [data-rbd-drag-handle-draggable-id][style*="transform"] {
     z-index: 9999 !important;
 }
+
+.glass-card {
+    @apply bg-white/20 dark:bg-gray-900/20
+           backdrop-blur-lg
+           border border-white/30 dark:border-gray-700/30
+           rounded-lg
+           shadow-sm hover:shadow-md
+           transition duration-150;
+  }

@@ -234,23 +234,24 @@ export const apiSlice = createApi({
       ],
     }),
 
-    /** 3) Fetch board + columns + tasks (mapowanie sort_order) */
+    /** 3) Fetch board + columns + tasks (mapowanie sort_order, z assignee) */
     getBoard: builder.query<Board, string>({
       async queryFn(boardId) {
         try {
-          // Pobieramy board wraz z danymi właściciela (user_id → users.id)
+          // 1) Pobieramy board
           const { data: bRaw, error: be } = await supabase
             .from("boards")
             .select(
               `
-              *,
-              owner:users!boards_user_id_fkey(id, name, email)
-            `
+          *,
+          owner:users!boards_user_id_fkey(id, name, email)
+        `
             )
             .eq("id", boardId)
             .single();
           if (be || !bRaw) throw be || new Error("Board not found");
 
+          // mapowanie właściciela...
           let ownerObj: any = null;
           if (Array.isArray(bRaw.owner) && bRaw.owner.length > 0) {
             ownerObj = bRaw.owner[0];
@@ -268,36 +269,66 @@ export const apiSlice = createApi({
             updated_at: bRaw.updated_at ?? undefined,
           };
 
-          // Pobieramy kolumny:
+          // 2) Pobieramy kolumny wraz z zadaniami i assignee
           const { data: colsRaw = [], error: ce } = await supabase
             .from("columns")
-            .select("*, tasks(*)")
+            .select(
+              `
+          *,
+          tasks:tasks(
+            *,
+            assignee:users!tasks_user_id_fkey(
+              id,
+              name,
+              email,
+              image
+            )
+          )
+        `
+            )
             .eq("board_id", boardId)
             .order("order", { ascending: true });
           if (ce) throw ce;
 
           boardBase.columns = (colsRaw || []).map((c: any) => {
+            // sortujemy po sort_order
             const rawTasks: any[] = Array.isArray(c.tasks) ? c.tasks : [];
             rawTasks.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-            const mappedTasks: Task[] = rawTasks.map((t) => ({
-              id: t.id,
-              title: t.title,
-              description: t.description,
-              column_id: t.column_id,
-              board_id: t.board_id,
-              priority: t.priority,
-              user_id: t.user_id ?? undefined,
-              order: t.sort_order ?? 0,
-              completed: t.completed,
-              created_at: t.created_at ?? undefined,
-              updated_at: t.updated_at ?? undefined,
-              images: t.images ?? undefined,
-              assignee: undefined,
-              start_date: t.start_date ?? undefined,
-              end_date: t.end_date ?? undefined,
-              due_date: t.due_date ?? undefined,
-              status: t.status ?? undefined,
-            }));
+
+            const mappedTasks: Task[] = rawTasks.map((t) => {
+              const rawAssignee = Array.isArray(t.assignee)
+                ? t.assignee[0]
+                : t.assignee;
+              const assigneeObj: User | undefined = rawAssignee
+                ? {
+                    id: rawAssignee.id,
+                    name: rawAssignee.name,
+                    email: rawAssignee.email,
+                    image: rawAssignee.image ?? undefined,
+                  }
+                : undefined;
+
+              return {
+                id: t.id,
+                title: t.title,
+                description: t.description,
+                column_id: t.column_id,
+                board_id: t.board_id,
+                priority: t.priority,
+                user_id: t.user_id ?? undefined,
+                order: t.sort_order ?? 0,
+                completed: t.completed,
+                created_at: t.created_at ?? undefined,
+                updated_at: t.updated_at ?? undefined,
+                images: t.images ?? undefined,
+                assignee: assigneeObj,
+                start_date: t.start_date ?? undefined,
+                end_date: t.end_date ?? undefined,
+                due_date: t.due_date ?? undefined,
+                status: t.status ?? undefined,
+              };
+            });
+
             return {
               id: c.id,
               boardId: c.board_id,
