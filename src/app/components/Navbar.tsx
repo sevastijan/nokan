@@ -114,7 +114,7 @@ const Navbar = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-4 z-50 md:hidden bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-3 shadow-lg hover:bg-slate-700/80 transition-all duration-200 text-slate-300 hover:text-white"
+        className="fixed right-4 top-3 z-50 md:hidden bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-3 shadow-lg hover:bg-slate-700/80 transition-all duration-200 text-slate-300 hover:text-white"
       >
         <FaBars className="w-5 h-5" />
       </button>

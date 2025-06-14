@@ -1,51 +1,86 @@
 @import "tailwindcss";
 
 html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
+  margin: 0;
+  padding: 0;
+  height: 100%;
 }
 
-/* Ensure main content doesn't overlap with burger button on mobile */
-@media (max-width: 768px) {
-    .main-content {
-        padding-left: 16px; /* 1rem = 16px */
-        padding-right: 16px;
-        padding-top: 76px; /* Space for burger button + some extra */
-        padding-bottom: 16px;
-        margin-left: 0 !important;
-    }
-}
-
-/* Ensure content has proper spacing on desktop */
-@media (min-width: 769px) {
-    .main-content {
-        margin-left: 256px; /* Width of sidebar (w-64 = 16rem = 256px) */
-        /* Removed padding - content should touch the edges */
-    }
-}
-
-.main-content {
-    transition: margin-left 0.3s ease;
-}
-
+/* Drag & drop optymalizacje */
 [data-rbd-drag-handle-draggable-id] {
-    touch-action: none !important;
+  touch-action: none !important;
 }
-
 .dragging-active {
-    overflow: hidden !important;
+  overflow: hidden !important;
 }
-
 [data-rbd-drag-handle-draggable-id][style*="transform"] {
-    z-index: 9999 !important;
+  z-index: 9999 !important;
 }
 
+/* Glass card helper */
 .glass-card {
-    @apply bg-white/20 dark:bg-gray-900/20
-           backdrop-blur-lg
-           border border-white/30 dark:border-gray-700/30
-           rounded-lg
-           shadow-sm hover:shadow-md
-           transition duration-150;
+  @apply bg-white/20 dark:bg-gray-900/20
+         backdrop-blur-lg
+         border border-white/30 dark:border-gray-700/30
+         rounded-lg
+         shadow-sm hover:shadow-md
+         transition duration-150;
+}
+
+/* Custom Toast Styles */
+.Toastify__toast-container {
+    z-index: 9999 !important;
   }
+  
+  /* Glass effect toast */
+  .Toastify__toast {
+    background: rgba(20, 18, 30, 0.75) !important; 
+    backdrop-filter: blur(16px) !important;
+    border-radius: 1rem !important;
+    color: #fff !important;
+    border: 1.5px solid rgba(140, 80, 255, 0.22);
+    box-shadow: 0 6px 24px 0 rgba(80, 30, 200, 0.13);
+    font-size: 1.08rem;
+    min-height: 56px;
+    padding: 16px 20px !important;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Success - left border */
+  .Toastify__toast--success {
+    border-left: 5px solid #22d34d !important;
+  }
+  
+  /* Error - left border */
+  .Toastify__toast--error {
+    border-left: 5px solid #ef4444 !important;
+  }
+  
+  /* Info - left border */
+  .Toastify__toast--info {
+    border-left: 5px solid #38bdf8 !important;
+  }
+  
+  /* Warning - left border */
+  .Toastify__toast--warning {
+    border-left: 5px solid #f59e0b !important;
+  }
+  
+  .Toastify__close-button {
+    color: #fff !important;
+    opacity: 0.7 !important;
+    transition: opacity 0.2s;
+  }
+  .Toastify__close-button:hover {
+    opacity: 1 !important;
+  }
+  
+  /* Progress bar style */
+  .Toastify__progress-bar {
+    background: linear-gradient(90deg, #8b5cf6 0%, #22d34d 100%) !important;
+    height: 4px !important;
+    border-radius: 8px !important;
+    bottom: 8px !important;
+  }
+  

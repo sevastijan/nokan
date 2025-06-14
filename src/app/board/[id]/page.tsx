@@ -339,6 +339,11 @@ const Page = () => {
     });
   });
 
+  const selectedTaskColumnId = selectedTaskId
+    ? localColumns.find((col) => col.tasks.some((t) => t.id === selectedTaskId))
+        ?.id
+    : null;
+
   // Filter columns/tasks
   const filteredColumns: ColumnType[] = localColumns.map((col) => {
     const filteredTasks = (col.tasks || []).filter((task) => {
@@ -406,7 +411,7 @@ const Page = () => {
                 gap-4 md:gap-6
                 p-2 md:p-6
                 h-full
-                scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent
+                scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent flex-col md:flex-row
               "
               >
                 {filteredColumns.map((col, idx) => (
@@ -490,8 +495,9 @@ const Page = () => {
           key={selectedTaskId ?? `add-${addTaskColumnId}`}
           taskId={selectedTaskId!}
           mode={selectedTaskId ? "edit" : "add"}
+          columns={localColumns}
           boardId={boardId}
-          columnId={addTaskColumnId || undefined}
+          columnId={(addTaskColumnId || selectedTaskColumnId) as string}
           onClose={() => {
             setSelectedTaskId(null);
             setAddTaskColumnId(null);

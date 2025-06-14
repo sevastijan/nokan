@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { JSX } from "react";
 
 interface LoaderProps {
@@ -13,17 +12,6 @@ interface LoaderProps {
 const Loader = ({ text = "Loading..." }: LoaderProps): JSX.Element => {
   return (
     <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-sm flex items-center justify-center z-50 select-none">
-      {/* Optional app logo watermark, faint and large in the bg */}
-      <div className="absolute inset-0 flex items-end justify-start pointer-events-none">
-        <Image
-          src="/af24c1eb-924a-4472-83c7-ae83c7e62525.png"
-          alt="App Logo"
-          width={80}
-          height={80}
-          className="opacity-10 mb-8 ml-8"
-          draggable={false}
-        />
-      </div>
       <div className="relative z-10 flex flex-col items-center">
         {/* Glowing spinner */}
         <div className="relative mb-4">

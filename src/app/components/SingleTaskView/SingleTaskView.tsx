@@ -20,6 +20,7 @@ import {
 import { useSession } from "next-auth/react";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 import { useTaskManagement } from "./hooks/useTaskManagement";
+import { supabase } from "@/app/lib/supabase";
 
 import UserSelector from "./UserSelector";
 import PrioritySelector from "./PrioritySelector";
@@ -29,6 +30,7 @@ import ImagePreviewModal from "./ImagePreviewModal";
 import ConfirmDialog from "./ConfirmDialog";
 import Button from "../Button/Button";
 import Avatar from "../Avatar/Avatar";
+import ColumnSelector from "@/app/components/ColumnSelector";
 
 import {
   formatDate,
@@ -40,13 +42,21 @@ import {
   calculateDuration,
 } from "@/app/utils/helpers";
 
-import { SingleTaskViewProps } from "@/app/types/globalTypes";
+import {
+  SingleTaskViewProps,
+  Column as ColumnType,
+} from "@/app/types/globalTypes";
 import { useOutsideClick } from "@/app/hooks/useOutsideClick";
 
 interface LocalFilePreview {
   id: string;
   file: File;
   previewUrl: string;
+}
+
+interface Props extends SingleTaskViewProps {
+  columns: ColumnType[];
+  columnId: string;
 }
 
 const SingleTaskView = ({
@@ -57,7 +67,8 @@ const SingleTaskView = ({
   onClose,
   onTaskUpdate,
   onTaskAdded,
-}: SingleTaskViewProps) => {
+  columns,
+}: Props) => {
   const { data: session } = useSession();
   const { currentUser, loading: userLoading } = useCurrentUser();
 
@@ -94,6 +105,32 @@ const SingleTaskView = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [waitBeforeError, setWaitBeforeError] = useState(true);
+
+  // Mobile: move to column
+  const [moveToColumnId, setMoveToColumnId] = useState<string>(columnId);
+
+  useEffect(() => {
+    setMoveToColumnId(columnId);
+  }, [columnId]);
+
+  const handleMoveColumn = async (newColId: string) => {
+    setMoveToColumnId(newColId);
+    if (!task?.id || !newColId) return;
+    // Put task at the end of the new column
+    const col = columns.find((c) => c.id === newColId);
+    const newOrder = col?.tasks?.length || 0;
+
+    await supabase
+      .from("tasks")
+      .update({
+        column_id: newColId,
+        sort_order: newOrder,
+      })
+      .eq("id", task.id);
+
+    toast.success("Task moved!");
+    await fetchTaskData();
+  };
 
   useEffect(() => {
     const timeout = setTimeout(() => setWaitBeforeError(false), 500);
@@ -142,7 +179,6 @@ const SingleTaskView = ({
     }
   });
 
-  // Handlers
   const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTempTitle(newTitle);
@@ -413,88 +449,22 @@ const SingleTaskView = ({
               </div>
             </div>
 
-            {/* BODY: form + sidebar*/}
-            <div className="flex flex-col-reverse md:flex-row-reverse flex-1 overflow-hidden">
-              {/* SIDEBAR: */}
-              <aside className="w-full md:w-72 hidden md:block bg-slate-800/70 border-t md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0">
-                {/* Assignee with avatar */}
-                <div className="mb-6">
-                  <h3 className="text-sm text-slate-300 uppercase mb-2">
-                    Assignee
-                  </h3>
-                  {task?.assignee ? (
-                    <div className="flex items-center bg-slate-700 p-3 rounded-lg">
-                      <Avatar
-                        src={getAvatarUrl(task.assignee) || ""}
-                        alt={task.assignee.name}
-                        size={32}
-                        className="mr-3 border-2 border-white/20"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-white font-medium truncate">
-                          {task.assignee.name}
-                        </span>
-                        <span className="text-slate-400 text-sm truncate">
-                          {task.assignee.email}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-slate-400">No assignee</div>
-                  )}
-                </div>
-
-                {/* Created */}
-                <div className="mb-6">
-                  <h3 className="text-sm text-slate-300 uppercase mb-2">
-                    Created
-                  </h3>
-                  <div
-                    className={
-                      task?.created_at ? "text-white" : "text-slate-400"
-                    }
-                  >
-                    {task?.created_at ? formatDate(task.created_at) : "-"}
-                  </div>
-                </div>
-
-                {/* Last Updated */}
-                <div className="mb-6">
-                  <h3 className="text-sm text-slate-300 uppercase mb-2">
-                    Last Updated
-                  </h3>
-                  <div
-                    className={
-                      task?.updated_at ? "text-white" : "text-slate-400"
-                    }
-                  >
-                    {task?.updated_at ? formatDate(task.updated_at) : "-"}
-                  </div>
-                </div>
-
-                {/* Duration */}
-                {task?.start_date && task?.end_date && (
-                  <div className="mb-6">
-                    <h4 className="text-sm font-semibold text-slate-300 mt-4 mb-2">
-                      Duration
-                    </h4>
-                    <p className="text-sm">
-                      {(() => {
-                        const dur = calculateDuration(
-                          task.start_date,
-                          task.end_date
-                        );
-                        return dur !== null
-                          ? `${dur} ${dur === 1 ? "day" : "days"}`
-                          : "-";
-                      })()}
-                    </p>
-                  </div>
-                )}
-              </aside>
-              {/* FORM (main content) */}
+            {/* BODY */}
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+              {/* FORM */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
-                {/* Assignee & Priority selectors */}
+                {/* --- MOBILE SELECT --- */}
+                <div className="block md:hidden mb-4">
+                  <ColumnSelector
+                    columns={columns}
+                    value={task?.column_id || columnId}
+                    onChange={async (newColId) => {
+                      await updateTask({ column_id: newColId });
+                    }}
+                  />
+                </div>
+                {/* --- END MOBILE SELECT --- */}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <UserSelector
                     selectedUser={
@@ -510,8 +480,6 @@ const SingleTaskView = ({
                     onChange={(newId) => updateTask({ priority: newId })}
                   />
                 </div>
-
-                {/* Description */}
                 <div>
                   <label className="text-sm text-slate-300">Description</label>
                   <textarea
@@ -525,9 +493,7 @@ const SingleTaskView = ({
                     rows={4}
                   />
                 </div>
-
-                {/* Dates*/}
-                <div className="flex flex-col md:flex-row-reverse md:space-x-4 space-y-4 md:space-y-0">
+                <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
                   <div className="flex-1">
                     <label className="text-sm flex items-center gap-1 text-slate-300">
                       <FaClock className="text-white w-4 h-4" />
@@ -562,8 +528,6 @@ const SingleTaskView = ({
                     />
                   </div>
                 </div>
-
-                {/* Duration display if both dates */}
                 {(() => {
                   const dur = calculateDuration(startDate, endDate);
                   if (dur === null) return null;
@@ -581,8 +545,6 @@ const SingleTaskView = ({
                     </div>
                   );
                 })()}
-
-                {/* Attachments */}
                 <div className="mt-4">
                   <label className="text-sm text-slate-300 flex items-center gap-1">
                     <FaPaperclip className="w-4 h-4 text-white" />
@@ -657,8 +619,6 @@ const SingleTaskView = ({
                     </div>
                   )}
                 </div>
-
-                {/* Comments */}
                 {!isNewTask && task?.id && (
                   <div className="mt-6">
                     <CommentsSection
@@ -676,9 +636,78 @@ const SingleTaskView = ({
                   </div>
                 )}
               </div>
+              {/* SIDEBAR (no changes) */}
+              <aside className="w-full md:w-72 bg-slate-800/70 border-t md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0 hidden md:block">
+                {/* Assignee with avatar */}
+                <div className="mb-6">
+                  <h3 className="text-sm text-slate-300 uppercase mb-2">
+                    Assignee
+                  </h3>
+                  {task?.assignee ? (
+                    <div className="flex items-center bg-slate-700 p-3 rounded-lg">
+                      <Avatar
+                        src={getAvatarUrl(task.assignee) || ""}
+                        alt={task.assignee.name}
+                        size={32}
+                        className="mr-3 border-2 border-white/20"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-white font-medium truncate">
+                          {task.assignee.name}
+                        </span>
+                        <span className="text-slate-400 text-sm truncate">
+                          {task.assignee.email}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-slate-400">No assignee</div>
+                  )}
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-sm text-slate-300 uppercase mb-2">
+                    Created
+                  </h3>
+                  <div
+                    className={
+                      task?.created_at ? "text-white" : "text-slate-400"
+                    }
+                  >
+                    {task?.created_at ? formatDate(task.created_at) : "-"}
+                  </div>
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-sm text-slate-300 uppercase mb-2">
+                    Last Updated
+                  </h3>
+                  <div
+                    className={
+                      task?.updated_at ? "text-white" : "text-slate-400"
+                    }
+                  >
+                    {task?.updated_at ? formatDate(task.updated_at) : "-"}
+                  </div>
+                </div>
+                {task?.start_date && task?.end_date && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-slate-300 mt-4 mb-2">
+                      Duration
+                    </h4>
+                    <p className="text-sm">
+                      {(() => {
+                        const dur = calculateDuration(
+                          task.start_date,
+                          task.end_date
+                        );
+                        return dur !== null
+                          ? `${dur} ${dur === 1 ? "day" : "days"}`
+                          : "-";
+                      })()}
+                    </p>
+                  </div>
+                )}
+              </aside>
             </div>
-
-            {/* FOOTER */}
             <div className="flex flex-col sm:flex-row justify-end items-center px-6 py-4 border-t border-slate-600 gap-3">
               {!isNewTask && (
                 <Button
@@ -711,8 +740,6 @@ const SingleTaskView = ({
           </motion.div>
         </motion.div>
       )}
-
-      {/* Delete confirmation */}
       {showDeleteConfirm && (
         <motion.div
           key="confirm-dialog"
@@ -733,8 +760,6 @@ const SingleTaskView = ({
           />
         </motion.div>
       )}
-
-      {/* Image preview modal */}
       {previewImageUrl && (
         <ImagePreviewModal
           imageUrl={previewImageUrl}
