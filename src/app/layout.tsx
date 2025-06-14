@@ -1,3 +1,4 @@
+// src/app/layout.tsx (or wherever your RootLayout lives)
 import { ToastContainer } from "react-toastify";
 import "./styles/globals.css";
 import { Providers } from "./providers";
@@ -15,7 +16,12 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           <main className="main-content min-h-screen md:ml-64">{children}</main>
+          {/* Toast notifications */}
           <ToastContainer position="top-right" autoClose={3000} />
+
+          {/* Portal root for context menus, modals, tooltips, etc. */}
+          {/* This div sits at the end of <body>, outside clipped containers */}
+          <div id="menu-portal-root" />
         </Providers>
       </body>
     </html>

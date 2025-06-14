@@ -13,11 +13,8 @@ import {
 import { TaskDetail, User, Attachment } from "@/app/types/globalTypes";
 import { pickUpdatable } from "@/app/utils/helpers";
 
-/**
- * Hook to manage a single task: fetch (edit mode), lokalne zmiany, zapisz (nowe lub istniejące), upload załączników, delete.
- */
 export const useTaskManagement = ({
-  taskId,
+  taskId: propTaskId,
   mode,
   columnId,
   boardId,
@@ -37,18 +34,26 @@ export const useTaskManagement = ({
 }) => {
   const isNewTask = mode === "add";
 
-  // Stan lokalny: edytowany/nowy task
+  // Track the “current” task ID: in edit mode starts as propTaskId; in add mode, null until creation
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(
+    isNewTask ? null : propTaskId || null
+  );
+
+  // Local task state
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Fetch istniejącego task w trybie edycji
+  // Pending attachments for Add Mode: files selected before creation
+  const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
+
+  // Fetch existing task in edit mode or after creation: skip if no currentTaskId
   const {
     data: fetchedTask,
     error: fetchError,
     isLoading,
     refetch: refetchTask,
-  } = useGetTaskByIdQuery({ taskId: taskId! }, { skip: !taskId || isNewTask });
+  } = useGetTaskByIdQuery({ taskId: currentTaskId! }, { skip: !currentTaskId });
 
   // Mutations
   const [updateTaskMutation, { isLoading: saving }] = useUpdateTaskMutation();
@@ -56,32 +61,70 @@ export const useTaskManagement = ({
   const [uploadAttachmentMutation] = useUploadAttachmentMutation();
   const [removeTaskMutation] = useRemoveTaskMutation();
 
-  // Team members do selecta
+  // Team members for assignee select
   const {
     data: teamMembers = [],
     isLoading: loadingTeamMembers,
     error: teamError,
   } = useGetTeamMembersByBoardIdQuery(boardId, { skip: !boardId });
 
-  // 1) Gdy w trybie edycji i przychodzi fetchedTask, inicjalizuj lokalny stan
+  // 1) Initialize local state when fetchedTask arrives (edit mode or after creation)
   useEffect(() => {
     if (isLoading) return;
-    if (!isNewTask) {
-      if (fetchedTask) {
-        setTask(fetchedTask);
-        setHasUnsavedChanges(false);
-        setError(null);
-      } else if (fetchError) {
-        setError("Task not found");
-      }
-    }
-  }, [isLoading, fetchedTask, fetchError, isNewTask]);
+    if (fetchedTask) {
+      // Update local task state
+      setTask(fetchedTask);
+      setHasUnsavedChanges(false);
+      setError(null);
 
-  // 2) W trybie dodawania, ustaw pusty TaskDetail
+      // If there are pending attachments (from Add Mode), upload them now:
+      if (pendingAttachments.length > 0) {
+        pendingAttachments.forEach(async (file) => {
+          try {
+            // uploadAttachmentMutation expects taskId and userId
+            if (currentTaskId && currentUser?.id) {
+              const result = await uploadAttachmentMutation({
+                file,
+                taskId: currentTaskId,
+                userId: currentUser.id,
+              }).unwrap();
+              // append to local attachments list
+              setTask((prev) => {
+                if (!prev) return prev;
+                const newList: Attachment[] = prev.attachments
+                  ? [...prev.attachments, result]
+                  : [result];
+                return { ...prev, attachments: newList };
+              });
+            }
+          } catch (err) {
+            console.error("Upload attachment error:", err);
+            setError("Failed to upload attachment");
+          }
+        });
+        // Clear pendingAttachments after attempting upload
+        setPendingAttachments([]);
+      }
+    } else if (!isNewTask && fetchError) {
+      setError("Task not found");
+    }
+  }, [
+    isLoading,
+    fetchedTask,
+    fetchError,
+    pendingAttachments,
+    currentTaskId,
+    currentUser?.id,
+    uploadAttachmentMutation,
+    isNewTask,
+  ]);
+
+  // 2) Initialize local state for Add Mode (once, on mount or when switching to add mode)
   useEffect(() => {
     if (isNewTask) {
+      // Create an "empty" TaskDetail. Note: id is null/empty until creation.
       const initial: TaskDetail = {
-        id: "", // w backendzie wygenerowane
+        id: "",
         title: "",
         description: "",
         column_id: columnId || "",
@@ -113,12 +156,12 @@ export const useTaskManagement = ({
       setTask(initial);
       setHasUnsavedChanges(false);
       setError(null);
+      setCurrentTaskId(null);
+      setPendingAttachments([]);
     }
   }, [isNewTask, boardId, columnId, currentUser]);
 
-  /**
-   * Lokalna aktualizacja pola task. Oznacza unsaved changes.
-   */
+  // 3) Local updateTask: merges changes into local task and mark unsaved
   const updateTask = useCallback((changes: Partial<TaskDetail>) => {
     setTask((prev) => {
       if (!prev) return prev;
@@ -127,48 +170,47 @@ export const useTaskManagement = ({
     setHasUnsavedChanges(true);
   }, []);
 
-  /**
-   * Upload pojedynczego załącznika.
-   * Po sukcesie dodaje do lokalnej listy attachments.
-   */
+  // 4) uploadAttachment: if editing or after create (currentTaskId exists), upload immediately; else collect in pendingAttachments
   const uploadAttachment = useCallback(
     async (file: File) => {
-      if (!task?.id || !currentUser?.id) return null;
-      try {
-        const result = await uploadAttachmentMutation({
-          file,
-          taskId: task.id,
-          userId: currentUser.id,
-        }).unwrap();
-        // Dodaj do lokalnych attachments
-        setTask((prev) => {
-          if (!prev) return prev;
-          const newList: Attachment[] = prev.attachments
-            ? [...prev.attachments, result]
-            : [result];
-          return { ...prev, attachments: newList };
-        });
-        // Nie ustawiamy unsavedChanges, bo upload jest osobny request
-        return result;
-      } catch (err) {
-        console.error("Upload attachment error:", err);
-        setError("Failed to upload attachment");
+      // If we already have a valid task ID, upload immediately
+      if (currentTaskId && currentUser?.id) {
+        try {
+          const result = await uploadAttachmentMutation({
+            file,
+            taskId: currentTaskId,
+            userId: currentUser.id,
+          }).unwrap();
+          // Add to local attachments
+          setTask((prev) => {
+            if (!prev) return prev;
+            const newList: Attachment[] = prev.attachments
+              ? [...prev.attachments, result]
+              : [result];
+            return { ...prev, attachments: newList };
+          });
+          return result;
+        } catch (err) {
+          console.error("Upload attachment error:", err);
+          setError("Failed to upload attachment");
+          return null;
+        }
+      } else {
+        // Add to pending list to upload after creation
+        setPendingAttachments((prev) => [...prev, file]);
         return null;
       }
     },
-    [uploadAttachmentMutation, task?.id, currentUser?.id]
+    [currentTaskId, currentUser?.id, uploadAttachmentMutation]
   );
 
-  /**
-   * Zapis istniejącego task.
-   * Bierze pickUpdatable(task) i wysyła. Po sukcesie resetuje hasUnsavedChanges.
-   */
+  // 5) saveExistingTask for edit mode
   const saveExistingTask = useCallback(async (): Promise<boolean> => {
-    if (!taskId || !task) return false;
+    if (!currentTaskId || !task) return false;
     const payload: Partial<TaskDetail> = pickUpdatable(task);
     try {
       const result = await updateTaskMutation({
-        taskId,
+        taskId: currentTaskId,
         data: payload,
       }).unwrap();
       setHasUnsavedChanges(false);
@@ -179,15 +221,12 @@ export const useTaskManagement = ({
       setError("Failed to update task");
       return false;
     }
-  }, [taskId, task, updateTaskMutation, onTaskUpdate]);
+  }, [currentTaskId, task, updateTaskMutation, onTaskUpdate]);
 
-  /**
-   * Zapis nowego task.
-   * Explicitnie wybiera pola do insertu.
-   */
+  // 6) saveNewTask for add mode
   const saveNewTask = useCallback(async (): Promise<boolean> => {
     if (!task || !columnId) return false;
-    // Przygotuj payload: unikaj niepotrzebnych pól
+    // Prepare payload for creation (only relevant fields)
     const payload: Partial<TaskDetail> & { column_id: string } = {
       column_id: columnId,
       title: task.title,
@@ -197,12 +236,45 @@ export const useTaskManagement = ({
       user_id: task.user_id ?? null,
       start_date: task.start_date ?? null,
       end_date: task.end_date ?? null,
-      // inne pola jeśli potrzebne: due_date, status itp.
+      due_date: task.due_date ?? null,
+      status: task.status ?? null,
+      // other fields if desired
     };
     try {
       const result = await addTaskMutation(payload).unwrap();
+      // result is Task (with id, title, etc.)
+      // Set currentTaskId so that fetch can run
+      setCurrentTaskId(result.id);
+      // Mark unsavedChanges false for now; after fetch, hasUnsavedChanges remains false
       setHasUnsavedChanges(false);
-      onTaskAdded?.(result);
+      // Optionally update local task immediately with returned fields
+      setTask((prev) => {
+        // Merge returned fields (id, created_at, etc.) into local TaskDetail
+        if (!prev) return prev;
+        return {
+          ...prev,
+          id: result.id,
+          // if result has created_at, updated_at, etc., merge them:
+          created_at: (result as any).created_at ?? prev.created_at,
+          updated_at: (result as any).updated_at ?? prev.updated_at,
+          // other fields from result if needed
+        };
+      });
+      // Notify parent of newly created task (parent can add to UI list)
+      onTaskAdded?.(
+        // Construct a TaskDetail-like object or minimal object with id/title
+        {
+          ...task,
+          id: result.id,
+          column_id: columnId,
+          board_id: boardId,
+          // created_at/updated_at if available
+          created_at: (result as any).created_at ?? undefined,
+          updated_at: (result as any).updated_at ?? undefined,
+        }
+      );
+      // After setting currentTaskId, the fetchEffect will run, fetching full details,
+      // then uploading any pendingAttachments.
       return true;
     } catch (err) {
       console.error("Failed to create task:", err);
@@ -211,25 +283,21 @@ export const useTaskManagement = ({
     }
   }, [task, columnId, boardId, addTaskMutation, onTaskAdded]);
 
-  /**
-   * Delete task (tylko w edit mode). Po sukcesie zamyka modal.
-   */
+  // 7) deleteTask (edit mode)
   const deleteTask = useCallback(async () => {
-    if (!taskId || !columnId) return;
+    if (!currentTaskId || !columnId) return;
     try {
-      await removeTaskMutation({ taskId, columnId }).unwrap();
+      await removeTaskMutation({ taskId: currentTaskId, columnId }).unwrap();
       onClose();
     } catch (err) {
       console.error("Failed to delete task:", err);
       setError("Failed to delete task");
     }
-  }, [taskId, columnId, removeTaskMutation, onClose]);
+  }, [currentTaskId, columnId, removeTaskMutation, onClose]);
 
-  /**
-   * Refetch task z serwera, nadpisuje lokalny stan.
-   */
+  // 8) fetchTaskData (refetch)
   const fetchTaskData = useCallback(async () => {
-    if (taskId) {
+    if (currentTaskId) {
       try {
         const { data } = await refetchTask();
         if (data) {
@@ -240,7 +308,7 @@ export const useTaskManagement = ({
         console.error("Failed to refetch task:", err);
       }
     }
-  }, [taskId, refetchTask]);
+  }, [currentTaskId, refetchTask]);
 
   return {
     task,

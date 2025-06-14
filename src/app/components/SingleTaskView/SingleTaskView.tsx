@@ -1,7 +1,13 @@
 // src/app/components/SingleTaskView/SingleTaskView.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  ChangeEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import {
@@ -10,48 +16,57 @@ import {
   FaFlag,
   FaLink,
   FaCalendarAlt,
+  FaPaperclip,
 } from "react-icons/fa";
-
 import { useSession } from "next-auth/react";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 import { useTaskManagement } from "./hooks/useTaskManagement";
-
-import { useTitleChange } from "@/app/hooks/useTitleChange";
-import { useDescriptionChange } from "@/app/hooks/useDescriptionChange";
-import { useAssigneeChange } from "@/app/hooks/useAssigneeChange";
-import { useDateChange } from "@/app/hooks/useDateChange";
-import { useAttachmentUpload } from "@/app/hooks/useAttachmentUpload";
 
 import UserSelector from "./UserSelector";
 import PrioritySelector from "./PrioritySelector";
 import CommentsSection from "./CommentsSection";
 import AttachmentsList from "./AttachmentsList";
+import ImagePreviewModal from "./ImagePreviewModal";
+import ConfirmDialog from "./ConfirmDialog";
 import Button from "../Button/Button";
 import Avatar from "../Avatar/Avatar";
 
-import { formatDate } from "@/app/utils/helpers";
-import { SingleTaskViewProps, TaskDetail } from "@/app/types/globalTypes";
-import "./styles/styles.css";
+import {
+  formatDate,
+  getPriorityStyleConfig,
+  getAvatarUrl,
+  formatFileSize,
+  getFileIcon,
+  copyTaskUrlToClipboard,
+  calculateDuration,
+} from "@/app/utils/helpers";
+
+import { SingleTaskViewProps, Attachment } from "@/app/types/globalTypes";
+import { useOutsideClick } from "@/app/hooks/useOutsideClick";
+
+interface LocalFilePreview {
+  file: File;
+  previewUrl: string;
+}
 
 export default function SingleTaskView({
-  taskId: propTaskId,
+  taskId,
   mode,
-  columnId: propColumnId,
-  boardId: propBoardId,
+  columnId,
+  boardId,
   onClose,
   onTaskUpdate,
-  onTaskAdd,
   onTaskAdded,
 }: SingleTaskViewProps) {
-  // 1) Core hooks (always at the top)
   const { data: session } = useSession();
   const { currentUser, loading: userLoading } = useCurrentUser(session);
 
+  // Hook managing task data & operations
   const {
     task,
     loading,
-    error,
     saving,
+    error,
     hasUnsavedChanges,
     isNewTask,
     updateTask,
@@ -63,55 +78,263 @@ export default function SingleTaskView({
     teamMembers,
     fetchedTask,
   } = useTaskManagement({
-    taskId: propTaskId ?? "",
+    taskId,
     mode,
-    columnId: propColumnId ?? "",
-    boardId: propBoardId ?? "",
+    columnId,
+    boardId: boardId!,
     currentUser: currentUser || undefined,
-    onTaskUpdate,
-    onTaskAdded: (t) =>
-      onTaskAdded?.({
-        ...t,
-        column_id: propColumnId ?? "",
-        board_id: propBoardId ?? "",
-      }),
+    onTaskUpdate: (t) => {
+      onTaskUpdate?.(t);
+    },
+    onTaskAdded: (t) => {
+      onTaskAdded?.(t);
+    },
     onClose,
   });
 
-  // 2) Field-specific hooks
-  const { title, handleChange: handleTitleChange } = useTitleChange(
-    task,
-    updateTask
-  );
-  const { description, handleChange: handleDescriptionChange } =
-    useDescriptionChange(task, updateTask);
-  const { assigneeId, handleChange: handleAssigneeChange } = useAssigneeChange(
-    task,
-    teamMembers,
-    updateTask
-  );
-  const { startDate, endDate, handleStartChange, handleEndChange } =
-    useDateChange(task, updateTask);
-  const { uploadFiles } = useAttachmentUpload(uploadAttachment);
+  // Local previews for files selected before creation
+  const [localFilePreviews, setLocalFilePreviews] = useState<
+    LocalFilePreview[]
+  >([]);
 
-  // 3) Local UI state
+  // Controls for image preview modal
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  // Confirm delete dialog
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Modal visibility state (for animate exit)
   const [isVisible, setIsVisible] = useState(true);
-  // For delaying "not found" placeholder
-  const [showErrorPlaceholder, setShowErrorPlaceholder] = useState(false);
 
-  // 4) Side-effects
-  // Delay before showing "task not found" fallback
+  // Delay before showing "Task not found" in edit mode
+  const [waitBeforeError, setWaitBeforeError] = useState(true);
   useEffect(() => {
-    const timer = setTimeout(() => setShowErrorPlaceholder(true), 500);
-    return () => clearTimeout(timer);
+    const timeout = setTimeout(() => setWaitBeforeError(false), 500);
+    return () => clearTimeout(timeout);
   }, []);
 
-  // 5) Early returns
-  if (loading || userLoading) {
+  // Form fields state
+  const [tempTitle, setTempTitle] = useState("");
+  const [tempDescription, setTempDescription] = useState("");
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
+    null
+  );
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
+  // Sync form inputs when `task` updates (edit mode or after fetch)
+  useEffect(() => {
+    if (task) {
+      setTempTitle(task.title || "");
+      setTempDescription(task.description || "");
+      setSelectedAssigneeId(task.assignee?.id || task.user_id || null);
+      setStartDate(task.start_date || "");
+      setEndDate(task.end_date || "");
+    }
+  }, [task]);
+
+  // Refs for outside-click and overlay detection
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Handle Escape key to close modal (with unsaved changes check)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    if (isVisible) {
+      document.addEventListener("keydown", onKeyDown);
+    }
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isVisible, hasUnsavedChanges, tempTitle]);
+  // @ts-expect-error: HTMLDivElement ref is not exactly HTMLElement, but we know it's safe
+
+  // Outside click: close when clicking outside modalRef
+  useOutsideClick(modalRef, () => {
+    if (isVisible) {
+      handleClose();
+    }
+  });
+
+  // Title change handler
+  const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTempTitle(newTitle);
+    updateTask({ title: newTitle });
+  };
+  // Prevent Enter from creating newline; if Enter pressed, blur field
+  const handleTitleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (!tempTitle.trim()) {
+        // Do nothing if empty
+        return;
+      }
+      (e.target as HTMLInputElement).blur();
+    }
+  };
+
+  // Description change
+  const handleDescriptionChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const desc = e.target.value;
+    setTempDescription(desc);
+    updateTask({ description: desc });
+  };
+
+  // Assignee change
+  const handleAssigneeChange = async (assigneeId: string | null) => {
+    setSelectedAssigneeId(assigneeId);
+    if (!assigneeId) {
+      await updateTask({ user_id: null, assignee: null });
+      return;
+    }
+    const sel = teamMembers.find((u) => u.id === assigneeId);
+    if (!sel) {
+      await updateTask({ user_id: null, assignee: null });
+      return;
+    }
+    await updateTask({ user_id: assigneeId, assignee: sel });
+  };
+
+  // Date change (start/end)
+  const handleDateChange = (type: "start" | "end", value: string) => {
+    if (type === "start") {
+      setStartDate(value);
+      updateTask({ start_date: value });
+      // If end < new start, clear end
+      if (endDate && value && endDate < value) {
+        setEndDate("");
+        updateTask({ end_date: null });
+      }
+    } else {
+      setEndDate(value);
+      updateTask({ end_date: value });
+    }
+  };
+
+  // File input ref & handlers (for attachments in new/edit)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleFileSelectClick = () => {
+    fileInputRef.current?.click();
+  };
+  const handleFilesSelected = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const arr: LocalFilePreview[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      let previewUrl = "";
+      if (file.type.startsWith("image/")) {
+        previewUrl = URL.createObjectURL(file);
+      }
+      arr.push({ file, previewUrl });
+    }
+    setLocalFilePreviews((prev) => [...prev, ...arr]);
+    // Clear input to allow re-selecting same file later
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+  const removeLocalFile = (index: number) => {
+    setLocalFilePreviews((prev) => {
+      const copy = [...prev];
+      if (copy[index].previewUrl) {
+        URL.revokeObjectURL(copy[index].previewUrl);
+      }
+      copy.splice(index, 1);
+      return copy;
+    });
+  };
+
+  // Upload a single attachment (edit mode or after creation)
+  const handleUploadAttachment = async (file: File) => {
+    if (!task?.id) {
+      console.warn("Cannot upload attachment until task has an ID");
+      return null;
+    }
+    if (!currentUser?.id) {
+      toast.error("No user to upload attachment");
+      return null;
+    }
+    try {
+      const result = await uploadAttachment(file);
+      if (result) {
+        toast.success(`Uploaded ${file.name}`);
+      } else {
+        toast.error(`Failed to upload ${file.name}`);
+      }
+      return result;
+    } catch (err) {
+      console.error("Attachment upload error:", err);
+      toast.error(`Upload error: ${file.name}`);
+      return null;
+    }
+  };
+
+  // Save / Create handler
+  const handleSave = async () => {
+    if (!tempTitle.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    if (isNewTask) {
+      // Create
+      const success = await saveNewTask();
+      if (success) {
+        toast.success("Task created");
+        // Upload any selected files after creation
+        if (localFilePreviews.length > 0 && task?.id) {
+          for (const local of localFilePreviews) {
+            await handleUploadAttachment(local.file);
+            if (local.previewUrl) {
+              URL.revokeObjectURL(local.previewUrl);
+            }
+          }
+          setLocalFilePreviews([]);
+          await fetchTaskData();
+        }
+        setIsVisible(false);
+      }
+    } else {
+      // Existing
+      const success = await saveExistingTask();
+      if (success) {
+        toast.success("Task saved");
+        setIsVisible(false);
+      }
+    }
+  };
+
+  // Close with unsaved-changes check
+  const handleClose = () => {
+    if (hasUnsavedChanges) {
+      const confirmClose = confirm("You have unsaved changes. Close anyway?");
+      if (!confirmClose) return;
+    }
+    setIsVisible(false);
+  };
+
+  // After exit animation completes
+  const onAnimationCompleteExit = () => {
+    onClose?.();
+  };
+
+  // Copy link handler
+  const handleCopyLink = async () => {
+    if (task?.id) {
+      await copyTaskUrlToClipboard(task.id);
+    }
+  };
+
+  // Early loading / error UI
+  if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
         <div className="p-4 bg-slate-800 rounded-lg border border-slate-600 text-white">
-          Loading…
+          Loading task...
         </div>
       </div>
     );
@@ -125,137 +348,115 @@ export default function SingleTaskView({
       </div>
     );
   }
-  // If in edit mode but no fetchedTask after a delay, close or return null
-  if (!isNewTask && !fetchedTask && showErrorPlaceholder) {
+  if (userLoading || !currentUser) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+        <div className="p-4 bg-slate-800 rounded-lg border border-slate-600 text-white">
+          Loading user...
+        </div>
+      </div>
+    );
+  }
+  // In edit mode: if not found after delay, show nothing
+  if (!isNewTask && !loading && !task && !waitBeforeError) {
     return null;
   }
 
-  // 6) Helper functions
-  const calculateDuration = (s?: string, e?: string): number | null => {
-    if (!s || !e) return null;
-    const diff = new Date(e).getTime() - new Date(s).getTime();
-    if (diff < 0 || isNaN(diff)) return null;
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
-  const getPriorityClasses = (p: string) => {
-    const map: Record<string, string> = {
-      urgent: "bg-red-500/20 text-red-400 border-red-500/30",
-      high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-      medium: "bg-yellow-500/20 text-yellow-500 border-yellow-500/30",
-      low: "bg-green-500/20 text-green-500 border-green-500/30",
-    };
-    return (
-      map[p.toLowerCase()] ??
-      "bg-slate-500/20 text-slate-400 border-slate-500/30"
-    );
-  };
-
-  // 7) Action handlers
-  const handleSave = async () => {
-    const ok = isNewTask ? await saveNewTask() : await saveExistingTask();
-    if (ok) {
-      setIsVisible(false);
-      toast.success(isNewTask ? "Task created" : "Task updated");
-    }
-  };
-  const handleClose = () => {
-    if (
-      hasUnsavedChanges &&
-      !confirm("You have unsaved changes. Close anyway?")
-    )
-      return;
-    setIsVisible(false);
-  };
-
-  // 8) Render
   return (
-    <AnimatePresence initial onExitComplete={onClose}>
+    <AnimatePresence initial={false} onExitComplete={onAnimationCompleteExit}>
       {isVisible && (
-        // Overlay
         <motion.div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          ref={overlayRef}
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4"
           onClick={(e) => {
-            // Close if clicking outside modal
-            if (e.target === e.currentTarget) {
+            if (e.target === overlayRef.current) {
               handleClose();
             }
           }}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 1, transition: { duration: 0.2 } }}
           exit={{ opacity: 0, transition: { duration: 0.2 } }}
         >
-          {/* Modal container */}
           <motion.div
-            className="bg-slate-800 rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl border border-slate-600"
+            ref={modalRef}
+            className="bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl border border-slate-600"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1, transition: { duration: 0.2 } }}
             exit={{ scale: 0.95, opacity: 0, transition: { duration: 0.15 } }}
           >
             {/* Header */}
-            {task && (
-              <header className="flex justify-between items-center p-4 border-b border-slate-600">
-                <div className="flex items-center gap-3 text-white">
-                  <span className="bg-slate-700 px-2 py-1 rounded text-xs font-mono">
-                    {task.id ? task.id.slice(-6) : "#??????"}
+            <div className="flex justify-between items-center px-6 py-3 border-b border-slate-600">
+              <div className="flex items-center gap-3">
+                {isNewTask ? (
+                  <span className="bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                    New
                   </span>
-                  <input
-                    type="text"
-                    value={title}
-                    placeholder={isNewTask ? "New Task" : "Untitled"}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    className="bg-transparent text-lg font-semibold flex-1 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  {task.priority && (
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full border ${getPriorityClasses(
-                        task.priority
-                      )}`}
-                    >
-                      <FaFlag className="inline mr-1" />
-                      {task.priority}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {!isNewTask && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={<FaLink />}
-                      onClick={() => {
-                        const url = `${window.location.origin}${window.location.pathname}?task=${task.id}`;
-                        navigator.clipboard.writeText(url);
-                        toast.success("Link copied");
-                      }}
-                    />
-                  )}
+                ) : task?.id ? (
+                  <span className="bg-slate-700 text-slate-300 text-xs font-mono px-2 py-1 rounded">
+                    #{task.id.slice(-6)}
+                  </span>
+                ) : null}
+                <input
+                  type="text"
+                  className="bg-transparent text-lg font-semibold text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Task title (required)"
+                  value={tempTitle}
+                  onChange={handleTitleChange}
+                  onKeyDown={handleTitleKeyDown}
+                  autoFocus={isNewTask}
+                />
+                {!isNewTask && task?.priority && (
+                  <span
+                    className={`flex items-center text-xs px-2 py-1 rounded-full border ${
+                      getPriorityStyleConfig(task.priority).bgColor
+                    } ${getPriorityStyleConfig(task.priority).textColor} ${
+                      getPriorityStyleConfig(task.priority).borderColor
+                    }`}
+                  >
+                    <FaFlag className="inline mr-1" />
+                    {task.priority}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {!isNewTask && task?.id && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    icon={<FaTimes />}
-                    onClick={handleClose}
+                    icon={<FaLink />}
+                    onClick={handleCopyLink}
                   />
-                </div>
-              </header>
-            )}
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<FaTimes />}
+                  onClick={handleClose}
+                />
+              </div>
+            </div>
 
-            {/* Main Body */}
+            {/* Body */}
             <div className="flex-1 overflow-hidden flex">
-              {/* Left/form pane */}
-              <section className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
+              {/* Left pane: form */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
                 {/* Assignee & Priority */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <UserSelector
                     selectedUser={
-                      teamMembers.find((u) => u.id === assigneeId) || null
+                      teamMembers.find((u) => u.id === selectedAssigneeId) ||
+                      null
                     }
                     availableUsers={teamMembers}
                     onUserSelect={handleAssigneeChange}
+                    label="Assignee"
                   />
-                  <PrioritySelector
-                    selectedPriority={task?.priority || null}
-                    onChange={(p) => updateTask({ priority: p })}
-                  />
+                  <div>
+                    <PrioritySelector
+                      selectedPriority={task?.priority || null}
+                      onChange={(newId) => updateTask({ priority: newId })}
+                    />
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -263,8 +464,8 @@ export default function SingleTaskView({
                   <label className="text-sm text-slate-300">Description</label>
                   <textarea
                     className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    value={description}
-                    onChange={(e) => handleDescriptionChange(e.target.value)}
+                    value={tempDescription}
+                    onChange={handleDescriptionChange}
                     placeholder="Describe the task..."
                     rows={4}
                   />
@@ -272,7 +473,6 @@ export default function SingleTaskView({
 
                 {/* Dates */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Start Date */}
                   <div>
                     <label className="text-sm flex items-center gap-1 text-slate-300">
                       <FaClock className="text-green-400 w-4 h-4" />
@@ -282,10 +482,11 @@ export default function SingleTaskView({
                       type="date"
                       className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       value={startDate}
-                      onChange={(e) => handleStartChange(e.target.value)}
+                      onChange={(e) =>
+                        handleDateChange("start", e.target.value)
+                      }
                     />
                   </div>
-                  {/* Due Date */}
                   <div>
                     <label className="text-sm flex items-center gap-1 text-slate-300">
                       <FaClock className="text-red-400 w-4 h-4" />
@@ -295,8 +496,8 @@ export default function SingleTaskView({
                       type="date"
                       className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       value={endDate}
-                      onChange={(e) => handleEndChange(e.target.value)}
                       min={startDate || undefined}
+                      onChange={(e) => handleDateChange("end", e.target.value)}
                     />
                   </div>
                 </div>
@@ -306,7 +507,7 @@ export default function SingleTaskView({
                   const dur = calculateDuration(startDate, endDate);
                   if (dur === null) return null;
                   return (
-                    <div className="mt-3 p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200 flex items-center gap-2">
+                    <div className="mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200 flex items-center gap-2">
                       <FaCalendarAlt className="text-slate-300 w-4 h-4" />
                       <span className="font-medium">
                         Duration: {dur} {dur === 1 ? "day" : "days"}
@@ -315,48 +516,120 @@ export default function SingleTaskView({
                   );
                 })()}
 
-                {/* Comments (edit mode only) */}
-                {mode === "edit" && task?.id && (
-                  <CommentsSection
-                    task={task}
-                    taskId={task.id}
-                    comments={task.comments || []}
-                    currentUser={currentUser!}
-                    onRefreshComments={fetchTaskData}
-                    onImagePreview={(url) => updateTask({ imagePreview: url })}
-                  />
-                )}
-
                 {/* Attachments */}
-                {task?.id && (
-                  <AttachmentsList
-                    attachments={task.attachments || []}
-                    currentUser={currentUser!}
-                    taskId={task.id}
-                    uploadFiles={uploadFiles}
-                    onAttachmentsUpdate={fetchTaskData}
+                <div className="mt-4">
+                  <label className="text-sm text-slate-300 flex items-center gap-1">
+                    <FaPaperclip className="w-4 h-4" />
+                    Attachments
+                  </label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      onClick={handleFileSelectClick}
+                      // In new mode, disable until task.id exists? But upload after creation
+                      // We still allow selecting, but note files upload after creation.
+                    >
+                      <FaPaperclip className="mr-1" />
+                      {isNewTask
+                        ? localFilePreviews.length > 0
+                          ? "Add more files"
+                          : "Select files"
+                        : "Select files"}
+                    </button>
+                    <span className="text-slate-400 text-sm">
+                      {isNewTask
+                        ? "Files will upload after creation"
+                        : "You can add multiple files"}
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFilesSelected}
                   />
+                  {/* List local previews if new mode */}
+                  {isNewTask && localFilePreviews.length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {localFilePreviews.map((lp, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-center justify-between bg-slate-700 p-2 rounded"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{getFileIcon(lp.file.type)}</span>
+                            <span className="text-sm text-white">
+                              {lp.file.name} ({formatFileSize(lp.file.size)})
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-red-400 hover:text-red-300 text-sm"
+                            onClick={() => removeLocalFile(idx)}
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {/* In edit mode: show existing attachments via AttachmentsList */}
+                  {!isNewTask && task?.attachments && (
+                    <div className="mt-4">
+                      <AttachmentsList
+                        attachments={task.attachments}
+                        currentUser={currentUser}
+                        taskId={task.id!}
+                        onTaskUpdate={async () => {
+                          await fetchTaskData();
+                        }}
+                        onAttachmentsUpdate={async () => {
+                          await fetchTaskData();
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Comments in edit mode */}
+                {!isNewTask && task?.id && (
+                  <div className="mt-6">
+                    <CommentsSection
+                      taskId={task.id}
+                      comments={task.comments || []}
+                      currentUser={currentUser}
+                      task={task}
+                      onRefreshComments={async () => {
+                        await fetchTaskData();
+                      }}
+                      onImagePreview={(url: string) =>
+                        updateTask({ imagePreview: url })
+                      }
+                    />
+                  </div>
                 )}
-              </section>
+              </div>
 
-              {/* Divider */}
-              <div className="hidden lg:block w-px bg-slate-600/50" />
+              {/* Vertical separator */}
+              <div className="hidden lg:block w-px bg-slate-600/50"></div>
 
-              {/* Right sidebar */}
-              <aside className="w-full lg:w-80 bg-slate-800/60 border-l border-slate-600 overflow-y-auto p-6 text-white">
+              {/* Right sidebar: details */}
+              <aside className="w-full lg:w-72 bg-slate-800/60 border-l border-slate-600 overflow-y-auto p-6 text-white">
                 {/* Assignee info */}
-                <section className="mb-6">
+                <div className="mb-6">
                   <h3 className="text-sm text-slate-400 uppercase mb-2">
                     Assignee
                   </h3>
                   {task?.assignee ? (
                     <div className="flex items-center gap-3 bg-slate-700 p-3 rounded-lg">
                       <Avatar
-                        src={task.assignee.image || ""}
+                        src={getAvatarUrl(task.assignee) || ""}
                         alt={task.assignee.name}
                         size={32}
                       />
-                      <div className="flex flex-col">
+                      <div className="flex flex-col text-white">
                         <span className="font-medium">
                           {task.assignee.name}
                         </span>
@@ -366,42 +639,42 @@ export default function SingleTaskView({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-slate-400">No assignee</p>
+                    <div className="text-slate-400">No assignee</div>
                   )}
-                </section>
+                </div>
 
                 {/* Created */}
-                <section className="mb-6">
+                <div className="mb-6">
                   <h3 className="text-sm text-slate-400 uppercase mb-2">
                     Created
                   </h3>
-                  <p
+                  <div
                     className={
                       task?.created_at ? "text-white" : "text-slate-400"
                     }
                   >
                     {task?.created_at ? formatDate(task.created_at) : "-"}
-                  </p>
-                </section>
+                  </div>
+                </div>
 
                 {/* Last Updated */}
-                <section className="mb-6">
+                <div className="mb-6">
                   <h3 className="text-sm text-slate-400 uppercase mb-2">
                     Last Updated
                   </h3>
-                  <p
+                  <div
                     className={
                       task?.updated_at ? "text-white" : "text-slate-400"
                     }
                   >
                     {task?.updated_at ? formatDate(task.updated_at) : "-"}
-                  </p>
-                </section>
+                  </div>
+                </div>
 
-                {/* Duration in sidebar */}
-                {task?.start_date && task.end_date && (
-                  <section>
-                    <h4 className="text-sm font-semibold text-slate-300 mb-2">
+                {/* Duration sidebar */}
+                {task?.start_date && task?.end_date && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-slate-300 mt-4 mb-2">
                       Duration
                     </h4>
                     <p className="text-sm">
@@ -415,34 +688,62 @@ export default function SingleTaskView({
                           : "-";
                       })()}
                     </p>
-                  </section>
+                  </div>
                 )}
               </aside>
             </div>
 
             {/* Footer */}
-            {task && (
-              <footer className="flex justify-end items-center p-4 border-t border-slate-600 gap-3">
-                {!isNewTask && (
-                  <Button variant="destructive" size="md" onClick={deleteTask}>
-                    Delete
-                  </Button>
-                )}
-                <Button variant="secondary" size="md" onClick={handleClose}>
-                  Cancel
-                </Button>
+            <div className="flex justify-end items-center px-6 py-4 border-t border-slate-600 gap-3">
+              {!isNewTask && (
                 <Button
-                  variant="primary"
+                  variant="destructive"
                   size="md"
-                  onClick={handleSave}
-                  disabled={saving}
+                  onClick={() => setShowDeleteConfirm(true)}
                 >
-                  {isNewTask ? "Create" : "Save Changes"}
+                  Delete
                 </Button>
-              </footer>
-            )}
+              )}
+              <Button variant="secondary" size="md" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSave}
+                disabled={saving || !tempTitle.trim()}
+              >
+                {isNewTask ? "Create Task" : "Save Changes"}
+              </Button>
+            </div>
           </motion.div>
         </motion.div>
+      )}
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          title="Delete Task"
+          message="Are you sure you want to delete this task? This cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          type="danger"
+          onConfirm={async () => {
+            setShowDeleteConfirm(false);
+            await deleteTask();
+            // onClose will be invoked after exit animation
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+
+      {/* Image preview modal */}
+      {previewImageUrl && (
+        <ImagePreviewModal
+          imageUrl={previewImageUrl}
+          onClose={() => setPreviewImageUrl(null)}
+        />
       )}
     </AnimatePresence>
   );
