@@ -57,8 +57,7 @@ const SingleTaskView = ({
   onClose,
   onTaskUpdate,
   onTaskAdded,
-}: // Optionally you may want to pass more props (e.g. breadcrumbs, etc.)
-SingleTaskViewProps) => {
+}: SingleTaskViewProps) => {
   const { data: session } = useSession();
   const { currentUser, loading: userLoading } = useCurrentUser();
 
@@ -88,7 +87,6 @@ SingleTaskViewProps) => {
     onClose,
   });
 
-  // Local previews for attachments before creation
   const [localFilePreviews, setLocalFilePreviews] = useState<
     LocalFilePreview[]
   >([]);
@@ -97,13 +95,11 @@ SingleTaskViewProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const [waitBeforeError, setWaitBeforeError] = useState(true);
 
-  // Delay before showing not-found error in edit mode
   useEffect(() => {
     const timeout = setTimeout(() => setWaitBeforeError(false), 500);
     return () => clearTimeout(timeout);
   }, []);
 
-  // Form fields state
   const [tempTitle, setTempTitle] = useState("");
   const [tempDescription, setTempDescription] = useState("");
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
@@ -112,7 +108,6 @@ SingleTaskViewProps) => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // Sync form fields when task loads/updates
   useEffect(() => {
     if (task) {
       setTempTitle(task.title || "");
@@ -123,11 +118,9 @@ SingleTaskViewProps) => {
     }
   }, [task]);
 
-  // Refs for outside click detection
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Handle Escape key to close
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -142,7 +135,6 @@ SingleTaskViewProps) => {
     };
   }, [isVisible, hasUnsavedChanges, tempTitle]);
 
-  // Close when clicking outside modalRef
   // @ts-expect-error: useOutsideClick handles HTMLElement types safely
   useOutsideClick([modalRef], () => {
     if (isVisible) {
@@ -194,7 +186,6 @@ SingleTaskViewProps) => {
     }
   };
 
-  // File attachment previews
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleFileSelectClick = () => {
     fileInputRef.current?.click();
@@ -260,7 +251,6 @@ SingleTaskViewProps) => {
       const success = await saveNewTask();
       if (success) {
         toast.success("Task created");
-        // upload previews after creation
         if (localFilePreviews.length > 0 && task?.id) {
           for (const local of localFilePreviews) {
             await handleUploadAttachment(local.file);
@@ -282,7 +272,6 @@ SingleTaskViewProps) => {
 
   const handleClose = () => {
     if (hasUnsavedChanges) {
-      // confirm only if there are unsaved changes
       const confirmClose = confirm("You have unsaved changes. Close anyway?");
       if (!confirmClose) return;
     }
@@ -307,11 +296,9 @@ SingleTaskViewProps) => {
     } catch (err) {
       console.error("deleteTask error:", err);
       toast.error("Failed to delete task");
-      // Optionally re-show confirm or handle differently
     }
   };
 
-  // Early loading / error UI
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
@@ -340,11 +327,9 @@ SingleTaskViewProps) => {
     );
   }
   if (!isNewTask && !loading && !task && !waitBeforeError) {
-    // edit mode but task not found
     return null;
   }
 
-  // Priority badge for header if needed
   const headerPriorityBadge =
     !isNewTask && task?.priority ? (
       <span
@@ -407,7 +392,6 @@ SingleTaskViewProps) => {
                   onKeyDown={handleTitleKeyDown}
                   autoFocus={isNewTask}
                 />
-                {headerPriorityBadge}
               </div>
               <div className="flex items-center gap-2">
                 {!isNewTask && task?.id && (
@@ -429,199 +413,10 @@ SingleTaskViewProps) => {
               </div>
             </div>
 
-            {/* BODY: form + sidebar */}
-            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-              {/* Left pane: form */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
-                {/* Assignee & Priority selectors */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <UserSelector
-                    selectedUser={
-                      teamMembers.find((u) => u.id === selectedAssigneeId) ||
-                      null
-                    }
-                    availableUsers={teamMembers}
-                    onUserSelect={handleAssigneeChange}
-                    label="Assignee"
-                  />
-                  <PrioritySelector
-                    selectedPriority={task?.priority || null}
-                    onChange={(newId) => updateTask({ priority: newId })}
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="text-sm text-slate-300">Description</label>
-                  <textarea
-                    className="
-                      mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400
-                      resize-none focus:outline-none focus:ring-2 focus:ring-purple-500
-                    "
-                    value={tempDescription}
-                    onChange={handleDescriptionChange}
-                    placeholder="Describe the task..."
-                    rows={4}
-                  />
-                </div>
-
-                {/* Dates: responsive */}
-                <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-                  <div className="flex-1">
-                    <label className="text-sm flex items-center gap-1 text-slate-300">
-                      {/* White clock icon */}
-                      <FaClock className="text-white w-4 h-4" />
-                      Start Date
-                    </label>
-                    <input
-                      type="date"
-                      className="
-                        mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded
-                        text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500
-                      "
-                      value={startDate}
-                      onChange={(e) =>
-                        handleDateChange("start", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-sm flex items-center gap-1 text-slate-300">
-                      {/* White clock icon */}
-                      <FaClock className="text-white w-4 h-4" />
-                      Due Date
-                    </label>
-                    <input
-                      type="date"
-                      className="
-                        mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded
-                        text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500
-                      "
-                      value={endDate}
-                      min={startDate || undefined}
-                      onChange={(e) => handleDateChange("end", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* Duration display if both dates */}
-                {(() => {
-                  const dur = calculateDuration(startDate, endDate);
-                  if (dur === null) return null;
-                  return (
-                    <div
-                      className="
-                      mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200
-                      flex items-center gap-2
-                    "
-                    >
-                      <FaCalendarAlt className="text-white w-4 h-4" />
-                      <span className="font-medium">
-                        Duration: {dur} {dur === 1 ? "day" : "days"}
-                      </span>
-                    </div>
-                  );
-                })()}
-
-                {/* Attachments */}
-                <div className="mt-4">
-                  <label className="text-sm text-slate-300 flex items-center gap-1">
-                    <FaPaperclip className="w-4 h-4 text-white" />
-                    Attachments
-                  </label>
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      className="
-                        inline-flex items-center px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white
-                        hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500
-                      "
-                      onClick={handleFileSelectClick}
-                    >
-                      <FaPaperclip className="mr-1 text-white" />
-                      {isNewTask
-                        ? localFilePreviews.length > 0
-                          ? "Add more files"
-                          : "Select files"
-                        : "Select files"}
-                    </button>
-                    <span className="text-slate-400 text-sm">
-                      {isNewTask
-                        ? "Files will upload after creation"
-                        : "You can add multiple files"}
-                    </span>
-                  </div>
-                  <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleFilesSelected}
-                  />
-                  {/* Local previews list */}
-                  {isNewTask && localFilePreviews.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {localFilePreviews.map((lp) => (
-                        <li
-                          key={lp.id}
-                          className="flex items-center justify-between bg-slate-700 p-2 rounded"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span>{getFileIcon(lp.file.type)}</span>
-                            <span className="text-sm text-white">
-                              {lp.file.name} ({formatFileSize(lp.file.size)})
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            className="text-red-400 hover:text-red-300 text-sm"
-                            onClick={() => removeLocalFile(lp.id)}
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {/* Existing attachments in edit mode */}
-                  {!isNewTask && task?.attachments && (
-                    <div className="mt-4">
-                      <AttachmentsList
-                        attachments={task.attachments}
-                        currentUser={currentUser}
-                        taskId={task.id!}
-                        onTaskUpdate={async () => {
-                          await fetchTaskData();
-                        }}
-                        onAttachmentsUpdate={async () => {
-                          await fetchTaskData();
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Comments */}
-                {!isNewTask && task?.id && (
-                  <div className="mt-6">
-                    <CommentsSection
-                      taskId={task.id}
-                      comments={task.comments || []}
-                      currentUser={currentUser}
-                      task={task}
-                      onRefreshComments={async () => {
-                        await fetchTaskData();
-                      }}
-                      onImagePreview={(url: string) =>
-                        updateTask({ imagePreview: url })
-                      }
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Sidebar: on small screens it appears below; on md+ it sits on right */}
-              <aside className="w-full md:w-72 bg-slate-800/70 border-t border-slate-600 md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0">
+            {/* BODY: form + sidebar*/}
+            <div className="flex flex-col-reverse md:flex-row-reverse flex-1 overflow-hidden">
+              {/* SIDEBAR: */}
+              <aside className="w-full md:w-72 hidden md:block bg-slate-800/70 border-t md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0">
                 {/* Assignee with avatar */}
                 <div className="mb-6">
                   <h3 className="text-sm text-slate-300 uppercase mb-2">
@@ -697,11 +492,194 @@ SingleTaskViewProps) => {
                   </div>
                 )}
               </aside>
+              {/* FORM (main content) */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
+                {/* Assignee & Priority selectors */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <UserSelector
+                    selectedUser={
+                      teamMembers.find((u) => u.id === selectedAssigneeId) ||
+                      null
+                    }
+                    availableUsers={teamMembers}
+                    onUserSelect={handleAssigneeChange}
+                    label="Assignee"
+                  />
+                  <PrioritySelector
+                    selectedPriority={task?.priority || null}
+                    onChange={(newId) => updateTask({ priority: newId })}
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="text-sm text-slate-300">Description</label>
+                  <textarea
+                    className="
+                      mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400
+                      resize-none focus:outline-none focus:ring-2 focus:ring-purple-500
+                    "
+                    value={tempDescription}
+                    onChange={handleDescriptionChange}
+                    placeholder="Describe the task..."
+                    rows={4}
+                  />
+                </div>
+
+                {/* Dates*/}
+                <div className="flex flex-col md:flex-row-reverse md:space-x-4 space-y-4 md:space-y-0">
+                  <div className="flex-1">
+                    <label className="text-sm flex items-center gap-1 text-slate-300">
+                      <FaClock className="text-white w-4 h-4" />
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      className="
+                        mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded
+                        text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500
+                      "
+                      value={startDate}
+                      onChange={(e) =>
+                        handleDateChange("start", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-sm flex items-center gap-1 text-slate-300">
+                      <FaClock className="text-white w-4 h-4" />
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      className="
+                        mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded
+                        text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500
+                      "
+                      value={endDate}
+                      min={startDate || undefined}
+                      onChange={(e) => handleDateChange("end", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Duration display if both dates */}
+                {(() => {
+                  const dur = calculateDuration(startDate, endDate);
+                  if (dur === null) return null;
+                  return (
+                    <div
+                      className="
+                      mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200
+                      flex items-center gap-2
+                    "
+                    >
+                      <FaCalendarAlt className="text-white w-4 h-4" />
+                      <span className="font-medium">
+                        Duration: {dur} {dur === 1 ? "day" : "days"}
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Attachments */}
+                <div className="mt-4">
+                  <label className="text-sm text-slate-300 flex items-center gap-1">
+                    <FaPaperclip className="w-4 h-4 text-white" />
+                    Attachments
+                  </label>
+                  <div className="mt-1 flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      className="
+                        inline-flex items-center px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white
+                        hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500
+                      "
+                      onClick={handleFileSelectClick}
+                    >
+                      <FaPaperclip className="mr-1 text-white" />
+                      {isNewTask
+                        ? localFilePreviews.length > 0
+                          ? "Add more files"
+                          : "Select files"
+                        : "Select files"}
+                    </button>
+                    <span className="text-slate-400 text-sm">
+                      {isNewTask
+                        ? "Files will upload after creation"
+                        : "You can add multiple files"}
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFilesSelected}
+                  />
+                  {isNewTask && localFilePreviews.length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {localFilePreviews.map((lp) => (
+                        <li
+                          key={lp.id}
+                          className="flex items-center justify-between bg-slate-700 p-2 rounded"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{getFileIcon(lp.file.type)}</span>
+                            <span className="text-sm text-white">
+                              {lp.file.name} ({formatFileSize(lp.file.size)})
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-red-400 hover:text-red-300 text-sm"
+                            onClick={() => removeLocalFile(lp.id)}
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {!isNewTask && task?.attachments && (
+                    <div className="mt-4">
+                      <AttachmentsList
+                        attachments={task.attachments}
+                        currentUser={currentUser}
+                        taskId={task.id!}
+                        onTaskUpdate={async () => {
+                          await fetchTaskData();
+                        }}
+                        onAttachmentsUpdate={async () => {
+                          await fetchTaskData();
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Comments */}
+                {!isNewTask && task?.id && (
+                  <div className="mt-6">
+                    <CommentsSection
+                      taskId={task.id}
+                      comments={task.comments || []}
+                      currentUser={currentUser}
+                      task={task}
+                      onRefreshComments={async () => {
+                        await fetchTaskData();
+                      }}
+                      onImagePreview={(url: string) =>
+                        updateTask({ imagePreview: url })
+                      }
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* FOOTER */}
             <div className="flex flex-col sm:flex-row justify-end items-center px-6 py-4 border-t border-slate-600 gap-3">
-              {/* Delete only in edit mode */}
               {!isNewTask && (
                 <Button
                   variant="destructive"
