@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 interface MarkdownContentProps {
   /**
    * Markdown content string, which may contain images in format ![alt](url)

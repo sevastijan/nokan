@@ -2,7 +2,11 @@ import { ToastContainer } from "react-toastify";
 import "./styles/globals.css";
 import { Providers } from "./providers";
 import Navbar from "./components/Navbar";
-import { metadata } from "./metadata";
+
+export const metadata = {
+  title: "Nokan Taskboard",
+  description: "Taskboard application",
+};
 
 export default function RootLayout({
   children,
@@ -14,7 +18,7 @@ export default function RootLayout({
       <body className="bg-gray-950 text-white">
         <Providers>
           <Navbar />
-          <main className="main-content min-h-screen">{children}</main>
+          <main className="main-content min-h-screen md:ml-64">{children}</main>
           <ToastContainer position="top-right" autoClose={3000} />
         </Providers>
       </body>

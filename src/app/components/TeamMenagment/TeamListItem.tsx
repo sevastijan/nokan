@@ -1,6 +1,8 @@
-import React from "react";
-import { TeamListItemProps } from "./types";
+// src/app/components/TeamManagement/TeamListItem.tsx
 import DOMPurify from "dompurify";
+import { FiEdit3, FiTrash2, FiUsers } from "react-icons/fi";
+import Avatar from "../Avatar/Avatar";
+import { TeamListItemProps } from "@/app/types/globalTypes";
 
 const TeamListItem = ({
   team,
@@ -8,34 +10,84 @@ const TeamListItem = ({
   onDeleteTeam,
   availableUsers,
 }: TeamListItemProps) => {
-  const members = availableUsers
-    .filter((user) => team.users.find((member) => member.user_id === user.id))
-    .map((user) => user.name)
-    .join(", ");
+  // Filtrujemy availableUsers, by znaleźć tych w team.users
+  const teamMembers = availableUsers.filter((user) =>
+    team.users.some((member) => member.user_id === user.id)
+  );
 
   return (
-    <div className="bg-[#1E293B] border border-[#334155] rounded-xl shadow-lg p-6 flex flex-col gap-4">
-      <div
-        className="font-semibold text-lg text-white"
-        dangerouslySetInnerHTML={{
-          __html: DOMPurify.sanitize(team.name),
-        }}
-      />
-      <div className="text-gray-300 text-sm break-words">
-        <span className="font-medium text-gray-400">Members:</span> {members}
+    <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-200 group hover:shadow-xl hover:shadow-purple-500/10 min-h-[280px] flex flex-col">
+      {/* Nagłówek */}
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl">
+            <FiUsers className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h4
+              className="font-semibold text-xl text-white group-hover:text-purple-300 transition-colors leading-tight"
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(team.name),
+              }}
+            />
+            <p className="text-slate-400 text-sm mt-1">
+              {teamMembers.length} member{teamMembers.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
       </div>
-      <div className="flex gap-3 mt-2">
+
+      {/* Lista członków */}
+      <div className="flex-1 mb-6">
+        <p className="text-slate-400 text-sm font-medium mb-4">Team Members</p>
+        <div className="space-y-3">
+          {teamMembers.slice(0, 4).map((user) => (
+            <div
+              key={user.id}
+              className="flex items-center gap-3 bg-slate-700/30 rounded-xl px-4 py-3 hover:bg-slate-700/50 transition-colors"
+            >
+              {user.image ? (
+                <Avatar src={user.image} alt={user.name} size={32} />
+              ) : (
+                <div className="w-8 h-8 bg-slate-600 rounded-full" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium truncate">
+                  {user.name}
+                </p>
+                <p className="text-slate-400 text-xs truncate">{user.email}</p>
+              </div>
+            </div>
+          ))}
+          {teamMembers.length > 4 && (
+            <div className="flex items-center justify-center bg-slate-700/30 rounded-xl px-4 py-3">
+              <span className="text-slate-400 text-sm font-medium">
+                +{teamMembers.length - 4} more
+              </span>
+            </div>
+          )}
+          {teamMembers.length === 0 && (
+            <div className="text-center py-4">
+              <p className="text-slate-500 text-sm">No members assigned</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Akcje */}
+      <div className="flex gap-3 pt-4 border-t border-slate-700/50">
         <button
           onClick={() => onEditTeam(team)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-md transition-colors"
+          className="flex-1 bg-gradient-to-r from-purple-600/20 to-blue-600/20 hover:from-purple-600/30 hover:to-blue-600/30 text-white font-medium px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-purple-500/30 hover:border-purple-400/50"
         >
-          Edit
+          <FiEdit3 className="w-4 h-4" />
+          Edit Team
         </button>
         <button
           onClick={() => onDeleteTeam(team.id)}
-          className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-md transition-colors"
+          className="bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 font-medium px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-red-500/30 hover:border-red-400/50"
         >
-          Delete
+          <FiTrash2 className="w-4 h-4" />
         </button>
       </div>
     </div>

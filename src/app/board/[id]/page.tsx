@@ -1,470 +1,514 @@
 "use client";
 
-import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
+import { useEffect, useState, useCallback } from "react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 import { useParams, useRouter } from "next/navigation";
-import { useBoard } from "../../hooks/useBoard";
-import Column from "../../components/Column";
-import AddColumnPopup from "../../components/TaskColumn/AddColumnPopup";
-import SingleTaskView from "../../components/SingleTaskView/SingleTaskView";
-import Calendar from "../../components/Calendar/Calendar";
-import { JSX, useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiArrowLeft, FiCalendar } from "react-icons/fi";
-import { Column as ColumnType, Task } from "../../types/useBoardTypes";
-import { User } from "../../components/SingleTaskView/types";
 import { useSession } from "next-auth/react";
-import Loader from "../../components/Loader";
-import { supabase } from "../../lib/supabase";
-import { extractIdFromUrl } from "../../lib/utils";
-import { getPriorities, getTeams } from "../../lib/api";
+import { supabase } from "@/app/lib/supabase";
+import { useBoard } from "@/app/hooks/useBoard";
+import Column from "@/app/components/Column";
+import AddColumnPopup from "@/app/components/TaskColumn/AddColumnPopup";
+import SingleTaskView from "@/app/components/SingleTaskView/SingleTaskView";
+import ListView from "@/app/components/ListView/ListView";
+import Loader from "@/app/components/Loader";
+import { extractTaskIdFromUrl } from "@/app/utils/helpers";
+import { getPriorities } from "@/app/lib/api";
+import {
+  Column as ColumnType,
+  User,
+  Priority,
+  AssigneeOption,
+  Task as TaskType,
+} from "@/app/types/globalTypes";
+import { FaArrowLeft } from "react-icons/fa";
+import Button from "@/app/components/Button/Button";
+import { toast } from "react-toastify";
 
-/**
- * Board page component displaying a Kanban board with drag-and-drop support
- * @returns JSX element rendering the board UI
- */
-const Page = (): JSX.Element => {
+import BoardHeader from "@/app/components/Board/BoardHeader";
+
+const Page = () => {
   const { id } = useParams();
+  const boardId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Custom hook for board data and handlers
+  if (!boardId) {
+    return <div>Missing boardId in URL!</div>;
+  }
+
+  // useBoard hook for data & actions
   const {
     board,
+    loading: boardLoading,
+    error: boardError,
     fetchBoardData,
-    updateBoard,
     handleUpdateBoardTitle,
     handleAddColumn,
     handleRemoveColumn,
     handleUpdateColumnTitle,
-    handleRemoveTask,
-    handleUpdateTask,
     handleAddTask,
-  } = useBoard(id as string);
+    handleRemoveTask,
+  } = useBoard(boardId);
 
-  // Local state for board functionality
-  const [newColumnTitle, setNewColumnTitle] = useState<string>("");
-  const [isAddingColumn, setIsAddingColumn] = useState<boolean>(false);
-  const [localBoardTitle, setLocalBoardTitle] = useState<string>(
-    board?.title || ""
-  );
-  const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
+  // Local state
+  const [localColumns, setLocalColumns] = useState<ColumnType[]>([]);
+  const [boardTitle, setBoardTitle] = useState("");
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState("");
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [addTaskColumnId, setAddTaskColumnId] = useState<string | null>(null);
-  const [showCalendar, setShowCalendar] = useState<boolean>(false);
-  const [priorities, setPriorities] = useState<
-    Array<{ id: string; label: string; color: string }>
-  >([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [priorities, setPriorities] = useState<Priority[]>([]);
+  const [viewMode, setViewMode] = useState<"columns" | "list">("columns");
 
-  /**
-   * Fetch task priorities from API or set default priorities on failure
-   */
+  // New: search + filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterPriority, setFilterPriority] = useState<string | null>(null);
+  const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
+
+  // Sync localColumns when board updates
   useEffect(() => {
-    const loadPriorities = async () => {
-      try {
-        const fetchedPriorities = await getPriorities();
-        setPriorities(fetchedPriorities);
-      } catch (error) {
-        console.error("Error loading priorities:", error);
+    if (!board) return;
+    setBoardTitle(board.title);
+    const sortedCols = board.columns
+      .map((c) => ({
+        ...c,
+        tasks: (c.tasks || [])
+          .map((t) => ({ ...t, order: t.sort_order ?? 0 }))
+          .sort((a, b) => a.order - b.order),
+      }))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    setLocalColumns(sortedCols);
+  }, [board]);
+
+  // Load priorities once
+  useEffect(() => {
+    getPriorities()
+      .then(setPriorities)
+      .catch(() =>
         setPriorities([
           { id: "low", label: "Low", color: "#10b981" },
           { id: "medium", label: "Medium", color: "#f59e0b" },
           { id: "high", label: "High", color: "#ef4444" },
           { id: "urgent", label: "Urgent", color: "#dc2626" },
-        ]);
-      }
-    };
-
-    loadPriorities();
+        ])
+      );
   }, []);
 
-  /**
-   * Fetch or create current user from Supabase using session email
-   */
+  // Ensure user record exists in Supabase
   useEffect(() => {
-    const fetchUser = async () => {
-      if (session?.user?.email) {
-        try {
-          const { data: userData, error } = await supabase
-            .from("users")
-            .select("*")
-            .eq("email", session.user.email)
-            .single();
-
-          if (userData && !error) {
-            // Set user from existing database record
-            const user: User = {
-              id: userData.id,
-              name: userData.name || session.user.name || "Unknown User",
-              email: userData.email,
-              image: userData.image || session.user.image || undefined,
-              created_at: userData.created_at,
-            };
-            setCurrentUser(user);
-          } else if (error?.code === "PGRST116") {
-            // If user not found, create a new one in the database
-            const { data: newUser, error: createError } = await supabase
-              .from("users")
-              .insert({
-                email: session.user.email,
-                name: session.user.name || "Unknown User",
-                image: session.user.image || null,
-              })
-              .select()
-              .single();
-
-            if (createError) {
-              console.error("Error creating user:", createError);
-              throw createError;
-            }
-
-            const user: User = {
-              id: newUser.id,
-              name: newUser.name,
-              email: newUser.email,
-              image: newUser.image || undefined,
-              created_at: newUser.created_at,
-            };
-            setCurrentUser(user);
-          } else {
-            console.error("Database error:", error);
-            throw error;
-          }
-        } catch (error) {
-          // Fallback user object from session if DB fails
-          console.error("Error fetching/creating user:", error);
-          const user: User = {
-            id: session.user.email || "temp-id",
-            name: session.user.name || "Unknown User",
-            email: session.user.email || "",
-            image: session.user.image || undefined,
-          };
-          setCurrentUser(user);
-        }
-      }
-    };
-
-    if (session?.user?.email) {
-      fetchUser();
-    }
-  }, [session]);
-
-  /**
-   * Redirect to sign-in page if user is unauthenticated
-   */
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin");
-    }
-  }, [status, router]);
-
-  /**
-   * Synchronize local board title state when board data updates
-   */
-  useEffect(() => {
-    if (board?.title && board.title !== localBoardTitle) {
-      setLocalBoardTitle(board.title);
-    }
-  }, [board?.title, localBoardTitle]);
-
-  /**
-   * Debounce board title updates to reduce number of API calls
-   */
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (localBoardTitle !== board?.title) {
-        handleUpdateBoardTitle(localBoardTitle);
-      }
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [localBoardTitle, board?.title, handleUpdateBoardTitle]);
-
-  /**
-   * If there is ID in url, display task details
-   */
-  useEffect(() => {
-    const id = extractIdFromUrl(window.location.href);
-    if (id) {
-      setSelectedTaskId(id);
-    }
-  }, []);
-
-  /**
-   * Handle drag and drop events for tasks and columns
-   * @param result - Result object from drag-and-drop library
-   */
-  const onDragEnd = (result: DropResult) => {
-    if (!board) return;
-
-    const { source, destination, type } = result;
-    if (!destination) return;
-
-    if (type === "TASK") {
-      const sourceCol = board.columns.find(
-        (col: ColumnType) => col.id === source.droppableId
-      );
-      const destCol = board.columns.find(
-        (col: ColumnType) => col.id === destination.droppableId
-      );
-
-      if (!sourceCol || !destCol) return;
-
-      const taskToMove = sourceCol.tasks[source.index];
-
-      if (source.droppableId === destination.droppableId) {
-        // Reorder task within same column
-        const newTasks = [...sourceCol.tasks];
-        newTasks.splice(source.index, 1);
-        newTasks.splice(destination.index, 0, taskToMove);
-
-        updateBoard({
-          ...board,
-          columns: board.columns.map((col: ColumnType) =>
-            col.id === sourceCol.id ? { ...col, tasks: newTasks } : col
-          ),
+    if (!session?.user?.email) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", session.user.email)
+        .single();
+      if (data && !error) {
+        setCurrentUser({
+          id: data.id,
+          name: data.name!,
+          email: data.email,
+          image: data.image || undefined,
+          created_at: data.created_at!,
         });
       } else {
-        // Move task between columns
-        const sourceTasks = [...sourceCol.tasks];
-        const destTasks = [...destCol.tasks];
-
-        sourceTasks.splice(source.index, 1);
-        destTasks.splice(destination.index, 0, taskToMove);
-
-        updateBoard({
-          ...board,
-          columns: board.columns.map((col: ColumnType) =>
-            col.id === sourceCol.id
-              ? { ...col, tasks: sourceTasks }
-              : col.id === destCol.id
-              ? { ...col, tasks: destTasks }
-              : col
-          ),
+        const { data: d2 } = await supabase
+          .from("users")
+          .insert({
+            email: session.user.email,
+            name: session.user.name,
+            image: session.user.image,
+          })
+          .select()
+          .single();
+        setCurrentUser({
+          id: d2.id,
+          name: d2.name!,
+          email: d2.email,
+          image: d2.image || undefined,
+          created_at: d2.created_at!,
         });
       }
-    } else if (type === "COLUMN") {
-      // Reorder columns
-      const newColumns = [...board.columns];
-      const [movedColumn] = newColumns.splice(source.index, 1);
-      newColumns.splice(destination.index, 0, movedColumn);
+    })();
+  }, [session]);
 
-      updateBoard({
-        ...board,
-        columns: newColumns,
-      });
+  // Redirect if unauthenticated
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/auth/signin");
+  }, [status, router]);
+
+  // Read ?task= from URL
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const t = extractTaskIdFromUrl(window.location.href);
+    if (t) setSelectedTaskId(t);
+  }, []);
+
+  // Board title edit
+  const onBoardTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBoardTitle(e.target.value);
+  };
+  const onBoardTitleBlur = () => {
+    const trimmed = boardTitle.trim();
+    if (trimmed && trimmed !== board?.title) {
+      handleUpdateBoardTitle(trimmed);
     }
   };
 
-  /**
-   * Add a new column to the board after validating title
-   */
-  const addColumn = async () => {
+  // Add Column popup
+  const openAddColumn = () => setIsPopupOpen(true);
+  const closeAddColumn = () => setIsPopupOpen(false);
+  const onAddColumn = async () => {
     if (!newColumnTitle.trim()) return;
     setIsAddingColumn(true);
-    try {
-      await handleAddColumn(newColumnTitle);
-      setNewColumnTitle("");
-      setIsPopupOpen(false);
-    } finally {
-      setIsAddingColumn(false);
-    }
+    await handleAddColumn(newColumnTitle.trim());
+    setNewColumnTitle("");
+    closeAddColumn();
+    await fetchBoardData();
+    setIsAddingColumn(false);
   };
 
-  /**
-   * Navigate back to dashboard
-   */
-  const handleBackToDashboard = () => {
-    router.push("/dashboard");
+  // Add Task
+  const openAddTask = (colId: string) => setAddTaskColumnId(colId);
+  const onTaskAdded = async (
+    columnId: string,
+    title: string,
+    priority?: string,
+    userId?: string
+  ) => {
+    const t = await handleAddTask(columnId, title, priority, userId);
+    // Update localColumns immediately
+    setLocalColumns((cols) =>
+      cols.map((c) =>
+        c.id === columnId ? { ...c, tasks: [...(c.tasks || []), t] } : c
+      )
+    );
+    setAddTaskColumnId(null);
+    return t;
   };
 
-  /**
-   * Handle calendar task click - open task in edit mode
-   */
-  const handleCalendarTaskClick = (taskId: string) => {
-    setSelectedTaskId(taskId);
+  // Remove Task
+  const onTaskRemoved = async (columnId: string, taskId: string) => {
+    await handleRemoveTask(columnId, taskId);
+    setLocalColumns((cols) =>
+      cols.map((c) =>
+        c.id === columnId
+          ? { ...c, tasks: c.tasks.filter((t) => t.id !== taskId) }
+          : c
+      )
+    );
+    toast.success("Task deleted");
   };
 
-  if (status === "loading") {
-    return <Loader text="Loading session..." />;
+  // Drag & drop
+  const onDragEnd = useCallback(
+    async (result: DropResult) => {
+      const { source, destination, type } = result;
+      if (!destination) return;
+
+      if (type === "COLUMN") {
+        const cols = Array.from(localColumns);
+        const [m] = cols.splice(source.index, 1);
+        cols.splice(destination.index, 0, m);
+        setLocalColumns(cols);
+        // Persist
+        await Promise.all(
+          cols.map((c, i) =>
+            supabase.from("columns").update({ order: i }).eq("id", c.id)
+          )
+        );
+        await fetchBoardData();
+        return;
+      }
+
+      if (type === "TASK") {
+        const cols = Array.from(localColumns);
+        const srcIdx = cols.findIndex((c) => c.id === source.droppableId);
+        const dstIdx = cols.findIndex((c) => c.id === destination.droppableId);
+        if (srcIdx < 0 || dstIdx < 0) return;
+
+        const srcTasks = Array.from(cols[srcIdx].tasks || []);
+        const [moved] = srcTasks.splice(source.index, 1);
+        if (!moved) return;
+
+        if (srcIdx === dstIdx) {
+          srcTasks.splice(destination.index, 0, moved);
+          const updated = srcTasks.map((t, i) => ({ ...t, order: i }));
+          cols[srcIdx].tasks = updated;
+          setLocalColumns(cols);
+          // Persist sort_order
+          await Promise.all(
+            updated.map((t) =>
+              supabase
+                .from("tasks")
+                .update({ sort_order: t.order })
+                .eq("id", t.id)
+            )
+          );
+        } else {
+          const dstTasks = Array.from(cols[dstIdx].tasks || []);
+          dstTasks.splice(destination.index, 0, moved);
+
+          const updatedSrc = srcTasks.map((t, i) => ({ ...t, order: i }));
+          const updatedDst = dstTasks.map((t, i) => ({ ...t, order: i }));
+
+          cols[srcIdx].tasks = updatedSrc;
+          cols[dstIdx].tasks = updatedDst;
+          setLocalColumns(cols);
+
+          // Persist both
+          await Promise.all([
+            ...updatedSrc.map((t) =>
+              supabase
+                .from("tasks")
+                .update({ sort_order: t.order })
+                .eq("id", t.id)
+            ),
+            ...updatedDst.map((t) =>
+              supabase
+                .from("tasks")
+                .update({
+                  sort_order: t.order,
+                  column_id: destination.droppableId,
+                })
+                .eq("id", t.id)
+            ),
+          ]);
+        }
+
+        await fetchBoardData();
+      }
+    },
+    [localColumns, fetchBoardData]
+  );
+
+  // Loading / error
+  if (
+    status === "loading" ||
+    !session ||
+    !currentUser ||
+    boardLoading ||
+    !board
+  ) {
+    return <Loader text="Loading board…" />;
+  }
+  if (boardError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+        <div>
+          <h2 className="text-red-400 text-2xl mb-2">Error loading board</h2>
+          <p className="mb-4">{String(boardError)}</p>
+          <Button
+            variant="primary"
+            onClick={() => router.push("/dashboard")}
+            icon={<FaArrowLeft />}
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
   }
 
-  if (!session) {
-    return <Loader text="Redirecting to sign in..." />;
-  }
+  // Compute totalTasks
+  const totalTasks = board.columns.reduce(
+    (sum, col) => sum + (col.tasks?.length || 0),
+    0
+  );
 
-  if (!currentUser) {
-    return <Loader text="Loading user..." />;
-  }
+  // Extract unique assignees
+  const assigneesList: AssigneeOption[] = [];
+  board.columns.forEach((col) => {
+    (col.tasks || []).forEach((task) => {
+      if (task.assignee && task.assignee.id) {
+        const assigneeId = task.assignee.id;
+        if (!assigneesList.find((u) => u.id === assigneeId)) {
+          assigneesList.push({
+            id: assigneeId,
+            name: task.assignee.name,
+          });
+        }
+      }
+    });
+  });
 
-  if (!board) {
-    return <Loader text="Loading board..." />;
-  }
+  // Filter columns/tasks
+  const filteredColumns: ColumnType[] = localColumns.map((col) => {
+    const filteredTasks = (col.tasks || []).filter((task) => {
+      // Search
+      if (searchTerm.trim()) {
+        const term = searchTerm.trim().toLowerCase();
+        const inTitle = task.title?.toLowerCase().includes(term);
+        const inDesc = task.description?.toLowerCase().includes(term);
+        if (!inTitle && !inDesc) return false;
+      }
+      // Priority filter
+      if (filterPriority) {
+        if (task.priority !== filterPriority) return false;
+      }
+      // Assignee filter
+      if (filterAssignee) {
+        if (!task.assignee || task.assignee.id !== filterAssignee) return false;
+      }
+      return true;
+    });
+    return { ...col, tasks: filteredTasks };
+  });
 
   return (
-    <>
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="p-4 sm:p-6 bg-gray-900 min-h-screen">
-          {/* Back to Dashboard Button */}
-          <div className="mb-4">
-            <button
-              onClick={handleBackToDashboard}
-              className="flex cursor-pointer items-center gap-2 text-gray-400 hover:text-white transition-colors group"
-            >
-              <FiArrowLeft className="group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Dashboard</span>
-            </button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+      {/* Header */}
+      <BoardHeader
+        boardTitle={boardTitle}
+        onTitleChange={onBoardTitleChange}
+        onTitleBlur={onBoardTitleBlur}
+        onAddColumn={openAddColumn}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        totalTasks={totalTasks}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        priorities={priorities.map((p) => ({
+          id: p.id,
+          label: p.label,
+          color: p.color,
+        }))}
+        filterPriority={filterPriority}
+        onFilterPriorityChange={setFilterPriority}
+        assignees={assigneesList}
+        filterAssignee={filterAssignee}
+        onFilterAssigneeChange={setFilterAssignee}
+      />
 
-          {/* Board Header */}
-          <div className="mb-4 sm:mb-6 flex flex-col md:flex-row gap-4 md:items-center">
-            <input
-              type="text"
-              value={localBoardTitle}
-              onChange={(e) => setLocalBoardTitle(e.target.value)}
-              className="text-2xl sm:text-3xl font-bold bg-transparent text-white border-b-2 border-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="Board Title"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowCalendar(!showCalendar)}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200 ${
-                  showCalendar
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-gray-600 hover:bg-gray-700 text-white"
-                }`}
-              >
-                <FiCalendar />
-                {showCalendar ? "Ukryj Kalendarz" : "Pokaż Kalendarz"}
-              </button>
-              <button
-                onClick={() => setIsPopupOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-md transition-all duration-200"
-              >
-                Add Column
-              </button>
-            </div>
-          </div>
-
-          {/* Calendar View */}
-          <AnimatePresence>
-            {showCalendar && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mb-6"
-              >
-                <Calendar
-                  boardId={id as string}
-                  onTaskClick={handleCalendarTaskClick}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Board Columns */}
-          <Droppable droppableId="board" type="COLUMN" direction="horizontal">
-            {(provided) => (
+      {/* Body */}
+      {viewMode === "columns" ? (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable
+            droppableId="all-columns"
+            direction="horizontal"
+            type="COLUMN"
+          >
+            {(provider) => (
               <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="flex flex-wrap gap-4 sm:gap-6 overflow-x-auto pb-4 justify-center sm:justify-start"
+                ref={provider.innerRef}
+                {...provider.droppableProps}
+                className="
+                flex-1 flex
+                overflow-x-auto
+                snap-x snap-mandatory
+                gap-4 md:gap-6
+                p-2 md:p-6
+                h-full
+                scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent
+              "
               >
-                <AnimatePresence>
-                  {board.columns.map((column: ColumnType, colIndex: number) => (
-                    <motion.div
-                      key={column.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.3 }}
-                      className="w-full sm:w-auto min-w-[250px] sm:min-w-[300px]"
-                    >
-                      <Column
-                        column={column}
-                        onUpdateTask={handleUpdateTask}
-                        colIndex={colIndex}
-                        onUpdateColumnTitle={handleUpdateColumnTitle}
-                        onRemoveColumn={handleRemoveColumn}
-                        onTaskAdded={(
-                          columnId: string,
-                          title: string,
-                          priority?: string,
-                          userId?: string
-                        ) => handleAddTask(columnId, title, priority, userId)}
-                        onRemoveTask={handleRemoveTask}
-                        onOpenTaskDetail={setSelectedTaskId}
-                        onTaskUpdate={fetchBoardData}
-                        currentUser={currentUser}
-                        selectedTaskId={selectedTaskId}
-                        onOpenAddTask={setAddTaskColumnId}
-                        priorities={priorities}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                {provided.placeholder}
+                {filteredColumns.map((col, idx) => (
+                  <Draggable key={col.id} draggableId={col.id} index={idx}>
+                    {(prov) => (
+                      <div
+                        ref={prov.innerRef}
+                        {...prov.draggableProps}
+                        style={prov.draggableProps.style}
+                        className="
+                        flex-shrink-0 flex h-full p-1
+                        min-w-[88vw] sm:min-w-[340px] md:min-w-[320px] lg:min-w-[350px]
+                        snap-start
+                      "
+                      >
+                        {/* Column content */}
+                        <div
+                          className="
+                          bg-white/10 dark:bg-gray-900/20
+                          rounded-lg
+                          border border-white/30 dark:border-gray-700/30
+                          ring-1 ring-white/10 ring-offset-1 ring-offset-transparent
+                          shadow-md
+                          transition
+                          w-full
+                          flex flex-col
+                          h-full
+                        "
+                        >
+                          {prov.dragHandleProps && (
+                            <Column
+                              column={col}
+                              colIndex={idx}
+                              onUpdateColumnTitle={handleUpdateColumnTitle}
+                              onRemoveColumn={handleRemoveColumn}
+                              onTaskAdded={onTaskAdded}
+                              onRemoveTask={onTaskRemoved}
+                              onOpenTaskDetail={setSelectedTaskId}
+                              selectedTaskId={selectedTaskId}
+                              currentUser={currentUser}
+                              onOpenAddTask={openAddTask}
+                              priorities={priorities}
+                              dragHandleProps={prov.dragHandleProps}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provider.placeholder}
               </div>
             )}
           </Droppable>
-
-          {/* Add Column Popup */}
-          <AddColumnPopup
-            isOpen={isPopupOpen}
-            onClose={() => setIsPopupOpen(false)}
-            onAddColumn={addColumn}
-            newColumnTitle={newColumnTitle}
-            setNewColumnTitle={setNewColumnTitle}
-            isAddingColumn={isAddingColumn}
+        </DragDropContext>
+      ) : (
+        // List view
+        <div className="flex-1 overflow-auto p-6">
+          <ListView
+            columns={filteredColumns}
+            onOpenTaskDetail={setSelectedTaskId}
+            onRemoveTask={onTaskRemoved}
+            priorities={priorities}
           />
         </div>
-      </DragDropContext>
+      )}
 
-      {/* Single Task Detail View in Edit Mode */}
-      <AnimatePresence>
-        {selectedTaskId && !addTaskColumnId && (
-          <SingleTaskView
-            taskId={selectedTaskId}
-            mode="edit"
-            boardId={id as string}
-            onClose={() => setSelectedTaskId(null)}
-            onTaskUpdate={() => {
-              fetchBoardData();
-            }}
-            currentUser={currentUser}
-            priorities={priorities}
-          />
-        )}
-      </AnimatePresence>
+      {/* Add Column Popup */}
+      <AddColumnPopup
+        isOpen={isPopupOpen}
+        onClose={closeAddColumn}
+        onAddColumn={onAddColumn}
+        newColumnTitle={newColumnTitle}
+        setNewColumnTitle={setNewColumnTitle}
+        isAddingColumn={isAddingColumn}
+      />
 
-      {/* Single Task Detail View in Add Mode */}
-      <AnimatePresence>
-        {addTaskColumnId && !selectedTaskId && (
-          <SingleTaskView
-            mode="add"
-            columnId={addTaskColumnId}
-            boardId={id as string}
-            onClose={() => setAddTaskColumnId(null)}
-            onTaskAdd={(newTask) => {
-              updateBoard({
-                ...board,
-                columns: board.columns.map((col: ColumnType) =>
-                  col.id === addTaskColumnId
-                    ? { ...col, tasks: [...col.tasks, newTask] }
-                    : col
-                ),
-              });
-              setAddTaskColumnId(null);
-            }}
-            onTaskAdded={handleAddTask}
-            currentUser={currentUser}
-            priorities={priorities}
-          />
-        )}
-      </AnimatePresence>
-    </>
+      {/* SingleTaskView modal */}
+      {(selectedTaskId || addTaskColumnId) && (
+        <SingleTaskView
+          key={selectedTaskId ?? `add-${addTaskColumnId}`}
+          taskId={selectedTaskId!}
+          mode={selectedTaskId ? "edit" : "add"}
+          boardId={boardId}
+          columnId={addTaskColumnId || undefined}
+          onClose={() => {
+            setSelectedTaskId(null);
+            setAddTaskColumnId(null);
+            fetchBoardData();
+          }}
+          onTaskUpdate={() => {
+            setSelectedTaskId(null);
+            fetchBoardData();
+          }}
+          onTaskAdded={() => {
+            setAddTaskColumnId(null);
+            fetchBoardData();
+          }}
+          currentUser={currentUser!}
+        />
+      )}
+    </div>
   );
 };
 

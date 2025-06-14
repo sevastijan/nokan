@@ -1,286 +1,57 @@
-"use client";
+import { FaPen, FaTrash } from "react-icons/fa";
+import type { BoardWithCounts } from "@/app/store/apiSlice";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import BoardModal from "./BoardModal";
-import BoardDropdown from "./BoardDropdown";
-import Loader from "../Loader";
-import {
-  getAllBoardsForUser,
-  createBoardFromTemplate,
-  addBoard,
-} from "../../lib/api";
-import { BoardTemplate } from "../../types/useBoardTypes";
-
-interface Board {
-  id: string;
-  title: string;
-  owner: string;
+interface BoardListProps {
+  boards: BoardWithCounts[];
+  onEdit: (boardId: string) => void;
+  onDelete: (boardId: string) => void;
 }
 
-/**
- * Board list component that displays user's boards with CRUD operations
- * @returns JSX element containing the board list interface
- */
-const BoardList = () => {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
-
-  /**
-   * Fetch boards when user is authenticated
-   */
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.email) {
-      fetchBoards();
-    } else if (status !== "loading") {
-      setLoading(false);
-    }
-  }, [session, status]);
-
-  /**
-   * Fetch all boards from API
-   */
-  const fetchBoards = async () => {
-    try {
-      const userEmail = session?.user?.email;
-
-      if (!userEmail) {
-        return;
-      }
-      const boards = await getAllBoardsForUser(userEmail);
-      setBoards(boards);
-    } catch (error) {
-      console.error("Error fetching boards:", error);
-      setError("Failed to fetch boards");
-      setBoards([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Create a new board with template support
-   * @param title - The title of the new board
-   * @param template - Optional template to use for board creation
-   */
-  const createBoard = async (title: string, template?: BoardTemplate) => {
-    if (!session?.user?.email) return;
-
-    try {
-      let newBoard;
-
-      if (template) {
-        // Create board from template
-        newBoard = await createBoardFromTemplate(
-          title,
-          template.id,
-          session.user.email
-        );
-      } else {
-        // Create basic board without template
-        newBoard = await addBoard({ title });
-      }
-
-      setCreateModalOpen(false);
-      // Refresh boards to get updated list
-      await fetchBoards();
-    } catch (error) {
-      console.error("Error creating board:", error);
-      setError("Failed to create board");
-    }
-  };
-
-  /**
-   * Edit an existing board
-   * @param title - The new title for the board
-   */
-  const editBoard = async (title: string) => {
-    if (!selectedBoard) return;
-
-    try {
-      const response = await fetch(`/api/dashboards/${selectedBoard.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ title }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const updatedBoard = await response.json();
-      setBoards(
-        boards.map((board) =>
-          board.id === selectedBoard.id
-            ? { ...board, title: updatedBoard.title }
-            : board
-        )
-      );
-      setEditModalOpen(false);
-      setSelectedBoard(null);
-    } catch (error) {
-      console.error("Error editing board:", error);
-      setError("Failed to edit board");
-    }
-  };
-
-  /**
-   * Delete a board
-   */
-  const deleteBoard = async () => {
-    if (!selectedBoard) return;
-
-    try {
-      const response = await fetch(`/api/dashboards/${selectedBoard.id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      setBoards(boards.filter((board) => board.id !== selectedBoard.id));
-      setDeleteModalOpen(false);
-      setSelectedBoard(null);
-    } catch (error) {
-      console.error("Error deleting board:", error);
-      setError("Failed to delete board");
-    }
-  };
-
-  /**
-   * Navigate to board page
-   * @param boardId - The ID of the board to open
-   */
-  const openBoard = (boardId: string) => {
-    router.push(`/board/${boardId}`);
-  };
-
-  /**
-   * Handle edit button click
-   * @param board - The board to edit
-   */
-  const handleEditClick = (board: Board) => {
-    setSelectedBoard(board);
-    setEditModalOpen(true);
-  };
-
-  /**
-   * Handle delete button click
-   * @param board - The board to delete
-   */
-  const handleDeleteClick = (board: Board) => {
-    setSelectedBoard(board);
-    setDeleteModalOpen(true);
-  };
-
-  if (status === "loading" || loading) {
-    return <Loader text="Loading boards..." />;
-  }
-
-  if (!session) {
+const BoardList = ({ boards, onEdit, onDelete }: BoardListProps) => {
+  if (!boards || boards.length === 0) {
     return (
-      <div className="text-center p-8">
-        <div className="text-gray-400">Please log in to view your boards</div>
+      <div className="text-slate-400 text-center py-8">
+        No boards found. Create one to get started.
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <h2 className="text-xl font-semibold">Your Boards</h2>
-        <button
-          onClick={() => setCreateModalOpen(true)}
-          className={`bg-blue-600 cursor-pointer text-white px-4 py-2 rounded hover:bg-blue-700 transition-all duration-300 ${
-            boards.length === 0 && !loading
-              ? "animate-pulse shadow-lg shadow-blue-500/30 ring-2 ring-blue-400/50"
-              : ""
-          }`}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {boards.map((b) => (
+        <div
+          key={b.id}
+          className="relative bg-slate-800/60 p-4 rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors group"
         >
-          Create Board
-        </button>
-      </div>
-
-      {error && (
-        <div className="bg-red-600 text-white p-3 rounded">{error}</div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {boards.map((board) => (
-          <div
-            key={board.id}
-            className="bg-gray-800 p-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors cursor-pointer hover:bg-gray-750 relative"
-          >
-            <div className="flex items-start justify-between">
-              <div onClick={() => openBoard(board.id)} className="flex-1">
-                <h3 className="text-lg font-medium text-white">
-                  {board.title}
-                </h3>
-                <p className="text-gray-400 text-sm mt-1">
-                  Owner: {board.owner}
-                </p>
-              </div>
-              <BoardDropdown
-                onEdit={() => handleEditClick(board)}
-                onDelete={() => handleDeleteClick(board)}
-              />
-            </div>
+          {/* Board Info */}
+          <div>
+            <h3 className="text-lg font-semibold text-white truncate">
+              {b.title}
+            </h3>
+            <p className="text-sm text-slate-400 mt-1">
+              Tasks: {b._count?.tasks ?? 0} | Team: {b._count?.teamMembers ?? 0}
+            </p>
           </div>
-        ))}
-      </div>
 
-      {boards.length === 0 && !loading && (
-        <div className="text-center p-8">
-          <div className="text-gray-400 mb-4">
-            No boards found. Create your first board!
+          {/* Edit/Delete Buttons */}
+          <div className="absolute top-3 right-3 flex gap-3 opacity-0 group-hover:opacity-100 transition">
+            <button
+              onClick={() => onEdit(b.id)}
+              className="text-blue-400 hover:text-blue-200"
+              title="Edit board"
+            >
+              <FaPen className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(b.id)}
+              className="text-red-500 hover:text-red-300"
+              title="Delete board"
+            >
+              <FaTrash className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      )}
-
-      <BoardModal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSubmit={createBoard}
-        title="Create Board"
-        mode="create"
-      />
-
-      <BoardModal
-        isOpen={editModalOpen}
-        onClose={() => {
-          setEditModalOpen(false);
-          setSelectedBoard(null);
-        }}
-        onSubmit={editBoard}
-        initialTitle={selectedBoard?.title || ""}
-        title="Edit Board"
-        mode="edit"
-      />
-
-      <BoardModal
-        isOpen={deleteModalOpen}
-        onClose={() => {
-          setDeleteModalOpen(false);
-          setSelectedBoard(null);
-        }}
-        onSubmit={() => {}}
-        onDelete={deleteBoard}
-        initialTitle={selectedBoard?.title || ""}
-        title="Delete Board"
-        mode="delete"
-      />
+      ))}
     </div>
   );
 };

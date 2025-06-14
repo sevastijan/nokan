@@ -1,96 +1,236 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Calendar from "../components/Calendar/Calendar";
-import SingleTaskView from "../components/SingleTaskView/SingleTaskView";
-import { useCalendar } from "../hooks/useCalendar";
-import { useBoards } from "../hooks/useBoards";
-import { useCurrentUser } from "../hooks/useCurrentUser";
-import Loader from "../components/Loader";
+import Loader from "@/app/components/Loader";
+import Button from "@/app/components/Button/Button";
+import Calendar from "@/app/components/Calendar/Calendar";
+import SingleTaskView from "@/app/components/SingleTaskView/SingleTaskView";
+import BoardSelect from "@/app/components/Calendar/BoardSelect";
+import {
+  useGetCurrentUserQuery,
+  useGetMyBoardsQuery,
+  useGetTasksWithDatesQuery,
+} from "@/app/store/apiSlice";
+import {
+  FaArrowLeft,
+  FaCalendarAlt,
+  FaCalendarWeek,
+  FaCalendarDay,
+  FaFilter,
+} from "react-icons/fa";
+import { CalendarEvent } from "@/app/types/globalTypes";
+
+const getPriorityColor = (priority: string) => {
+  switch (priority?.toLowerCase()) {
+    case "high":
+    case "urgent":
+      return "#ef4444";
+    case "medium":
+    case "normal":
+      return "#f59e0b";
+    case "low":
+      return "#10b981";
+    default:
+      return "#6b7280";
+  }
+};
 
 const CalendarPage = () => {
-  const { data: session, status } = useSession();
   const router = useRouter();
-  const { refreshKey, refreshCalendar } = useCalendar();
+  const { data: session, status: sessionStatus } = useSession();
+
   const {
-    boards,
-    selectedBoardId,
-    setSelectedBoardId,
-    loading: boardsLoading,
-  } = useBoards(session?.user?.email || null);
-  const { currentUser, loading: userLoading } = useCurrentUser(session);
+    data: currentUser,
+    isFetching: userFetching,
+    error: userError,
+  } = useGetCurrentUserQuery(session!, {
+    skip: sessionStatus !== "authenticated" || !session,
+  });
+
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      router.push("/api/auth/signin");
+    }
+  }, [sessionStatus, router]);
+
+  const userId = currentUser?.id ?? "";
+  const {
+    data: boards,
+    isFetching: boardsFetching,
+    error: boardsError,
+  } = useGetMyBoardsQuery(userId, {
+    skip: !userId,
+  });
+
+  const [selectedBoardId, setSelectedBoardId] = useState<string>("");
+
+  // Board options for select
+  const boardOptions = useMemo(
+    () => boards?.map((b) => ({ label: b.title, value: b.id })) ?? [],
+    [boards]
+  );
+
+  useEffect(() => {
+    if (boards && boards.length > 0 && !selectedBoardId) {
+      setSelectedBoardId(boards[0].id);
+    }
+  }, [boards, selectedBoardId]);
+
+  const {
+    data: events,
+    isFetching: eventsFetching,
+    error: eventsError,
+  } = useGetTasksWithDatesQuery(selectedBoardId, {
+    skip: !selectedBoardId,
+  });
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
+  const [showFilters, setShowFilters] = useState(false);
 
-  const handleTaskClick = (taskId: string) => {
-    setSelectedTaskId(taskId);
-  };
+  const handleTaskClick = (taskId: string) => setSelectedTaskId(taskId);
+  const handleCloseTask = () => setSelectedTaskId(null);
+  const handleTaskUpdate = () => setSelectedTaskId(null);
+  const handleBackToDashboard = () => router.push("/dashboard");
 
-  const handleCloseTask = () => {
-    setSelectedTaskId(null);
-  };
+  const loading = sessionStatus === "loading" || userFetching || boardsFetching;
 
-  const handleTaskUpdate = () => {
-    refreshCalendar();
-    setSelectedTaskId(null);
-  };
+  if (loading) return <Loader text="Loading calendar..." />;
+  if (sessionStatus !== "authenticated") return null;
+  if (userError)
+    return <div className="p-8 text-red-400">Error loading user data</div>;
+  if (boardsError)
+    return <div className="p-8 text-red-400">Error loading boards</div>;
 
-  if (status === "loading" || boardsLoading || userLoading) {
-    return <Loader text="Loading" />;
-  }
+  const calendarEvents: CalendarEvent[] = (events ?? []).map((task) => {
+    const start = task.start_date ?? new Date().toISOString();
+    const rawEnd = task.end_date ?? task.start_date ?? new Date().toISOString();
+    const endDate = new Date(rawEnd);
+    endDate.setDate(endDate.getDate() + 1); // make inclusive
+    const end = endDate.toISOString().split("T")[0];
 
-  if (!session) {
-    return null;
-  }
+    const priority =
+      typeof task.priority === "string"
+        ? task.priority
+        : //@ts-expect-error
+          task.priority?.label ?? "low";
+
+    const color = getPriorityColor(priority);
+
+    return {
+      id: task.id,
+      title: task.title ?? "Unnamed Task",
+      start,
+      end,
+      priority,
+      assignee: task.assignee ?? null,
+      description: task.description ?? "",
+      backgroundColor: color,
+      borderColor: color,
+      extendedProps: {
+        priority,
+        assignee: task.assignee ?? null,
+        description: task.description ?? "",
+      },
+    };
+  });
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-white">Task Calendar</h1>
-          {boards.length > 1 && (
-            <div className="flex items-center space-x-3">
-              <label className="text-gray-300 font-medium">Board:</label>
-              <select
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* HEADER */}
+      <div className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-40">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-6 px-2 md:px-8 py-4 md:items-center md:justify-between">
+          {/* Left: Back + Title + Select */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center w-full md:w-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<FaArrowLeft />}
+              onClick={handleBackToDashboard}
+              className="text-slate-400 hover:text-white"
+            >
+              Back
+            </Button>
+            <h1 className="text-2xl font-bold text-white whitespace-nowrap">
+              Task Calendar
+            </h1>
+            <div className="w-full sm:w-64 min-w-0">
+              <BoardSelect
                 value={selectedBoardId}
-                onChange={(e) => setSelectedBoardId(e.target.value)}
-                className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {boards.map((board) => (
-                  <option key={board.id} value={board.id}>
-                    {board.title}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedBoardId}
+                boards={boards || []}
+                className="w-full"
+              />
             </div>
-          )}
-        </div>
-        {selectedBoardId ? (
-          <div className="bg-gray-800 rounded-lg shadow-xl p-6">
-            <Calendar
-              key={refreshKey}
-              boardId={selectedBoardId}
-              onTaskClick={handleTaskClick}
-            />
           </div>
-        ) : (
-          !boardsLoading && (
-            <div className="text-center text-gray-400 mt-12">
-              <p>You don't have access to any boards yet.</p>
-            </div>
-          )
-        )}
-        {selectedTaskId && currentUser && (
-          <SingleTaskView
-            taskId={selectedTaskId}
-            mode="edit"
-            onClose={handleCloseTask}
-            onTaskUpdate={handleTaskUpdate}
-            currentUser={currentUser}
-          />
+          {/* Right: View Mode Buttons */}
+          <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
+            <Button
+              variant={viewMode === "month" ? "primary" : "ghost"}
+              size="sm"
+              icon={<FaCalendarAlt />}
+              onClick={() => setViewMode("month")}
+            >
+              Month
+            </Button>
+            <Button
+              variant={viewMode === "week" ? "primary" : "ghost"}
+              size="sm"
+              icon={<FaCalendarWeek />}
+              onClick={() => setViewMode("week")}
+            >
+              Week
+            </Button>
+            <Button
+              variant={viewMode === "day" ? "primary" : "ghost"}
+              size="sm"
+              icon={<FaCalendarDay />}
+              onClick={() => setViewMode("day")}
+            >
+              Day
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<FaFilter />}
+              onClick={() => setShowFilters((prev) => !prev)}
+            >
+              Filters
+            </Button>
+          </div>
+        </div>
+      </div>
+      {/* CALENDAR */}
+      <div className="p-2 md:p-8">
+        {selectedBoardId && (
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-1 md:p-6">
+            {typeof events === "undefined" && eventsFetching ? (
+              <Loader text="Loading events..." />
+            ) : eventsError ? (
+              <div className="text-red-400">Error loading events</div>
+            ) : (
+              <Calendar
+                events={calendarEvents}
+                viewMode={viewMode}
+                onTaskClick={handleTaskClick}
+              />
+            )}
+          </div>
         )}
       </div>
+      {/* TASK MODAL */}
+      {selectedTaskId && currentUser && (
+        <SingleTaskView
+          taskId={selectedTaskId}
+          key={`edit-${selectedTaskId}`}
+          mode="edit"
+          onClose={handleCloseTask}
+          onTaskUpdate={handleTaskUpdate}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 };

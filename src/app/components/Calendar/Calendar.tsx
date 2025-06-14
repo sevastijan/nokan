@@ -1,167 +1,147 @@
 "use client";
 
-import { useState, useEffect, JSX } from "react";
+import { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { getTasksWithDates, updateTaskDates } from "../../lib/api";
-import { CalendarProps, CalendarEvent } from "./types";
+import { CalendarProps, CalendarEvent } from "@/app/types/globalTypes";
 import "../Calendar/calendar.css";
-import Loader from "../Loader";
-import Avatar from "../Avatar/Avatar"; // Import the Avatar component
+import Avatar from "../Avatar/Avatar";
 
-/**
- * Calendar component for displaying tasks with dates in a monthly/weekly view
- * Supports drag-and-drop functionality to update task dates
- * @param {CalendarProps} props - Component props
- * @returns {JSX.Element} Calendar component
- */
-const Calendar = ({ boardId, onTaskClick }: CalendarProps): JSX.Element => {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+const Calendar = ({
+  events,
+  viewMode = "month",
+  onTaskClick,
+}: CalendarProps) => {
   const [isMobile, setIsMobile] = useState(false);
 
+  // Determine if the device is mobile
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
-
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  useEffect(() => {
-    loadCalendarEvents();
-  }, [boardId]);
-
-  /**
-   * Loads and transforms tasks with dates into calendar events
-   * Fetches tasks from the API and converts them to FullCalendar format
-   */
-  const loadCalendarEvents = async () => {
-    try {
-      setLoading(true);
-      const tasks = (await getTasksWithDates(boardId)) as any[];
-
-      if (!tasks || tasks.length === 0) {
-        setEvents([]);
-        return;
-      }
-
-      const calendarEvents: CalendarEvent[] = tasks.map((task: any) => ({
-        id: task.id,
-        title: task.title,
-        start: task.start_date,
-        end: task.end_date
-          ? new Date(new Date(task.end_date).getTime() + 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0]
-          : undefined,
-        backgroundColor: getPriorityColor(task.priorities?.color),
-        borderColor: getPriorityColor(task.priorities?.color),
-        extendedProps: {
-          description: task.description,
-          priority: task.priorities?.label,
-          assignee: task.assignee,
-        },
-      }));
-
-      setEvents(calendarEvents);
-    } catch (error) {
-      console.error("Error loading calendar events:", error);
-    } finally {
-      setLoading(false);
+  // Convert priority string into a corresponding color
+  const getPriorityColor = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case "high":
+      case "urgent":
+        return "#ef4444";
+      case "medium":
+      case "normal":
+        return "#f59e0b";
+      case "low":
+        return "#10b981";
+      default:
+        return "#6b7280";
     }
   };
 
-  /**
-   * Returns priority color or default blue if not provided
-   * @param {string} [priorityColor] - Priority color from database
-   * @returns {string} Color hex code
-   */
-  const getPriorityColor = (priorityColor?: string): string => {
-    return priorityColor || "#3788d8";
-  };
-
-  /**
-   * Handles drag-and-drop events to update task dates
-   * Updates both start and end dates when an event is moved
-   * @param {any} info - FullCalendar event drop information
-   */
-  const handleEventDrop = async (info: any) => {
-    try {
-      const startDate = info.event.start.toISOString().split("T")[0];
-      const endDate = info.event.end
-        ? new Date(info.event.end.getTime() - 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0]
-        : startDate;
-
-      await updateTaskDates(info.event.id, startDate, endDate);
-      await loadCalendarEvents();
-    } catch (error) {
-      console.error("Error updating task dates:", error);
-      info.revert();
+  // Choose calendar view based on view mode
+  const getCalendarView = () => {
+    switch (viewMode) {
+      case "day":
+        return "timeGridDay";
+      case "week":
+        return "timeGridWeek";
+      default:
+        return "dayGridMonth";
     }
   };
 
-  /**
-   * Handles click events on calendar tasks
-   * Triggers parent callback to open task details
-   * @param {any} info - FullCalendar event click information
-   */
-  const handleEventClick = (info: any) => {
-    if (onTaskClick) {
-      onTaskClick(info.event.id);
+  // Get toolbar layout
+  const getHeaderToolbar = () => {
+    const baseLeft = "prev,next today";
+    const baseCenter = "title";
+
+    if (isMobile) {
+      return { left: "prev,next", center: "title", right: "" };
     }
+
+    return {
+      left: baseLeft,
+      center: baseCenter,
+      right: "dayGridMonth,timeGridWeek,timeGridDay",
+    };
   };
 
-  if (loading) {
-    return <Loader text="Loading calendar.." />;
-  }
+  // Transform tasks into FullCalendar-compatible events
+  const calendarEvents: CalendarEvent[] = (events ?? []).map((task) => {
+    const start = task.start ?? new Date().toISOString();
+
+    const rawEnd = task.end ?? task.start ?? new Date().toISOString();
+    const endDate = new Date(rawEnd);
+    endDate.setDate(endDate.getDate() + 1); // Make exclusive per FullCalendar rules
+
+    const end = endDate.toISOString().split("T")[0];
+    const priority = task.priority ?? "low";
+
+    return {
+      id: task.id,
+      title: task.title ?? "Unnamed Task",
+      start,
+      end,
+      priority,
+      assignee: task.assignee ?? null,
+      description: task.description ?? "",
+      backgroundColor: getPriorityColor(priority),
+      borderColor: getPriorityColor(priority),
+      extendedProps: {
+        priority,
+        assignee: task.assignee ?? null,
+        description: task.description ?? "",
+      },
+    };
+  });
 
   return (
     <div className="calendar-container">
-      <div className="calendar-header">
-        <h2>Task Calendar</h2>
-        <p>Drag tasks to change their dates</p>
-      </div>
-
       <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        events={events}
-        editable={true}
-        droppable={true}
-        eventDrop={handleEventDrop}
-        eventClick={handleEventClick}
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        initialView={getCalendarView()}
+        events={calendarEvents}
+        editable={false}
+        droppable={false}
+        eventClick={(info) => onTaskClick?.(info.event.id)}
         height="auto"
         locale="en"
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,dayGridWeek",
-        }}
+        headerToolbar={getHeaderToolbar()}
         eventDisplay="block"
-        dayMaxEvents={false}
+        dayMaxEvents={viewMode === "month" ? 3 : false}
         moreLinkClick="popover"
+        firstDay={1}
+        weekends={true}
+        slotMinTime="06:00:00"
+        slotMaxTime="22:00:00"
+        allDaySlot={true}
+        nowIndicator={viewMode !== "month"}
+        eventClassNames="calendar-event-clickable"
         eventContent={(arg) => (
-          <div className="custom-event">
-            <div className="event-title">{arg.event.title}</div>
-            {arg.event.extendedProps.assignee && !isMobile && (
-              <div className="event-assignee">
-                <Avatar
-                  src={arg.event.extendedProps.assignee.image || null}
-                  alt={arg.event.extendedProps.assignee.name}
-                  size={isMobile ? 16 : 20}
-                />
-                <span className="event-assignee-name">
-                  {arg.event.extendedProps.assignee.name}
-                </span>
-              </div>
-            )}
+          <div
+            className="custom-event"
+            onClick={(e) => {
+              e.stopPropagation();
+              onTaskClick?.(arg.event.id);
+            }}
+          >
+            <div className="event-title font-semibold">{arg.event.title}</div>
+            {arg.event.extendedProps.assignee &&
+              !isMobile &&
+              viewMode === "month" && (
+                <div className="event-assignee flex items-center gap-1 mt-1">
+                  <Avatar
+                    src={arg.event.extendedProps.assignee.image || null}
+                    alt={arg.event.extendedProps.assignee.name}
+                    size={isMobile ? 16 : 20}
+                  />
+                  <span className="event-assignee-name text-xs truncate">
+                    {arg.event.extendedProps.assignee.name}
+                  </span>
+                </div>
+              )}
           </div>
         )}
       />

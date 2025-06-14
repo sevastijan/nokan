@@ -13,6 +13,7 @@ html, body {
         padding-right: 16px;
         padding-top: 76px; /* Space for burger button + some extra */
         padding-bottom: 16px;
+        margin-left: 0 !important;
     }
 }
 
@@ -23,3 +24,28 @@ html, body {
         /* Removed padding - content should touch the edges */
     }
 }
+
+.main-content {
+    transition: margin-left 0.3s ease;
+}
+
+[data-rbd-drag-handle-draggable-id] {
+    touch-action: none !important;
+}
+
+.dragging-active {
+    overflow: hidden !important;
+}
+
+[data-rbd-drag-handle-draggable-id][style*="transform"] {
+    z-index: 9999 !important;
+}
+
+.glass-card {
+    @apply bg-white/20 dark:bg-gray-900/20
+           backdrop-blur-lg
+           border border-white/30 dark:border-gray-700/30
+           rounded-lg
+           shadow-sm hover:shadow-md
+           transition duration-150;
+  }

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { JSX } from "react";
 
 interface LoaderProps {
@@ -7,26 +8,45 @@ interface LoaderProps {
 }
 
 /**
- * Loading spinner component with animated dots
- * @param {string} [text="Loading..."] - Custom loading text to display
- * @returns JSX element containing the loading interface
+ * Custom Loader with glow spinner, animated dots, and logo watermark
  */
 const Loader = ({ text = "Loading..." }: LoaderProps): JSX.Element => {
   return (
-    <div className="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
-      <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <p className="text-white mt-4 text-lg">{text}</p>
-        <div className="flex justify-center mt-2 space-x-1">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-          <div
-            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-            style={{ animationDelay: "0.1s" }}
-          ></div>
-          <div
-            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-            style={{ animationDelay: "0.2s" }}
-          ></div>
+    <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-sm flex items-center justify-center z-50 select-none">
+      {/* Optional app logo watermark, faint and large in the bg */}
+      <div className="absolute inset-0 flex items-end justify-start pointer-events-none">
+        <Image
+          src="/af24c1eb-924a-4472-83c7-ae83c7e62525.png"
+          alt="App Logo"
+          width={80}
+          height={80}
+          className="opacity-10 mb-8 ml-8"
+          draggable={false}
+        />
+      </div>
+      <div className="relative z-10 flex flex-col items-center">
+        {/* Glowing spinner */}
+        <div className="relative mb-4">
+          <span className="block h-14 w-14 rounded-full border-4 border-blue-500/30 border-t-blue-400 animate-spin shadow-lg" />
+          <span className="absolute inset-0 rounded-full blur-md bg-blue-600/20 animate-pulse" />
+        </div>
+        <p className="text-white font-semibold text-lg tracking-wide drop-shadow-md mb-1">
+          {text}
+        </p>
+        {/* Animated dots */}
+        <div className="flex justify-center items-center gap-1 mt-1">
+          <span
+            className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+            style={{ animationDelay: "0s" }}
+          />
+          <span
+            className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+            style={{ animationDelay: "0.15s" }}
+          />
+          <span
+            className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+            style={{ animationDelay: "0.3s" }}
+          />
         </div>
       </div>
     </div>

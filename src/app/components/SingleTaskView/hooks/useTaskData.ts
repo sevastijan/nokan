@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getTaskById } from "../../../lib/api";
-import { TaskDetail } from "../types";
+import { TaskDetail } from "@/app/types/globalTypes";
 import { supabase } from "../../../lib/api";
 
 interface UseTaskDataResult {

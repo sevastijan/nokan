@@ -19,7 +19,10 @@ const AddTaskForm = ({
         variant="success"
         size="md"
         fullWidth={true}
-        onClick={() => onOpenAddTask(columnId)}
+        onClick={() => {
+          console.log("Add Task button clicked");
+          onOpenAddTask(columnId);
+        }}
         icon={<FaPlus />}
       >
         Add Task

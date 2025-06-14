@@ -1,8 +1,7 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { FaTrash } from "react-icons/fa";
-import { CommentListProps } from "./types";
-import { formatDate } from "./utils";
+import { CommentListProps } from "@/app/types/globalTypes";
+import { formatDate } from "@/app/utils/helpers";
 import MarkdownContent from "./MarkdownContent";
 import Avatar from "../Avatar/Avatar";
 
@@ -36,14 +35,14 @@ const CommentList = ({
           className="flex items-start gap-2 p-2 bg-gray-700/50 rounded-md"
         >
           <Avatar
-            src={comment.author.image || null}
-            alt={comment.author.name}
+            src={comment.author?.image || undefined}
+            alt={comment.author?.name || "Unknown"}
             size={20}
           />
           <div className="flex-1">
             <div className="flex items-center gap-1 mb-1">
               <span className="font-medium text-gray-200 text-xs">
-                {comment.author.name}
+                {comment.author?.name || "Unknown"}
               </span>
               <span className="text-gray-400 text-[0.6rem]">
                 {formatDate(comment.created_at)}
@@ -56,8 +55,8 @@ const CommentList = ({
               />
             </div>
           </div>
-          {(comment.user_id === currentUser.id ||
-            task.user_id === currentUser.id) && (
+          {(comment.user_id === currentUser?.id ||
+            task.user_id === currentUser?.id) && (
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}

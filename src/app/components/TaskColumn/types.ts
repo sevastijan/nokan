@@ -1,15 +1,15 @@
-import { Task } from "../../types/useBoardTypes";
+import { Task, User } from "@/app/types/globalTypes";
 
 export interface AddTaskFormProps {
-  boardId: string;
   columnId: string;
-  onTaskAdded?: (
+  boardId: string;
+  currentUser: User;
+  onOpenAddTask: (columnId: string) => void;
+  onTaskAdded: (
     columnId: string,
     title: string,
     priority?: string,
     userId?: string
-  ) => Promise<Task>;
-  currentUser: any;
-  onOpenAddTask: (columnId: string) => void;
-  selectedTaskId?: string | null | undefined;
+  ) => void;
+  selectedTaskId?: string | null;
 }

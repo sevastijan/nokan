@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes } from "react-icons/fa";
-import { ImagePreviewModalProps } from "./types";
+import { ImagePreviewModalProps } from "@/app/types/globalTypes";
 
 /**
  * Modal component to preview images. Closes on Escape key or outside click.

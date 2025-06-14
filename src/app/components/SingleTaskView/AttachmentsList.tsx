@@ -1,18 +1,20 @@
+// src/app/components/SingleTaskView/AttachmentsList.tsx
 "use client";
 
-import React, { useState, useRef } from "react";
-import { motion } from "framer-motion";
-import { FaPlus, FaDownload, FaTrash, FaEye } from "react-icons/fa";
-import { Attachment, User, AttachmentsListProps } from "./types";
+import { useState, useRef } from "react";
+import {
+  FaPlus,
+  FaDownload,
+  FaTrash,
+  FaEye,
+  FaPaperclip,
+} from "react-icons/fa";
+import { Attachment, AttachmentsListProps } from "@/app/types/globalTypes";
 import { formatFileSize, getFileIcon } from "./utils";
 import { supabase } from "../../lib/api";
 import { toast } from "react-toastify";
 import Button from "../Button/Button";
 
-/**
- * AttachmentsList component provides functionality to upload, preview, download, and delete
- * attachments related to a specific task. It uses Supabase for file storage and metadata management.
- */
 const AttachmentsList = ({
   attachments,
   currentUser,
@@ -23,9 +25,6 @@ const AttachmentsList = ({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /**
-   * Handles uploading a file to Supabase storage and saving metadata in the database.
-   */
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -45,10 +44,9 @@ const AttachmentsList = ({
       const { error: uploadError } = await supabase.storage
         .from("attachments")
         .upload(filePath, file);
-
       if (uploadError) throw uploadError;
 
-      const { data: newAttachment, error: dbError } = await supabase
+      const { data: newAttachment, error: insertError } = await supabase
         .from("task_attachments")
         .insert({
           task_id: taskId,
@@ -60,13 +58,11 @@ const AttachmentsList = ({
         })
         .select()
         .single();
+      if (insertError) throw insertError;
 
-      if (dbError) throw dbError;
-
-      if (onAttachmentsUpdate && newAttachment) {
-        onAttachmentsUpdate((prev) => [newAttachment, ...prev]);
-      } else if (onTaskUpdate) {
-        await onTaskUpdate();
+      if (newAttachment) {
+        onAttachmentsUpdate?.((prev) => [newAttachment, ...prev]);
+        onTaskUpdate?.();
       }
 
       toast.success("File uploaded successfully");
@@ -75,21 +71,15 @@ const AttachmentsList = ({
       toast.error("Error uploading file");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  /**
-   * Handles downloading an attachment from Supabase storage.
-   */
   const handleDownload = async (attachment: Attachment) => {
     try {
       const { data, error } = await supabase.storage
         .from("attachments")
         .download(attachment.file_path);
-
       if (error) throw error;
 
       const url = URL.createObjectURL(data);
@@ -106,9 +96,6 @@ const AttachmentsList = ({
     }
   };
 
-  /**
-   * Handles deleting an attachment from both storage and database.
-   */
   const handleDelete = async (attachment: Attachment) => {
     if (!confirm("Are you sure you want to delete this attachment?")) return;
 
@@ -116,23 +103,18 @@ const AttachmentsList = ({
       const { error: storageError } = await supabase.storage
         .from("attachments")
         .remove([attachment.file_path]);
-
       if (storageError) throw storageError;
 
       const { error: dbError } = await supabase
         .from("task_attachments")
         .delete()
         .eq("id", attachment.id);
-
       if (dbError) throw dbError;
 
-      if (onAttachmentsUpdate) {
-        onAttachmentsUpdate((prev) =>
-          prev.filter((att) => att.id !== attachment.id)
-        );
-      } else if (onTaskUpdate) {
-        await onTaskUpdate();
-      }
+      onAttachmentsUpdate?.((prev) =>
+        prev.filter((att) => att.id !== attachment.id)
+      );
+      onTaskUpdate?.();
 
       toast.success("Attachment deleted");
     } catch (error) {
@@ -141,18 +123,13 @@ const AttachmentsList = ({
     }
   };
 
-  /**
-   * Previews image attachments in a new tab, or downloads non-image files.
-   */
   const handlePreview = async (attachment: Attachment) => {
     if (attachment.mime_type.startsWith("image/")) {
       try {
         const { data, error } = await supabase.storage
           .from("attachments")
           .createSignedUrl(attachment.file_path, 60 * 60);
-
         if (error) throw error;
-
         window.open(data.signedUrl, "_blank");
       } catch (error) {
         console.error("Error creating preview:", error);
@@ -164,9 +141,10 @@ const AttachmentsList = ({
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-200">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+          <FaPaperclip className="w-5 h-5 text-slate-300" />
           Attachments ({attachments.length})
         </h3>
         <Button
@@ -194,17 +172,17 @@ const AttachmentsList = ({
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600"
+              className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg border border-slate-600"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span className="text-2xl flex items-center justify-center w-8 h-8">
                   {getFileIcon(attachment.mime_type)}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-200 truncate">
+                  <p className="text-sm font-medium text-slate-200 truncate">
                     {attachment.file_name}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-slate-400">
                     {formatFileSize(attachment.file_size)}
                   </p>
                 </div>
@@ -215,14 +193,14 @@ const AttachmentsList = ({
                   size="sm"
                   onClick={() => handlePreview(attachment)}
                   icon={<FaEye />}
-                  className="text-blue-400 hover:text-blue-300 p-2"
+                  className="text-slate-200 hover:text-white p-2"
                 />
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDownload(attachment)}
                   icon={<FaDownload />}
-                  className="text-green-400 hover:text-green-300 p-2"
+                  className="text-slate-200 hover:text-white p-2"
                 />
                 <Button
                   variant="ghost"
@@ -236,9 +214,9 @@ const AttachmentsList = ({
           ))}
         </div>
       ) : (
-        <div className="text-center text-gray-400 py-6 border-2 border-dashed border-gray-600 rounded-lg">
-          <p className="text-gray-400">No attachments yet</p>
-          <p className="text-sm">
+        <div className="text-center text-slate-400 py-6 border-2 border-dashed border-slate-600 rounded-lg">
+          <p className="text-slate-400">No attachments yet</p>
+          <p className="text-sm text-slate-500">
             Click "Add File" to upload your first attachment
           </p>
         </div>
