@@ -1,4 +1,3 @@
-// src/app/hooks/useOutsideClick.ts
 "use client";
 
 import { RefObject, useEffect } from "react";

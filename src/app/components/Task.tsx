@@ -38,7 +38,7 @@ const Task = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
-  // Refs for menu
+  // Refs for menu trigger & menu container & menu items
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const viewEditRef = useRef<HTMLButtonElement>(null);
@@ -59,7 +59,7 @@ const Task = ({
   const assignee = (task.assignee as User) || null;
   const avatarUrl = useUserAvatar(assignee);
 
-  // Menu items (logic unchanged)
+  // Menu items
   const menuItems: Array<{
     label: string;
     ref: RefObject<HTMLButtonElement | null>;
@@ -93,7 +93,7 @@ const Task = ({
     triggerRef.current?.focus();
   };
 
-  // Trigger handlers
+  // Trigger click/key handlers
   const onTriggerClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     menuOpen ? closeMenu() : openMenu();
@@ -105,7 +105,7 @@ const Task = ({
     }
   };
 
-  // Menu keyboard nav
+  // Menu keyboard navigation
   const onMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -123,6 +123,7 @@ const Task = ({
     }
   };
 
+  // Focus first item when opening menu
   useEffect(() => {
     if (menuOpen) {
       setTimeout(() => {
@@ -131,14 +132,15 @@ const Task = ({
     }
   }, [menuOpen]);
 
+  // Focus changed item
   useEffect(() => {
     if (menuOpen) {
       menuItems[focusedIndex].ref.current?.focus();
     }
   }, [focusedIndex, menuOpen]);
 
+  //@ts-expect-error
   // Close on outside click/touch
-  // @ts-expect-error: Using HTMLDivElement ref as HTMLElement is safe here.
   useOutsideClick([menuRef, triggerRef], () => {
     if (menuOpen) closeMenu();
   });
@@ -150,7 +152,7 @@ const Task = ({
     }
   };
 
-  // Left border accent: 4px wide. If priority exists, color by priority dotColor; else transparent.
+  // Left border accent: 4px wide. If priority exists, color by priority.dotColor; else transparent.
   const leftBorderStyle = prio
     ? { borderLeftColor: prio.dotColor }
     : { borderLeftColor: "transparent" };
@@ -167,20 +169,22 @@ const Task = ({
   // Metadata presence: priority badge or due date
   const showMeta = Boolean(prio || task.due_date);
 
-  // If entirely empty (no title, no desc, no metadata), render minimal centered placeholder
+  // If entirely empty (no title, no desc, no metadata), render minimal placeholder
   const isEmptyCard = !hasTitle && !hasDesc && !showMeta;
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 6 }}
+      transition={{ layout: { duration: 0.1, ease: "easeOut" } }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.3 }}
+      exit={{ opacity: 0, y: -4 }}
       onClick={onCardClick}
-      className={`relative cursor-pointer group transition-shadow duration-200 ease-in-out bg-white/5 backdrop-blur-md border border-white/25 rounded-lg overflow-hidden hover:shadow-lg ${
-        isEmptyCard ? "min-h-[60px]" : "min-h-[88px]"
-      }`}
+      className={`
+        relative cursor-pointer group transition-shadow duration-200 ease-in-out
+        bg-white/5 backdrop-blur-md border border-white/25 rounded-lg overflow-hidden hover:shadow-lg
+        ${isEmptyCard ? "min-h-[60px]" : "min-h-[88px]"}
+      `}
       style={{
         borderLeftWidth: "4px",
         borderLeftStyle: "solid",
@@ -192,7 +196,10 @@ const Task = ({
         ref={triggerRef}
         onClick={onTriggerClick}
         onKeyDown={onTriggerKeyDown}
-        className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 bg-transparent hover:bg-white/20 focus:bg-white/20 transition-colors z-10"
+        className="
+          absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100
+          bg-transparent hover:bg-white/20 focus:bg-white/20 transition-colors z-10
+        "
         aria-haspopup="true"
         aria-expanded={menuOpen}
       >
@@ -201,6 +208,7 @@ const Task = ({
 
       {/* Main content */}
       {isEmptyCard ? (
+        // Center “Untitled” vertically if no content
         <div className="h-full flex items-center justify-center px-4">
           <h4 className="text-white/50 italic truncate">Untitled</h4>
         </div>
@@ -226,7 +234,10 @@ const Task = ({
             <div className="flex items-center gap-2">
               {prio && (
                 <span
-                  className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-medium ${prio.cfg.bgColor} ${prio.cfg.textColor} ${prio.cfg.borderColor}`}
+                  className={`
+                    inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-medium
+                    ${prio.cfg.bgColor} ${prio.cfg.textColor} ${prio.cfg.borderColor}
+                  `}
                 >
                   <FiFlag size={12} style={{ color: prio.dotColor }} />
                   {prio.label}
@@ -243,7 +254,7 @@ const Task = ({
               )}
             </div>
 
-            {/* Right: avatar or placeholder “assign” icon */}
+            {/* Right: avatar or “assign” placeholder */}
             {assignee && avatarUrl ? (
               <Avatar
                 src={avatarUrl}
@@ -257,7 +268,10 @@ const Task = ({
                   e.stopPropagation();
                   onOpenTaskDetail(task.id);
                 }}
-                className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-white/20 text-white/50 hover:text-white hover:border-white transition-colors"
+                className="
+                  w-8 h-8 flex items-center justify-center rounded-full border-2 border-white/20
+                  text-white/50 hover:text-white hover:border-white transition-colors
+                "
                 aria-label="Assign user"
               >
                 <FiUserPlus size={16} />
@@ -271,7 +285,7 @@ const Task = ({
       <AnimatePresence>
         {menuOpen && (
           <>
-            {/* Overlay to capture outside clicks */}
+            {/* Overlay to catch outside clicks */}
             <div className="fixed inset-0 z-40" onClick={closeMenu} />
             <motion.div
               ref={menuRef}
@@ -282,11 +296,14 @@ const Task = ({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-3 right-3 z-50 bg-slate-800 text-white border border-slate-600 rounded-md shadow-lg overflow-hidden focus:outline-none min-w-[140px]"
+              className="
+                absolute top-3 right-3 z-50
+                bg-white text-gray-800 border border-gray-200 rounded-md shadow-lg overflow-hidden focus:outline-none min-w-[140px]
+              "
             >
-              {menuItems.map((item) => (
+              {menuItems.map((item, idx) => (
                 <button
-                  key={item.label}
+                  key={`${item.label}-${idx}`} // Unique key using label and index
                   ref={item.ref}
                   role="menuitem"
                   tabIndex={-1}
@@ -294,7 +311,9 @@ const Task = ({
                     e.stopPropagation();
                     item.action();
                   }}
-                  className="w-full text-left px-4 py-2 text-sm font-medium text-white/90 hover:bg-slate-700 focus:bg-slate-700 focus:outline-none transition-colors cursor-pointer"
+                  className="
+                    w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-sm cursor-pointer
+                  "
                 >
                   {item.label}
                 </button>

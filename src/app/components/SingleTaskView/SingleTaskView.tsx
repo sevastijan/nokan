@@ -41,15 +41,16 @@ import {
   calculateDuration,
 } from "@/app/utils/helpers";
 
-import { SingleTaskViewProps, Attachment } from "@/app/types/globalTypes";
+import { SingleTaskViewProps } from "@/app/types/globalTypes";
 import { useOutsideClick } from "@/app/hooks/useOutsideClick";
 
 interface LocalFilePreview {
+  id: string;
   file: File;
   previewUrl: string;
 }
 
-export default function SingleTaskView({
+const SingleTaskView = ({
   taskId,
   mode,
   columnId,
@@ -57,11 +58,10 @@ export default function SingleTaskView({
   onClose,
   onTaskUpdate,
   onTaskAdded,
-}: SingleTaskViewProps) {
+}: SingleTaskViewProps) => {
   const { data: session } = useSession();
   const { currentUser, loading: userLoading } = useCurrentUser(session);
 
-  // Hook managing task data & operations
   const {
     task,
     loading,
@@ -83,37 +83,26 @@ export default function SingleTaskView({
     columnId,
     boardId: boardId!,
     currentUser: currentUser || undefined,
-    onTaskUpdate: (t) => {
-      onTaskUpdate?.(t);
-    },
-    onTaskAdded: (t) => {
-      onTaskAdded?.(t);
-    },
+    onTaskUpdate: (t) => onTaskUpdate?.(t),
+    onTaskAdded: (t) => onTaskAdded?.(t),
     onClose,
   });
 
-  // Local previews for files selected before creation
+  // Local previews
   const [localFilePreviews, setLocalFilePreviews] = useState<
     LocalFilePreview[]
   >([]);
-
-  // Controls for image preview modal
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-
-  // Confirm delete dialog
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  // Modal visibility state (for animate exit)
   const [isVisible, setIsVisible] = useState(true);
-
-  // Delay before showing "Task not found" in edit mode
   const [waitBeforeError, setWaitBeforeError] = useState(true);
+
   useEffect(() => {
     const timeout = setTimeout(() => setWaitBeforeError(false), 500);
     return () => clearTimeout(timeout);
   }, []);
 
-  // Form fields state
+  // Form fields
   const [tempTitle, setTempTitle] = useState("");
   const [tempDescription, setTempDescription] = useState("");
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
@@ -122,7 +111,6 @@ export default function SingleTaskView({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // Sync form inputs when `task` updates (edit mode or after fetch)
   useEffect(() => {
     if (task) {
       setTempTitle(task.title || "");
@@ -133,11 +121,11 @@ export default function SingleTaskView({
     }
   }, [task]);
 
-  // Refs for outside-click and overlay detection
+  // Refs for outside-click and overlay
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Handle Escape key to close modal (with unsaved changes check)
+  // Escape key to close
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -151,40 +139,32 @@ export default function SingleTaskView({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [isVisible, hasUnsavedChanges, tempTitle]);
-  // @ts-expect-error: HTMLDivElement ref is not exactly HTMLElement, but we know it's safe
 
-  // Outside click: close when clicking outside modalRef
-  useOutsideClick(modalRef, () => {
+  //@ts-ignore
+  // Outside click closes
+  useOutsideClick([modalRef], () => {
     if (isVisible) {
       handleClose();
     }
   });
 
-  // Title change handler
+  // Handlers for title, desc, assignee, dates, files...
   const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTempTitle(newTitle);
     updateTask({ title: newTitle });
   };
-  // Prevent Enter from creating newline; if Enter pressed, blur field
   const handleTitleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      if (!tempTitle.trim()) {
-        // Do nothing if empty
-        return;
-      }
+      if (!tempTitle.trim()) return;
       (e.target as HTMLInputElement).blur();
     }
   };
-
-  // Description change
   const handleDescriptionChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const desc = e.target.value;
     setTempDescription(desc);
     updateTask({ description: desc });
   };
-
-  // Assignee change
   const handleAssigneeChange = async (assigneeId: string | null) => {
     setSelectedAssigneeId(assigneeId);
     if (!assigneeId) {
@@ -198,13 +178,10 @@ export default function SingleTaskView({
     }
     await updateTask({ user_id: assigneeId, assignee: sel });
   };
-
-  // Date change (start/end)
   const handleDateChange = (type: "start" | "end", value: string) => {
     if (type === "start") {
       setStartDate(value);
       updateTask({ start_date: value });
-      // If end < new start, clear end
       if (endDate && value && endDate < value) {
         setEndDate("");
         updateTask({ end_date: null });
@@ -215,7 +192,7 @@ export default function SingleTaskView({
     }
   };
 
-  // File input ref & handlers (for attachments in new/edit)
+  // File previews
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleFileSelectClick = () => {
     fileInputRef.current?.click();
@@ -230,33 +207,31 @@ export default function SingleTaskView({
       if (file.type.startsWith("image/")) {
         previewUrl = URL.createObjectURL(file);
       }
-      arr.push({ file, previewUrl });
+      const id = crypto.randomUUID();
+      arr.push({ id, file, previewUrl });
     }
     setLocalFilePreviews((prev) => [...prev, ...arr]);
-    // Clear input to allow re-selecting same file later
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
-  const removeLocalFile = (index: number) => {
+  const removeLocalFile = (id: string) => {
     setLocalFilePreviews((prev) => {
-      const copy = [...prev];
-      if (copy[index].previewUrl) {
-        URL.revokeObjectURL(copy[index].previewUrl);
+      const removed = prev.find((lp) => lp.id === id);
+      if (removed?.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl);
       }
-      copy.splice(index, 1);
-      return copy;
+      return prev.filter((lp) => lp.id !== id);
     });
   };
 
-  // Upload a single attachment (edit mode or after creation)
   const handleUploadAttachment = async (file: File) => {
     if (!task?.id) {
-      console.warn("Cannot upload attachment until task has an ID");
+      console.warn("Cannot upload until task has ID");
       return null;
     }
     if (!currentUser?.id) {
-      toast.error("No user to upload attachment");
+      toast.error("No user to upload");
       return null;
     }
     try {
@@ -268,30 +243,25 @@ export default function SingleTaskView({
       }
       return result;
     } catch (err) {
-      console.error("Attachment upload error:", err);
+      console.error("Attach error:", err);
       toast.error(`Upload error: ${file.name}`);
       return null;
     }
   };
 
-  // Save / Create handler
   const handleSave = async () => {
     if (!tempTitle.trim()) {
       toast.error("Title is required");
       return;
     }
     if (isNewTask) {
-      // Create
       const success = await saveNewTask();
       if (success) {
         toast.success("Task created");
-        // Upload any selected files after creation
         if (localFilePreviews.length > 0 && task?.id) {
           for (const local of localFilePreviews) {
             await handleUploadAttachment(local.file);
-            if (local.previewUrl) {
-              URL.revokeObjectURL(local.previewUrl);
-            }
+            if (local.previewUrl) URL.revokeObjectURL(local.previewUrl);
           }
           setLocalFilePreviews([]);
           await fetchTaskData();
@@ -299,7 +269,6 @@ export default function SingleTaskView({
         setIsVisible(false);
       }
     } else {
-      // Existing
       const success = await saveExistingTask();
       if (success) {
         toast.success("Task saved");
@@ -308,7 +277,6 @@ export default function SingleTaskView({
     }
   };
 
-  // Close with unsaved-changes check
   const handleClose = () => {
     if (hasUnsavedChanges) {
       const confirmClose = confirm("You have unsaved changes. Close anyway?");
@@ -317,19 +285,29 @@ export default function SingleTaskView({
     setIsVisible(false);
   };
 
-  // After exit animation completes
   const onAnimationCompleteExit = () => {
     onClose?.();
   };
 
-  // Copy link handler
   const handleCopyLink = async () => {
     if (task?.id) {
       await copyTaskUrlToClipboard(task.id);
     }
   };
 
-  // Early loading / error UI
+  const handleDeleteConfirm = async () => {
+    setShowDeleteConfirm(false); // Hide confirmation dialog immediately
+    try {
+      await deleteTask(); // Wait for deletion to complete
+      setIsVisible(false); // Close the modal only after deletion
+    } catch (err) {
+      console.error("deleteTask error:", err);
+      toast.error("Failed to delete task");
+      setShowDeleteConfirm(true); // Re-show dialog if deletion fails
+    }
+  };
+
+  // Early returns
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
@@ -357,15 +335,29 @@ export default function SingleTaskView({
       </div>
     );
   }
-  // In edit mode: if not found after delay, show nothing
   if (!isNewTask && !loading && !task && !waitBeforeError) {
     return null;
   }
+
+  const headerPriorityBadge =
+    !isNewTask && task?.priority ? (
+      <span
+        className={`flex items-center text-xs px-2 py-1 rounded-full border ${
+          getPriorityStyleConfig(task.priority).bgColor
+        } ${getPriorityStyleConfig(task.priority).textColor} ${
+          getPriorityStyleConfig(task.priority).borderColor
+        }`}
+      >
+        <FaFlag className="inline mr-1" />
+        {task.priority}
+      </span>
+    ) : null;
 
   return (
     <AnimatePresence initial={false} onExitComplete={onAnimationCompleteExit}>
       {isVisible && (
         <motion.div
+          key="modal" // Unique key for the modal
           ref={overlayRef}
           className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4"
           onClick={(e) => {
@@ -405,18 +397,7 @@ export default function SingleTaskView({
                   onKeyDown={handleTitleKeyDown}
                   autoFocus={isNewTask}
                 />
-                {!isNewTask && task?.priority && (
-                  <span
-                    className={`flex items-center text-xs px-2 py-1 rounded-full border ${
-                      getPriorityStyleConfig(task.priority).bgColor
-                    } ${getPriorityStyleConfig(task.priority).textColor} ${
-                      getPriorityStyleConfig(task.priority).borderColor
-                    }`}
-                  >
-                    <FaFlag className="inline mr-1" />
-                    {task.priority}
-                  </span>
-                )}
+                {headerPriorityBadge}
               </div>
               <div className="flex items-center gap-2">
                 {!isNewTask && task?.id && (
@@ -527,8 +508,6 @@ export default function SingleTaskView({
                       type="button"
                       className="inline-flex items-center px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       onClick={handleFileSelectClick}
-                      // In new mode, disable until task.id exists? But upload after creation
-                      // We still allow selecting, but note files upload after creation.
                     >
                       <FaPaperclip className="mr-1" />
                       {isNewTask
@@ -550,12 +529,12 @@ export default function SingleTaskView({
                     ref={fileInputRef}
                     onChange={handleFilesSelected}
                   />
-                  {/* List local previews if new mode */}
+                  {/* Local previews */}
                   {isNewTask && localFilePreviews.length > 0 && (
                     <ul className="mt-2 space-y-1">
-                      {localFilePreviews.map((lp, idx) => (
+                      {localFilePreviews.map((lp) => (
                         <li
-                          key={idx}
+                          key={lp.id}
                           className="flex items-center justify-between bg-slate-700 p-2 rounded"
                         >
                           <div className="flex items-center gap-2">
@@ -567,7 +546,7 @@ export default function SingleTaskView({
                           <button
                             type="button"
                             className="text-red-400 hover:text-red-300 text-sm"
-                            onClick={() => removeLocalFile(idx)}
+                            onClick={() => removeLocalFile(lp.id)}
                           >
                             Remove
                           </button>
@@ -575,7 +554,7 @@ export default function SingleTaskView({
                       ))}
                     </ul>
                   )}
-                  {/* In edit mode: show existing attachments via AttachmentsList */}
+                  {/* Existing attachments */}
                   {!isNewTask && task?.attachments && (
                     <div className="mt-4">
                       <AttachmentsList
@@ -593,7 +572,7 @@ export default function SingleTaskView({
                   )}
                 </div>
 
-                {/* Comments in edit mode */}
+                {/* Comments */}
                 {!isNewTask && task?.id && (
                   <div className="mt-6">
                     <CommentsSection
@@ -612,10 +591,10 @@ export default function SingleTaskView({
                 )}
               </div>
 
-              {/* Vertical separator */}
+              {/* Separator */}
               <div className="hidden lg:block w-px bg-slate-600/50"></div>
 
-              {/* Right sidebar: details */}
+              {/* Sidebar */}
               <aside className="w-full lg:w-72 bg-slate-800/60 border-l border-slate-600 overflow-y-auto p-6 text-white">
                 {/* Assignee info */}
                 <div className="mb-6">
@@ -671,7 +650,7 @@ export default function SingleTaskView({
                   </div>
                 </div>
 
-                {/* Duration sidebar */}
+                {/* Duration */}
                 {task?.start_date && task?.end_date && (
                   <div className="mb-6">
                     <h4 className="text-sm font-semibold text-slate-300 mt-4 mb-2">
@@ -720,22 +699,25 @@ export default function SingleTaskView({
         </motion.div>
       )}
 
-      {/* Delete confirmation */}
       {showDeleteConfirm && (
-        <ConfirmDialog
-          isOpen={showDeleteConfirm}
-          title="Delete Task"
-          message="Are you sure you want to delete this task? This cannot be undone."
-          confirmText="Delete"
-          cancelText="Cancel"
-          type="danger"
-          onConfirm={async () => {
-            setShowDeleteConfirm(false);
-            await deleteTask();
-            // onClose will be invoked after exit animation
-          }}
-          onCancel={() => setShowDeleteConfirm(false)}
-        />
+        <motion.div
+          key="confirm-dialog" // Unique key for the confirmation dialog
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="fixed inset-0 flex items-center justify-center z-60 p-4"
+        >
+          <ConfirmDialog
+            isOpen={showDeleteConfirm}
+            title="Delete Task"
+            message="Are you sure you want to delete this task? This cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+            type="danger"
+            onConfirm={handleDeleteConfirm}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
+        </motion.div>
       )}
 
       {/* Image preview modal */}
@@ -747,4 +729,6 @@ export default function SingleTaskView({
       )}
     </AnimatePresence>
   );
-}
+};
+
+export default SingleTaskView;
