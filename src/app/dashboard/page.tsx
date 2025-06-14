@@ -1,4 +1,3 @@
-// src/app/dashboard/DashboardPage.tsx
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -23,6 +22,9 @@ import {
   FaCalendarAlt,
   FaArrowRight,
   FaUserFriends,
+  FaEllipsisV,
+  FaEdit,
+  FaTrash,
 } from "react-icons/fa";
 
 // Popover for filtering boards
@@ -144,6 +146,19 @@ const DashboardPage = () => {
   const [hasMembersOnly, setHasMembersOnly] = useState<boolean>(false);
   const [showFilterPopover, setShowFilterPopover] = useState(false);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Menu for board actions
+  const [boardMenuOpen, setBoardMenuOpen] = useState<string | null>(null);
+
+  // Close board menu when clicking outside
+  useEffect(() => {
+    if (!boardMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      setBoardMenuOpen(null);
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [boardMenuOpen]);
 
   // Redirect if unauthenticated
   useEffect(() => {
@@ -362,7 +377,17 @@ const DashboardPage = () => {
               </Button>
             </div>
           </div>
-
+          {showFilterPopover && (
+            <FilterPopover
+              //@ts-ignore
+              anchorRef={filterBtnRef}
+              onClose={() => setShowFilterPopover(false)}
+              hasTasksOnly={hasTasksOnly}
+              setHasTasksOnly={setHasTasksOnly}
+              hasMembersOnly={hasMembersOnly}
+              setHasMembersOnly={setHasMembersOnly}
+            />
+          )}
           {/* Board cards */}
           {filteredBoards.length === 0 ? (
             <p className="text-slate-400">No boards found.</p>
@@ -371,19 +396,64 @@ const DashboardPage = () => {
               {filteredBoards.map((b) => (
                 <div
                   key={b.id}
-                  onClick={() => router.push(`/board/${b.id}`)}
-                  className="cursor-pointer bg-slate-800/70 p-6 rounded-2xl border border-slate-700 hover:bg-slate-800/90 transition flex flex-col justify-between group shadow-lg relative"
+                  className="relative cursor-pointer bg-slate-800/70 p-6 rounded-2xl border border-slate-700 hover:bg-slate-800/90 transition flex flex-col justify-between group shadow-lg"
+                  // Only navigate if click target isn't the menu button
+                  onClick={(e) => {
+                    if (
+                      (e.target as HTMLElement).closest(".board-menu-btn") ||
+                      (e.target as HTMLElement).closest(".board-menu-dropdown")
+                    )
+                      return;
+                    router.push(`/board/${b.id}`);
+                  }}
                 >
-                  <h3 className="text-lg font-semibold text-white truncate">
-                    {b.title}
-                  </h3>
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-semibold text-white truncate">
+                      {b.title}
+                    </h3>
+                    {/* Menu button */}
+                    <div className="relative z-20">
+                      <button
+                        className="board-menu-btn p-2 rounded-full hover:bg-slate-700 text-slate-400 transition"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBoardMenuOpen(
+                            b.id === boardMenuOpen ? null : b.id
+                          );
+                        }}
+                        aria-label="Board actions"
+                      >
+                        <FaEllipsisV />
+                      </button>
+                      {/* Dropdown menu */}
+                      {boardMenuOpen === b.id && (
+                        <div className="board-menu-dropdown absolute right-0 mt-2 w-32 bg-slate-900 border border-slate-700 rounded-xl shadow-lg z-30">
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-slate-800 flex items-center gap-2 text-white"
+                            onClick={(e) => {
+                              openEdit(e, b.id);
+                              setBoardMenuOpen(null);
+                            }}
+                          >
+                            <FaEdit className="w-4 h-4" /> Edit
+                          </button>
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-red-600/80 flex items-center gap-2 text-red-400"
+                            onClick={(e) => {
+                              openDelete(e, b.id);
+                              setBoardMenuOpen(null);
+                            }}
+                          >
+                            <FaTrash className="w-4 h-4" /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <p className="mt-2 text-sm text-slate-400">
                     Tasks: {b._count?.tasks ?? 0} | Team:{" "}
                     {b._count?.teamMembers ?? 0}
                   </p>
-                  <span className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition">
-                    <FaArrowRight className="w-4 h-4 text-slate-400" />
-                  </span>
                 </div>
               ))}
             </div>

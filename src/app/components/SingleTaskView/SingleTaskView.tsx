@@ -1,4 +1,3 @@
-// src/app/components/SingleTaskView/SingleTaskView.tsx
 "use client";
 
 import React, {
@@ -61,7 +60,7 @@ const SingleTaskView = ({
 }: // Optionally you may want to pass more props (e.g. breadcrumbs, etc.)
 SingleTaskViewProps) => {
   const { data: session } = useSession();
-  const { currentUser, loading: userLoading } = useCurrentUser(session);
+  const { currentUser, loading: userLoading } = useCurrentUser();
 
   const {
     task,
