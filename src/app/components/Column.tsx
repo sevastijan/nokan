@@ -70,10 +70,10 @@ const Column = ({
   }, [column.tasks, column.id]);
 
   return (
-    <div className="bg-gray-800 text-white rounded-lg shadow-md p-4 min-w-[300px] flex flex-col gap-4 h-full">
+    <div className="glass-column shadow-md p-4 min-w-[300px] flex flex-col gap-4 h-full rounded-b-md border-white">
       <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
         <div
-          className="text-gray-400 hover:text-gray-200 cursor-grab"
+          className="text-gray-400 hover:text-gray-200 cursor-grab flex"
           {...dragHandleProps}
         >
           <FaGripVertical size={20} className="opacity-50" />

@@ -1,3 +1,4 @@
+// src/app/(your-folder)/page.tsx
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -31,6 +32,7 @@ const Page: React.FC = () => {
   const { id } = useParams();
   const router = useRouter();
   const { data: session, status } = useSession();
+
   const {
     board,
     loading: boardLoading,
@@ -54,7 +56,7 @@ const Page: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [priorities, setPriorities] = useState<Priority[]>([]);
 
-  // 1) sync localColumns whenever board changes
+  // Sync localColumns when board updates
   useEffect(() => {
     if (!board) return;
     setBoardTitle(board.title);
@@ -69,7 +71,7 @@ const Page: React.FC = () => {
     setLocalColumns(sortedCols);
   }, [board]);
 
-  // 2) load priorities once
+  // Load priorities
   useEffect(() => {
     getPriorities()
       .then(setPriorities)
@@ -83,7 +85,7 @@ const Page: React.FC = () => {
       );
   }, []);
 
-  // 3) fetch/create current user record
+  // Ensure user record exists
   useEffect(() => {
     if (!session?.user?.email) return;
     (async () => {
@@ -121,19 +123,19 @@ const Page: React.FC = () => {
     })();
   }, [session]);
 
-  // 4) if not signed in, redirect
+  // Redirect if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/signin");
   }, [status, router]);
 
-  // 5) pick up ?task= in URL
+  // Read ?task= from URL
   useEffect(() => {
     if (typeof window === "undefined") return;
     const t = extractTaskIdFromUrl(window.location.href);
     if (t) setSelectedTaskId(t);
   }, []);
 
-  // column‐title change
+  // Handlers for board title
   const onBoardTitleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setBoardTitle(e.target.value);
   const onBoardTitleBlur = () => {
@@ -142,7 +144,7 @@ const Page: React.FC = () => {
     }
   };
 
-  // add‐column popup
+  // Add column popup
   const openAddColumn = () => setIsPopupOpen(true);
   const closeAddColumn = () => setIsPopupOpen(false);
   const onAddColumn = async () => {
@@ -155,7 +157,7 @@ const Page: React.FC = () => {
     setIsAddingColumn(false);
   };
 
-  // add‐task handlers
+  // Add task
   const openAddTask = (colId: string) => setAddTaskColumnId(colId);
   const onTaskAdded = async (
     columnId: string,
@@ -173,7 +175,7 @@ const Page: React.FC = () => {
     return t;
   };
 
-  // remove‐task
+  // Remove task
   const onTaskRemoved = async (columnId: string, taskId: string) => {
     await handleRemoveTask(columnId, taskId);
     setLocalColumns((cols) =>
@@ -186,19 +188,17 @@ const Page: React.FC = () => {
     toast.success("Task deleted");
   };
 
-  // ════════════════════════
-  // DnD: columns + tasks
-  // ════════════════════════
+  // Drag & drop
   const onDragEnd = useCallback(
     async (result: DropResult) => {
       const { source, destination, type } = result;
       if (!destination) return;
 
-      // ── COLUMN REORDER ─────────────────────
+      // COLUMN reorder
       if (type === "COLUMN") {
         const cols = Array.from(localColumns);
-        const [moved] = cols.splice(source.index, 1);
-        cols.splice(destination.index, 0, moved);
+        const [m] = cols.splice(source.index, 1);
+        cols.splice(destination.index, 0, m);
         setLocalColumns(cols);
         await Promise.all(
           cols.map((c, i) =>
@@ -209,24 +209,22 @@ const Page: React.FC = () => {
         return;
       }
 
-      // ── TASK REORDER OR CROSS‐COLUMN ──────
+      // TASK reorder or move
       if (type === "TASK") {
         const cols = Array.from(localColumns);
         const srcIdx = cols.findIndex((c) => c.id === source.droppableId);
         const dstIdx = cols.findIndex((c) => c.id === destination.droppableId);
         if (srcIdx < 0 || dstIdx < 0) return;
 
-        // Remove the task from source
-        const sourceTasks = Array.from(cols[srcIdx].tasks || []);
-        const [movedTask] = sourceTasks.splice(source.index, 1);
+        const srcTasks = Array.from(cols[srcIdx].tasks || []);
+        const [moved] = srcTasks.splice(source.index, 1);
 
         if (srcIdx === dstIdx) {
-          // Same‐column reorder
-          sourceTasks.splice(destination.index, 0, movedTask);
-          const updated = sourceTasks.map((t, i) => ({ ...t, order: i }));
+          // same column
+          srcTasks.splice(destination.index, 0, moved);
+          const updated = srcTasks.map((t, i) => ({ ...t, order: i }));
           cols[srcIdx].tasks = updated;
           setLocalColumns(cols);
-
           await Promise.all(
             updated.map((t) =>
               supabase
@@ -236,12 +234,12 @@ const Page: React.FC = () => {
             )
           );
         } else {
-          // Cross‐column move
-          const destTasks = Array.from(cols[dstIdx].tasks || []);
-          destTasks.splice(destination.index, 0, movedTask);
+          // cross-column
+          const dstTasks = Array.from(cols[dstIdx].tasks || []);
+          dstTasks.splice(destination.index, 0, moved);
 
-          const updatedSrc = sourceTasks.map((t, i) => ({ ...t, order: i }));
-          const updatedDst = destTasks.map((t, i) => ({ ...t, order: i }));
+          const updatedSrc = srcTasks.map((t, i) => ({ ...t, order: i }));
+          const updatedDst = dstTasks.map((t, i) => ({ ...t, order: i }));
 
           cols[srcIdx].tasks = updatedSrc;
           cols[dstIdx].tasks = updatedDst;
@@ -266,15 +264,13 @@ const Page: React.FC = () => {
           ]);
         }
 
-        await fetchBoardData();
+        fetchBoardData();
       }
     },
     [localColumns, fetchBoardData]
   );
 
-  // ────────────────────────────────
-  // RENDER: blank states / loaders
-  // ────────────────────────────────
+  // Loading / error states
   if (
     status === "loading" ||
     !session ||
@@ -302,9 +298,6 @@ const Page: React.FC = () => {
     );
   }
 
-  // ────────────────────────────────
-  // MAIN LAYOUT
-  // ────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
       {/* HEADER */}
@@ -347,22 +340,34 @@ const Page: React.FC = () => {
                       ref={prov.innerRef}
                       {...prov.draggableProps}
                       style={prov.draggableProps.style}
-                      className="flex-shrink-0 flex h-full"
+                      className="flex-shrink-0 flex h-full p-1"
                     >
-                      <Column
-                        column={col}
-                        colIndex={idx}
-                        onUpdateColumnTitle={handleUpdateColumnTitle}
-                        onRemoveColumn={handleRemoveColumn}
-                        onTaskAdded={onTaskAdded}
-                        onRemoveTask={onTaskRemoved}
-                        onOpenTaskDetail={setSelectedTaskId}
-                        selectedTaskId={selectedTaskId}
-                        currentUser={currentUser}
-                        onOpenAddTask={openAddTask}
-                        priorities={priorities}
-                        dragHandleProps={prov.dragHandleProps}
-                      />
+                      {/* Glass wrapper without backdrop-filter */}
+                      <div
+                        className="
+                        bg-white/10 dark:bg-gray-900/20
+                        rounded-lg
+                        border border-white/30 dark:border-gray-700/30
+                        ring-1 ring-white/10 ring-offset-1 ring-offset-transparent
+                        shadow-md
+                        transition
+                      "
+                      >
+                        <Column
+                          column={col}
+                          colIndex={idx}
+                          onUpdateColumnTitle={handleUpdateColumnTitle}
+                          onRemoveColumn={handleRemoveColumn}
+                          onTaskAdded={onTaskAdded}
+                          onRemoveTask={onTaskRemoved}
+                          onOpenTaskDetail={setSelectedTaskId}
+                          selectedTaskId={selectedTaskId}
+                          currentUser={currentUser}
+                          onOpenAddTask={openAddTask}
+                          priorities={priorities}
+                          dragHandleProps={prov.dragHandleProps}
+                        />
+                      </div>
                     </div>
                   )}
                 </Draggable>
@@ -373,7 +378,7 @@ const Page: React.FC = () => {
         </Droppable>
       </DragDropContext>
 
-      {/* ADD COLUMN POPUP */}
+      {/* Popups & Modals */}
       <AddColumnPopup
         isOpen={isPopupOpen}
         onClose={closeAddColumn}
@@ -383,7 +388,6 @@ const Page: React.FC = () => {
         isAddingColumn={isAddingColumn}
       />
 
-      {/* TASK MODAL */}
       {(selectedTaskId || addTaskColumnId) && (
         <SingleTaskView
           key={selectedTaskId ?? `add-${addTaskColumnId}`}
