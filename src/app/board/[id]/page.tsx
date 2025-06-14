@@ -399,7 +399,15 @@ const Page = () => {
               <div
                 ref={provider.innerRef}
                 {...provider.droppableProps}
-                className="flex-1 flex overflow-x-auto p-6 gap-6 h-full"
+                className="
+                flex-1 flex
+                overflow-x-auto
+                snap-x snap-mandatory
+                gap-4 md:gap-6
+                p-2 md:p-6
+                h-full
+                scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent
+              "
               >
                 {filteredColumns.map((col, idx) => (
                   <Draggable key={col.id} draggableId={col.id} index={idx}>
@@ -408,18 +416,25 @@ const Page = () => {
                         ref={prov.innerRef}
                         {...prov.draggableProps}
                         style={prov.draggableProps.style}
-                        className="flex-shrink-0 flex h-full p-1"
+                        className="
+                        flex-shrink-0 flex h-full p-1
+                        min-w-[88vw] sm:min-w-[340px] md:min-w-[320px] lg:min-w-[350px]
+                        snap-start
+                      "
                       >
-                        {/* Glass-like wrapper */}
+                        {/* Column content */}
                         <div
                           className="
-                            bg-white/10 dark:bg-gray-900/20
-                            rounded-lg
-                            border border-white/30 dark:border-gray-700/30
-                            ring-1 ring-white/10 ring-offset-1 ring-offset-transparent
-                            shadow-md
-                            transition
-                          "
+                          bg-white/10 dark:bg-gray-900/20
+                          rounded-lg
+                          border border-white/30 dark:border-gray-700/30
+                          ring-1 ring-white/10 ring-offset-1 ring-offset-transparent
+                          shadow-md
+                          transition
+                          w-full
+                          flex flex-col
+                          h-full
+                        "
                         >
                           {prov.dragHandleProps && (
                             <Column
