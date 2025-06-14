@@ -1,191 +1,111 @@
 "use client";
 
-import { useState, useEffect, JSX } from "react";
+import { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { getTasksWithDates, updateTaskDates } from "../../lib/api";
 import { CalendarProps, CalendarEvent } from "@/app/types/globalTypes";
 import "../Calendar/calendar.css";
-import Loader from "../Loader";
 import Avatar from "../Avatar/Avatar";
 
 const Calendar = ({
-  boardId,
-  onTaskClick,
+  events,
   viewMode = "month",
-}: CalendarProps): JSX.Element => {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  onTaskClick,
+}: CalendarProps) => {
   const [isMobile, setIsMobile] = useState(false);
 
+  // Determine if the device is mobile
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
-
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  useEffect(() => {
-    if (boardId) {
-      loadCalendarEvents();
-    }
-  }, [boardId]);
-
-  // Ładowanie eventów z API
-  const loadCalendarEvents = async () => {
-    try {
-      setLoading(true);
-      const tasks = await getTasksWithDates(boardId);
-
-      const calendarEvents: CalendarEvent[] = tasks
-        .filter((task) => !!task.start_date)
-        .map((task) => ({
-          id: task.id,
-          title: task.title ?? "Unnamed Task",
-          start: task.start_date ?? new Date().toISOString(),
-          end: task.end_date ?? task.start_date ?? new Date().toISOString(),
-          backgroundColor: getPriorityColor(task.priorities?.label ?? "low"),
-          borderColor: getPriorityColor(task.priorities?.label ?? "low"),
-          extendedProps: {
-            description: task.description ?? "",
-            priority: task.priorities?.label ?? "low",
-            status: "todo",
-            assignee: task.assignee ?? null,
-          },
-        }));
-
-      console.log("Calendar events:", calendarEvents); // Debug
-      setEvents(calendarEvents);
-    } catch (error) {
-      console.error("Failed to load calendar events:", error);
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Obsługa przeciągania eventów
-  const handleEventDrop = async (info: any) => {
-    try {
-      const taskId = info.event.id;
-      const newDate = info.event.start;
-
-      // Użyj updateTaskDates z dwoma parametrami
-      await updateTaskDates(
-        taskId,
-        newDate.toISOString(),
-        newDate.toISOString()
-      );
-
-      // Aktualizuj lokalny stan
-      setEvents((prevEvents) =>
-        prevEvents.map((event) =>
-          event.id === taskId
-            ? { ...event, start: newDate, end: newDate }
-            : event
-        )
-      );
-    } catch (error) {
-      console.error("Failed to update task date:", error);
-      // Cofnij zmianę w przypadku błędu
-      info.revert();
-    }
-  };
-
-  // Obsługa kliknięcia w event
-  const handleEventClick = (info: any) => {
-    if (onTaskClick) {
-      onTaskClick(info.event.id);
-    }
-  };
-
-  // Funkcja do określenia koloru na podstawie priorytetu
+  // Convert priority string into a corresponding color
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {
       case "high":
       case "urgent":
-        return "#ef4444"; // czerwony
+        return "#ef4444";
       case "medium":
       case "normal":
-        return "#f59e0b"; // pomarańczowy
+        return "#f59e0b";
       case "low":
-        return "#10b981"; // zielony
+        return "#10b981";
       default:
-        return "#6b7280"; // szary
+        return "#6b7280";
     }
   };
 
+  // Choose calendar view based on view mode
   const getCalendarView = () => {
     switch (viewMode) {
       case "day":
         return "timeGridDay";
       case "week":
         return "timeGridWeek";
-      case "month":
       default:
         return "dayGridMonth";
     }
   };
 
+  // Get toolbar layout
   const getHeaderToolbar = () => {
     const baseLeft = "prev,next today";
     const baseCenter = "title";
 
     if (isMobile) {
-      return {
-        left: "prev,next",
-        center: "title",
-        right: "",
-      };
+      return { left: "prev,next", center: "title", right: "" };
     }
 
-    switch (viewMode) {
-      case "day":
-        return {
-          left: baseLeft,
-          center: baseCenter,
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
-        };
-      case "week":
-        return {
-          left: baseLeft,
-          center: baseCenter,
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
-        };
-      case "month":
-      default:
-        return {
-          left: baseLeft,
-          center: baseCenter,
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
-        };
-    }
+    return {
+      left: baseLeft,
+      center: baseCenter,
+      right: "dayGridMonth,timeGridWeek,timeGridDay",
+    };
   };
 
-  if (loading) {
-    return (
-      <div className="calendar-loading">
-        <Loader text="Loading calendar..." />
-      </div>
-    );
-  }
+  // Transform tasks into FullCalendar-compatible events
+  const calendarEvents: CalendarEvent[] = (events ?? []).map((task) => {
+    const start = task.start ?? new Date().toISOString();
+
+    const rawEnd = task.end ?? task.start ?? new Date().toISOString();
+    const endDate = new Date(rawEnd);
+    endDate.setDate(endDate.getDate() + 1); // Make exclusive per FullCalendar rules
+
+    const end = endDate.toISOString().split("T")[0];
+    const priority = task.priority ?? "low";
+
+    return {
+      id: task.id,
+      title: task.title ?? "Unnamed Task",
+      start,
+      end,
+      priority,
+      assignee: task.assignee ?? null,
+      description: task.description ?? "",
+      backgroundColor: getPriorityColor(priority),
+      borderColor: getPriorityColor(priority),
+      extendedProps: {
+        priority,
+        assignee: task.assignee ?? null,
+        description: task.description ?? "",
+      },
+    };
+  });
 
   return (
     <div className="calendar-container">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView={getCalendarView()}
-        events={events}
-        editable={true}
-        droppable={true}
-        eventDrop={handleEventDrop}
-        eventClick={handleEventClick}
+        events={calendarEvents}
+        editable={false}
+        droppable={false}
+        eventClick={(info) => onTaskClick?.(info.event.id)}
         height="auto"
         locale="en"
         headerToolbar={getHeaderToolbar()}
@@ -198,35 +118,32 @@ const Calendar = ({
         slotMaxTime="22:00:00"
         allDaySlot={true}
         nowIndicator={viewMode !== "month"}
+        eventClassNames="calendar-event-clickable"
         eventContent={(arg) => (
           <div
             className="custom-event"
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Event content clicked:", arg.event.id);
-              if (onTaskClick) {
-                onTaskClick(arg.event.id);
-              }
+              onTaskClick?.(arg.event.id);
             }}
           >
-            <div className="event-title">{arg.event.title}</div>
+            <div className="event-title font-semibold">{arg.event.title}</div>
             {arg.event.extendedProps.assignee &&
               !isMobile &&
               viewMode === "month" && (
-                <div className="event-assignee">
+                <div className="event-assignee flex items-center gap-1 mt-1">
                   <Avatar
                     src={arg.event.extendedProps.assignee.image || null}
                     alt={arg.event.extendedProps.assignee.name}
                     size={isMobile ? 16 : 20}
                   />
-                  <span className="event-assignee-name">
+                  <span className="event-assignee-name text-xs truncate">
                     {arg.event.extendedProps.assignee.name}
                   </span>
                 </div>
               )}
           </div>
         )}
-        eventClassNames="calendar-event-clickable"
       />
     </div>
   );

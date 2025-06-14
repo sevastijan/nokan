@@ -1,4 +1,3 @@
-// src/app/(protected)/board/[id]/page.tsx
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";

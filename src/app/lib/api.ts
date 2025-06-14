@@ -1,5 +1,3 @@
-// src/lib/api.ts
-
 import { createClient } from "@supabase/supabase-js";
 import {
   Attachment,
@@ -329,15 +327,16 @@ export const getTasksWithDates = async (
       description,
       start_date,
       end_date,
+      due_date,
       completed,
       assignee:user_id(id, name, email, image),
-      priority_data:priority(id, label, color)
+      priorities:priority(id, label, color)
     `
     )
     .eq("board_id", boardId);
 
   if (error) throw error;
-  //@ts-ignore
+
   const normalized: ApiTask[] = (data ?? []).map((task: any) => {
     const assignee =
       Array.isArray(task.assignee) && task.assignee.length > 0
@@ -345,9 +344,9 @@ export const getTasksWithDates = async (
         : task.assignee ?? null;
 
     const priority =
-      Array.isArray(task.priority_data) && task.priority_data.length > 0
-        ? task.priority_data[0]
-        : task.priority_data ?? null;
+      Array.isArray(task.priorities) && task.priorities.length > 0
+        ? task.priorities[0]
+        : task.priorities ?? null;
 
     return {
       id: task.id,
@@ -355,15 +354,15 @@ export const getTasksWithDates = async (
       description: task.description,
       start_date: task.start_date,
       end_date: task.end_date,
+      due_date: task.due_date,
       completed: task.completed,
       assignee,
-      priority,
+      priorities: priority,
     };
   });
 
   return normalized;
 };
-
 export const getTaskById = async (taskId: string): Promise<ApiTask | null> => {
   const { data, error } = await supabase
     .from("tasks")

@@ -1,4 +1,3 @@
-// src/app/components/TeamManagement.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -9,9 +8,8 @@ import { supabase } from "../../lib/supabase";
 import DOMPurify from "dompurify";
 import TeamList from "./TeamList";
 import TeamFormModal from "./TeamFormModal";
+import BoardSelect from "@/app/components/Calendar/BoardSelect";
 import { User, Team, Board } from "@/app/types/globalTypes";
-
-// Importujemy hooki RTK Query
 import {
   useGetCurrentUserQuery,
   useGetTeamsQuery,
@@ -25,26 +23,23 @@ const TeamManagement = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // 1) Pobierz bieżącego użytkownika z NextAuth (RTK Query)
-  const {
-    data: currentUser,
-    isLoading: loadingCurrentUser,
-    error: currentUserError,
-  } = useGetCurrentUserQuery(session!, {
-    skip: status !== "authenticated" || !session,
-  });
+  // Get current user (RTK Query)
+  const { data: currentUser, isLoading: loadingCurrentUser } =
+    useGetCurrentUserQuery(session!, {
+      skip: status !== "authenticated" || !session,
+    });
   const ownerId = currentUser?.id || "";
 
-  // 2) Stan wybranego boardu w select
+  // Selected board state for the BoardSelect
   const [selectedBoardId, setSelectedBoardId] = useState<string>("");
 
-  // 3) Pobierz boards dostępne dla usera (Active Boards)
+  // Get all boards for user
   const { data: boardsWithCounts = [], isLoading: loadingBoards } =
     useGetMyBoardsQuery(ownerId, {
       skip: !ownerId,
     });
 
-  // Mapujemy do prostszej tablicy Board (potrzebujemy id i title w select)
+  // Prepare boards for select
   const boards: Board[] = useMemo(() => {
     if (!boardsWithCounts) return [];
     return boardsWithCounts.map((b) => ({
@@ -59,7 +54,7 @@ const TeamManagement = () => {
     }));
   }, [boardsWithCounts]);
 
-  // 4) Pobierz wszystkie zespoły użytkownika (ownerId)
+  // Fetch all teams for this user
   const {
     data: teamsAll = [],
     isLoading: loadingTeams,
@@ -68,20 +63,19 @@ const TeamManagement = () => {
     skip: !ownerId,
   });
 
-  // 5) Filtrowanie zespołów wg wybranego boardu
+  // Filter teams by selected board
   const teamsForBoard: Team[] = useMemo(() => {
     if (!selectedBoardId) return [];
-    // teamsAll może być undefined lub pusta tablica
     return (teamsAll || []).filter((team) => team.board_id === selectedBoardId);
   }, [teamsAll, selectedBoardId]);
 
-  // 6) Mutations do teamów
+  // Team mutations
   const [addTeam, { isLoading: isAddingTeam }] = useAddTeamMutation();
   const [updateTeam, { isLoading: isUpdatingTeam }] = useUpdateTeamMutation();
   const [deleteTeamMutation, { isLoading: isDeletingTeam }] =
     useDeleteTeamMutation();
 
-  // 7) availableUsers - fetch z Supabase
+  // Load all users from Supabase for team assignment
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const loadUsers = async () => {
     try {
@@ -98,11 +92,10 @@ const TeamManagement = () => {
   useEffect(() => {
     if (status === "authenticated" && currentUser) {
       loadUsers();
-      // RTK Query automatycznie refetchuje teams i boards po ownerId
     }
   }, [status, currentUser]);
 
-  // 8) Stany i handlery do formularza
+  // Modal/form states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
@@ -110,10 +103,9 @@ const TeamManagement = () => {
   const [editedTeamName, setEditedTeamName] = useState("");
   const [editedTeamMembers, setEditedTeamMembers] = useState<string[]>([]);
 
-  const handleBackToDashboard = () => {
-    router.push("/dashboard");
-  };
+  const handleBackToDashboard = () => router.push("/dashboard");
 
+  // Modal open/close helpers
   const handleOpenModalForCreate = () => {
     setEditingTeamId(null);
     setNewTeamName("");
@@ -132,14 +124,14 @@ const TeamManagement = () => {
     setEditedTeamMembers([]);
   };
 
-  // Tworzenie nowego teamu
+  // Create new team
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
-      alert("Podaj nazwę teamu.");
+      alert("Enter a team name.");
       return;
     }
     if (!selectedBoardId) {
-      alert("Wybierz board, do którego dodajesz team.");
+      alert("Select a board for the team.");
       return;
     }
     try {
@@ -150,15 +142,14 @@ const TeamManagement = () => {
         board_id: selectedBoardId,
         members: newTeamMembers,
       }).unwrap();
-      // RTK Query invaliduje i refetchuje getTeamsQuery
       handleCloseModal();
     } catch (error) {
       console.error("Error creating team:", error);
-      alert("Nie udało się utworzyć teamu.");
+      alert("Could not create the team.");
     }
   };
 
-  // Edycja istniejącego teamu
+  // Start editing team
   const handleEditTeam = (team: Team) => {
     setEditingTeamId(team.id);
     setEditedTeamName(team.name);
@@ -167,15 +158,15 @@ const TeamManagement = () => {
     setIsModalOpen(true);
   };
 
-  // Zapis edycji
+  // Save team edits
   const handleUpdateTeam = async () => {
     if (!editingTeamId) return;
     if (!editedTeamName.trim()) {
-      alert("Podaj nazwę teamu.");
+      alert("Enter a team name.");
       return;
     }
     if (!selectedBoardId) {
-      alert("Wybierz board.");
+      alert("Select a board.");
       return;
     }
     try {
@@ -190,23 +181,22 @@ const TeamManagement = () => {
       handleCloseModal();
     } catch (error) {
       console.error("Error updating team:", error);
-      alert("Nie udało się zaktualizować teamu.");
+      alert("Could not update the team.");
     }
   };
 
-  // Usuwanie teamu
+  // Delete team
   const handleDeleteTeam = async (teamId: string) => {
-    if (!confirm("Na pewno chcesz usunąć ten team?")) return;
+    if (!confirm("Are you sure you want to delete this team?")) return;
     try {
       await deleteTeamMutation(teamId).unwrap();
-      // RTK Query invaliduje => refetch
     } catch (error) {
       console.error("Error deleting team:", error);
-      alert("Nie udało się usunąć teamu.");
+      alert("Could not delete the team.");
     }
   };
 
-  // Handler submit formularza
+  // Handle submit for form
   const handleSubmit = async () => {
     if (editingTeamId) {
       await handleUpdateTeam();
@@ -215,7 +205,7 @@ const TeamManagement = () => {
     }
   };
 
-  // Łączenie loadingów
+  // Merge all loading states
   const isOverallLoading =
     loadingCurrentUser ||
     loadingBoards ||
@@ -228,32 +218,26 @@ const TeamManagement = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Header */}
       <div className="bg-slate-800/30 backdrop-blur-sm border-b border-slate-700/50">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <button
             onClick={handleBackToDashboard}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group w-fit"
           >
             <FiArrowLeft className="group-hover:-translate-x-1 transition-transform" />
             <span>Back to Dashboard</span>
           </button>
 
-          {/* Select Board */}
-          <select
+          {/* Custom Board Select */}
+          <BoardSelect
+            boards={boards}
             value={selectedBoardId}
-            onChange={(e) => setSelectedBoardId(e.target.value)}
-            className="bg-slate-700 border border-slate-600 text-white rounded px-3 py-1"
-          >
-            <option value="">– Wybierz board –</option>
-            {boards.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.title}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedBoardId}
+            className="w-full md:w-64"
+          />
 
           <button
             onClick={handleOpenModalForCreate}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-xl flex items-center gap-2"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-xl flex items-center gap-2 w-fit"
             disabled={!selectedBoardId}
           >
             <FiPlus className="w-5 h-5" />
@@ -316,7 +300,7 @@ const TeamManagement = () => {
             />
           ) : (
             <div className="text-white">
-              Wybierz board z powyższego menu, aby zobaczyć zespoły.
+              Select a board from the menu above to view teams.
             </div>
           )}
           {isOverallLoading && (

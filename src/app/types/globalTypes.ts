@@ -380,27 +380,24 @@ export interface ImagePreviewModalProps {
 export interface CalendarEvent {
   id: string;
   title: string;
-  start: string | Date;
-  end: string | Date;
+  start: string;
+  end: string;
+  priority: string;
+  assignee: User | null;
+  description: string;
   backgroundColor: string;
   borderColor: string;
   extendedProps: {
-    description: string;
     priority: string;
-    status: string;
-    assignee: {
-      id: string;
-      name: string;
-      email: string;
-      image?: string | null;
-    } | null;
+    assignee: User | null;
+    description: string;
   };
 }
 
 export interface CalendarProps {
-  events: ApiTask[];
-  viewMode: "month" | "week" | "day";
-  onTaskClick: (taskId: string) => void;
+  events: CalendarEvent[];
+  viewMode?: "month" | "week" | "day";
+  onTaskClick?: (taskId: string) => void;
 }
 
 export interface ConfirmDialogProps {

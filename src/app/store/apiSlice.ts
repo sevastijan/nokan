@@ -1439,6 +1439,7 @@ export const apiSlice = createApi({
      *     Input: boardId: string
      *     Returns: Task[] (with at least id, title, start_date, end_date, etc.)
      */
+
     getTasksWithDates: builder.query<Task[], string>({
       async queryFn(boardId) {
         try {
@@ -1459,26 +1460,28 @@ export const apiSlice = createApi({
               board_id,
               sort_order,
               status,
-              images,
-              // Optionally join assignee info if needed:
-              assignee:users!tasks_user_id_fkey(id,name,email,image)
+              users (
+                id,
+                name,
+                email,
+                image
+              )
             `
             )
             .eq("board_id", boardId);
+
           if (error) throw error;
-          // Map tasks, flatten assignee
+
           const tasks: Task[] = (rawTasks as any[]).map((t) => {
-            const rawAssignee = Array.isArray(t.assignee)
-              ? t.assignee[0]
-              : t.assignee;
-            const assigneeObj: User | undefined = rawAssignee
+            const assigneeObj: User | undefined = t.users
               ? {
-                  id: rawAssignee.id,
-                  name: rawAssignee.name,
-                  email: rawAssignee.email,
-                  image: rawAssignee.image ?? undefined,
+                  id: t.users.id,
+                  name: t.users.name,
+                  email: t.users.email,
+                  image: t.users.image ?? undefined,
                 }
               : undefined;
+
             return {
               id: t.id,
               title: t.title,
@@ -1491,7 +1494,6 @@ export const apiSlice = createApi({
               completed: t.completed,
               created_at: t.created_at ?? undefined,
               updated_at: t.updated_at ?? undefined,
-              images: t.images ?? undefined,
               assignee: assigneeObj,
               start_date: t.start_date ?? undefined,
               end_date: t.end_date ?? undefined,
@@ -1499,10 +1501,11 @@ export const apiSlice = createApi({
               status: t.status ?? undefined,
             };
           });
-          // Optionally filter out ones without any date field:
+
           const filtered = tasks.filter(
             (tk) => tk.start_date || tk.end_date || tk.due_date
           );
+
           return { data: filtered };
         } catch (err: any) {
           console.error("[apiSlice.getTasksWithDates] error:", err);
@@ -1511,8 +1514,7 @@ export const apiSlice = createApi({
       },
       providesTags: (result) =>
         result
-          ? // tag each task for invalidation
-            result.map((t) => ({ type: "TasksWithDates" as const, id: t.id }))
+          ? result.map((t) => ({ type: "TasksWithDates" as const, id: t.id }))
           : [],
     }),
   }),
