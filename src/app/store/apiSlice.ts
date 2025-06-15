@@ -1436,6 +1436,110 @@ export const apiSlice = createApi({
     }),
 
     /**
+     * Fetch starter tasks (template_tasks) for a given board template.
+     * Used to display user-suggested starter tasks on new boards.
+     */
+    getTemplateTasks: builder.query<
+      {
+        id: string;
+        template_id: string;
+        template_column_id: string;
+        title: string;
+        description: string | null;
+        priority: string | null;
+      }[],
+      string
+    >({
+      async queryFn(templateId) {
+        try {
+          const { data, error } = await supabase
+            .from("template_tasks")
+            .select("*")
+            .eq("template_id", templateId);
+          if (error) throw error;
+          return { data: data || [] };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      providesTags: (_result, _error, templateId) => [
+        { type: "Task", id: `TEMPLATE-${templateId}` },
+      ],
+    }),
+
+    /**
+     * Create a new board task from a template task.
+     * Copies data from template_tasks to tasks table for actual user editing.
+     */
+    addStarterTask: builder.mutation<
+      Task,
+      {
+        templateTaskId: string;
+        boardId: string;
+        columnId: string;
+        order: number;
+      }
+    >({
+      async queryFn({ templateTaskId, boardId, columnId, order }) {
+        try {
+          // Fetch template task data by id
+          const { data: templateTask, error } = await supabase
+            .from("template_tasks")
+            .select("*")
+            .eq("id", templateTaskId)
+            .single();
+          if (error || !templateTask)
+            throw error || new Error("Template task not found");
+
+          // Insert as a new task in the board's column
+          const insertPayload = {
+            title: templateTask.title,
+            description: templateTask.description,
+            priority: templateTask.priority,
+            board_id: boardId,
+            column_id: columnId,
+            sort_order: order,
+            completed: false,
+          };
+          const { data: newTask, error: insertErr } = await supabase
+            .from("tasks")
+            .insert(insertPayload)
+            .select("*")
+            .single();
+          if (insertErr || !newTask)
+            throw insertErr || new Error("Insert failed");
+
+          // Map DB row to Task type
+          const mapped: Task = {
+            id: newTask.id,
+            title: newTask.title,
+            description: newTask.description,
+            column_id: newTask.column_id,
+            board_id: newTask.board_id,
+            priority: newTask.priority,
+            user_id: newTask.user_id ?? undefined,
+            order: newTask.sort_order ?? 0,
+            completed: newTask.completed,
+            created_at: newTask.created_at ?? undefined,
+            updated_at: newTask.updated_at ?? undefined,
+            images: newTask.images ?? undefined,
+            assignee: undefined,
+            start_date: newTask.start_date ?? undefined,
+            end_date: newTask.end_date ?? undefined,
+            due_date: newTask.due_date ?? undefined,
+            status: newTask.status ?? undefined,
+          };
+          return { data: mapped };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      invalidatesTags: (_result, _error, { columnId }) => [
+        { type: "Column", id: columnId },
+      ],
+    }),
+
+    /**
      * 24) New endpoint: Fetch tasks for a board that have date fields (start_date or end_date),
      *     for calendar usage.
      *     Input: boardId: string
@@ -1650,4 +1754,6 @@ export const {
   useMarkNotificationReadMutation,
   useDeleteNotificationMutation,
   useAddNotificationMutation,
+  useAddStarterTaskMutation,
+  useLazyGetTemplateTasksQuery,
 } = apiSlice;
