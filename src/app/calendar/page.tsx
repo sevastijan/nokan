@@ -20,7 +20,7 @@ import {
   FaCalendarDay,
   FaFilter,
 } from "react-icons/fa";
-import { CalendarEvent } from "@/app/types/globalTypes";
+import { CalendarEvent, Column as ColumnType } from "@/app/types/globalTypes";
 
 const getPriorityColor = (priority: string) => {
   switch (priority?.toLowerCase()) {
@@ -97,25 +97,17 @@ const CalendarPage = () => {
 
   const loading = sessionStatus === "loading" || userFetching || boardsFetching;
 
-  if (loading) return <Loader text="Loading calendar..." />;
-  if (sessionStatus !== "authenticated") return null;
-  if (userError)
-    return <div className="p-8 text-red-400">Error loading user data</div>;
-  if (boardsError)
-    return <div className="p-8 text-red-400">Error loading boards</div>;
-
+  // ---- Transform events to calendarEvents ----
   const calendarEvents: CalendarEvent[] = (events ?? []).map((task) => {
-    const start = task.start_date ?? new Date().toISOString();
-    const rawEnd = task.end_date ?? task.start_date ?? new Date().toISOString();
-    const endDate = new Date(rawEnd);
-    endDate.setDate(endDate.getDate() + 1); // make inclusive
-    const end = endDate.toISOString().split("T")[0];
+    const start =
+      typeof task.start_date === "string"
+        ? task.start_date.split("T")[0]
+        : new Date().toISOString().split("T")[0];
 
-    const priority =
-      typeof task.priority === "string"
-        ? task.priority
-        : //@ts-expect-error
-          task.priority?.label ?? "low";
+    const end =
+      typeof task.end_date === "string" ? task.end_date.split("T")[0] : start;
+
+    const priority = typeof task.priority === "string" ? task.priority : "low";
 
     const color = getPriorityColor(priority);
 
@@ -124,6 +116,7 @@ const CalendarPage = () => {
       title: task.title ?? "Unnamed Task",
       start,
       end,
+      column_id: task.column_id,
       priority,
       assignee: task.assignee ?? null,
       description: task.description ?? "",
@@ -136,6 +129,22 @@ const CalendarPage = () => {
       },
     };
   });
+
+  // ---- Columns for the modal ----
+  const columns: ColumnType[] =
+    boards?.find((b) => b.id === selectedBoardId)?.columns ?? [];
+
+  const getColumnIdForTask = (taskId: string): string => {
+    const found = (events ?? []).find((ev: any) => ev.id === taskId);
+    return found?.column_id || "";
+  };
+
+  if (loading) return <Loader text="Loading calendar..." />;
+  if (sessionStatus !== "authenticated") return null;
+  if (userError)
+    return <div className="p-8 text-red-400">Error loading user data</div>;
+  if (boardsError)
+    return <div className="p-8 text-red-400">Error loading boards</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -229,6 +238,9 @@ const CalendarPage = () => {
           onClose={handleCloseTask}
           onTaskUpdate={handleTaskUpdate}
           currentUser={currentUser}
+          boardId={selectedBoardId}
+          columns={columns}
+          columnId={getColumnIdForTask(selectedTaskId)}
         />
       )}
     </div>

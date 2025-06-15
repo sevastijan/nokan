@@ -9,6 +9,22 @@ import { CalendarProps, CalendarEvent } from "@/app/types/globalTypes";
 import "../Calendar/calendar.css";
 import Avatar from "../Avatar/Avatar";
 
+// Convert priority string into a color
+const getPriorityColor = (priority: string) => {
+  switch (priority?.toLowerCase()) {
+    case "high":
+    case "urgent":
+      return "#ef4444";
+    case "medium":
+    case "normal":
+      return "#f59e0b";
+    case "low":
+      return "#10b981";
+    default:
+      return "#6b7280";
+  }
+};
+
 const Calendar = ({
   events,
   viewMode = "month",
@@ -16,7 +32,7 @@ const Calendar = ({
 }: CalendarProps) => {
   const [isMobile, setIsMobile] = useState(false);
 
-  // Determine if the device is mobile
+  // Mobile detection
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
@@ -24,23 +40,7 @@ const Calendar = ({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Convert priority string into a corresponding color
-  const getPriorityColor = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-      case "high":
-      case "urgent":
-        return "#ef4444";
-      case "medium":
-      case "normal":
-        return "#f59e0b";
-      case "low":
-        return "#10b981";
-      default:
-        return "#6b7280";
-    }
-  };
-
-  // Choose calendar view based on view mode
+  // Get calendar view based on mode
   const getCalendarView = () => {
     switch (viewMode) {
       case "day":
@@ -54,39 +54,27 @@ const Calendar = ({
 
   // Get toolbar layout
   const getHeaderToolbar = () => {
-    const baseLeft = "prev,next today";
-    const baseCenter = "title";
-
     if (isMobile) {
       return { left: "prev,next", center: "title", right: "" };
     }
-
     return {
-      left: baseLeft,
-      center: baseCenter,
+      left: "prev,next today",
+      center: "title",
       right: "dayGridMonth,timeGridWeek,timeGridDay",
     };
   };
 
-  // Transform tasks into FullCalendar-compatible events
   const calendarEvents: CalendarEvent[] = (events ?? []).map((task) => {
-    const start = task.start ?? new Date().toISOString();
+    const start = (task.start ?? new Date().toISOString()).split("T")[0];
 
-    const rawEnd = task.end ?? task.start ?? new Date().toISOString();
-    const endDate = new Date(rawEnd);
-    endDate.setDate(endDate.getDate() + 1); // Make exclusive per FullCalendar rules
+    const end = task.end ? task.end.split("T")[0] : start;
 
-    const end = endDate.toISOString().split("T")[0];
     const priority = task.priority ?? "low";
-
     return {
-      id: task.id,
-      title: task.title ?? "Unnamed Task",
+      ...task,
       start,
       end,
       priority,
-      assignee: task.assignee ?? null,
-      description: task.description ?? "",
       backgroundColor: getPriorityColor(priority),
       borderColor: getPriorityColor(priority),
       extendedProps: {
