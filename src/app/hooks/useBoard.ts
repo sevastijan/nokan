@@ -10,9 +10,14 @@ import {
   useRemoveTaskMutation,
   useUpdateTaskMutation,
   useUpdateBoardTitleMutation,
+  useAddStarterTaskMutation,
+  useAddBoardTemplateMutation, // If needed elsewhere
 } from "@/app/store/apiSlice";
 import { Board, Task } from "@/app/types/globalTypes";
 
+/**
+ * Custom hook for fetching and managing board state.
+ */
 export const useBoard = (boardId: string) => {
   const {
     data: board,
@@ -24,19 +29,26 @@ export const useBoard = (boardId: string) => {
   const [addTask] = useAddTaskMutation();
   const [addColumn] = useAddColumnMutation();
   const [removeColumn] = useRemoveColumnMutation();
-  const [updColTitle] = useUpdateColumnTitleMutation();
+  const [updateColumnTitle] = useUpdateColumnTitleMutation();
   const [removeTask] = useRemoveTaskMutation();
-  const [updTask] = useUpdateTaskMutation();
-  const [updBoardTitle] = useUpdateBoardTitleMutation();
+  const [updateTask] = useUpdateTaskMutation();
+  const [updateBoardTitle] = useUpdateBoardTitleMutation();
+  const [addStarterTask] = useAddStarterTaskMutation();
 
+  /**
+   * Update board title.
+   */
   const handleUpdateBoardTitle = useCallback(
     async (title: string) => {
-      await updBoardTitle({ boardId, title }).unwrap();
+      await updateBoardTitle({ boardId, title }).unwrap();
       fetchBoardData();
     },
-    [boardId, updBoardTitle, fetchBoardData]
+    [boardId, updateBoardTitle, fetchBoardData]
   );
 
+  /**
+   * Add new task to a column.
+   */
   const handleAddTask = useCallback(
     async (
       column_id: string,
@@ -60,6 +72,9 @@ export const useBoard = (boardId: string) => {
     [board, boardId, addTask, fetchBoardData]
   );
 
+  /**
+   * Add new column to the board.
+   */
   const handleAddColumn = useCallback(
     async (title: string) => {
       const nextOrder = board?.columns.length || 0;
@@ -69,6 +84,9 @@ export const useBoard = (boardId: string) => {
     [board, boardId, addColumn, fetchBoardData]
   );
 
+  /**
+   * Remove column and its tasks.
+   */
   const handleRemoveColumn = useCallback(
     async (columnId: string) => {
       await removeColumn({ columnId }).unwrap();
@@ -77,14 +95,20 @@ export const useBoard = (boardId: string) => {
     [removeColumn, fetchBoardData]
   );
 
+  /**
+   * Update column title.
+   */
   const handleUpdateColumnTitle = useCallback(
     async (columnId: string, title: string) => {
-      await updColTitle({ columnId, title }).unwrap();
+      await updateColumnTitle({ columnId, title }).unwrap();
       fetchBoardData();
     },
-    [updColTitle, fetchBoardData]
+    [updateColumnTitle, fetchBoardData]
   );
 
+  /**
+   * Remove a task from a column.
+   */
   const handleRemoveTask = useCallback(
     async (columnId: string, taskId: string) => {
       await removeTask({ columnId, taskId }).unwrap();
@@ -93,24 +117,30 @@ export const useBoard = (boardId: string) => {
     [removeTask, fetchBoardData]
   );
 
+  /**
+   * Update a task's fields.
+   */
   const handleUpdateTask = useCallback(
     async (taskId: string, data: Partial<Task>) => {
-      await updTask({ taskId, data }).unwrap();
+      await updateTask({ taskId, data }).unwrap();
       fetchBoardData();
     },
-    [updTask, fetchBoardData]
+    [updateTask, fetchBoardData]
   );
 
+  /**
+   * Reorder tasks inside a column.
+   */
   const handleReorderTasks = useCallback(
     async (columnId: string, tasks: Task[]) => {
       await Promise.all(
         tasks.map((t, i) =>
-          updTask({ taskId: t.id, data: { order: i } }).unwrap()
+          updateTask({ taskId: t.id, data: { order: i } }).unwrap()
         )
       );
       fetchBoardData();
     },
-    [updTask, fetchBoardData]
+    [updateTask, fetchBoardData]
   );
 
   return {
@@ -128,3 +158,5 @@ export const useBoard = (boardId: string) => {
     handleReorderTasks,
   };
 };
+
+export default useBoard;

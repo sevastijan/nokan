@@ -1,20 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPlus, FiTrash2, FiX, FiMove } from "react-icons/fi";
-import { BoardTemplate } from "@/app/types/globalTypes";
-import { addBoardTemplate } from "@/app/lib/api";
-import { CreateTemplateModalProps } from "@/app/types/globalTypes";
+import { useAddBoardTemplateMutation } from "@/app/store/apiSlice";
+import {
+  BoardTemplate,
+  CreateTemplateModalProps,
+} from "@/app/types/globalTypes";
+
 interface TemplateColumn {
   id: string;
   title: string;
   order: number;
+  tasks: TemplateTask[];
 }
 
-/**
- * Modal component for creating a new board template
- */
+interface TemplateTask {
+  id: string;
+  title: string;
+  description: string;
+}
+
 const CreateTemplateModal = ({
   isOpen,
   onClose,
@@ -23,73 +30,139 @@ const CreateTemplateModal = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [columns, setColumns] = useState<TemplateColumn[]>([
-    { id: "1", title: "To Do", order: 0 },
-    { id: "2", title: "In Progress", order: 1 },
-    { id: "3", title: "Done", order: 2 },
+    { id: "1", title: "To Do", order: 0, tasks: [] },
+    { id: "2", title: "In Progress", order: 1, tasks: [] },
+    { id: "3", title: "Done", order: 2, tasks: [] },
   ]);
-  const [loading, setLoading] = useState(false);
 
+  const [addBoardTemplate, { isLoading }] = useAddBoardTemplateMutation();
+
+  // Add a new column
   const addColumn = () => {
-    const newColumn: TemplateColumn = {
-      id: Date.now().toString(),
-      title: `Kolumna ${columns.length + 1}`,
-      order: columns.length,
-    };
-    setColumns((prev) => [...prev, newColumn]);
+    setColumns((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        title: `Column ${prev.length + 1}`,
+        order: prev.length,
+        tasks: [],
+      },
+    ]);
   };
 
+  // Remove a column
   const removeColumn = (id: string) => {
     if (columns.length <= 1) {
-      alert("Szablon musi mieć przynajmniej jedną kolumnę");
+      alert("A template must have at least one column");
       return;
     }
     setColumns((prev) => prev.filter((col) => col.id !== id));
   };
 
+  // Update column title
   const updateColumnTitle = (id: string, title: string) => {
     setColumns((prev) =>
       prev.map((col) => (col.id === id ? { ...col, title } : col))
     );
   };
 
+  // Add a starter task to a column
+  const addTask = (colId: string) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.id === colId
+          ? {
+              ...col,
+              tasks: [
+                ...col.tasks,
+                {
+                  id: `${colId}-task-${col.tasks.length + 1}-${Date.now()}`,
+                  title: "",
+                  description: "",
+                },
+              ],
+            }
+          : col
+      )
+    );
+  };
+
+  // Remove a task from a column
+  const removeTask = (colId: string, taskId: string) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.id === colId
+          ? { ...col, tasks: col.tasks.filter((t) => t.id !== taskId) }
+          : col
+      )
+    );
+  };
+
+  // Update task details
+  const updateTask = (
+    colId: string,
+    taskId: string,
+    changes: Partial<TemplateTask>
+  ) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.id === colId
+          ? {
+              ...col,
+              tasks: col.tasks.map((task) =>
+                task.id === taskId ? { ...task, ...changes } : task
+              ),
+            }
+          : col
+      )
+    );
+  };
+
+  // Handle saving the template (including columns and starter tasks)
   const handleSave = async () => {
     if (!name.trim()) {
-      alert("Nazwa szablonu jest wymagana");
+      alert("Template name is required");
       return;
     }
     if (columns.some((col) => !col.title.trim())) {
-      alert("Wszystkie kolumny muszą mieć nazwę");
+      alert("All columns must have a title");
       return;
     }
-    setLoading(true);
-    try {
-      // Call API to create template, returns BoardTemplate including id, template_columns, etc.
-      const created: BoardTemplate = await addBoardTemplate({
-        name: name.trim(),
-        description: description.trim() || null,
-        columns: columns.map((col, index) => ({
-          title: col.title.trim(),
-          order: index,
+
+    // Build payload in exactly the shape: { name, description, columns: [{ title, order, tasks: [{ title, description }] }] }
+    const payload = {
+      name: name.trim(),
+      description: description.trim() || null,
+      columns: columns.map((col, colIndex) => ({
+        title: col.title.trim(),
+        order: colIndex,
+        tasks: col.tasks.map((task) => ({
+          title: task.title.trim(),
+          description: task.description.trim() || null,
         })),
-      });
-      // Inform parent with newly created template
+      })),
+    };
+
+    console.log("Creating template with payload:", payload);
+
+    try {
+      const created: BoardTemplate = await addBoardTemplate(payload).unwrap();
       onTemplateCreated(created);
       handleClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating template:", error);
-      alert("Nie udało się utworzyć szablonu");
-    } finally {
-      setLoading(false);
+      alert("Failed to create template: " + (error.error || error.message));
     }
   };
 
+  // Reset & close
   const handleClose = () => {
     setName("");
     setDescription("");
     setColumns([
-      { id: "1", title: "To Do", order: 0 },
-      { id: "2", title: "In Progress", order: 1 },
-      { id: "3", title: "Done", order: 2 },
+      { id: "1", title: "To Do", order: 0, tasks: [] },
+      { id: "2", title: "In Progress", order: 1, tasks: [] },
+      { id: "3", title: "Done", order: 2, tasks: [] },
     ]);
     onClose();
   };
@@ -113,7 +186,7 @@ const CreateTemplateModal = ({
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Utwórz nowy szablon</h2>
+              <h2 className="text-xl font-bold">Create new template</h2>
               <button
                 onClick={handleClose}
                 className="text-slate-400 hover:text-white transition-colors"
@@ -121,88 +194,150 @@ const CreateTemplateModal = ({
                 <FiX size={24} />
               </button>
             </div>
+
             {/* Body */}
             <div className="space-y-4">
+              {/* Name */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Nazwa szablonu *
+                  Template name *
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-slate-700 text-white border border-slate-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="np. Development Workflow"
+                  placeholder="e.g. Development Workflow"
                 />
               </div>
+
+              {/* Description */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Opis szablonu
+                  Template description
                 </label>
                 <textarea
-                  value={description || ""}
+                  value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full bg-slate-700 text-white border border-slate-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                   rows={3}
-                  placeholder="Krótki opis szablonu..."
+                  placeholder="Short description..."
                 />
               </div>
+
+              {/* Columns & Tasks */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium">Kolumny *</label>
+                  <label className="block text-sm font-medium">Columns *</label>
                   <button
                     onClick={addColumn}
                     className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
                   >
-                    <FiPlus size={16} />
-                    Dodaj kolumnę
+                    <FiPlus size={16} /> Add column
                   </button>
                 </div>
-                <div className="space-y-2">
-                  {columns.map((column, index) => (
+                <div className="space-y-4">
+                  {columns.map((column, colIdx) => (
                     <div
                       key={column.id}
-                      className="flex items-center gap-3 bg-slate-700 rounded-lg p-3"
+                      className="bg-slate-700 rounded-lg p-3"
                     >
-                      <FiMove className="text-slate-400" />
-                      <span className="text-sm text-slate-400 w-8">
-                        {index + 1}.
-                      </span>
-                      <input
-                        type="text"
-                        value={column.title}
-                        onChange={(e) =>
-                          updateColumnTitle(column.id, e.target.value)
-                        }
-                        className="flex-1 bg-slate-600 text-white border border-slate-500 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Nazwa kolumny"
-                      />
-                      <button
-                        onClick={() => removeColumn(column.id)}
-                        disabled={columns.length <= 1}
-                        className="text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <FiTrash2 size={16} />
-                      </button>
+                      <div className="flex items-center gap-3 mb-2">
+                        <FiMove className="text-slate-400" />
+                        <span className="text-sm text-slate-400 w-8">
+                          {colIdx + 1}.
+                        </span>
+                        <input
+                          type="text"
+                          value={column.title}
+                          onChange={(e) =>
+                            updateColumnTitle(column.id, e.target.value)
+                          }
+                          className="flex-1 bg-slate-600 text-white border border-slate-500 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="Column name"
+                        />
+                        <button
+                          onClick={() => removeColumn(column.id)}
+                          disabled={columns.length <= 1}
+                          className="text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      </div>
+                      {/* Tasks */}
+                      <div className="ml-8">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-gray-400">
+                            Starter tasks
+                          </span>
+                          <button
+                            onClick={() => addTask(column.id)}
+                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                          >
+                            <FiPlus size={12} /> Add task
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {column.tasks.map((task, tIdx) => (
+                            <div
+                              key={task.id}
+                              className="flex items-center gap-2 bg-slate-600 rounded p-2"
+                            >
+                              <span className="text-xs text-slate-400">
+                                {tIdx + 1}.
+                              </span>
+                              <input
+                                type="text"
+                                value={task.title}
+                                onChange={(e) =>
+                                  updateTask(column.id, task.id, {
+                                    title: e.target.value,
+                                  })
+                                }
+                                className="flex-1 bg-slate-500 text-white border border-slate-400 rounded px-2 py-1 text-xs"
+                                placeholder="Task title"
+                              />
+                              <input
+                                type="text"
+                                value={task.description}
+                                onChange={(e) =>
+                                  updateTask(column.id, task.id, {
+                                    description: e.target.value,
+                                  })
+                                }
+                                className="flex-1 bg-slate-500 text-white border border-slate-400 rounded px-2 py-1 text-xs"
+                                placeholder="Task description"
+                              />
+                              <button
+                                onClick={() => removeTask(column.id, task.id)}
+                                className="text-red-400 hover:text-red-300 transition-colors"
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
+
             {/* Footer */}
             <div className="flex gap-3 mt-6 justify-end">
               <button
                 onClick={handleClose}
                 className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
               >
-                Anuluj
+                Cancel
               </button>
               <button
                 onClick={handleSave}
-                disabled={!name.trim() || loading}
+                disabled={!name.trim() || isLoading}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Zapisywanie..." : "Utwórz szablon"}
+                {isLoading ? "Saving..." : "Create template"}
               </button>
             </div>
           </motion.div>
