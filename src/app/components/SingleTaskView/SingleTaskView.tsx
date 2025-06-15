@@ -542,32 +542,6 @@ const SingleTaskView = ({
                   );
                 })()}
                 <div className="mt-4">
-                  <label className="text-sm text-slate-300 flex items-center gap-1">
-                    <FaPaperclip className="w-4 h-4 text-white" />
-                    Attachments
-                  </label>
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      className="
-                        inline-flex items-center px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white
-                        hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500
-                      "
-                      onClick={handleFileSelectClick}
-                    >
-                      <FaPaperclip className="mr-1 text-white" />
-                      {isNewTask
-                        ? localFilePreviews.length > 0
-                          ? "Add more files"
-                          : "Select files"
-                        : "Select files"}
-                    </button>
-                    <span className="text-slate-400 text-sm">
-                      {isNewTask
-                        ? "Files will upload after creation"
-                        : "You can add multiple files"}
-                    </span>
-                  </div>
                   <input
                     type="file"
                     multiple
