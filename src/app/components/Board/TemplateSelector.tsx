@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiChevronDown, FiPlus, FiTrash2 } from "react-icons/fi";
@@ -6,6 +7,9 @@ import { BoardTemplate } from "@/app/types/globalTypes";
 import { getBoardTemplates, deleteBoardTemplate } from "@/app/lib/api";
 import { TemplateSelectorProps } from "@/app/types/globalTypes";
 
+/**
+ * Dropdown component for selecting a board template, including refresh and delete logic.
+ */
 const TemplateSelector = forwardRef<
   { refreshTemplates: () => void },
   TemplateSelectorProps
@@ -25,6 +29,7 @@ const TemplateSelector = forwardRef<
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Load all templates from backend (custom and default)
     const loadTemplates = async () => {
       try {
         setLoading(true);
@@ -33,7 +38,7 @@ const TemplateSelector = forwardRef<
         setTemplates(fetchedTemplates);
       } catch (err) {
         console.error("Error loading templates:", err);
-        setError("Nie udało się załadować szablonów");
+        setError("Could not load templates");
       } finally {
         setLoading(false);
       }
@@ -53,7 +58,7 @@ const TemplateSelector = forwardRef<
       e: React.MouseEvent
     ) => {
       e.stopPropagation();
-      if (!confirm("Czy na pewno chcesz usunąć ten szablon?")) return;
+      if (!confirm("Are you sure you want to delete this template?")) return;
       try {
         await deleteBoardTemplate(templateId);
         await loadTemplates();
@@ -62,14 +67,14 @@ const TemplateSelector = forwardRef<
         }
       } catch (err) {
         console.error("Error deleting template:", err);
-        setError("Usuwanie nie powiodło się");
+        setError("Failed to delete template");
       }
     };
 
     return (
       <div className="relative">
         <label className="block text-sm font-medium mb-1 text-gray-300">
-          Szablon tablicy
+          Board template
         </label>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -79,10 +84,10 @@ const TemplateSelector = forwardRef<
           <div className="flex flex-col items-start">
             <span className="font-medium">
               {loading
-                ? "Ładowanie..."
+                ? "Loading..."
                 : error
-                ? "Błąd"
-                : selectedTemplate?.name || "Wybierz szablon"}
+                ? "Error"
+                : selectedTemplate?.name || "Select template"}
             </span>
             {selectedTemplate && !error && (
               <span className="text-xs text-gray-400 mt-1">
@@ -119,9 +124,9 @@ const TemplateSelector = forwardRef<
               >
                 <FiPlus size={16} />
                 <div>
-                  <div className="font-medium">Utwórz nowy szablon</div>
+                  <div className="font-medium">Create new template</div>
                   <div className="text-xs text-gray-400">
-                    Dostosuj własny układ kolumn
+                    Customize your own column layout
                   </div>
                 </div>
               </button>
@@ -142,7 +147,7 @@ const TemplateSelector = forwardRef<
                       {template.name}
                       {!template.is_custom && (
                         <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">
-                          Domyślny
+                          Default
                         </span>
                       )}
                     </div>
@@ -150,10 +155,10 @@ const TemplateSelector = forwardRef<
                       {template.description}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Kolumny:{" "}
+                      Columns:{" "}
                       {template.template_columns
                         .map((c) => c.title)
-                        .join(", ") || "Brak"}
+                        .join(", ") || "None"}
                     </div>
                   </div>
                   {template.is_custom && (
@@ -168,7 +173,7 @@ const TemplateSelector = forwardRef<
               ))}
               {templates.length === 0 && (
                 <div className="p-3 text-gray-400 text-center">
-                  Brak szablonów
+                  No templates
                 </div>
               )}
             </motion.div>

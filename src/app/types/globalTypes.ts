@@ -138,7 +138,7 @@ export interface Column {
 export interface Board {
   id: string;
   title: string;
-  owner_id: string;
+  user_id: string;
   ownerName?: string;
   ownerEmail?: string;
   columns: Column[];
@@ -266,23 +266,17 @@ export interface BoardListProps {
   onDelete: (boardId: string) => void;
 }
 
-export interface TemplateTask {
+interface TemplateTask {
   id: string;
-  template_id: string;
-  column_id: string;
   title: string;
-  description?: string | null;
-  sort_order: number;
-  created_at?: string;
+  description?: string;
 }
 
-// Template selector / templates:
 export interface TemplateColumn {
   id: string;
-  template_id: string;
   title: string;
   order: number;
-  template_tasks?: TemplateTask[];
+  tasks: TemplateTask[]; // Each column has its own starter tasks
 }
 
 export interface BoardTemplate {

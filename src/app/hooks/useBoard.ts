@@ -11,7 +11,7 @@ import {
   useUpdateTaskMutation,
   useUpdateBoardTitleMutation,
   useAddStarterTaskMutation,
-  useLazyGetTemplateTasksQuery,
+  useAddBoardTemplateMutation, // If needed elsewhere
 } from "@/app/store/apiSlice";
 import { Board, Task } from "@/app/types/globalTypes";
 
@@ -33,10 +33,7 @@ export const useBoard = (boardId: string) => {
   const [removeTask] = useRemoveTaskMutation();
   const [updateTask] = useUpdateTaskMutation();
   const [updateBoardTitle] = useUpdateBoardTitleMutation();
-
-  // New: Mutations/queries for starter tasks from template
   const [addStarterTask] = useAddStarterTaskMutation();
-  const [triggerGetTemplateTasks] = useLazyGetTemplateTasksQuery();
 
   /**
    * Update board title.
@@ -146,34 +143,6 @@ export const useBoard = (boardId: string) => {
     [updateTask, fetchBoardData]
   );
 
-  /**
-   * Add starter tasks to a board from template.
-   * This is for cases where you want to seed a board with tasks from a template_tasks table.
-   */
-  const handleAddStarterTasksFromTemplate = useCallback(
-    async (boardId: string, templateId: string) => {
-      // Fetch template tasks for the given templateId
-      const { data: templateTasks } = await triggerGetTemplateTasks(
-        templateId,
-        true // preferCacheValue = true, or just pass templateId
-      );
-
-      if (templateTasks && Array.isArray(templateTasks)) {
-        // Insert each starter task into "tasks" for the board (can use addStarterTask mutation if you have it)
-        await Promise.all(
-          templateTasks.map((templateTask) =>
-            addStarterTask({
-              board_id: boardId,
-              ...templateTask,
-            }).unwrap()
-          )
-        );
-        fetchBoardData();
-      }
-    },
-    [addStarterTask, triggerGetTemplateTasks, fetchBoardData]
-  );
-
   return {
     board,
     loading: isLoading,
@@ -187,6 +156,7 @@ export const useBoard = (boardId: string) => {
     handleRemoveTask,
     handleUpdateTask,
     handleReorderTasks,
-    handleAddStarterTasksFromTemplate, // <-- expose starter tasks logic
   };
 };
+
+export default useBoard;
