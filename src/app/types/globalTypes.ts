@@ -266,13 +266,25 @@ export interface BoardListProps {
   onDelete: (boardId: string) => void;
 }
 
+export interface TemplateTask {
+  id: string;
+  template_id: string;
+  column_id: string;
+  title: string;
+  description?: string | null;
+  sort_order: number;
+  created_at?: string;
+}
+
 // Template selector / templates:
 export interface TemplateColumn {
   id: string;
   template_id: string;
   title: string;
   order: number;
+  template_tasks?: TemplateTask[];
 }
+
 export interface BoardTemplate {
   id: string;
   name: string;
