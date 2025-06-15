@@ -43,6 +43,7 @@ export const apiSlice = createApi({
     "TeamsList",
     "Team",
     "TasksWithDates",
+    "Notification",
   ],
   endpoints: (builder) => ({
     /**
@@ -1518,6 +1519,101 @@ export const apiSlice = createApi({
           ? result.map((t) => ({ type: "TasksWithDates" as const, id: t.id }))
           : [],
     }),
+
+    /**
+     * 25) Fetch notifications for user.
+     */
+    getNotifications: builder.query<any[], string>({
+      async queryFn(userId) {
+        try {
+          const { data, error } = await supabase
+            .from("notifications")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false });
+          if (error) throw error;
+          return { data: data || [] };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      providesTags: (result, _error, userId) =>
+        result ? [{ type: "Notification", id: userId }] : [],
+    }),
+
+    /**
+     * 26) Mark notification as read.
+     */
+    markNotificationRead: builder.mutation<{ id: string }, { id: string }>({
+      async queryFn({ id }) {
+        try {
+          const { error } = await supabase
+            .from("notifications")
+            .update({ read: true })
+            .eq("id", id);
+          if (error) throw error;
+          return { data: { id } };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Notification", id },
+      ],
+    }),
+
+    /**
+     * 27) Delete notification by id.
+     */
+    deleteNotification: builder.mutation<{ id: string }, { id: string }>({
+      async queryFn({ id }) {
+        try {
+          const { error } = await supabase
+            .from("notifications")
+            .delete()
+            .eq("id", id);
+          if (error) throw error;
+          return { data: { id } };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Notification", id },
+      ],
+    }),
+
+    /**
+     * 28) Add notification
+     */
+    addNotification: builder.mutation<
+      any,
+      {
+        user_id: string;
+        type: string;
+        task_id?: string;
+        board_id?: string;
+        message: string;
+      }
+    >({
+      async queryFn(payload) {
+        try {
+          const { data, error } = await supabase
+            .from("notifications")
+            .insert({ ...payload, read: false })
+            .select("*")
+            .single();
+          if (error || !data)
+            throw error || new Error("Add notification failed");
+          return { data };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      invalidatesTags: (_result, _error, { user_id }) => [
+        { type: "Notification", id: user_id },
+      ],
+    }),
   }),
 });
 
@@ -1550,4 +1646,8 @@ export const {
   useUpdateTeamMutation,
   useDeleteTeamMutation,
   useGetTasksWithDatesQuery,
+  useGetNotificationsQuery,
+  useMarkNotificationReadMutation,
+  useDeleteNotificationMutation,
+  useAddNotificationMutation,
 } = apiSlice;
