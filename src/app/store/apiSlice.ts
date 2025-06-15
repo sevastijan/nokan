@@ -955,6 +955,78 @@ export const apiSlice = createApi({
         result ? result.map((b) => ({ type: "Board" as const, id: b.id })) : [],
     }),
 
+    addBoardTemplate: builder.mutation<
+      any,
+      {
+        name: string;
+        description?: string | null;
+        columns: {
+          title: string;
+          order: number;
+          tasks: { title: string; description?: string | null }[];
+        }[];
+      }
+    >({
+      async queryFn({ name, description, columns }) {
+        try {
+          // 1. Stwórz template
+          const { data: template, error: templateErr } = await supabase
+            .from("board_templates")
+            .insert({ name, description })
+            .select("*")
+            .single();
+          if (templateErr || !template)
+            throw templateErr || new Error("Template creation failed");
+          const templateId = template.id;
+
+          // 2. Wstaw kolumny
+          const columnsToInsert = columns.map((col, idx) => ({
+            title: col.title,
+            order: col.order ?? idx,
+            template_id: templateId,
+          }));
+          const { data: insertedCols, error: colsErr } = await supabase
+            .from("template_columns")
+            .insert(columnsToInsert)
+            .select("*");
+          if (colsErr || !insertedCols)
+            throw colsErr || new Error("Columns creation failed");
+
+          // 3. Wstaw zadania do template_tasks, używając pola column_id (a nie template_column_id)
+          const templateTasksToInsert = insertedCols.flatMap((col, colIdx) =>
+            (columns[colIdx].tasks || []).map((task, tIdx) => ({
+              title: task.title,
+              description: task.description || null,
+              template_id: templateId,
+              column_id: col.id, // <-- tutaj zmiana
+              sort_order: tIdx,
+            }))
+          );
+          if (templateTasksToInsert.length > 0) {
+            const { error: tasksErr } = await supabase
+              .from("template_tasks")
+              .insert(templateTasksToInsert);
+            if (tasksErr) throw tasksErr;
+          }
+
+          // 4. Zwróć nowo utworzony template razem z kolumnami
+          return {
+            data: {
+              ...template,
+              template_columns: insertedCols.map((col, idx) => ({
+                ...col,
+                tasks: columns[idx]?.tasks || [],
+              })),
+            },
+          };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      invalidatesTags: (_result, _error, _arg) => [
+        { type: "Board", id: "TEMPLATE-LIST" },
+      ],
+    }),
     /**
      * 17) Fetch user role from Supabase users table.
      *     Input: email string
@@ -1355,7 +1427,7 @@ export const apiSlice = createApi({
     >({
       async queryFn({ title, templateId, user_id }) {
         try {
-          // 1) Insert board
+          // 1. Create board
           const { data: newBoard, error: boardErr } = await supabase
             .from("boards")
             .insert({ title, user_id })
@@ -1365,65 +1437,90 @@ export const apiSlice = createApi({
             throw boardErr || new Error("Failed to create board");
           const boardId = newBoard.id;
 
-          // 2) Fetch template columns
-          const { data: templateCols = [], error: templateErr } = await supabase
+          // 2. Get template columns
+          const { data: templateCols, error: templateColsErr } = await supabase
             .from("template_columns")
             .select("*")
             .eq("template_id", templateId)
             .order("order", { ascending: true });
-          if (templateErr) throw templateErr;
+          if (templateColsErr) throw templateColsErr;
+          if (!templateCols || templateCols.length === 0)
+            throw new Error("No columns found for this template");
 
-          // 3) Insert columns for new board
-          const colsToInsert = (templateCols as any[]).map((col) => ({
+          // 3. Insert columns into new board
+          const columnsToInsert = templateCols.map((col, idx) => ({
             title: col.title,
-            order: col.order,
+            order: col.order ?? idx,
             board_id: boardId,
           }));
-          if (colsToInsert.length > 0) {
-            const { error: insertColsErr } = await supabase
-              .from("columns")
-              .insert(colsToInsert);
-            if (insertColsErr) throw insertColsErr;
+          const { data: insertedColumns, error: columnsErr } = await supabase
+            .from("columns")
+            .insert(columnsToInsert)
+            .select("*");
+          if (columnsErr || !insertedColumns)
+            throw columnsErr || new Error("Failed to create columns");
+
+          // 4. Map template_column.id → new column.id
+          const templateIdToColumnId: Record<string, string> = {};
+          templateCols.forEach((tc, i) => {
+            templateIdToColumnId[tc.id] = insertedColumns[i].id;
+          });
+
+          // 5. Fetch starter tasks from template_tasks
+          const { data: templateTasks, error: tasksErr } = await supabase
+            .from("template_tasks")
+            .select("*")
+            .eq("template_id", templateId)
+            .order("sort_order", { ascending: true });
+          if (tasksErr) throw tasksErr;
+
+          // 6. Insert tasks into the new board, używając task.column_id
+          if (templateTasks && templateTasks.length > 0) {
+            const tasksToInsert = templateTasks.map((task) => ({
+              title: task.title,
+              description: task.description,
+              priority: task.priority ?? null,
+              board_id: boardId,
+              column_id: templateIdToColumnId[task.column_id],
+              sort_order: task.sort_order ?? 0,
+              completed: false,
+            }));
+            const { error: insertTasksErr } = await supabase
+              .from("tasks")
+              .insert(tasksToInsert);
+            if (insertTasksErr) throw insertTasksErr;
           }
 
-          // 4) Fetch inserted columns
-          const { data: colsInserted = [], error: colsFetchErr } =
-            await supabase
-              .from("columns")
-              .select("*")
-              .eq("board_id", boardId)
-              .order("order", { ascending: true });
-          if (colsFetchErr) throw colsFetchErr;
+          let ownerName, ownerEmail;
+          try {
+            const { data: userData } = await supabase
+              .from("users")
+              .select("name,email")
+              .eq("id", user_id)
+              .single();
+            if (userData) {
+              ownerName = userData.name;
+              ownerEmail = userData.email;
+            }
+          } catch {}
 
-          // 5) Optionally fetch owner info
-          const { data: ownerDataArr = [], error: ownerErr } = await supabase
-            .from("users")
-            .select("id, name, email")
-            .eq("id", user_id);
-          let ownerName: string | undefined = undefined;
-          let ownerEmailFetched: string | undefined = undefined;
-          if (!ownerErr && ownerDataArr.length > 0) {
-            ownerName = ownerDataArr[0].name;
-            ownerEmailFetched = ownerDataArr[0].email;
-          }
-
-          // Build result Board
           const resultBoard: Board = {
             id: newBoard.id,
             title: newBoard.title,
             user_id: newBoard.user_id,
             ownerName,
-            ownerEmail: ownerEmailFetched,
-            columns: (colsInserted as any[]).map((c: any) => ({
+            ownerEmail,
+            columns: insertedColumns.map((c) => ({
               id: c.id,
               boardId: c.board_id,
               title: c.title,
               order: c.order,
-              tasks: [],
+              tasks: [], // zadania załadujesz fetchBoard
             })),
-            created_at: newBoard.created_at ?? undefined,
-            updated_at: newBoard.updated_at ?? undefined,
+            created_at: newBoard.created_at,
+            updated_at: newBoard.updated_at,
           };
+
           return { data: resultBoard };
         } catch (err: any) {
           console.error("[apiSlice.createBoardFromTemplate] error:", err);
@@ -1434,39 +1531,6 @@ export const apiSlice = createApi({
         { type: "Board", id: "LIST" },
       ],
     }),
-
-    /**
-     * Fetch starter tasks (template_tasks) for a given board template.
-     * Used to display user-suggested starter tasks on new boards.
-     */
-    getTemplateTasks: builder.query<
-      {
-        id: string;
-        template_id: string;
-        template_column_id: string;
-        title: string;
-        description: string | null;
-        priority: string | null;
-      }[],
-      string
-    >({
-      async queryFn(templateId) {
-        try {
-          const { data, error } = await supabase
-            .from("template_tasks")
-            .select("*")
-            .eq("template_id", templateId);
-          if (error) throw error;
-          return { data: data || [] };
-        } catch (err: any) {
-          return { error: { status: "CUSTOM_ERROR", error: err.message } };
-        }
-      },
-      providesTags: (_result, _error, templateId) => [
-        { type: "Task", id: `TEMPLATE-${templateId}` },
-      ],
-    }),
-
     /**
      * Create a new board task from a template task.
      * Copies data from template_tasks to tasks table for actual user editing.
@@ -1755,5 +1819,5 @@ export const {
   useDeleteNotificationMutation,
   useAddNotificationMutation,
   useAddStarterTaskMutation,
-  useLazyGetTemplateTasksQuery,
+  useAddBoardTemplateMutation,
 } = apiSlice;
