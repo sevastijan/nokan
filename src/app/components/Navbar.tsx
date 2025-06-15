@@ -1,13 +1,18 @@
 "use client";
-
-import { useSession, signOut, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  useState,
+  useEffect,
+  Fragment,
+  JSXElementConstructor,
+  Key,
+  ReactElement,
+  ReactNode,
+  ReactPortal,
+} from "react";
 import Link from "next/link";
-import { useUserRole } from "../hooks/useUserRole";
-import Avatar from "../components/Avatar/Avatar";
-import Button from "../components/Button/Button";
+import { useRouter } from "next/navigation";
+import { Dialog, Transition, Menu } from "@headlessui/react";
+import { useSession, signOut, signIn } from "next-auth/react";
 import {
   FaHome,
   FaTachometerAlt,
@@ -16,395 +21,402 @@ import {
   FaUsers,
   FaSignInAlt,
   FaBars,
-  FaTimes,
   FaChevronRight,
   FaBell,
+  FaCheck,
+  FaTrash,
+  FaExternalLinkAlt,
 } from "react-icons/fa";
+import Avatar from "../components/Avatar/Avatar";
+import Button from "../components/Button/Button";
 
-const sidebarVariants = {
-  hidden: { x: "-100%" },
-  visible: { x: 0 },
-  exit: { x: "-100%" },
-};
-const overlayVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 0.5 },
-  exit: { opacity: 0 },
-};
+// RTK Query hooks
+import {
+  useGetUserRoleQuery,
+  useGetNotificationsQuery,
+  useMarkNotificationReadMutation,
+  useDeleteNotificationMutation,
+  useGetMyBoardsQuery,
+} from "@/app/store/apiSlice";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
+// Navbar component
 const Navbar = () => {
   const { data: session, status } = useSession();
-  const { hasManagementAccess, loading: roleLoading, userRole } = useUserRole();
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
 
-  type NotificationPlaceholder = {
-    id: string;
-    title?: string;
-    message?: string;
-    time?: string;
-    unread: boolean;
-  };
+  // Get Supabase user (id etc)
+  const { currentUser } = useCurrentUser();
 
-  // Prevent background scroll when mobile sidebar open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
+  // Get user role
+  const { data: userRole, isLoading: roleLoading } = useGetUserRoleQuery(
+    session?.user?.email ?? "",
+    { skip: !session?.user?.email }
+  );
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/", redirect: true });
-  };
-  const handleSignIn = () => {
-    signIn(undefined, { callbackUrl: "/dashboard" });
-  };
-  const goHome = () => {
-    router.push("/");
-    setIsOpen(false);
-  };
+  // For management access (OWNER, PROJECT_MANAGER)
+  const hasManagementAccess = () =>
+    userRole === "OWNER" || userRole === "PROJECT_MANAGER";
 
+  // Notifications hooks
+  const {
+    data: notifications = [],
+    refetch: refetchNotifications,
+    isFetching: notificationsLoading,
+  } = useGetNotificationsQuery(currentUser?.id ?? "", {
+    skip: !currentUser?.id,
+  });
+  const [markNotificationRead] = useMarkNotificationReadMutation();
+  const [deleteNotification] = useDeleteNotificationMutation();
+
+  // Boards for mapping board_id to board name
+  const { data: boards } = useGetMyBoardsQuery(currentUser?.id ?? "", {
+    skip: !currentUser?.id,
+  });
+  const getBoardName = (boardId: string) =>
+    boards?.find((b: { id: string }) => b.id === boardId)?.title ||
+    "Unknown board";
+
+  // State for sidebar open (mobile)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Count unread notifications
+  const unreadCount = notifications.filter(
+    (n: { read: any }) => !n.read
+  ).length;
+
+  // Show role badge
   const getRoleBadge = () => {
     if (roleLoading) return null;
-
-    let badgeColor = "";
-    let roleText = "";
+    let badgeColor = "",
+      roleText = "";
     switch (userRole) {
       case "OWNER":
-        badgeColor =
-          "bg-yellow-600/20 text-yellow-300 border border-yellow-400/30";
+        badgeColor = "bg-yellow-600/20 text-yellow-300 border-yellow-400/30";
         roleText = "Owner";
         break;
       case "PROJECT_MANAGER":
-        badgeColor = "bg-blue-600/20 text-blue-300 border border-blue-400/30";
+        badgeColor = "bg-blue-600/20 text-blue-300 border-blue-400/30";
         roleText = "Project Manager";
         break;
-      case "MEMBER":
       default:
-        badgeColor =
-          "bg-slate-600/20 text-slate-300 border border-slate-400/30";
+        badgeColor = "bg-slate-600/20 text-slate-300 border-slate-400/30";
         roleText = "Member";
-        break;
     }
     return (
       <span
-        className={`px-2 py-1 rounded-lg text-xs font-medium ${badgeColor} backdrop-blur-sm`}
+        className={`px-2 py-1 rounded-lg text-xs font-medium border ${badgeColor}`}
       >
         {roleText}
       </span>
     );
   };
 
-  // Placeholder notifications array; for now we just show bell icon without dropdown
-  const notifications: NotificationPlaceholder[] = [
-    // Example placeholder:
-    // { id: "1", title: "New task assigned", message: "...", time: "2h ago", unread: true },
+  // Navigation links
+  const nav = [
+    { href: "/dashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+    { href: "/calendar", label: "Calendar", icon: <FaCalendarAlt /> },
+    ...(hasManagementAccess()
+      ? [{ href: "/team-management", label: "Manage Teams", icon: <FaUsers /> }]
+      : []),
   ];
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  // Sidebar content used for both desktop and mobile
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo and home */}
+      <div className="p-4 border-b border-slate-700/50">
+        <button
+          onClick={() => {
+            router.push("/");
+            setSidebarOpen(false);
+          }}
+          className="flex items-center gap-2 text-xl font-bold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text"
+        >
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+            <FaHome className="w-4 h-4 text-white" />
+          </div>
+          NOKAN
+        </button>
+      </div>
 
+      {/* Profile section */}
+      {session?.user && (
+        <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 shadow-xl mt-5 mx-4">
+          <div className="flex items-center gap-4">
+            <Avatar
+              src={session.user.image || null}
+              alt="User avatar"
+              size={52}
+              className="ring-2 ring-slate-600/50 ring-offset-2 ring-offset-slate-800"
+            />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-bold text-lg truncate">
+                {session.user.name || "User"}
+              </h3>
+              <div className="mt-2">{getRoleBadge()}</div>
+            </div>
+          </div>
+          {/* Notifications bell and profile link */}
+          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-slate-700/30">
+            {/* Headless UI dropdown for notifications */}
+            <Menu as="div" className="relative">
+              <Menu.Button className="relative p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
+                <FaBell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-lg">
+                    {unreadCount}
+                  </span>
+                )}
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute left-0 z-30 mt-3 w-96 max-w-xs bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden">
+                  <div className="flex items-center justify-between p-3 border-b border-slate-700">
+                    <span className="font-semibold text-white text-base">
+                      Notifications
+                    </span>
+                    <button
+                      className="text-xs text-blue-400 hover:underline"
+                      onClick={refetchNotifications}
+                      tabIndex={-1}
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length === 0 && (
+                      <div className="px-4 py-5 text-slate-400 text-center text-sm">
+                        No notifications
+                      </div>
+                    )}
+                    {notifications.map(
+                      (n: {
+                        id: Key | null | undefined;
+                        read: any;
+                        task_id: string;
+                        title: any;
+                        board_id: string;
+                        message:
+                          | string
+                          | number
+                          | bigint
+                          | boolean
+                          | ReactElement<
+                              unknown,
+                              string | JSXElementConstructor<any>
+                            >
+                          | Iterable<ReactNode>
+                          | ReactPortal
+                          | Promise<
+                              | string
+                              | number
+                              | bigint
+                              | boolean
+                              | ReactPortal
+                              | ReactElement<
+                                  unknown,
+                                  string | JSXElementConstructor<any>
+                                >
+                              | Iterable<ReactNode>
+                              | null
+                              | undefined
+                            >
+                          | null
+                          | undefined;
+                        created_at: string | number | Date;
+                      }) => (
+                        <Menu.Item key={n.id}>
+                          {({ active }) => (
+                            <div
+                              className={`group px-4 py-3 ${
+                                n.read ? "" : "bg-slate-800/60"
+                              } ${
+                                active ? "bg-slate-800/80" : ""
+                              } text-white flex flex-col gap-1 cursor-pointer transition-all rounded`}
+                              onClick={() => {
+                                if (n.board_id && n.task_id) {
+                                  router.push(
+                                    `/board/${n.board_id}?task=${n.task_id}`
+                                  );
+                                  setSidebarOpen(false);
+                                }
+                              }}
+                              tabIndex={0}
+                              role="button"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">
+                                  {n.title || "Notification"}
+                                </span>
+                                {/* Board info */}
+                                {n.board_id && (
+                                  <span className="ml-2 bg-slate-700/40 px-2 py-0.5 rounded text-xs text-slate-300 border border-slate-600/40">
+                                    {getBoardName(n.board_id)}
+                                  </span>
+                                )}
+                                {n.task_id && (
+                                  <FaExternalLinkAlt className="ml-2 w-3 h-3 text-blue-400" />
+                                )}
+                              </div>
+                              <span className="text-xs text-slate-400 break-words">
+                                {n.message}
+                              </span>
+                              <span className="text-[10px] text-slate-500 mt-0.5">
+                                {n.created_at
+                                  ? new Date(n.created_at).toLocaleString()
+                                  : ""}
+                              </span>
+                              {/* Actions */}
+                              <div className="flex items-center gap-2 mt-2">
+                                {!n.read && (
+                                  <button
+                                    title="Mark as read"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (n.id)
+                                        await markNotificationRead({
+                                          id: String(n.id),
+                                        });
+                                      refetchNotifications();
+                                    }}
+                                    className="text-green-400 hover:bg-green-700/20 rounded p-1.5"
+                                  >
+                                    <FaCheck />
+                                  </button>
+                                )}
+                                <button
+                                  title="Delete"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (n.id)
+                                      await deleteNotification({
+                                        id: String(n.id),
+                                      });
+                                    refetchNotifications();
+                                  }}
+                                  className="text-red-400 hover:bg-red-700/20 rounded p-1.5"
+                                >
+                                  <FaTrash />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </Menu.Item>
+                      )
+                    )}
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+            <button
+              onClick={() => router.push("/profile")}
+              className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+            >
+              View Profile
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main navigation */}
+      <div className="flex-1 mt-8">
+        <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider px-6 mb-2">
+          NAVIGATION
+        </h4>
+        <div className="space-y-1 px-2">
+          {nav.map(({ href, label, icon }) => (
+            <Link key={href} href={href}>
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group cursor-pointer">
+                {icon}
+                <span className="font-medium text-sm truncate">{label}</span>
+                <FaChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Sign out button */}
+      {session?.user && (
+        <div className="p-4 border-t border-slate-700/50">
+          <Button
+            variant="danger"
+            size="sm"
+            fullWidth
+            onClick={() => signOut({ callbackUrl: "/", redirect: true })}
+            icon={<FaSignOutAlt />}
+          >
+            Sign Out
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  // Render component
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile hamburger */}
       <button
-        onClick={() => setIsOpen(true)}
-        className="fixed right-4 top-3 z-50 md:hidden bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-3 shadow-lg hover:bg-slate-700/80 transition-all duration-200 text-slate-300 hover:text-white"
+        onClick={() => setSidebarOpen(true)}
+        className="fixed right-4 top-3 z-50 md:hidden bg-slate-800/80 border border-slate-700/50 rounded-xl p-3 shadow-lg hover:bg-slate-700/80 transition-all text-slate-300 hover:text-white"
+        aria-label="Open sidebar"
       >
         <FaBars className="w-5 h-5" />
       </button>
-
-      {/* Desktop Sidebar */}
+      {/* Desktop sidebar */}
       <nav className="hidden md:flex fixed top-0 left-0 h-full w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 flex-col z-30 shadow-2xl">
-        {/* Header */}
-        <div className="p-4 border-b border-slate-700/50">
-          <button
-            onClick={goHome}
-            className="flex items-center gap-2 text-xl font-bold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text hover:from-blue-300 hover:to-purple-300 transition-all duration-200"
-          >
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <FaHome className="w-4 h-4 text-white" />
-            </div>
-            NOKAN
-          </button>
-        </div>
-
-        <div className="flex-1 p-4 space-y-6 overflow-y-auto">
-          {status === "loading" ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-            </div>
-          ) : session?.user ? (
-            <>
-              {/* User Profile */}
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-5 border border-slate-700/50 shadow-xl">
-                <div className="flex items-center gap-4">
-                  <Avatar
-                    src={session.user.image || null}
-                    alt="User avatar"
-                    size={52}
-                    className="ring-2 ring-slate-600/50 ring-offset-2 ring-offset-slate-800"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-bold text-lg truncate">
-                      {session.user.name || "User"}
-                    </h3>
-                    <div className="mt-2">{getRoleBadge()}</div>
-                  </div>
-                </div>
-
-                {/* Actions Row: only bell placeholder */}
-                <div className="flex items-center justify-start mt-4 pt-4 border-t border-slate-700/30 gap-3">
-                  <button
-                    onClick={() => {
-                      /* placeholder: open notifications logic later */
-                    }}
-                    className="relative p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 group"
-                  >
-                    <FaBell className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-lg">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => router.push("/profile")}
-                    className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200"
-                  >
-                    View Profile
-                  </button>
-                </div>
-              </div>
-
-              {/* Navigation */}
-              <div className="space-y-1 mt-6">
-                <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider px-2 mb-2">
-                  NAVIGATION
-                </h4>
-                <div className="space-y-1">
-                  <Link href="/dashboard">
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200 group cursor-pointer">
-                      <FaTachometerAlt className="w-4 h-4" />
-                      <span className="font-medium text-sm truncate">
-                        Dashboard
-                      </span>
-                      <FaChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </Link>
-
-                  <Link href="/calendar">
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200 group cursor-pointer">
-                      <FaCalendarAlt className="w-4 h-4" />
-                      <span className="font-medium text-sm truncate">
-                        Calendar
-                      </span>
-                      <FaChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </Link>
-
-                  {!roleLoading && hasManagementAccess() && (
-                    <Link href="/team-management">
-                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200 group cursor-pointer">
-                        <FaUsers className="w-4 h-4" />
-                        <span className="font-medium text-sm truncate">
-                          Manage Teams
-                        </span>
-                        <FaChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
-            <Button
-              variant="primary"
-              size="md"
-              fullWidth
-              onClick={handleSignIn}
-              icon={<FaSignInAlt />}
-            >
-              Sign In
-            </Button>
-          )}
-        </div>
-
-        {/* Footer */}
-        {session?.user && (
-          <div className="p-4 border-t border-slate-700/50">
-            <Button
-              variant="danger"
-              size="sm"
-              fullWidth
-              onClick={handleSignOut}
-              icon={<FaSignOutAlt />}
-            >
-              Sign Out
-            </Button>
-          </div>
-        )}
+        <SidebarContent />
       </nav>
-
-      {/* Click outside to close notifications placeholder */}
-      {showNotifications && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowNotifications(false)}
-        />
-      )}
-
-      {/* Mobile Sidebar */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <motion.div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-              variants={overlayVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              transition={{ duration: 0.2 }}
-              onClick={() => setIsOpen(false)}
-            />
-
-            <motion.nav
-              className="fixed top-0 left-0 h-full w-80 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 flex flex-col z-50 md:hidden shadow-2xl"
-              variants={sidebarVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+      {/* Mobile sidebar dialog */}
+      <Transition.Root show={sidebarOpen} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50 md:hidden"
+          onClose={setSidebarOpen}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-40 transition-opacity" />
+          </Transition.Child>
+          <div className="fixed inset-0 z-50 flex">
+            <Transition.Child
+              as={Fragment}
+              enter="transform transition ease-in-out duration-300"
+              enterFrom="-translate-x-full"
+              enterTo="translate-x-0"
+              leave="transform transition ease-in-out duration-300"
+              leaveFrom="translate-x-0"
+              leaveTo="-translate-x-full"
             >
-              {/* Mobile Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
+              <Dialog.Panel className="relative flex w-80 max-w-full bg-slate-900/95 border-r border-slate-700/50 shadow-2xl h-full focus:outline-none">
                 <button
-                  onClick={goHome}
-                  className="flex items-center gap-3 text-xl font-bold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text"
+                  onClick={() => setSidebarOpen(false)}
+                  className="absolute right-4 top-4 z-50 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
                 >
-                  <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                    <FaHome className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  NOKAN
+                  <span className="sr-only">Close</span>✕
                 </button>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
-                >
-                  <FaTimes className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Mobile Content */}
-              <div className="flex-1 p-6 space-y-6 overflow-y-auto">
-                {status === "loading" ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  </div>
-                ) : session?.user ? (
-                  <>
-                    {/* Mobile User Profile */}
-                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-3xl p-6 border border-slate-700/50 shadow-xl">
-                      <div className="flex flex-col items-center gap-4">
-                        <Avatar
-                          src={session.user.image || null}
-                          alt="User avatar"
-                          size={88}
-                          className="ring-4 ring-slate-600/50 ring-offset-4 ring-offset-slate-800"
-                        />
-                        <h3 className="text-white font-bold text-2xl truncate text-center">
-                          {session.user.name || "User"}
-                        </h3>
-                        <div className="mt-2">{getRoleBadge()}</div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-3 pt-4">
-                          <button
-                            onClick={() => {
-                              /* placeholder */
-                            }}
-                            className="p-3 rounded-xl bg-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-600/50 transition-all duration-200 relative group"
-                          >
-                            <FaBell className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                            {unreadCount > 0 && (
-                              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-lg">
-                                {unreadCount}
-                              </span>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => router.push("/profile")}
-                            className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 rounded-xl text-sm font-medium transition-all duration-200 border border-blue-500/30"
-                          >
-                            Profile
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Navigation */}
-                    <div className="space-y-2">
-                      <Link href="/dashboard">
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200 group cursor-pointer">
-                          <FaTachometerAlt className="w-5 h-5" />
-                          <span className="font-medium">Dashboard</span>
-                          <FaChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      </Link>
-                      <Link href="/calendar">
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200 group cursor-pointer">
-                          <FaCalendarAlt className="w-5 h-5" />
-                          <span className="font-medium">Calendar</span>
-                          <FaChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      </Link>
-                      {!roleLoading && hasManagementAccess() && (
-                        <Link href="/team-management">
-                          <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all duration-200 group cursor-pointer">
-                            <FaUsers className="w-5 h-5" />
-                            <span className="font-medium">Manage Teams</span>
-                            <FaChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                        </Link>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    onClick={handleSignIn}
-                    icon={<FaSignInAlt />}
-                  >
-                    Sign In
-                  </Button>
-                )}
-              </div>
-
-              {/* Mobile Footer */}
-              {session?.user && (
-                <div className="p-6 border-t border-slate-700/50">
-                  <Button
-                    variant="danger"
-                    size="md"
-                    fullWidth
-                    onClick={handleSignOut}
-                    icon={<FaSignOutAlt />}
-                  >
-                    Sign Out
-                  </Button>
-                </div>
-              )}
-            </motion.nav>
-          </>
-        )}
-      </AnimatePresence>
+                <SidebarContent />
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </>
   );
 };
