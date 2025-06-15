@@ -47,6 +47,7 @@ import {
   Column as ColumnType,
 } from "@/app/types/globalTypes";
 import { useOutsideClick } from "@/app/hooks/useOutsideClick";
+import "./styles/styles.css";
 
 interface LocalFilePreview {
   id: string;
@@ -116,7 +117,6 @@ const SingleTaskView = ({
   const handleMoveColumn = async (newColId: string) => {
     setMoveToColumnId(newColId);
     if (!task?.id || !newColId) return;
-    // Put task at the end of the new column
     const col = columns.find((c) => c.id === newColId);
     const newOrder = col?.tasks?.length || 0;
 
@@ -493,41 +493,37 @@ const SingleTaskView = ({
                     rows={4}
                   />
                 </div>
+                {/* DATE FIELDS START */}
                 <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-                  <div className="flex-1">
+                  <div className="flex-1 modal-date-field">
                     <label className="text-sm flex items-center gap-1 text-slate-300">
-                      <FaClock className="text-white w-4 h-4" />
+                      <FaClock className="w-4 h-4" />
                       Start Date
                     </label>
                     <input
                       type="date"
-                      className="
-                        mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded
-                        text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500
-                      "
+                      className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       value={startDate}
                       onChange={(e) =>
                         handleDateChange("start", e.target.value)
                       }
                     />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 modal-date-field">
                     <label className="text-sm flex items-center gap-1 text-slate-300">
-                      <FaClock className="text-white w-4 h-4" />
+                      <FaClock className="w-4 h-4" />
                       Due Date
                     </label>
                     <input
                       type="date"
-                      className="
-                        mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded
-                        text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500
-                      "
+                      className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       value={endDate}
                       min={startDate || undefined}
                       onChange={(e) => handleDateChange("end", e.target.value)}
                     />
                   </div>
                 </div>
+                {/* DATE FIELDS END */}
                 {(() => {
                   const dur = calculateDuration(startDate, endDate);
                   if (dur === null) return null;

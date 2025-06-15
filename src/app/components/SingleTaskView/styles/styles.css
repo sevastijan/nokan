@@ -1,10 +1,26 @@
-/* Stylowanie ikon kalendarzy dla input date */
-input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: brightness(0) saturate(100%) invert(65%) sepia(8%) saturate(348%) hue-rotate(183deg) brightness(103%) contrast(89%);
-    cursor: pointer;
-}
-
-/* Dla Firefox */
-input[type="date"]::-moz-calendar-picker-indicator {
-    filter: brightness(0) saturate(100%) invert(65%) sepia(8%) saturate(348%) hue-rotate(183deg) brightness(103%) contrast(89%);
-}
+@media (max-width: 640px) {
+    .modal-date-field input[type="date"] {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      font-size: 16px;
+    }
+    .modal-date-field {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2);
+    opacity: 1;
+  }
+  
+  input[type="date"]:focus::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2) drop-shadow(0 0 2px #6366f1);
+  }
+  
+  /* For Firefox */
+  input[type="date"]::-moz-calendar-picker-indicator {
+    filter: invert(1) brightness(2);
+  }
