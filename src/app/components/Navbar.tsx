@@ -1,7 +1,6 @@
 "use client";
 import {
   useState,
-  useEffect,
   Fragment,
   JSXElementConstructor,
   Key,
@@ -11,15 +10,20 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Dialog, Transition, Menu } from "@headlessui/react";
-import { useSession, signOut, signIn } from "next-auth/react";
+import {
+  Dialog,
+  Transition,
+  TransitionChild,
+  DialogPanel,
+  Menu,
+} from "@headlessui/react";
+import { useSession, signOut } from "next-auth/react";
 import {
   FaHome,
   FaTachometerAlt,
   FaCalendarAlt,
   FaSignOutAlt,
   FaUsers,
-  FaSignInAlt,
   FaBars,
   FaChevronRight,
   FaBell,
@@ -29,8 +33,6 @@ import {
 } from "react-icons/fa";
 import Avatar from "../components/Avatar/Avatar";
 import Button from "../components/Button/Button";
-
-// RTK Query hooks
 import {
   useGetUserRoleQuery,
   useGetNotificationsQuery,
@@ -40,36 +42,26 @@ import {
 } from "@/app/store/apiSlice";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
-// Navbar component
 const Navbar = () => {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
 
-  // Get Supabase user (id etc)
   const { currentUser } = useCurrentUser();
-
-  // Get user role
   const { data: userRole, isLoading: roleLoading } = useGetUserRoleQuery(
     session?.user?.email ?? "",
     { skip: !session?.user?.email }
   );
 
-  // For management access (OWNER, PROJECT_MANAGER)
   const hasManagementAccess = () =>
     userRole === "OWNER" || userRole === "PROJECT_MANAGER";
 
-  // Notifications hooks
-  const {
-    data: notifications = [],
-    refetch: refetchNotifications,
-    isFetching: notificationsLoading,
-  } = useGetNotificationsQuery(currentUser?.id ?? "", {
-    skip: !currentUser?.id,
-  });
+  const { data: notifications = [], refetch: refetchNotifications } =
+    useGetNotificationsQuery(currentUser?.id ?? "", {
+      skip: !currentUser?.id,
+    });
   const [markNotificationRead] = useMarkNotificationReadMutation();
   const [deleteNotification] = useDeleteNotificationMutation();
 
-  // Boards for mapping board_id to board name
   const { data: boards } = useGetMyBoardsQuery(currentUser?.id ?? "", {
     skip: !currentUser?.id,
   });
@@ -77,15 +69,12 @@ const Navbar = () => {
     boards?.find((b: { id: string }) => b.id === boardId)?.title ||
     "Unknown board";
 
-  // State for sidebar open (mobile)
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Count unread notifications
   const unreadCount = notifications.filter(
     (n: { read: any }) => !n.read
   ).length;
 
-  // Show role badge
   const getRoleBadge = () => {
     if (roleLoading) return null;
     let badgeColor = "",
@@ -112,7 +101,6 @@ const Navbar = () => {
     );
   };
 
-  // Navigation links
   const nav = [
     { href: "/dashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
     { href: "/calendar", label: "Calendar", icon: <FaCalendarAlt /> },
@@ -121,7 +109,6 @@ const Navbar = () => {
       : []),
   ];
 
-  // Sidebar content used for both desktop and mobile
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo and home */}
@@ -204,33 +191,7 @@ const Navbar = () => {
                         task_id: string;
                         title: any;
                         board_id: string;
-                        message:
-                          | string
-                          | number
-                          | bigint
-                          | boolean
-                          | ReactElement<
-                              unknown,
-                              string | JSXElementConstructor<any>
-                            >
-                          | Iterable<ReactNode>
-                          | ReactPortal
-                          | Promise<
-                              | string
-                              | number
-                              | bigint
-                              | boolean
-                              | ReactPortal
-                              | ReactElement<
-                                  unknown,
-                                  string | JSXElementConstructor<any>
-                                >
-                              | Iterable<ReactNode>
-                              | null
-                              | undefined
-                            >
-                          | null
-                          | undefined;
+                        message: ReactNode;
                         created_at: string | number | Date;
                       }) => (
                         <Menu.Item key={n.id}>
@@ -256,7 +217,6 @@ const Navbar = () => {
                                 <span className="font-semibold">
                                   {n.title || "Notification"}
                                 </span>
-                                {/* Board info */}
                                 {n.board_id && (
                                   <span className="ml-2 bg-slate-700/40 px-2 py-0.5 rounded text-xs text-slate-300 border border-slate-600/40">
                                     {getBoardName(n.board_id)}
@@ -274,7 +234,6 @@ const Navbar = () => {
                                   ? new Date(n.created_at).toLocaleString()
                                   : ""}
                               </span>
-                              {/* Actions */}
                               <div className="flex items-center gap-2 mt-2">
                                 {!n.read && (
                                   <button
@@ -333,7 +292,7 @@ const Navbar = () => {
         </h4>
         <div className="space-y-1 px-2">
           {nav.map(({ href, label, icon }) => (
-            <Link key={href} href={href}>
+            <Link key={href} href={href} onClick={() => setSidebarOpen(false)}>
               <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group cursor-pointer">
                 {icon}
                 <span className="font-medium text-sm truncate">{label}</span>
@@ -361,7 +320,6 @@ const Navbar = () => {
     </div>
   );
 
-  // Render component
   return (
     <>
       {/* Mobile hamburger */}
@@ -377,13 +335,13 @@ const Navbar = () => {
         <SidebarContent />
       </nav>
       {/* Mobile sidebar dialog */}
-      <Transition.Root show={sidebarOpen} as={Fragment}>
+      <Transition show={sidebarOpen} as={Fragment}>
         <Dialog
           as="div"
           className="relative z-50 md:hidden"
           onClose={setSidebarOpen}
         >
-          <Transition.Child
+          <TransitionChild
             as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0"
@@ -393,30 +351,29 @@ const Navbar = () => {
             leaveTo="opacity-0"
           >
             <div className="fixed inset-0 bg-black bg-opacity-40 transition-opacity" />
-          </Transition.Child>
-          <div className="fixed inset-0 z-50 flex">
-            <Transition.Child
-              as={Fragment}
-              enter="transform transition ease-in-out duration-300"
-              enterFrom="-translate-x-full"
-              enterTo="translate-x-0"
-              leave="transform transition ease-in-out duration-300"
-              leaveFrom="translate-x-0"
-              leaveTo="-translate-x-full"
-            >
-              <Dialog.Panel className="relative flex w-80 max-w-full bg-slate-900/95 border-r border-slate-700/50 shadow-2xl h-full focus:outline-none">
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="absolute right-4 top-4 z-50 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
-                >
-                  <span className="sr-only">Close</span>✕
-                </button>
-                <SidebarContent />
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
+          </TransitionChild>
+          {/* Full width mobile sidebar */}
+          <TransitionChild
+            as={Fragment}
+            enter="transform transition ease-in-out duration-300"
+            enterFrom="-translate-x-full"
+            enterTo="translate-x-0"
+            leave="transform transition ease-in-out duration-300"
+            leaveFrom="translate-x-0"
+            leaveTo="-translate-x-full"
+          >
+            <DialogPanel className="fixed inset-0 w-full h-full bg-slate-900/95 border-r border-slate-700/50 shadow-2xl focus:outline-none rounded-none p-0">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="absolute right-4 top-4 z-50 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
+              >
+                <span className="sr-only">Close</span>✕
+              </button>
+              <SidebarContent />
+            </DialogPanel>
+          </TransitionChild>
         </Dialog>
-      </Transition.Root>
+      </Transition>
     </>
   );
 };
