@@ -1,3 +1,7 @@
+// ===========================
+// 📁 src/app/components/TeamManagement/TeamManagement.tsx
+// ===========================
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -23,59 +27,45 @@ const TeamManagement = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Get current user (RTK Query)
   const { data: currentUser, isLoading: loadingCurrentUser } =
     useGetCurrentUserQuery(session!, {
       skip: status !== "authenticated" || !session,
     });
   const ownerId = currentUser?.id || "";
 
-  // Selected board state for the BoardSelect
-  const [selectedBoardId, setSelectedBoardId] = useState<string>("");
-
-  // Get all boards for user
   const { data: boardsWithCounts = [], isLoading: loadingBoards } =
-    useGetMyBoardsQuery(ownerId, {
-      skip: !ownerId,
-    });
+    useGetMyBoardsQuery(ownerId, { skip: !ownerId });
 
-  // Prepare boards for select
   const boards: Board[] = useMemo(() => {
-    if (!boardsWithCounts) return [];
     return boardsWithCounts.map((b) => ({
       id: b.id,
       title: b.title,
-      owner_id: b.owner_id,
-      ownerName: b.ownerName,
-      ownerEmail: b.ownerEmail,
+      owner_id: currentUser?.id || "",
+      ownerName: b.ownerName || "",
+      ownerEmail: b.ownerEmail || "",
       columns: [],
       created_at: b.created_at,
       updated_at: b.updated_at,
     }));
-  }, [boardsWithCounts]);
+  }, [boardsWithCounts, currentUser]);
 
-  // Fetch all teams for this user
-  const {
-    data: teamsAll = [],
-    isLoading: loadingTeams,
-    refetch: refetchTeams,
-  } = useGetTeamsQuery(ownerId, {
-    skip: !ownerId,
-  });
+  const [selectedBoardId, setSelectedBoardId] = useState<string>("");
 
-  // Filter teams by selected board
+  const { data: teamsAll = [], isLoading: loadingTeams } = useGetTeamsQuery(
+    ownerId,
+    { skip: !ownerId }
+  );
+
   const teamsForBoard: Team[] = useMemo(() => {
-    if (!selectedBoardId) return [];
-    return (teamsAll || []).filter((team) => team.board_id === selectedBoardId);
+    if (!selectedBoardId) return teamsAll;
+    return teamsAll.filter((team) => team.board_id === selectedBoardId);
   }, [teamsAll, selectedBoardId]);
 
-  // Team mutations
   const [addTeam, { isLoading: isAddingTeam }] = useAddTeamMutation();
   const [updateTeam, { isLoading: isUpdatingTeam }] = useUpdateTeamMutation();
   const [deleteTeamMutation, { isLoading: isDeletingTeam }] =
     useDeleteTeamMutation();
 
-  // Load all users from Supabase for team assignment
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const loadUsers = async () => {
     try {
@@ -95,23 +85,23 @@ const TeamManagement = () => {
     }
   }, [status, currentUser]);
 
-  // Modal/form states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamMembers, setNewTeamMembers] = useState<string[]>([]);
   const [editedTeamName, setEditedTeamName] = useState("");
   const [editedTeamMembers, setEditedTeamMembers] = useState<string[]>([]);
+  const [modalBoardId, setModalBoardId] = useState<string>("");
 
   const handleBackToDashboard = () => router.push("/dashboard");
 
-  // Modal open/close helpers
   const handleOpenModalForCreate = () => {
     setEditingTeamId(null);
     setNewTeamName("");
     setNewTeamMembers([]);
     setEditedTeamName("");
     setEditedTeamMembers([]);
+    setModalBoardId("");
     setIsModalOpen(true);
   };
 
@@ -122,90 +112,69 @@ const TeamManagement = () => {
     setNewTeamMembers([]);
     setEditedTeamName("");
     setEditedTeamMembers([]);
+    setModalBoardId("");
   };
 
-  // Create new team
   const handleCreateTeam = async () => {
-    if (!newTeamName.trim()) {
-      alert("Enter a team name.");
-      return;
-    }
-    if (!selectedBoardId) {
-      alert("Select a board for the team.");
+    if (!newTeamName.trim() || !modalBoardId) {
+      alert("Please provide team name and select a board.");
       return;
     }
     try {
-      const sanitizedTeamName = DOMPurify.sanitize(newTeamName);
+      const name = DOMPurify.sanitize(newTeamName);
       await addTeam({
-        name: sanitizedTeamName,
+        name,
         owner_id: ownerId,
-        board_id: selectedBoardId,
+        board_id: modalBoardId,
         members: newTeamMembers,
       }).unwrap();
       handleCloseModal();
     } catch (error) {
       console.error("Error creating team:", error);
-      alert("Could not create the team.");
+      alert("Failed to create team.");
     }
   };
 
-  // Start editing team
   const handleEditTeam = (team: Team) => {
     setEditingTeamId(team.id);
     setEditedTeamName(team.name);
-    const memberIds = team.users.map((tm) => tm.user_id);
-    setEditedTeamMembers(memberIds);
+    setEditedTeamMembers(team.users.map((u) => u.user_id));
+    setModalBoardId(team.board_id ?? "");
     setIsModalOpen(true);
   };
 
-  // Save team edits
   const handleUpdateTeam = async () => {
-    if (!editingTeamId) return;
-    if (!editedTeamName.trim()) {
-      alert("Enter a team name.");
-      return;
-    }
-    if (!selectedBoardId) {
-      alert("Select a board.");
-      return;
-    }
+    if (!editingTeamId || !editedTeamName.trim() || !modalBoardId) return;
     try {
-      const sanitizedTeamName = DOMPurify.sanitize(editedTeamName);
+      const name = DOMPurify.sanitize(editedTeamName);
       await updateTeam({
         id: editingTeamId,
-        name: sanitizedTeamName,
+        name,
         owner_id: ownerId,
-        board_id: selectedBoardId,
+        board_id: modalBoardId,
         members: editedTeamMembers,
       }).unwrap();
       handleCloseModal();
     } catch (error) {
       console.error("Error updating team:", error);
-      alert("Could not update the team.");
+      alert("Failed to update team.");
     }
   };
 
-  // Delete team
-  const handleDeleteTeam = async (teamId: string) => {
-    if (!confirm("Are you sure you want to delete this team?")) return;
+  const handleDeleteTeam = async (id: string) => {
+    if (!confirm("Delete this team?")) return;
     try {
-      await deleteTeamMutation(teamId).unwrap();
+      await deleteTeamMutation(id).unwrap();
     } catch (error) {
       console.error("Error deleting team:", error);
-      alert("Could not delete the team.");
+      alert("Failed to delete team.");
     }
   };
 
-  // Handle submit for form
   const handleSubmit = async () => {
-    if (editingTeamId) {
-      await handleUpdateTeam();
-    } else {
-      await handleCreateTeam();
-    }
+    editingTeamId ? await handleUpdateTeam() : await handleCreateTeam();
   };
 
-  // Merge all loading states
   const isOverallLoading =
     loadingCurrentUser ||
     loadingBoards ||
@@ -216,7 +185,6 @@ const TeamManagement = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
       <div className="bg-slate-800/30 backdrop-blur-sm border-b border-slate-700/50">
         <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <button
@@ -227,7 +195,6 @@ const TeamManagement = () => {
             <span>Back to Dashboard</span>
           </button>
 
-          {/* Custom Board Select */}
           <BoardSelect
             boards={boards}
             value={selectedBoardId}
@@ -238,7 +205,6 @@ const TeamManagement = () => {
           <button
             onClick={handleOpenModalForCreate}
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-xl flex items-center gap-2 w-fit"
-            disabled={!selectedBoardId}
           >
             <FiPlus className="w-5 h-5" />
             Create New Team
@@ -246,17 +212,15 @@ const TeamManagement = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold">
-                  {teamsForBoard ? teamsForBoard.length : 0}
+                <p className="text-2xl font-bold">{teamsForBoard.length}</p>
+                <p className="text-blue-200 text-sm mt-1">
+                  Teams {selectedBoardId ? "in Board" : "Total"}
                 </p>
-                <p className="text-blue-200 text-sm mt-1">Teams in Board</p>
               </div>
               <div className="bg-blue-500/30 p-3 rounded-xl">
                 <FiUsers className="w-6 h-6" />
@@ -289,20 +253,13 @@ const TeamManagement = () => {
           </div>
         </div>
 
-        {/* Teams List */}
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-          {selectedBoardId ? (
-            <TeamList
-              teams={teamsForBoard || []}
-              onEditTeam={handleEditTeam}
-              onDeleteTeam={handleDeleteTeam}
-              availableUsers={availableUsers}
-            />
-          ) : (
-            <div className="text-white">
-              Select a board from the menu above to view teams.
-            </div>
-          )}
+          <TeamList
+            teams={teamsForBoard}
+            onEditTeam={handleEditTeam}
+            onDeleteTeam={handleDeleteTeam}
+            availableUsers={availableUsers}
+          />
           {isOverallLoading && (
             <div className="mt-4 text-white">Loading...</div>
           )}
@@ -325,8 +282,8 @@ const TeamManagement = () => {
         setEditedTeamMembers={setEditedTeamMembers}
         availableUsers={availableUsers}
         boards={boards}
-        selectedBoardId={selectedBoardId}
-        setSelectedBoardId={setSelectedBoardId}
+        selectedBoardId={modalBoardId}
+        setSelectedBoardId={setModalBoardId}
       />
     </div>
   );
