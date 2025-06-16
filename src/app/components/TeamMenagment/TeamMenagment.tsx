@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiPlus, FiUsers } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import DOMPurify from "dompurify";
 import TeamList from "./TeamList";
@@ -195,12 +196,22 @@ const TeamManagement = () => {
             <span>Back to Dashboard</span>
           </button>
 
-          <BoardSelect
-            boards={boards}
-            value={selectedBoardId}
-            onChange={setSelectedBoardId}
-            className="w-full md:w-64"
-          />
+          <AnimatePresence>
+            <motion.div
+              key="board-select"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="w-full md:w-64"
+            >
+              <BoardSelect
+                boards={boards}
+                value={selectedBoardId}
+                onChange={setSelectedBoardId}
+              />
+            </motion.div>
+          </AnimatePresence>
 
           <button
             onClick={handleOpenModalForCreate}
