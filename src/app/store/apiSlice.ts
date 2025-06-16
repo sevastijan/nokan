@@ -1019,6 +1019,93 @@ export const apiSlice = createApi({
         result ? result.map((b) => ({ type: "Board" as const, id: b.id })) : [],
     }),
 
+    getMyTeams: builder.query<Team[], string>({
+      async queryFn(userId) {
+        try {
+          // 1. Teams I own:
+          const { data: ownedRaw = [], error: ownedErr } = await supabase
+            .from("teams")
+            .select("*")
+            .eq("owner_id", userId);
+          if (ownedErr) throw ownedErr;
+
+          // 2. Teams I’m a member of:
+          const { data: memberLinks = [], error: linkErr } = await supabase
+            .from("team_members")
+            .select("team_id")
+            .eq("user_id", userId);
+          if (linkErr) throw linkErr;
+
+          const teamIds = memberLinks.map((l) => l.team_id);
+          let memberRaw: any[] = [];
+          if (teamIds.length > 0) {
+            const { data, error } = await supabase
+              .from("teams")
+              .select("*")
+              .in("id", teamIds);
+            if (error) throw error;
+            memberRaw = data || [];
+          }
+
+          // 3. Merge & dedupe:
+          const map = new Map<string, any>();
+          [...ownedRaw, ...memberRaw].forEach((t) => map.set(t.id, t));
+          const allTeams = Array.from(map.values());
+
+          // 4. For each team, fetch its members (you can reuse your existing logic):
+          const result: Team[] = await Promise.all(
+            allTeams.map(async (t) => {
+              const { data: membersData = [], error: mErr } = await supabase
+                .from("team_members")
+                .select(
+                  "*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)"
+                )
+                .eq("team_id", t.id);
+              if (mErr) throw mErr;
+              const users = membersData.map((r: any) => {
+                const u = Array.isArray(r.user) ? r.user[0] : r.user;
+                return {
+                  id: r.id,
+                  team_id: r.team_id,
+                  user_id: r.user_id,
+                  created_at: r.created_at,
+                  user: {
+                    id: u.id,
+                    name: u.name,
+                    email: u.email,
+                    image: u.image,
+                    role: u.role,
+                    created_at: u.created_at,
+                  },
+                };
+              });
+              return {
+                id: t.id,
+                name: t.name,
+                board_id: t.board_id,
+                owner_id: t.owner_id,
+                users,
+                created_at: t.created_at,
+                updated_at: t.updated_at,
+              } as Team;
+            })
+          );
+
+          return { data: result };
+        } catch (err: any) {
+          console.error("[apiSlice.getMyTeams] error:", err);
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              { type: "TeamsList", id: "LIST" },
+              ...result.map((t) => ({ type: "Team" as const, id: t.id })),
+            ]
+          : [{ type: "TeamsList", id: "LIST" }],
+    }),
+
     /**
      * getNotifications
      *
@@ -1368,6 +1455,69 @@ export const apiSlice = createApi({
               ...result.map((u) => ({ type: "TeamMember" as const, id: u.id })),
             ]
           : [{ type: "TeamMember", id: boardId }],
+    }),
+
+    getBoardsByTeamId: builder.query<Board[], string>({
+      async queryFn(teamId) {
+        try {
+          const { data: links, error: linkErr } = await supabase
+            .from("team_boards")
+            .select("board_id")
+            .eq("team_id", teamId);
+
+          if (linkErr) throw linkErr;
+
+          const boardIds = (links ?? []).map((l) => l.board_id);
+          if (!boardIds.length) return { data: [] };
+
+          const { data: boards, error: boardErr } = await supabase
+            .from("boards")
+            .select("*")
+            .in("id", boardIds);
+
+          if (boardErr) throw boardErr;
+
+          return { data: boards ?? [] };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      providesTags: (_result, _error, teamId) => [{ type: "Team", id: teamId }],
+    }),
+
+    updateTeamBoards: builder.mutation<
+      { teamId: string; boardIds: string[] },
+      { teamId: string; boardIds: string[] }
+    >({
+      async queryFn({ teamId, boardIds }) {
+        try {
+          // 1. Usuń istniejące powiązania
+          const { error: deleteErr } = await supabase
+            .from("team_boards")
+            .delete()
+            .eq("team_id", teamId);
+          if (deleteErr) throw deleteErr;
+
+          // 2. Dodaj nowe powiązania
+          const inserts = boardIds.map((boardId) => ({
+            team_id: teamId,
+            board_id: boardId,
+          }));
+
+          const { error: insertErr } = await supabase
+            .from("team_boards")
+            .insert(inserts);
+
+          if (insertErr) throw insertErr;
+
+          return { data: { teamId, boardIds } };
+        } catch (err: any) {
+          return { error: { status: "CUSTOM_ERROR", error: err.message } };
+        }
+      },
+      invalidatesTags: (_res, _err, { teamId }) => [
+        { type: "Team", id: teamId },
+      ],
     }),
 
     /**
@@ -2040,4 +2190,7 @@ export const {
   useUpdateTaskDatesMutation,
   useUpdateTeamMutation,
   useUploadAttachmentMutation,
+  useGetBoardsByTeamIdQuery,
+  useUpdateTeamBoardsMutation,
+  useGetMyTeamsQuery,
 } = apiSlice;

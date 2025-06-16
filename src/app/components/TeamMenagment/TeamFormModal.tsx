@@ -10,7 +10,7 @@ import {
   CustomSelectOption,
 } from "@/app/types/globalTypes";
 
-const TeamFormModal = ({
+export default function TeamFormModal({
   isOpen,
   onClose,
   onSubmit,
@@ -26,42 +26,39 @@ const TeamFormModal = ({
   setEditedTeamMembers,
   availableUsers,
   boards,
-  selectedBoardId,
-  setSelectedBoardId,
-}: TeamFormModalProps) => {
+  selectedBoardIds,
+  setSelectedBoardIds,
+}: TeamFormModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
 
-  // Escape key closes modal
   useEffect(() => {
     if (!isOpen) return;
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  // Convert user data into select options
-  const userOptions: CustomSelectOption[] = useMemo(() => {
-    return availableUsers.map((user) => ({
-      value: user.id!,
-      label: `${user.name} (${user.email})`,
-      image: user.image ?? undefined,
-    }));
-  }, [availableUsers]);
+  const userOptions: CustomSelectOption[] = useMemo(
+    () =>
+      availableUsers.map((u) => ({
+        value: u.id!,
+        label: `${u.name} (${u.email})`,
+        image: u.image ?? undefined,
+      })),
+    [availableUsers]
+  );
 
-  // Convert board data into select options
   const boardOptions = useMemo(
     () => boards.map((b) => ({ value: b.id, label: b.title })),
     [boards]
   );
 
-  const selectedBoardOption = useMemo(() => {
-    return boardOptions.find((b) => b.value === selectedBoardId) || null;
-  }, [boardOptions, selectedBoardId]);
+  const selectedBoardOptions = useMemo(
+    () => boardOptions.filter((opt) => selectedBoardIds.includes(opt.value)),
+    [boardOptions, selectedBoardIds]
+  );
 
-  // Custom styles for react-select
   const selectStyles = useMemo(
     () => ({
       control: (base: any, state: any) => ({
@@ -71,9 +68,7 @@ const TeamFormModal = ({
         borderRadius: "12px",
         minHeight: "48px",
         boxShadow: state.isFocused ? "0 0 0 1px #8b5cf6" : "none",
-        "&:hover": {
-          borderColor: "#8b5cf6",
-        },
+        "&:hover": { borderColor: "#8b5cf6" },
       }),
       singleValue: (base: any) => ({ ...base, color: "#fff" }),
       input: (base: any) => ({ ...base, color: "#fff" }),
@@ -83,7 +78,6 @@ const TeamFormModal = ({
         border: "1px solid #475569",
         borderRadius: "12px",
         overflow: "hidden",
-        zIndex: 9999,
       }),
       option: (base: any, state: any) => ({
         ...base,
@@ -97,15 +91,15 @@ const TeamFormModal = ({
         ...base,
         backgroundColor: "#475569",
       }),
+      // ← This makes your portal’d menu sit above the modal
+      menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
     }),
     []
   );
 
-  const handleMembersChange = (selected: string[] | null) => {
-    const newValue = selected || [];
-    editingTeamId
-      ? setEditedTeamMembers(newValue)
-      : setNewTeamMembers(newValue);
+  const handleMembersChange = (vals: string[] | null) => {
+    const arr = vals || [];
+    editingTeamId ? setEditedTeamMembers(arr) : setNewTeamMembers(arr);
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,13 +112,8 @@ const TeamFormModal = ({
     isCreatingTeam ||
     (editingTeamId ? !editedTeamName.trim() : !newTeamName.trim());
 
-  // Motion variants
-  const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 },
-  };
-
-  const modalVariants = {
+  const backdropV = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
+  const modalV = {
     hidden: { opacity: 0, scale: 0.95, y: 50 },
     visible: { opacity: 1, scale: 1, y: 0 },
     exit: { opacity: 0, scale: 0.9, y: 80 },
@@ -141,15 +130,15 @@ const TeamFormModal = ({
         >
           <motion.div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            variants={backdropVariants}
+            variants={backdropV}
             onClick={onClose}
           />
 
           <div className="flex items-center justify-center min-h-screen p-4 text-center">
             <motion.div
               ref={modalRef}
-              className={`relative w-full max-w-2xl mx-auto overflow-visible rounded-2xl bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 text-left shadow-2xl`}
-              variants={modalVariants}
+              className="relative w-full max-w-2xl mx-auto overflow-visible rounded-2xl bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 text-left shadow-2xl"
+              variants={modalV}
               initial="hidden"
               animate="visible"
               exit="exit"
@@ -184,20 +173,24 @@ const TeamFormModal = ({
 
               {/* Body */}
               <div className="p-6 space-y-6">
-                {/* Board Select */}
+                {/* Boards */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-white flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-white">
                     <FiSettings className="w-4 h-4 text-purple-400" />
-                    Board
+                    Boards
                   </label>
                   <Select
+                    isMulti
+                    closeMenuOnSelect={false}
+                    hideSelectedOptions={false}
                     options={boardOptions}
-                    value={selectedBoardOption}
-                    onChange={(option) =>
-                      setSelectedBoardId(option?.value || "")
+                    value={selectedBoardOptions}
+                    onChange={(opts) =>
+                      setSelectedBoardIds(
+                        Array.isArray(opts) ? opts.map((o) => o.value) : []
+                      )
                     }
-                    placeholder="Select a board..."
-                    isClearable
+                    placeholder="Select boards..."
                     onMenuOpen={() => setIsSelectOpen(true)}
                     onMenuClose={() => setIsSelectOpen(false)}
                     styles={selectStyles}
@@ -209,7 +202,7 @@ const TeamFormModal = ({
 
                 {/* Team Name */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-white flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-white">
                     <FiUsers className="w-4 h-4 text-blue-400" />
                     Team Name
                   </label>
@@ -218,25 +211,23 @@ const TeamFormModal = ({
                     placeholder="Enter team name..."
                     value={editingTeamId ? editedTeamName : newTeamName}
                     onChange={handleNameChange}
-                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
                   />
                 </div>
 
                 {/* Members */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-white flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-white">
                     <FiUsers className="w-4 h-4 text-emerald-400" />
                     Team Members
                   </label>
-                  <div className="bg-slate-700/30 border border-slate-600 rounded-xl p-1">
-                    <CustomSelect
-                      isMulti
-                      options={userOptions}
-                      value={editingTeamId ? editedTeamMembers : newTeamMembers}
-                      onChange={handleMembersChange}
-                      onDropdownToggle={setIsSelectOpen}
-                    />
-                  </div>
+                  <CustomSelect
+                    isMulti
+                    options={userOptions}
+                    value={editingTeamId ? editedTeamMembers : newTeamMembers}
+                    onChange={handleMembersChange}
+                    onDropdownToggle={setIsSelectOpen}
+                  />
                 </div>
               </div>
 
@@ -244,14 +235,14 @@ const TeamFormModal = ({
               <div className="bg-slate-800/50 px-6 py-4 border-t border-slate-700/50 flex justify-end space-x-3">
                 <button
                   onClick={onClose}
-                  className="px-6 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-xl border border-slate-600 hover:border-slate-500"
+                  className="px-6 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-xl transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={onSubmit}
                   disabled={disableSubmit}
-                  className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium rounded-xl flex items-center gap-2 disabled:opacity-50"
                 >
                   {isCreatingTeam ? (
                     <>
@@ -274,6 +265,4 @@ const TeamFormModal = ({
       )}
     </AnimatePresence>
   );
-};
-
-export default TeamFormModal;
+}

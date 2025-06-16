@@ -1,4 +1,3 @@
-// src/app/components/TeamManagement/TeamListItem.tsx
 import DOMPurify from "dompurify";
 import { FiEdit3, FiTrash2, FiUsers } from "react-icons/fi";
 import Avatar from "../Avatar/Avatar";
@@ -10,14 +9,17 @@ const TeamListItem = ({
   onDeleteTeam,
   availableUsers,
 }: TeamListItemProps) => {
-  // Filtrujemy availableUsers, by znaleźć tych w team.users
+  // All members of this team
   const teamMembers = availableUsers.filter((user) =>
     team.users.some((member) => member.user_id === user.id)
   );
 
+  // **Find the creator (owner) by ID**
+  const creator = availableUsers.find((u) => u.id === team.owner_id);
+
   return (
     <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-200 group hover:shadow-xl hover:shadow-purple-500/10 min-h-[280px] flex flex-col">
-      {/* Nagłówek */}
+      {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl">
@@ -33,11 +35,15 @@ const TeamListItem = ({
             <p className="text-slate-400 text-sm mt-1">
               {teamMembers.length} member{teamMembers.length !== 1 ? "s" : ""}
             </p>
+            {/* newly added */}
+            <p className="text-slate-400 text-xs mt-1">
+              Created by {creator?.name ?? "Unknown"}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Lista członków */}
+      {/* Member list */}
       <div className="flex-1 mb-6">
         <p className="text-slate-400 text-sm font-medium mb-4">Team Members</p>
         <div className="space-y-3">
@@ -74,7 +80,7 @@ const TeamListItem = ({
         </div>
       </div>
 
-      {/* Akcje */}
+      {/* Actions */}
       <div className="flex gap-3 pt-4 border-t border-slate-700/50">
         <button
           onClick={() => onEditTeam(team)}

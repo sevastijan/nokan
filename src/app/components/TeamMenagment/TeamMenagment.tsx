@@ -1,287 +1,225 @@
-// ===========================
-// 📁 src/app/components/TeamManagement/TeamManagement.tsx
-// ===========================
-
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiPlus, FiUsers } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import DOMPurify from "dompurify";
+
 import TeamList from "./TeamList";
 import TeamFormModal from "./TeamFormModal";
-import BoardSelect from "@/app/components/Calendar/BoardSelect";
 import { User, Team, Board } from "@/app/types/globalTypes";
+
 import {
   useGetCurrentUserQuery,
-  useGetTeamsQuery,
+  useGetMyBoardsQuery,
+  useGetMyTeamsQuery,
   useAddTeamMutation,
   useUpdateTeamMutation,
   useDeleteTeamMutation,
-  useGetMyBoardsQuery,
+  useUpdateTeamBoardsMutation,
 } from "@/app/store/apiSlice";
 
 const TeamManagement = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const { data: currentUser, isLoading: loadingCurrentUser } =
-    useGetCurrentUserQuery(session!, {
+  const { data: currentUser, isLoading: loadingUser } = useGetCurrentUserQuery(
+    session!,
+    {
       skip: status !== "authenticated" || !session,
-    });
-  const ownerId = currentUser?.id || "";
+    }
+  );
+  const ownerId = currentUser?.id ?? "";
 
-  const { data: boardsWithCounts = [], isLoading: loadingBoards } =
-    useGetMyBoardsQuery(ownerId, { skip: !ownerId });
-
-  const boards: Board[] = useMemo(() => {
-    return boardsWithCounts.map((b) => ({
-      id: b.id,
-      title: b.title,
-      owner_id: currentUser?.id || "",
-      ownerName: b.ownerName || "",
-      ownerEmail: b.ownerEmail || "",
-      columns: [],
-      created_at: b.created_at,
-      updated_at: b.updated_at,
-    }));
-  }, [boardsWithCounts, currentUser]);
-
-  const [selectedBoardId, setSelectedBoardId] = useState<string>("");
-
-  const { data: teamsAll = [], isLoading: loadingTeams } = useGetTeamsQuery(
+  // fetch all boards
+  const { data: boards = [], isLoading: loadingBoards } = useGetMyBoardsQuery(
     ownerId,
     { skip: !ownerId }
   );
 
-  const teamsForBoard: Team[] = useMemo(() => {
-    if (!selectedBoardId) return teamsAll;
-    return teamsAll.filter((team) => team.board_id === selectedBoardId);
-  }, [teamsAll, selectedBoardId]);
+  // fetch all teams owned or joined
+  const { data: teamsAll = [], isLoading: loadingTeams } = useGetMyTeamsQuery(
+    ownerId,
+    { skip: !ownerId }
+  );
 
-  const [addTeam, { isLoading: isAddingTeam }] = useAddTeamMutation();
-  const [updateTeam, { isLoading: isUpdatingTeam }] = useUpdateTeamMutation();
-  const [deleteTeamMutation, { isLoading: isDeletingTeam }] =
-    useDeleteTeamMutation();
+  // RTK mutations
+  const [addTeam, { isLoading: isAdding }] = useAddTeamMutation();
+  const [updateTeam, { isLoading: isUpdating }] = useUpdateTeamMutation();
+  const [deleteTeam] = useDeleteTeamMutation();
+  const [updateTeamBoards] = useUpdateTeamBoardsMutation();
 
+  // list of all users
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
-  const loadUsers = async () => {
-    try {
-      const { data: users, error } = await supabase
-        .from("users")
-        .select("id, name, email, image");
-      if (error) throw error;
-      setAvailableUsers(users || []);
-    } catch (error) {
-      console.error("Error loading users:", error);
-    }
-  };
-
   useEffect(() => {
     if (status === "authenticated" && currentUser) {
-      loadUsers();
+      supabase
+        .from("users")
+        .select("id, name, email, image")
+        .then(({ data, error }) => {
+          if (!error && data) setAvailableUsers(data);
+        });
     }
   }, [status, currentUser]);
 
+  // modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamMembers, setNewTeamMembers] = useState<string[]>([]);
+
   const [editedTeamName, setEditedTeamName] = useState("");
   const [editedTeamMembers, setEditedTeamMembers] = useState<string[]>([]);
-  const [modalBoardId, setModalBoardId] = useState<string>("");
 
-  const handleBackToDashboard = () => router.push("/dashboard");
+  // multiple boards selection
+  const [modalBoardIds, setModalBoardIds] = useState<string[]>([]);
 
-  const handleOpenModalForCreate = () => {
+  const handleBack = () => router.push("/dashboard");
+
+  const openCreate = () => {
     setEditingTeamId(null);
     setNewTeamName("");
     setNewTeamMembers([]);
     setEditedTeamName("");
     setEditedTeamMembers([]);
-    setModalBoardId("");
+    setModalBoardIds([]);
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingTeamId(null);
-    setNewTeamName("");
-    setNewTeamMembers([]);
-    setEditedTeamName("");
-    setEditedTeamMembers([]);
-    setModalBoardId("");
-  };
-
-  const handleCreateTeam = async () => {
-    if (!newTeamName.trim() || !modalBoardId) {
-      alert("Please provide team name and select a board.");
-      return;
-    }
-    try {
-      const name = DOMPurify.sanitize(newTeamName);
-      await addTeam({
-        name,
-        owner_id: ownerId,
-        board_id: modalBoardId,
-        members: newTeamMembers,
-      }).unwrap();
-      handleCloseModal();
-    } catch (error) {
-      console.error("Error creating team:", error);
-      alert("Failed to create team.");
-    }
-  };
-
-  const handleEditTeam = (team: Team) => {
+  const openEdit = (team: Team) => {
     setEditingTeamId(team.id);
     setEditedTeamName(team.name);
     setEditedTeamMembers(team.users.map((u) => u.user_id));
-    setModalBoardId(team.board_id ?? "");
+    setModalBoardIds(team.board_id?.split(",") ?? []);
     setIsModalOpen(true);
   };
 
-  const handleUpdateTeam = async () => {
-    if (!editingTeamId || !editedTeamName.trim() || !modalBoardId) return;
-    try {
-      const name = DOMPurify.sanitize(editedTeamName);
-      await updateTeam({
-        id: editingTeamId,
-        name,
-        owner_id: ownerId,
-        board_id: modalBoardId,
-        members: editedTeamMembers,
-      }).unwrap();
-      handleCloseModal();
-    } catch (error) {
-      console.error("Error updating team:", error);
-      alert("Failed to update team.");
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingTeamId(null);
+    setModalBoardIds([]);
+  };
+
+  const handleCreate = async () => {
+    if (!newTeamName.trim() || modalBoardIds.length === 0) {
+      alert("Provide name and select at least one board.");
+      return;
+    }
+    const created = await addTeam({
+      name: DOMPurify.sanitize(newTeamName),
+      owner_id: ownerId,
+      members: newTeamMembers,
+    }).unwrap();
+
+    await updateTeamBoards({
+      teamId: created.id,
+      boardIds: modalBoardIds,
+    }).unwrap();
+
+    closeModal();
+  };
+
+  const handleUpdate = async () => {
+    if (
+      !editingTeamId ||
+      !editedTeamName.trim() ||
+      modalBoardIds.length === 0
+    ) {
+      alert("Provide name and select at least one board.");
+      return;
+    }
+    await updateTeam({
+      id: editingTeamId,
+      name: DOMPurify.sanitize(editedTeamName),
+      owner_id: ownerId,
+      members: editedTeamMembers,
+    }).unwrap();
+
+    await updateTeamBoards({
+      teamId: editingTeamId,
+      boardIds: modalBoardIds,
+    }).unwrap();
+
+    closeModal();
+  };
+
+  const handleSubmit = editingTeamId ? handleUpdate : handleCreate;
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Delete this team?")) {
+      await deleteTeam(id).unwrap();
     }
   };
 
-  const handleDeleteTeam = async (id: string) => {
-    if (!confirm("Delete this team?")) return;
-    try {
-      await deleteTeamMutation(id).unwrap();
-    } catch (error) {
-      console.error("Error deleting team:", error);
-      alert("Failed to delete team.");
-    }
-  };
-
-  const handleSubmit = async () => {
-    editingTeamId ? await handleUpdateTeam() : await handleCreateTeam();
-  };
-
-  const isOverallLoading =
-    loadingCurrentUser ||
-    loadingBoards ||
-    loadingTeams ||
-    isAddingTeam ||
-    isUpdatingTeam ||
-    isDeletingTeam;
+  const loadingOverall =
+    loadingUser || loadingBoards || loadingTeams || isAdding || isUpdating;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header */}
       <div className="bg-slate-800/30 backdrop-blur-sm border-b border-slate-700/50">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto px-4 py-4 flex items-center justify-between">
           <button
-            onClick={handleBackToDashboard}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group w-fit"
+            onClick={handleBack}
+            className="flex items-center gap-2 text-slate-400 hover:text-white"
           >
-            <FiArrowLeft className="group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Dashboard</span>
+            <FiArrowLeft />
+            Back to Dashboard
           </button>
-
-          <AnimatePresence>
-            <motion.div
-              key="board-select"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.25 }}
-              className="w-full md:w-64"
-            >
-              <BoardSelect
-                boards={boards}
-                value={selectedBoardId}
-                onChange={setSelectedBoardId}
-              />
-            </motion.div>
-          </AnimatePresence>
-
           <button
-            onClick={handleOpenModalForCreate}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-xl flex items-center gap-2 w-fit"
+            onClick={openCreate}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2"
           >
-            <FiPlus className="w-5 h-5" />
-            Create New Team
+            <FiPlus /> Create New Team
           </button>
         </div>
       </div>
 
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">{teamsForBoard.length}</p>
-                <p className="text-blue-200 text-sm mt-1">
-                  Teams {selectedBoardId ? "in Board" : "Total"}
-                </p>
-              </div>
-              <div className="bg-blue-500/30 p-3 rounded-xl">
-                <FiUsers className="w-6 h-6" />
-              </div>
-            </div>
+      {/* Stats */}
+      <div className="mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-2xl text-white flex justify-between items-center">
+          <div>
+            <p className="text-2xl font-bold">{teamsAll.length}</p>
+            <p className="text-blue-200">Teams</p>
           </div>
-
-          <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">{availableUsers.length}</p>
-                <p className="text-purple-200 text-sm mt-1">Available Users</p>
-              </div>
-              <div className="bg-purple-500/30 p-3 rounded-xl">
-                <FiUsers className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">{boards.length}</p>
-                <p className="text-emerald-200 text-sm mt-1">Active Boards</p>
-              </div>
-              <div className="bg-emerald-500/30 p-3 rounded-xl">
-                <FiUsers className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
+          <FiUsers className="text-4xl" />
         </div>
-
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-          <TeamList
-            teams={teamsForBoard}
-            onEditTeam={handleEditTeam}
-            onDeleteTeam={handleDeleteTeam}
-            availableUsers={availableUsers}
-          />
-          {isOverallLoading && (
-            <div className="mt-4 text-white">Loading...</div>
-          )}
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-6 rounded-2xl text-white flex justify-between items-center">
+          <div>
+            <p className="text-2xl font-bold">{availableUsers.length}</p>
+            <p className="text-purple-200">Available Users</p>
+          </div>
+          <FiUsers className="text-4xl" />
+        </div>
+        <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-6 rounded-2xl text-white flex justify-between items-center">
+          <div>
+            <p className="text-2xl font-bold">{boards.length}</p>
+            <p className="text-emerald-200">Boards</p>
+          </div>
+          <FiUsers className="text-4xl" />
         </div>
       </div>
 
+      {/* Team List */}
+      <div className="mx-auto px-4 py-6 bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700">
+        <TeamList
+          teams={teamsAll}
+          onEditTeam={openEdit}
+          onDeleteTeam={handleDelete}
+          availableUsers={availableUsers}
+        />
+        {loadingOverall && <p className="text-white mt-4">Loading…</p>}
+      </div>
+
+      {/* Modal */}
       <TeamFormModal
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        onClose={closeModal}
         onSubmit={handleSubmit}
-        isCreatingTeam={isAddingTeam || isUpdatingTeam}
+        isCreatingTeam={isAdding || isUpdating}
         editingTeamId={editingTeamId}
         newTeamName={newTeamName}
         setNewTeamName={setNewTeamName}
@@ -293,8 +231,8 @@ const TeamManagement = () => {
         setEditedTeamMembers={setEditedTeamMembers}
         availableUsers={availableUsers}
         boards={boards}
-        selectedBoardId={modalBoardId}
-        setSelectedBoardId={setModalBoardId}
+        selectedBoardIds={modalBoardIds}
+        setSelectedBoardIds={setModalBoardIds}
       />
     </div>
   );

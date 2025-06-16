@@ -1,4 +1,3 @@
-// src/app/components/TeamManagement/TeamList.tsx
 import { TeamListProps } from "@/app/types/globalTypes";
 import TeamListItem from "./TeamListItem";
 

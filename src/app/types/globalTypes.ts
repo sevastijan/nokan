@@ -219,21 +219,25 @@ export interface CustomSelectProps {
 export interface TeamFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void>;
   isCreatingTeam: boolean;
   editingTeamId: string | null;
+
   newTeamName: string;
-  setNewTeamName: (name: string) => void;
+  setNewTeamName: (val: string) => void;
   newTeamMembers: string[];
-  setNewTeamMembers: (members: string[]) => void;
+  setNewTeamMembers: (val: string[]) => void;
+
   editedTeamName: string;
-  setEditedTeamName: (name: string) => void;
+  setEditedTeamName: (val: string) => void;
   editedTeamMembers: string[];
-  setEditedTeamMembers: (members: string[]) => void;
+  setEditedTeamMembers: (val: string[]) => void;
+
   availableUsers: User[];
-  boards: { id: string; title: string }[];
-  selectedBoardId: string;
-  setSelectedBoardId: (id: string) => void;
+  boards: Board[];
+
+  selectedBoardIds: string[];
+  setSelectedBoardIds: (ids: string[]) => void;
 }
 
 export interface TeamListProps {
