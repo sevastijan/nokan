@@ -1,3 +1,4 @@
+// src/app/components/CustomSelect.tsx
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -17,28 +18,25 @@ const CustomSelect = ({
   const selectRef = useRef<HTMLDivElement>(null);
 
   const toggleOpen = () => {
-    const newIsOpen = !isOpen;
-    setIsOpen(newIsOpen);
-    onDropdownToggle?.(newIsOpen);
+    const next = !isOpen;
+    setIsOpen(next);
+    onDropdownToggle?.(next);
   };
 
-  const handleOptionClick = (optionValue: string) => {
+  const handleOptionClick = (opt: string) => {
     if (isMulti) {
-      if (value.includes(optionValue)) {
-        onChange(value.filter((v: string) => v !== optionValue));
-      } else {
-        onChange([...value, optionValue]);
-      }
+      if (value.includes(opt)) onChange(value.filter((v) => v !== opt));
+      else onChange([...value, opt]);
     } else {
-      onChange([optionValue]);
+      onChange([opt]);
       setIsOpen(false);
       onDropdownToggle?.(false);
     }
   };
 
-  const removeValue = (optionValue: string, e: React.MouseEvent) => {
+  const removeValue = (opt: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    onChange(value.filter((v: string) => v !== optionValue));
+    onChange(value.filter((v) => v !== opt));
   };
 
   useEffect(() => {
@@ -46,33 +44,34 @@ const CustomSelect = ({
       onDropdownToggle?.(false);
       return;
     }
-    const handleClickOutside = (e: MouseEvent) => {
+    const onClickOutside = (e: MouseEvent) => {
       if (selectRef.current && !selectRef.current.contains(e.target as Node)) {
         setIsOpen(false);
         onDropdownToggle?.(false);
       }
     };
-    const handleEsc = (e: KeyboardEvent) => {
+    const onEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsOpen(false);
         onDropdownToggle?.(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEsc);
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEsc);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEsc);
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEsc);
     };
   }, [isOpen, onDropdownToggle]);
 
-  const selectedOptions = options.filter((opt) => value.includes(opt.value));
+  const selectedOptions = options.filter((o) => value.includes(o.value));
 
   return (
     <div className="relative w-full" ref={selectRef}>
+      {/* outer toggle button */}
       <button
         type="button"
-        className={`relative w-full bg-slate-700/50 border border-slate-600 rounded-xl shadow-sm px-4 py-3 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
+        className={`relative w-full bg-slate-700/50 border border-slate-600 rounded-xl shadow-sm px-4 py-3 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 transition ${
           isOpen
             ? "ring-2 ring-purple-500 border-transparent"
             : "hover:border-slate-500"
@@ -86,43 +85,42 @@ const CustomSelect = ({
             {value.length > 0 ? (
               <div className="flex items-center flex-wrap gap-2">
                 {isMulti ? (
-                  selectedOptions.map((option) => (
+                  selectedOptions.map((opt) => (
                     <motion.div
-                      key={option.value}
+                      key={opt.value}
                       className="flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-lg px-2 py-1 text-sm"
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {option.image ? (
-                        <Avatar
-                          src={option.image}
-                          alt={option.label}
-                          size={20}
-                        />
-                      ) : null}
+                      {opt.image && (
+                        <Avatar src={opt.image} alt={opt.label} size={20} />
+                      )}
                       <span className="text-white font-medium truncate max-w-32">
-                        {option.label.split(" (")[0]}
+                        {opt.label.split(" (")[0]}
                       </span>
-                      <button
-                        type="button"
-                        onClick={(e) => removeValue(option.value, e)}
-                        className="text-slate-400 hover:text-white transition-colors"
+
+                      {/* <-- changed from <button> to <span role="button"> */}
+                      <span
+                        role="button"
+                        aria-label={`Remove ${opt.label}`}
+                        onClick={(e) => removeValue(opt.value, e)}
+                        className="text-slate-400 hover:text-white transition-colors cursor-pointer"
                       >
                         <FiX className="w-3 h-3" />
-                      </button>
+                      </span>
                     </motion.div>
                   ))
                 ) : (
                   <div className="flex items-center gap-3">
-                    {selectedOptions[0]?.image ? (
+                    {selectedOptions[0]?.image && (
                       <Avatar
                         src={selectedOptions[0].image}
                         alt={selectedOptions[0].label}
                         size={24}
                       />
-                    ) : null}
+                    )}
                     <span className="text-white font-medium truncate">
                       {selectedOptions[0]?.label}
                     </span>
@@ -145,6 +143,7 @@ const CustomSelect = ({
         </div>
       </button>
 
+      {/* dropdown menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -160,43 +159,39 @@ const CustomSelect = ({
                   No options available
                 </li>
               ) : (
-                options.map((option) => {
-                  const isSelected = value.includes(option.value);
+                options.map((opt) => {
+                  const selected = value.includes(opt.value);
                   return (
                     <motion.li
-                      key={option.value}
-                      className={`mx-2 rounded-lg cursor-pointer select-none transition-all duration-200 ${
-                        isSelected
+                      key={opt.value}
+                      className={`mx-2 rounded-lg cursor-pointer select-none transition-colors duration-200 ${
+                        selected
                           ? "bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30"
                           : "hover:bg-slate-700/50"
                       }`}
                       role="option"
-                      onClick={() => handleOptionClick(option.value)}
+                      onClick={() => handleOptionClick(opt.value)}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.15, delay: 0.05 }}
                     >
                       <div className="flex items-center justify-between px-3 py-2.5">
                         <div className="flex items-center gap-3">
-                          {option.image ? (
-                            <Avatar
-                              src={option.image}
-                              alt={option.label}
-                              size={32}
-                            />
-                          ) : null}
+                          {opt.image && (
+                            <Avatar src={opt.image} alt={opt.label} size={32} />
+                          )}
                           <div className="flex flex-col">
                             <span className="text-white font-medium text-sm">
-                              {option.label.split(" (")[0]}
+                              {opt.label.split(" (")[0]}
                             </span>
-                            {option.label.includes("(") && (
+                            {opt.label.includes("(") && (
                               <span className="text-slate-400 text-xs">
-                                {option.label.split("(")[1]?.replace(")", "")}
+                                {opt.label.split("(")[1]?.replace(")", "")}
                               </span>
                             )}
                           </div>
                         </div>
-                        {isSelected && (
+                        {selected && (
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}

@@ -70,12 +70,35 @@ export default function TeamFormModal({
         boxShadow: state.isFocused ? "0 0 0 1px #8b5cf6" : "none",
         "&:hover": { borderColor: "#8b5cf6" },
       }),
+      placeholder: (base: any) => ({ ...base, color: "#94a3b8" }),
       singleValue: (base: any) => ({ ...base, color: "#fff" }),
       input: (base: any) => ({ ...base, color: "#fff" }),
+
+      // **this is the gradient + border on each selected chip**
+      multiValue: (base: any) => ({
+        ...base,
+        background:
+          "linear-gradient(to right, rgba(139,92,246,0.2), rgba(59,130,246,0.2))",
+        border: "1px solid rgba(139,92,246,0.3)",
+        borderRadius: "12px",
+      }),
+      multiValueLabel: (base: any) => ({
+        ...base,
+        color: "#fff",
+        fontWeight: 500,
+      }),
+      multiValueRemove: (base: any) => ({
+        ...base,
+        color: "#fff",
+        ":hover": {
+          backgroundColor: "rgba(255,255,255,0.1)",
+          color: "#fff",
+        },
+      }),
+
       menu: (base: any) => ({
         ...base,
         backgroundColor: "#1e293b",
-        border: "1px solid #475569",
         borderRadius: "12px",
         overflow: "hidden",
       }),
@@ -83,15 +106,15 @@ export default function TeamFormModal({
         ...base,
         backgroundColor: state.isFocused ? "#374151" : "#1e293b",
         color: "#fff",
+        cursor: "pointer",
       }),
-      placeholder: (base: any) => ({ ...base, color: "#94a3b8" }),
       dropdownIndicator: (base: any) => ({ ...base, color: "#94a3b8" }),
       clearIndicator: (base: any) => ({ ...base, color: "#94a3b8" }),
       indicatorSeparator: (base: any) => ({
         ...base,
         backgroundColor: "#475569",
       }),
-      // ← This makes your portal’d menu sit above the modal
+
       menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
     }),
     []
