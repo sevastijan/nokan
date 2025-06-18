@@ -368,6 +368,8 @@ export interface SingleTaskViewProps {
   onTaskAdd?: () => void;
   onTaskAdded?: (task: TaskDetail) => void;
   currentUser?: User;
+  initialStartDate?: string;
+  columns: Column[]; // jeśli potrzebujesz listę kolumn
 }
 
 export interface AttachmentsListProps {

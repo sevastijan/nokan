@@ -56,6 +56,8 @@ export const apiSlice = createApi({
     "Team",
     "TasksWithDates",
     "Notification",
+    "Boards",
+    "Tasks",
   ],
   endpoints: (builder) => ({
     /**
@@ -1593,6 +1595,126 @@ export const apiSlice = createApi({
           : [{ type: "TeamsList", id: "LIST" }],
     }),
 
+    getUserBoards: builder.query<Board[], string>({
+      async queryFn(userId, _queryApi, _extraOptions, _baseFetch) {
+        try {
+          // 1. boards, gdzie owner_id = userId
+          const { data: ownBoards, error: ownErr } = await supabase
+            .from("boards")
+            .select("id,name,owner_id,created_at")
+            .eq("owner_id", userId);
+          if (ownErr) {
+            console.error(
+              "getUserBoards – owned boards error:",
+              ownErr.message
+            );
+          }
+          const own = ownBoards || [];
+
+          // 2. team_members dla userId → team_id[]
+          const { data: tm, error: tmErr } = await supabase
+            .from("team_members")
+            .select("team_id")
+            .eq("user_id", userId);
+          if (tmErr) {
+            console.error("getUserBoards – team_members error:", tmErr.message);
+          }
+          const teamIds = tm?.map((r) => r.team_id) || [];
+
+          // 3. team_boards dla tych teamIds → board_id[]
+          let teamBoardIds: string[] = [];
+          if (teamIds.length > 0) {
+            const { data: tb, error: tbErr } = await supabase
+              .from("team_boards")
+              .select("board_id")
+              .in("team_id", teamIds);
+            if (tbErr) {
+              console.error(
+                "getUserBoards – team_boards error:",
+                tbErr.message
+              );
+            } else {
+              teamBoardIds = tb?.map((r) => r.board_id) || [];
+            }
+          }
+
+          // 4. fetch boardów po tych boardBoardIds
+          let teamBoards: any[] = [];
+          if (teamBoardIds.length > 0) {
+            const { data: tBoardsData, error: tBoardsErr } = await supabase
+              .from("boards")
+              .select("id,name,owner_id,created_at")
+              .in("id", teamBoardIds);
+            if (tBoardsErr) {
+              console.error(
+                "getUserBoards – fetch boards by IDs error:",
+                tBoardsErr.message
+              );
+            } else {
+              teamBoards = tBoardsData || [];
+            }
+          }
+
+          // 5. połącz, bez duplikatów
+          const map = new Map<string, Board>();
+          own.forEach((b: any) => map.set(b.id, b));
+          teamBoards.forEach((b: any) => {
+            if (!map.has(b.id)) map.set(b.id, b);
+          });
+          const result: Board[] = Array.from(map.values());
+          return { data: result };
+        } catch (err: any) {
+          console.error("getUserBoards – unexpected error:", err);
+          return { error: { status: 500, data: err.message || err } };
+        }
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Boards" as const, id })),
+              { type: "Boards", id: "LIST" },
+            ]
+          : [{ type: "Boards", id: "LIST" }],
+    }),
+
+    getTasksByBoardsAndDate: builder.query<
+      Task[],
+      { boardIds: string[]; start: string; end: string }
+    >({
+      async queryFn(arg, _queryApi, _extraOptions, _baseFetch) {
+        const { boardIds, start, end } = arg;
+        if (!boardIds || boardIds.length === 0) {
+          return { data: [] };
+        }
+        try {
+          // Prosty fetch: start_date pomiędzy start a end
+          const { data, error } = await supabase
+            .from("tasks")
+            .select(
+              "id,title,start_date,end_date,board_id,priority,color,column_id"
+            )
+            .in("board_id", boardIds)
+            .gte("start_date", start)
+            .lte("start_date", end);
+          if (error) {
+            console.error("getTasksByBoardsAndDate error:", error.message);
+            return { error: { status: 400, data: error.message } };
+          }
+          return { data: data || [] };
+        } catch (err: any) {
+          console.error("getTasksByBoardsAndDate unexpected:", err);
+          return { error: { status: 500, data: err.message || err } };
+        }
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Tasks" as const, id })),
+              { type: "Tasks", id: "LIST" },
+            ]
+          : [{ type: "Tasks", id: "LIST" }],
+    }),
+
     /**
      * getUserRole
      *
@@ -2193,4 +2315,6 @@ export const {
   useGetBoardsByTeamIdQuery,
   useUpdateTeamBoardsMutation,
   useGetMyTeamsQuery,
+  useGetUserBoardsQuery,
+  useGetTasksByBoardsAndDateQuery,
 } = apiSlice;

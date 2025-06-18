@@ -15,7 +15,6 @@ import {
   FaFlag,
   FaLink,
   FaCalendarAlt,
-  FaPaperclip,
 } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
@@ -55,11 +54,20 @@ interface LocalFilePreview {
   previewUrl: string;
 }
 
-interface Props extends SingleTaskViewProps {
-  columns: ColumnType[];
-  columnId: string;
-}
-
+/**
+ * SingleTaskView component renders a modal for viewing, creating, or editing a task.
+ *
+ * @param props.taskId - ID of the task when editing; undefined in add mode.
+ * @param props.mode - "add" or "edit".
+ * @param props.columnId - ID of the column (used for mobile move or initial context).
+ * @param props.boardId - ID of the board.
+ * @param props.onClose - Callback to close the modal.
+ * @param props.onTaskUpdate - Callback when a task is updated.
+ * @param props.onTaskAdded - Callback when a new task is created.
+ * @param props.currentUser - Current user object (optional override).
+ * @param props.initialStartDate - Initial start date ("YYYY-MM-DD") when opening in add mode.
+ * @param props.columns - List of columns (for mobile column selector).
+ */
 const SingleTaskView = ({
   taskId,
   mode,
@@ -68,8 +76,10 @@ const SingleTaskView = ({
   onClose,
   onTaskUpdate,
   onTaskAdded,
+  currentUser: propCurrentUser,
+  initialStartDate,
   columns,
-}: Props) => {
+}: SingleTaskViewProps) => {
   const { data: session } = useSession();
   const { currentUser, loading: userLoading } = useCurrentUser();
 
@@ -93,12 +103,18 @@ const SingleTaskView = ({
     mode,
     columnId,
     boardId: boardId!,
-    currentUser: currentUser || undefined,
-    onTaskUpdate: (t) => onTaskUpdate?.(t),
-    onTaskAdded: (t) => onTaskAdded?.(t),
+    currentUser: propCurrentUser || currentUser || undefined,
+    onTaskUpdate,
+    onTaskAdded,
     onClose,
   });
 
+  // Refs for modal outside click and one-time initial date application
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const appliedInitialDate = useRef(false);
+
+  // Local UI state
   const [localFilePreviews, setLocalFilePreviews] = useState<
     LocalFilePreview[]
   >([]);
@@ -106,37 +122,20 @@ const SingleTaskView = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [waitBeforeError, setWaitBeforeError] = useState(true);
-
-  // Mobile: move to column
-  const [moveToColumnId, setMoveToColumnId] = useState<string>(columnId);
+  const [moveToColumnId, setMoveToColumnId] = useState<string>(columnId || "");
 
   useEffect(() => {
-    setMoveToColumnId(columnId);
+    if (columnId) {
+      setMoveToColumnId(columnId);
+    }
   }, [columnId]);
-
-  const handleMoveColumn = async (newColId: string) => {
-    setMoveToColumnId(newColId);
-    if (!task?.id || !newColId) return;
-    const col = columns.find((c) => c.id === newColId);
-    const newOrder = col?.tasks?.length || 0;
-
-    await supabase
-      .from("tasks")
-      .update({
-        column_id: newColId,
-        sort_order: newOrder,
-      })
-      .eq("id", task.id);
-
-    toast.success("Task moved!");
-    await fetchTaskData();
-  };
 
   useEffect(() => {
     const timeout = setTimeout(() => setWaitBeforeError(false), 500);
     return () => clearTimeout(timeout);
   }, []);
 
+  // Temporary form fields
   const [tempTitle, setTempTitle] = useState("");
   const [tempDescription, setTempDescription] = useState("");
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
@@ -145,19 +144,36 @@ const SingleTaskView = ({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
+  /**
+   * Synchronize form fields when task loads or changes.
+   * - Title, description, assignee always synced.
+   * - Dates synced only in edit mode (not add mode).
+   */
   useEffect(() => {
     if (task) {
       setTempTitle(task.title || "");
       setTempDescription(task.description || "");
       setSelectedAssigneeId(task.assignee?.id || task.user_id || null);
-      setStartDate(task.start_date || "");
-      setEndDate(task.end_date || "");
+
+      if (!isNewTask) {
+        setStartDate(task.start_date || "");
+        setEndDate(task.end_date || "");
+      }
     }
-  }, [task]);
+  }, [task, isNewTask]);
 
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
+  /**
+   * Apply initialStartDate once when opening in add mode.
+   */
+  useEffect(() => {
+    if (isNewTask && initialStartDate && !appliedInitialDate.current) {
+      setStartDate(initialStartDate);
+      updateTask({ start_date: initialStartDate });
+      appliedInitialDate.current = true;
+    }
+  }, [isNewTask, initialStartDate, updateTask]);
 
+  // Handle Escape key to close modal
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -172,6 +188,7 @@ const SingleTaskView = ({
     };
   }, [isVisible, hasUnsavedChanges, tempTitle]);
 
+  // Close when clicking outside modal
   // @ts-expect-error: useOutsideClick handles HTMLElement types safely
   useOutsideClick([modalRef], () => {
     if (isVisible) {
@@ -179,22 +196,36 @@ const SingleTaskView = ({
     }
   });
 
+  /**
+   * Handle title input change.
+   */
   const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTempTitle(newTitle);
     updateTask({ title: newTitle });
   };
+
+  /**
+   * Handle Enter key in title to blur without submitting form.
+   */
   const handleTitleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      if (!tempTitle.trim()) return;
+    if (e.key === "Enter" && tempTitle.trim()) {
       (e.target as HTMLInputElement).blur();
     }
   };
+
+  /**
+   * Handle description input change.
+   */
   const handleDescriptionChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const desc = e.target.value;
     setTempDescription(desc);
     updateTask({ description: desc });
   };
+
+  /**
+   * Handle assignee selection change.
+   */
   const handleAssigneeChange = async (assigneeId: string | null) => {
     setSelectedAssigneeId(assigneeId);
     if (!assigneeId) {
@@ -208,6 +239,12 @@ const SingleTaskView = ({
     }
     await updateTask({ user_id: assigneeId, assignee: sel });
   };
+
+  /**
+   * Handle date field changes.
+   * @param type - "start" or "end"
+   * @param value - date string "YYYY-MM-DD"
+   */
   const handleDateChange = (type: "start" | "end", value: string) => {
     if (type === "start") {
       setStartDate(value);
@@ -222,10 +259,8 @@ const SingleTaskView = ({
     }
   };
 
+  // File attachment previews
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const handleFileSelectClick = () => {
-    fileInputRef.current?.click();
-  };
   const handleFilesSelected = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -254,6 +289,9 @@ const SingleTaskView = ({
     });
   };
 
+  /**
+   * Upload a single attachment file once task exists.
+   */
   const handleUploadAttachment = async (file: File) => {
     if (!task?.id) {
       console.warn("Cannot upload until task has ID");
@@ -278,6 +316,9 @@ const SingleTaskView = ({
     }
   };
 
+  /**
+   * Handle save button: create or update task.
+   */
   const handleSave = async () => {
     if (!tempTitle.trim()) {
       toast.error("Title is required");
@@ -306,6 +347,9 @@ const SingleTaskView = ({
     }
   };
 
+  /**
+   * Handle modal close with unsaved changes confirmation.
+   */
   const handleClose = () => {
     if (hasUnsavedChanges) {
       const confirmClose = confirm("You have unsaved changes. Close anyway?");
@@ -314,16 +358,18 @@ const SingleTaskView = ({
     setIsVisible(false);
   };
 
-  const onAnimationCompleteExit = () => {
-    onClose?.();
-  };
-
+  /**
+   * Handle copy task URL to clipboard.
+   */
   const handleCopyLink = async () => {
     if (task?.id) {
       await copyTaskUrlToClipboard(task.id);
     }
   };
 
+  /**
+   * Handle delete confirmation and deletion.
+   */
   const handleDeleteConfirm = async () => {
     setShowDeleteConfirm(false);
     try {
@@ -366,22 +412,8 @@ const SingleTaskView = ({
     return null;
   }
 
-  const headerPriorityBadge =
-    !isNewTask && task?.priority ? (
-      <span
-        className={`flex items-center text-xs px-2 py-1 rounded-full border ${
-          getPriorityStyleConfig(task.priority).bgColor
-        } ${getPriorityStyleConfig(task.priority).textColor} ${
-          getPriorityStyleConfig(task.priority).borderColor
-        }`}
-      >
-        <FaFlag className="inline mr-1" />
-        {task.priority}
-      </span>
-    ) : null;
-
   return (
-    <AnimatePresence initial={false} onExitComplete={onAnimationCompleteExit}>
+    <AnimatePresence initial={false} onExitComplete={onClose}>
       {isVisible && (
         <motion.div
           key="modal"
@@ -400,8 +432,7 @@ const SingleTaskView = ({
             ref={modalRef}
             className="
               bg-slate-800 rounded-xl w-full max-w-lg md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden
-              flex flex-col
-              shadow-xl border border-slate-600
+              flex flex-col shadow-xl border border-slate-600
             "
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1, transition: { duration: 0.2 } }}
@@ -453,7 +484,7 @@ const SingleTaskView = ({
             <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
               {/* FORM */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
-                {/* --- MOBILE SELECT --- */}
+                {/* MOBILE COLUMN SELECT */}
                 <div className="block md:hidden mb-4">
                   <ColumnSelector
                     columns={columns}
@@ -463,8 +494,8 @@ const SingleTaskView = ({
                     }}
                   />
                 </div>
-                {/* --- END MOBILE SELECT --- */}
 
+                {/* ASSIGNEE & PRIORITY */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <UserSelector
                     selectedUser={
@@ -480,6 +511,8 @@ const SingleTaskView = ({
                     onChange={(newId) => updateTask({ priority: newId })}
                   />
                 </div>
+
+                {/* DESCRIPTION */}
                 <div>
                   <label className="text-sm text-slate-300">Description</label>
                   <textarea
@@ -493,7 +526,8 @@ const SingleTaskView = ({
                     rows={4}
                   />
                 </div>
-                {/* DATE FIELDS START */}
+
+                {/* DATE FIELDS */}
                 <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
                   <div className="flex-1 modal-date-field">
                     <label className="text-sm flex items-center gap-1 text-slate-300">
@@ -523,17 +557,11 @@ const SingleTaskView = ({
                     />
                   </div>
                 </div>
-                {/* DATE FIELDS END */}
                 {(() => {
                   const dur = calculateDuration(startDate, endDate);
                   if (dur === null) return null;
                   return (
-                    <div
-                      className="
-                      mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200
-                      flex items-center gap-2
-                    "
-                    >
+                    <div className="mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200 flex items-center gap-2">
                       <FaCalendarAlt className="text-white w-4 h-4" />
                       <span className="font-medium">
                         Duration: {dur} {dur === 1 ? "day" : "days"}
@@ -541,6 +569,8 @@ const SingleTaskView = ({
                     </div>
                   );
                 })()}
+
+                {/* ATTACHMENTS */}
                 <div className="mt-4">
                   <input
                     type="file"
@@ -589,6 +619,8 @@ const SingleTaskView = ({
                     </div>
                   )}
                 </div>
+
+                {/* COMMENTS */}
                 {!isNewTask && task?.id && (
                   <div className="mt-6">
                     <CommentsSection
@@ -606,9 +638,9 @@ const SingleTaskView = ({
                   </div>
                 )}
               </div>
-              {/* SIDEBAR (no changes) */}
+
+              {/* SIDEBAR */}
               <aside className="w-full md:w-72 bg-slate-800/70 border-t md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0 hidden md:block">
-                {/* Assignee with avatar */}
                 <div className="mb-6">
                   <h3 className="text-sm text-slate-300 uppercase mb-2">
                     Assignee
@@ -678,6 +710,8 @@ const SingleTaskView = ({
                 )}
               </aside>
             </div>
+
+            {/* FOOTER */}
             <div className="flex flex-col sm:flex-row justify-end items-center px-6 py-4 border-t border-slate-600 gap-3">
               {!isNewTask && (
                 <Button
