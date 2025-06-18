@@ -436,9 +436,10 @@ const Page = () => {
                           ring-1 ring-white/10 ring-offset-1 ring-offset-transparent
                           shadow-md
                           transition
-                          w-full
                           flex flex-col
                           h-full
+                          w-full
+                          md:max-w-[350px]
                         "
                         >
                           {prov.dragHandleProps && (
