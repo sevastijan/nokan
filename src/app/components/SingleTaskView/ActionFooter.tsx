@@ -6,6 +6,22 @@ import ConfirmDialog from "./ConfirmDialog";
 import Button from "../Button/Button";
 import { ActionFooterProps } from "@/app/types/globalTypes";
 
+/**
+ * Footer actions for SingleTaskView: Cancel, Save/Create, and optional Delete.
+ *
+ * Ensures:
+ * - Save button enabled only when appropriate (non-empty title & unsaved changes).
+ * - On close, if there are unsaved changes, ask user to confirm before closing.
+ *
+ * @param props.isNewTask - true if creating a new task
+ * @param props.hasUnsavedChanges - whether form has unsaved changes
+ * @param props.isSaving - whether a save operation is in progress
+ * @param props.onSave - callback to invoke when Save/Create is clicked
+ * @param props.onClose - callback to invoke when Cancel/Close is confirmed
+ * @param props.onDelete - optional callback to invoke when Delete is confirmed
+ * @param props.task - the current task object (for title in delete confirmation)
+ * @param props.tempTitle - the current (possibly edited) title string
+ */
 const ActionFooter = ({
   isNewTask,
   hasUnsavedChanges,
@@ -14,26 +30,35 @@ const ActionFooter = ({
   onClose,
   onDelete,
   task,
-  tempTitle, // nowy prop
+  tempTitle,
 }: ActionFooterProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   /**
-   * Determines if the Save/Create button should be enabled.
-   * Dla nowego zadania: wymagamy, żeby tempTitle było niepuste oraz aby były zmiany.
-   * Dla edycji: można wymagać tylko hasUnsavedChanges, a ew. też non-empty title (opcjonalnie).
+   * Check if title is non-empty (after trimming).
    */
   const titleNotEmpty = Boolean(tempTitle && tempTitle.trim().length > 0);
 
+  /**
+   * Determine whether Save/Create button should be enabled.
+   * - For new tasks: require non-empty title AND hasUnsavedChanges.
+   * - For edits: require hasUnsavedChanges AND non-empty title (adjust if you allow empty title on edit).
+   */
   const canSave = isNewTask
     ? titleNotEmpty && hasUnsavedChanges
-    : hasUnsavedChanges && (task?.title ? task.title.trim().length > 0 : true);
-  // lub: hasUnsavedChanges && titleNotEmpty, jeśli chcesz także przy edycji wymagać, by tytuł finalnie nie był pusty
+    : hasUnsavedChanges && titleNotEmpty;
 
+  /**
+   * Handle click on Delete: open confirmation dialog.
+   */
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
   };
 
+  /**
+   * After confirming delete: call onDelete.
+   */
   const handleDeleteConfirm = () => {
     setShowDeleteConfirm(false);
     if (onDelete) {
@@ -45,10 +70,31 @@ const ActionFooter = ({
     setShowDeleteConfirm(false);
   };
 
+  /**
+   * Handle click on Close/Cancel: if unsaved changes, ask confirm; else directly call onClose.
+   */
+  const handleCloseClick = () => {
+    if (hasUnsavedChanges) {
+      setShowCloseConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleCloseConfirm = () => {
+    setShowCloseConfirm(false);
+    onClose();
+  };
+
+  const handleCloseCancel = () => {
+    setShowCloseConfirm(false);
+  };
+
   return (
     <>
-      <div className="border-t border-gray-600 p-3 bg-gray-800 flex justify-between items-center">
+      <div className="border-t border-slate-600 p-3 bg-slate-800 flex justify-between items-center">
         <div>
+          {/* Delete only for existing tasks */}
           {!isNewTask && onDelete && (
             <Button
               variant="danger"
@@ -61,7 +107,12 @@ const ActionFooter = ({
           )}
         </div>
         <div className="flex space-x-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCloseClick}
+            disabled={isSaving}
+          >
             Cancel
           </Button>
           <Button
@@ -70,21 +121,37 @@ const ActionFooter = ({
             onClick={onSave}
             disabled={!canSave || isSaving}
             loading={isSaving}
+            className="z-10"
           >
             {isNewTask ? "Create Task" : "Save Changes"}
           </Button>
         </div>
       </div>
 
+      {/* Confirm Delete Dialog */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         title="Delete Task"
-        message={`Are you sure you want to delete "${task?.title}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${
+          task?.title ?? ""
+        }"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
+        type="danger"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
-        type="danger"
+      />
+
+      {/* Confirm Close Dialog */}
+      <ConfirmDialog
+        isOpen={showCloseConfirm}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to close without saving?"
+        confirmText="Discard"
+        cancelText="Keep Editing"
+        type="warning"
+        onConfirm={handleCloseConfirm}
+        onCancel={handleCloseCancel}
       />
     </>
   );
