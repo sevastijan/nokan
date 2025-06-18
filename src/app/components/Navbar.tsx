@@ -1,13 +1,7 @@
+// src/app/components/Navbar.tsx
 "use client";
-import {
-  useState,
-  Fragment,
-  JSXElementConstructor,
-  Key,
-  ReactElement,
-  ReactNode,
-  ReactPortal,
-} from "react";
+
+import { useState, Fragment } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -46,10 +40,15 @@ const Navbar = () => {
   const { data: session } = useSession();
   const router = useRouter();
 
+  // If user not logged in, render nothing
+  if (!session?.user) {
+    return null;
+  }
+
   const { currentUser } = useCurrentUser();
   const { data: userRole, isLoading: roleLoading } = useGetUserRoleQuery(
-    session?.user?.email ?? "",
-    { skip: !session?.user?.email }
+    session.user.email ?? "",
+    { skip: !session.user.email }
   );
 
   const hasManagementAccess = () =>
@@ -109,6 +108,7 @@ const Navbar = () => {
       : []),
   ];
 
+  // Sidebar content as a separate component
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo and home */}
@@ -128,7 +128,7 @@ const Navbar = () => {
       </div>
 
       {/* Profile section */}
-      {session?.user && (
+      {session.user && (
         <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 shadow-xl mt-5 mx-4">
           <div className="flex items-center gap-4">
             <Avatar
@@ -146,7 +146,7 @@ const Navbar = () => {
           </div>
           {/* Notifications bell and profile link */}
           <div className="flex items-center gap-3 mt-5 pt-4 border-t border-slate-700/30">
-            {/* Headless UI dropdown for notifications */}
+            {/* Notifications dropdown */}
             <Menu as="div" className="relative">
               <Menu.Button className="relative p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
                 <FaBell className="w-4 h-4" />
@@ -186,15 +186,15 @@ const Navbar = () => {
                     )}
                     {notifications.map(
                       (n: {
-                        id: Key | null | undefined;
+                        id: string | number | null | undefined;
                         read: any;
                         task_id: string;
                         title: any;
                         board_id: string;
-                        message: ReactNode;
+                        message: React.ReactNode;
                         created_at: string | number | Date;
                       }) => (
-                        <Menu.Item key={n.id}>
+                        <Menu.Item key={String(n.id)}>
                           {({ active }) => (
                             <div
                               className={`group px-4 py-3 ${
@@ -285,7 +285,7 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* Main navigation */}
+      {/* Main navigation links */}
       <div className="flex-1 mt-8">
         <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider px-6 mb-2">
           NAVIGATION
@@ -304,7 +304,7 @@ const Navbar = () => {
       </div>
 
       {/* Sign out button */}
-      {session?.user && (
+      {session.user && (
         <div className="p-4 border-t border-slate-700/50">
           <Button
             variant="danger"
@@ -318,8 +318,9 @@ const Navbar = () => {
         </div>
       )}
     </div>
-  );
+  ); // end of SidebarContent return
 
+  // Now the main render of Navbar:
   return (
     <>
       {/* Mobile hamburger */}
@@ -330,10 +331,12 @@ const Navbar = () => {
       >
         <FaBars className="w-5 h-5" />
       </button>
+
       {/* Desktop sidebar */}
       <nav className="hidden md:flex fixed top-0 left-0 h-full w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 flex-col z-30 shadow-2xl">
         <SidebarContent />
       </nav>
+
       {/* Mobile sidebar dialog */}
       <Transition show={sidebarOpen} as={Fragment}>
         <Dialog
@@ -352,7 +355,6 @@ const Navbar = () => {
           >
             <div className="fixed inset-0 bg-black bg-opacity-40 transition-opacity" />
           </TransitionChild>
-          {/* Full width mobile sidebar */}
           <TransitionChild
             as={Fragment}
             enter="transform transition ease-in-out duration-300"

@@ -1,7 +1,7 @@
-import { ToastContainer } from "react-toastify";
+// src/app/layout.tsx
 import "./styles/globals.css";
 import { Providers } from "./providers";
-import Navbar from "./components/Navbar";
+import ClientLayout from "./ClientLayout";
 import "react-toastify/dist/ReactToastify.css";
 
 export const metadata = {
@@ -9,6 +9,11 @@ export const metadata = {
   description: "Taskboard application",
 };
 
+/**
+ * RootLayout is a Server Component.
+ * It wraps everything with Providers, then delegates rendering to ClientLayout,
+ * which handles session-based rendering of Navbar and content margin.
+ */
 export default function RootLayout({
   children,
 }: {
@@ -18,16 +23,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-gray-950 text-white">
         <Providers>
-          <Navbar />
-          <main className="main-content min-h-screen md:ml-64 ">
-            {children}
-          </main>
-          <ToastContainer
-            position="top-right"
-            autoClose={2500}
-            className="nokan-toastify"
-            toastClassName=""
-          />
+          {/* ClientLayout is a client-only component that uses useSession */}
+          <ClientLayout>{children}</ClientLayout>
         </Providers>
       </body>
     </html>
