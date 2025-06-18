@@ -92,7 +92,7 @@ const ActionFooter = ({
 
   return (
     <>
-      <div className="border-t border-slate-600 p-3 bg-slate-800 flex justify-between items-center">
+      <div className="border-t border-slate-600 py-5 px-3 md:py-3 bg-slate-800 flex justify-between items-center">
         <div>
           {/* Delete only for existing tasks */}
           {!isNewTask && onDelete && (
@@ -106,7 +106,7 @@ const ActionFooter = ({
             </Button>
           )}
         </div>
-        <div className="flex space-x-2">
+        <div className="flex w-full md:w-auto justify-between md:justify-start md:space-x-3">
           <Button
             variant="ghost"
             size="sm"

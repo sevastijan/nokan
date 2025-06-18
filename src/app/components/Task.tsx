@@ -198,8 +198,7 @@ const Task = ({
         onClick={onTriggerClick}
         onKeyDown={onTriggerKeyDown}
         className="
-          absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100
-          bg-transparent hover:bg-white/20 focus:bg-white/20 transition-colors z-10
+          absolute top-3 right-3 p-1.5 rounded-full bg-transparent hover:bg-white/20 focus:bg-white/20 transition-colors z-10
         "
         aria-haspopup="true"
         aria-expanded={menuOpen}
@@ -214,7 +213,7 @@ const Task = ({
           <h4 className="text-white/50 italic truncate">Untitled</h4>
         </div>
       ) : (
-        <div className="p-4 flex flex-col">
+        <div className="p-4 flex flex-col gap-3 md:gap-2">
           {/* Title */}
           <h4 className="text-white font-semibold text-base leading-snug truncate">
             {titleDisplay}
