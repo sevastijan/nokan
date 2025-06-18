@@ -9,12 +9,15 @@ export const calendarApi = createApi({
   tagTypes: ["UserBoards", "CalendarTasks", "TeamMembers"],
   endpoints: (builder) => ({
     /**
-     * Fetch boards the user belongs to.
+     * Fetch boards the user belongs to OR which the user personally owns.
      *
      * Steps:
-     * 1. Query team_members for given userId to get team IDs.
-     * 2. Query team_boards for those team IDs to get board IDs.
-     * 3. Query boards table with those board IDs to fetch {id, title}.
+     * 1. If no userId, return [].
+     * 2. Query team_members for given userId to get team IDs.
+     * 3. Query team_boards for those team IDs to get board IDs.
+     * 4. Query boards table with those board IDs to fetch {id, title}.
+     * 5. Query boards table for personal boards where user_id = userId.
+     * 6. Merge both lists uniquely and return.
      *
      * @param userId Supabase user ID
      * @returns Array of Board ({ id, title })
@@ -25,6 +28,7 @@ export const calendarApi = createApi({
           if (!userId) {
             return { data: [] };
           }
+
           // 1) Fetch team_members rows for this user
           const { data: tmRows, error: tmError } = await supabase
             .from("team_members")
@@ -38,38 +42,61 @@ export const calendarApi = createApi({
           const teamIds = tmRows
             ?.map((r) => r.team_id)
             .filter(Boolean) as string[];
-          if (!teamIds.length) {
-            return { data: [] };
-          }
 
           // 2) Fetch team_boards entries for those team IDs
-          const { data: tbRows, error: tbError } = await supabase
-            .from("team_boards")
-            .select("board_id")
-            .in("team_id", teamIds);
-          if (tbError) {
-            return {
-              error: { status: tbError.code ?? 400, data: tbError.message },
-            };
-          }
-          const boardIds = Array.from(
-            new Set(tbRows?.map((r) => r.board_id).filter(Boolean))
-          );
-          if (!boardIds.length) {
-            return { data: [] };
+          let boardsFromTeam: Board[] = [];
+          if (teamIds.length) {
+            const { data: tbRows, error: tbError } = await supabase
+              .from("team_boards")
+              .select("board_id")
+              .in("team_id", teamIds);
+            if (tbError) {
+              return {
+                error: { status: tbError.code ?? 400, data: tbError.message },
+              };
+            }
+            const teamBoardIds = Array.from(
+              new Set(tbRows?.map((r) => r.board_id).filter(Boolean))
+            );
+            if (teamBoardIds.length) {
+              const { data: boardsData, error: bError } = await supabase
+                .from("boards")
+                .select("id, title")
+                .in("id", teamBoardIds);
+              if (bError) {
+                return {
+                  error: { status: bError.code ?? 400, data: bError.message },
+                };
+              }
+              boardsFromTeam = (boardsData as Board[]) || [];
+            }
           }
 
-          // 3) Fetch boards by ID
-          const { data: boards, error: bError } = await supabase
+          // 3) Fetch personal boards: where user_id = userId
+          //    (adjust 'user_id' if your schema uses a different column name for board owner)
+          let personalBoards: Board[] = [];
+          const { data: personalData, error: pError } = await supabase
             .from("boards")
             .select("id, title")
-            .in("id", boardIds);
-          if (bError) {
+            .eq("user_id", userId);
+          if (pError) {
             return {
-              error: { status: bError.code ?? 400, data: bError.message },
+              error: { status: pError.code ?? 400, data: pError.message },
             };
           }
-          return { data: boards as Board[] };
+          personalBoards = (personalData as Board[]) || [];
+
+          // 4) Merge both lists uniquely by id
+          const boardMap = new Map<string, Board>();
+          for (const b of boardsFromTeam) {
+            if (b.id) boardMap.set(b.id, b);
+          }
+          for (const b of personalBoards) {
+            if (b.id) boardMap.set(b.id, b);
+          }
+          const resultBoards = Array.from(boardMap.values());
+
+          return { data: resultBoards };
         } catch (err: any) {
           return { error: { status: 500, data: err.message } };
         }
@@ -84,12 +111,11 @@ export const calendarApi = createApi({
     }),
 
     /**
-     * Fetch tasks overlapping a date range across specified board IDs.
+     * Fetch tasks overlapping a date range across specified board IDs,
+     * including assignee data to render avatar/name in calendar.
      *
      * Overlap condition:
      *   (start_date <= end) AND (end_date >= start OR end_date IS NULL).
-     * This ensures tasks that started before the month but end within it,
-     * tasks fully inside the month, and tasks that start inside and have no end_date yet.
      *
      * We also join the assignee user data so that the calendar can render
      * the assignee’s avatar/name alongside the task bar.

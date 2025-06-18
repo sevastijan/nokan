@@ -92,6 +92,13 @@ const Calendar = () => {
   const [boardSelectModalOpen, setBoardSelectModalOpen] = useState<boolean>(
     selectedBoardId == null
   );
+  // Whenever selectedBoardId becomes non-null, close the modal automatically
+  useEffect(() => {
+    if (selectedBoardId) {
+      setBoardSelectModalOpen(false);
+    }
+  }, [selectedBoardId]);
+
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskModalMode, setTaskModalMode] = useState<"add" | "edit">("add");
   const [selectedDate, setSelectedDate] = useState<string | undefined>(
@@ -197,10 +204,9 @@ const Calendar = () => {
     setSelectedDate(undefined);
     setSelectedTaskId(undefined);
   };
+  // Close board-select modal even if no board chosen
   const closeBoardSelectModal = () => {
-    if (selectedBoardId) {
-      setBoardSelectModalOpen(false);
-    }
+    setBoardSelectModalOpen(false);
   };
 
   // Loading / auth checks
@@ -231,7 +237,7 @@ const Calendar = () => {
         {boardSelectModalOpen && (
           <motion.div
             key="board-select-overlay"
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -242,6 +248,7 @@ const Calendar = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
+              {/* Header with gradient, icon, title, close button */}
               <div className="flex items-center justify-between bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-6 py-4 border-b border-slate-700/50">
                 <div className="flex items-center gap-2">
                   <FaRegCalendarDays className="text-white w-5 h-5" />
@@ -279,7 +286,7 @@ const Calendar = () => {
                       }
                     >
                       <option value="" disabled>
-                        -- select --
+                        Select
                       </option>
                       {boards.map((b) => (
                         <option key={b.id} value={b.id}>
@@ -311,6 +318,16 @@ const Calendar = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* If modal was closed without selecting a board, show prompt */}
+      {!boardSelectModalOpen && !selectedBoardId && (
+        <div className="p-6 text-center text-white">
+          <p className="text-lg font-medium">Calendar not initialized.</p>
+          <p className="text-sm text-slate-400 mt-2">
+            Please refresh the page to select a board.
+          </p>
+        </div>
+      )}
 
       {/* Render calendar only after board is chosen */}
       {!boardSelectModalOpen && selectedBoardId && (
@@ -488,7 +505,7 @@ const Calendar = () => {
           <AnimatePresence>
             {isTaskModalOpen && selectedBoardId && (
               <motion.div
-                className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50"
+                className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
