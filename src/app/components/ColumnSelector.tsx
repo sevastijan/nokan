@@ -1,3 +1,5 @@
+// ColumnSelector.tsx
+
 import { useRef, useState, useEffect } from "react";
 import { FaCheck, FaChevronDown, FaColumns } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,9 +8,10 @@ interface Column {
   id: string;
   title: string;
 }
+
 interface ColumnSelectorProps {
   columns: Column[];
-  value: string;
+  value?: string; // allow undefined
   onChange: (columnId: string) => void;
 }
 
@@ -42,6 +45,21 @@ const ColumnSelector = ({ columns, value, onChange }: ColumnSelectorProps) => {
     };
   }, [open]);
 
+  // If columns is empty or undefined:
+  if (!Array.isArray(columns) || columns.length === 0) {
+    return (
+      <div className="mb-4">
+        <label className="block text-sm text-slate-300 mb-1">
+          Move to column:
+        </label>
+        <div className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-400">
+          No columns available
+        </div>
+      </div>
+    );
+  }
+
+  // Determine selected: either match value, or fallback to first column if value is undefined or not found
   const selected = columns.find((c) => c.id === value) || columns[0];
 
   return (
@@ -60,7 +78,7 @@ const ColumnSelector = ({ columns, value, onChange }: ColumnSelectorProps) => {
       >
         <span className="flex items-center gap-2 min-w-0">
           <FaColumns className="text-slate-400" />
-          <span className="truncate">{selected?.title}</span>
+          <span className="truncate">{selected.title}</span>
         </span>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
