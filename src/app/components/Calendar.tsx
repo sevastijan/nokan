@@ -7,7 +7,7 @@ import { FaRegCalendarDays } from "react-icons/fa6";
 import {
   useGetUserBoardsQuery,
   useGetTasksByBoardsAndDateQuery,
-  useGetColumnsByBoardIdQuery, // now available
+  useGetColumnsByBoardIdQuery,
 } from "@/app/store/slices/calendarApiSlice";
 import {
   format,
@@ -34,7 +34,6 @@ import {
 } from "react-icons/fa";
 import type { User } from "@/app/types/globalTypes";
 
-// Interface for a processed task in calendar:
 interface ProcessedTask {
   id: string;
   title: string;
@@ -43,31 +42,37 @@ interface ProcessedTask {
   assignee?: User | null;
 }
 
+/**
+ * Calendar component showing monthly view and task modals.
+ */
 const Calendar = () => {
-  // Current user
   const { currentUser, loading: userLoading, authStatus } = useCurrentUser();
   const userId = currentUser?.id;
 
-  // Fetch boards for the user
   const {
     data: boards = [],
     isLoading: boardsLoading,
     isError: boardsError,
   } = useGetUserBoardsQuery(userId ?? "", { skip: !userId });
 
-  // Selected boardId state: undefined means “not yet chosen”
+  const [filterOpen, setFilterOpen] = useState(false);
   const [selectedBoardId, setSelectedBoardId] = useState<string | undefined>(
     undefined
   );
+  const [selectedColumnForNew, setSelectedColumnForNew] = useState<
+    string | undefined
+  >(undefined);
 
-  // Auto-select if exactly one board
   useEffect(() => {
     if (boards.length === 1) {
       setSelectedBoardId(boards[0].id);
     }
   }, [boards]);
 
-  // Fetch columns for the selected board
+  useEffect(() => {
+    setSelectedColumnForNew(undefined);
+  }, [selectedBoardId]);
+
   const {
     data: columns = [],
     isLoading: columnsLoading,
@@ -76,17 +81,25 @@ const Calendar = () => {
     skip: !selectedBoardId,
   });
 
-  // Month navigation
+  useEffect(() => {
+    if (
+      selectedBoardId &&
+      !columnsLoading &&
+      columns.length > 0 &&
+      !selectedColumnForNew
+    ) {
+      setSelectedColumnForNew(columns[0].id);
+    }
+  }, [columnsLoading, columns, selectedBoardId, selectedColumnForNew]);
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const monthStart = useMemo(() => startOfMonth(currentMonth), [currentMonth]);
   const monthEnd = useMemo(() => endOfMonth(currentMonth), [currentMonth]);
   const fetchStart = format(monthStart, "yyyy-MM-dd");
   const fetchEnd = format(monthEnd, "yyyy-MM-dd");
 
-  // Determine boardIds to fetch: only after board is selected
   const boardIdsToFetch = selectedBoardId ? [selectedBoardId] : [];
 
-  // Fetch tasks overlapping the month
   const {
     data: tasksRaw = [],
     isLoading: tasksLoading,
@@ -97,12 +110,9 @@ const Calendar = () => {
     { skip: !selectedBoardId || boardIdsToFetch.length === 0 }
   );
 
-  // Modal state:
-  // Show board-select modal initially if no board selected
   const [boardSelectModalOpen, setBoardSelectModalOpen] = useState<boolean>(
     selectedBoardId == null
   );
-  // Whenever selectedBoardId becomes non-null, close the modal automatically
   useEffect(() => {
     if (selectedBoardId) {
       setBoardSelectModalOpen(false);
@@ -117,25 +127,7 @@ const Calendar = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(
     undefined
   );
-  // New: wybrana kolumna przy tworzeniu
-  const [selectedColumnForNew, setSelectedColumnForNew] = useState<
-    string | undefined
-  >(undefined);
 
-  // Whenever columns load and mamy modal add otwarty, lub resetujemy modal, ustawiamy domyślną kolumnę
-  useEffect(() => {
-    if (isTaskModalOpen && taskModalMode === "add" && columns.length > 0) {
-      // jeśli jeszcze nie ustawiono, wybierz pierwszą
-      if (!selectedColumnForNew) {
-        setSelectedColumnForNew(columns[0].id);
-      }
-    }
-  }, [columns, isTaskModalOpen, taskModalMode, selectedColumnForNew]);
-
-  // Filter UI state placeholder
-  const [filterOpen, setFilterOpen] = useState(false);
-
-  // Generate weeks grid for current month
   const weeks = useMemo(() => {
     const start = startOfWeek(monthStart, { weekStartsOn: 0 });
     const end = endOfWeek(monthEnd, { weekStartsOn: 0 });
@@ -152,7 +144,6 @@ const Calendar = () => {
     return wks;
   }, [monthStart, monthEnd]);
 
-  // Process tasksRaw → ProcessedTask[] including assignee
   const tasksProcessed: ProcessedTask[] = useMemo(() => {
     if (!tasksRaw) return [];
     return tasksRaw
@@ -176,7 +167,6 @@ const Calendar = () => {
       .filter((x): x is ProcessedTask => x !== null);
   }, [tasksRaw]);
 
-  // Organize tasks per week for bars
   type TaskForWeek = {
     id: string;
     title: string;
@@ -208,15 +198,40 @@ const Calendar = () => {
     });
   }, [weeks, tasksProcessed]);
 
-  // Handlers
+  const handleAddTaskClick = () => {
+    if (!selectedBoardId) return;
+    if (columnsLoading) {
+      return;
+    }
+    if (columns.length === 0) {
+      alert("This board has no columns; please create a column first.");
+      return;
+    }
+    setSelectedColumnForNew(columns[0].id);
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    setSelectedDate(todayStr);
+    setSelectedTaskId(undefined);
+    setTaskModalMode("add");
+    setIsTaskModalOpen(true);
+  };
+
   const handleDateClick = (date: Date) => {
+    if (!selectedBoardId) return;
+    if (columnsLoading) {
+      return;
+    }
+    if (columns.length === 0) {
+      alert("This board has no columns; please create a column first.");
+      return;
+    }
     const dateStr = format(date, "yyyy-MM-dd");
     setSelectedDate(dateStr);
     setSelectedTaskId(undefined);
     setTaskModalMode("add");
-    setSelectedColumnForNew(undefined); // wymusi wybór domyślnej kolumny po załadowaniu columns
+    setSelectedColumnForNew(columns[0].id);
     setIsTaskModalOpen(true);
   };
+
   const handleTaskClick = (taskId: string) => {
     setSelectedTaskId(taskId);
     setTaskModalMode("edit");
@@ -231,12 +246,10 @@ const Calendar = () => {
     setSelectedTaskId(undefined);
     setSelectedColumnForNew(undefined);
   };
-  // Close board-select modal even if no board chosen
   const closeBoardSelectModal = () => {
     setBoardSelectModalOpen(false);
   };
 
-  // Loading / auth checks
   if (authStatus === "loading" || userLoading || boardsLoading) {
     return (
       <div className="p-4 text-center text-white">Loading calendar...</div>
@@ -259,7 +272,6 @@ const Calendar = () => {
 
   return (
     <>
-      {/* Board-select modal */}
       <AnimatePresence>
         {boardSelectModalOpen && (
           <motion.div
@@ -275,7 +287,6 @@ const Calendar = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              {/* Header with gradient, icon, title, close button */}
               <div className="flex items-center justify-between bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-6 py-4 border-b border-slate-700/50">
                 <div className="flex items-center gap-2">
                   <FaRegCalendarDays className="text-white w-5 h-5" />
@@ -291,13 +302,11 @@ const Calendar = () => {
                   <FaTimes />
                 </button>
               </div>
-              {/* Subtitle below header */}
               <div className="px-6 pt-4 pb-2">
                 <p className="text-slate-400 text-sm">
                   Select board to display calendar!
                 </p>
               </div>
-
               <div className="px-6 pb-6">
                 {boards.length === 0 ? (
                   <p className="text-sm mb-4">
@@ -346,7 +355,6 @@ const Calendar = () => {
         )}
       </AnimatePresence>
 
-      {/* If modal was closed without selecting a board, show prompt */}
       {!boardSelectModalOpen && !selectedBoardId && (
         <div className="p-6 text-center text-white">
           <p className="text-lg font-medium">Calendar not initialized.</p>
@@ -356,10 +364,8 @@ const Calendar = () => {
         </div>
       )}
 
-      {/* Render calendar only after board is chosen */}
       {!boardSelectModalOpen && selectedBoardId && (
         <div className="flex flex-col space-y-4 p-4">
-          {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-6 py-4 rounded-lg border border-slate-700/50">
             <div className="flex items-center space-x-2">
               <Button
@@ -392,24 +398,12 @@ const Calendar = () => {
               >
                 Filter
               </Button>
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => {
-                  const todayStr = format(new Date(), "yyyy-MM-dd");
-                  setSelectedDate(todayStr);
-                  setSelectedTaskId(undefined);
-                  setTaskModalMode("add");
-                  setSelectedColumnForNew(undefined);
-                  setIsTaskModalOpen(true);
-                }}
-              >
+              <Button variant="primary" size="md" onClick={handleAddTaskClick}>
                 + Add Task
               </Button>
             </div>
           </div>
 
-          {/* Weekday labels */}
           <div className="grid grid-cols-7 text-center text-sm font-medium text-slate-300">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
               <div key={d} className="py-1">
@@ -418,19 +412,16 @@ const Calendar = () => {
             ))}
           </div>
 
-          {/* Calendar grid */}
           <div className="grid auto-rows-fr">
             {weeks.map((week, wi) => (
               <div
                 key={wi}
                 className="grid grid-cols-7 border-t border-slate-700 relative"
               >
-                {/* Day cells */}
                 {week.map((day) => {
                   const inMonth = isSameMonth(day, monthStart);
                   const isToday = isSameDay(day, new Date());
                   const baseBg = inMonth ? "bg-slate-800" : "bg-slate-700";
-                  // Highlight today with a subtle gradient overlay
                   const todayClasses = isToday
                     ? "relative z-10 before:absolute before:inset-0 before:bg-gradient-to-b before:from-purple-600/20 before:to-transparent before:rounded-lg"
                     : "";
@@ -447,12 +438,10 @@ const Calendar = () => {
                       >
                         {format(day, "d")}
                       </div>
-                      {/* empty space for events */}
                     </div>
                   );
                 })}
 
-                {/* Task bars overlay */}
                 <div className="absolute top-6 left-0 right-0 pointer-events-none">
                   {tasksByWeek[wi].map((t) => {
                     const leftPct = ((t.colStart - 1) / 7) * 100;
@@ -489,7 +478,6 @@ const Calendar = () => {
             ))}
           </div>
 
-          {/* Filter placeholder modal */}
           <AnimatePresence>
             {filterOpen && (
               <motion.div
@@ -505,7 +493,6 @@ const Calendar = () => {
                   exit={{ scale: 0.9, opacity: 0 }}
                 >
                   <h3 className="text-lg font-semibold mb-4">Filter Tasks</h3>
-                  {/* TODO: implement filter UI fields */}
                   <p className="text-sm text-slate-300">Filter UI goes here.</p>
                   <div className="mt-4 flex justify-end">
                     <Button
@@ -529,50 +516,50 @@ const Calendar = () => {
             )}
           </AnimatePresence>
 
-          {/* Add/Edit Task Modal */}
           <AnimatePresence>
-            {isTaskModalOpen && selectedBoardId && (
-              <motion.div
-                className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+            {isTaskModalOpen &&
+              selectedBoardId &&
+              (taskModalMode === "edit" ||
+                (columns.length > 0 && selectedColumnForNew)) && (
                 <motion.div
-                  className="bg-slate-800 text-white rounded-lg max-w-3xl w-full h-full md:h-auto overflow-auto"
-                  initial={{ y: 50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 50, opacity: 0 }}
+                  className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                 >
-                  <SingleTaskView
-                    taskId={
-                      taskModalMode === "edit" ? selectedTaskId : undefined
-                    }
-                    mode={taskModalMode === "edit" ? "edit" : "add"}
-                    columnId={
-                      taskModalMode === "edit"
-                        ? tasksRaw.find((t) => t.id === selectedTaskId)
-                            ?.column_id ?? undefined
-                        : selectedColumnForNew
-                    }
-                    boardId={selectedBoardId}
-                    initialStartDate={selectedDate}
-                    onClose={closeTaskModal}
-                    onTaskAdded={() => {
-                      // po dodaniu: odśwież zadania w kalendarzu
-                      refetchTasks();
-                    }}
-                    onTaskUpdate={() => {
-                      // po edycji: odśwież zadania
-                      refetchTasks();
-                      closeTaskModal();
-                    }}
-                    currentUser={currentUser!}
-                    columns={columns}
-                  />
+                  <motion.div
+                    className="bg-slate-800 text-white rounded-lg max-w-3xl w-full h-full md:h-auto overflow-auto"
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 50, opacity: 0 }}
+                  >
+                    <SingleTaskView
+                      taskId={
+                        taskModalMode === "edit" ? selectedTaskId : undefined
+                      }
+                      mode={taskModalMode === "edit" ? "edit" : "add"}
+                      columnId={
+                        taskModalMode === "edit"
+                          ? tasksRaw.find((t) => t.id === selectedTaskId)
+                              ?.column_id ?? undefined
+                          : selectedColumnForNew!
+                      }
+                      boardId={selectedBoardId}
+                      initialStartDate={selectedDate}
+                      onClose={closeTaskModal}
+                      onTaskAdded={() => {
+                        refetchTasks();
+                      }}
+                      onTaskUpdate={() => {
+                        refetchTasks();
+                        closeTaskModal();
+                      }}
+                      currentUser={currentUser!}
+                      columns={columns}
+                    />
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            )}
+              )}
           </AnimatePresence>
         </div>
       )}

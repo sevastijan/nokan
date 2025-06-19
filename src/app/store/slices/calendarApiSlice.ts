@@ -14,12 +14,15 @@ export const calendarApi = createApi({
   endpoints: (builder) => ({
     /**
      * Fetch boards the user belongs to OR which the user personally owns.
+     * Additionally, if user has no teams, include boards on which user created tasks before.
+     *
      * Steps:
      *  1. Query team_members for given userId to get team IDs.
      *  2. Query team_boards for those team IDs to get board IDs.
      *  3. Query boards table with those board IDs to fetch {id, title}.
      *  4. Query personal boards where user_id = userId.
-     *  5. Merge both lists uniquely and return.
+     *  5. If no teams found, also query tasks table for board_ids where user_id = userId, fetch those boards.
+     *  6. Merge all lists uniquely and return.
      *
      * @param userId - Supabase user ID.
      * @returns Array of Board ({ id, title }).
@@ -44,8 +47,8 @@ export const calendarApi = createApi({
             ?.map((r) => r.team_id)
             .filter(Boolean) as string[];
 
-          // 2) Fetch team_boards entries for those team IDs
           let boardsFromTeam: Board[] = [];
+          // 2) Fetch team_boards entries for those team IDs
           if (teamIds.length) {
             const { data: tbRows, error: tbError } = await supabase
               .from("team_boards")
@@ -86,12 +89,50 @@ export const calendarApi = createApi({
           }
           personalBoards = (personalData as Board[]) || [];
 
-          // 4) Merge both lists uniquely by id
+          // 4) If user has no teams (teamIds empty), try fetch boards from tasks history
+          let boardsFromTasks: Board[] = [];
+          if (teamIds.length === 0) {
+            // Query distinct board_id from tasks where user_id = userId
+            const { data: taskRows, error: taskError } = await supabase
+              .from("tasks")
+              .select("board_id")
+              .eq("user_id", userId);
+            if (taskError) {
+              // Jeżeli błąd podczas pobierania zadań, ignorujemy tę ścieżkę, ale nie przerywamy całości
+              console.warn(
+                "[getUserBoards] Could not fetch task-based boards:",
+                taskError.message
+              );
+            } else if (taskRows && taskRows.length) {
+              const taskBoardIds = Array.from(
+                new Set(taskRows.map((r) => r.board_id).filter(Boolean))
+              );
+              if (taskBoardIds.length) {
+                const { data: boardsData2, error: bError2 } = await supabase
+                  .from("boards")
+                  .select("id, title")
+                  .in("id", taskBoardIds);
+                if (bError2) {
+                  console.warn(
+                    "[getUserBoards] Could not fetch boards from taskBoardIds:",
+                    bError2.message
+                  );
+                } else {
+                  boardsFromTasks = (boardsData2 as Board[]) || [];
+                }
+              }
+            }
+          }
+
+          // 5) Merge all lists uniquely by id
           const boardMap = new Map<string, Board>();
           for (const b of boardsFromTeam) {
             if (b.id) boardMap.set(b.id, b);
           }
           for (const b of personalBoards) {
+            if (b.id) boardMap.set(b.id, b);
+          }
+          for (const b of boardsFromTasks) {
             if (b.id) boardMap.set(b.id, b);
           }
           const resultBoards = Array.from(boardMap.values());

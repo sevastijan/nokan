@@ -1,4 +1,3 @@
-// src/app/hooks/useTaskManagement.ts
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -15,8 +14,8 @@ import { TaskDetail, User, Attachment } from "@/app/types/globalTypes";
 import { pickUpdatable } from "@/app/utils/helpers";
 
 /**
- * Custom hook for task creation/editing logic, with attachments and notification support.
- * Accepts initialStartDate for calendar integration. Includes debug logs.
+ * Custom hook for creating/editing a task, including attachments and notifications.
+ * Synchronizes initial columnId and start date when provided.
  */
 export const useTaskManagement = ({
   taskId: propTaskId,
@@ -24,7 +23,7 @@ export const useTaskManagement = ({
   columnId,
   boardId,
   currentUser,
-  initialStartDate, // optional initial date for new task
+  initialStartDate,
   onTaskUpdate,
   onTaskAdded,
   onClose,
@@ -49,10 +48,8 @@ export const useTaskManagement = ({
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
   const [addNotification] = useAddNotificationMutation();
 
-  // Used to detect assignment change on edit
   const prevUserId = useRef<string | null | undefined>(null);
 
-  // Fetch the task for edit mode (or after creation)
   const {
     data: fetchedTask,
     error: fetchError,
@@ -60,46 +57,22 @@ export const useTaskManagement = ({
     refetch: refetchTask,
   } = useGetTaskByIdQuery({ taskId: currentTaskId! }, { skip: !currentTaskId });
 
-  // Mutations
   const [updateTaskMutation, { isLoading: saving }] = useUpdateTaskMutation();
   const [addTaskMutation] = useAddTaskMutation();
   const [uploadAttachmentMutation] = useUploadAttachmentMutation();
   const [removeTaskMutation] = useRemoveTaskMutation();
 
-  // Fetch team members for board (assignee selection)
   const { data: teamMembers = [] } = useGetTeamMembersByBoardIdQuery(boardId, {
     skip: !boardId,
   });
 
-  // Debug: log initial params
   useEffect(() => {
-    console.log(
-      "[useTaskManagement] mode:",
-      mode,
-      "propTaskId:",
-      propTaskId,
-      "initialStartDate:",
-      initialStartDate
-    );
-  }, [mode, propTaskId, initialStartDate]);
-
-  // When the task is fetched (edit mode), sync state and handle pending attachments
-  useEffect(() => {
-    console.log(
-      "[useTaskManagement] fetchEffect isLoading:",
-      isLoading,
-      "fetchedTask:",
-      fetchedTask,
-      "fetchError:",
-      fetchError
-    );
     if (isLoading) return;
     if (fetchedTask) {
       setTask(fetchedTask);
       setHasUnsavedChanges(false);
       setError(null);
       prevUserId.current = fetchedTask.user_id;
-      console.log("[useTaskManagement] set fetched task:", fetchedTask);
       if (pendingAttachments.length > 0) {
         pendingAttachments.forEach(async (file) => {
           try {
@@ -109,7 +82,6 @@ export const useTaskManagement = ({
                 taskId: currentTaskId,
                 userId: currentUser.id,
               }).unwrap();
-              console.log("[useTaskManagement] uploaded attachment:", result);
               setTask((prev) => {
                 if (!prev) return prev;
                 const newList: Attachment[] = prev.attachments
@@ -118,7 +90,7 @@ export const useTaskManagement = ({
                 return { ...prev, attachments: newList };
               });
             }
-          } catch (err) {
+          } catch {
             setError("Failed to upload attachment");
           }
         });
@@ -126,7 +98,6 @@ export const useTaskManagement = ({
       }
     } else if (!isNewTask && fetchError) {
       setError("Task not found");
-      console.warn("[useTaskManagement] Task not found for id", currentTaskId);
     }
   }, [
     isLoading,
@@ -139,14 +110,9 @@ export const useTaskManagement = ({
     isNewTask,
   ]);
 
-  // On add mode: set up an empty task template, using initialStartDate if provided
   useEffect(() => {
     if (isNewTask) {
       const initialDate = initialStartDate ?? null;
-      console.log(
-        "[useTaskManagement] initializing new task with date",
-        initialDate
-      );
       const initial: TaskDetail = {
         id: "",
         title: "",
@@ -184,24 +150,30 @@ export const useTaskManagement = ({
       setPendingAttachments([]);
       prevUserId.current = null;
     }
-  }, [isNewTask, boardId, columnId, currentUser, initialStartDate]);
+  }, [isNewTask, boardId, currentUser, initialStartDate, columnId]);
 
-  // Local update of task state
+  useEffect(() => {
+    if (isNewTask && columnId) {
+      setTask((prev) => {
+        if (!prev) return prev;
+        if (prev.column_id !== columnId) {
+          return { ...prev, column_id: columnId };
+        }
+        return prev;
+      });
+    }
+  }, [isNewTask, columnId]);
+
   const updateTask = useCallback((changes: Partial<TaskDetail>) => {
-    console.log("[useTaskManagement] updateTask changes:", changes);
     setTask((prev) => {
       if (!prev) return prev;
-      const updated = { ...prev, ...changes };
-      console.log("[useTaskManagement] updated task state:", updated);
-      return updated;
+      return { ...prev, ...changes };
     });
     setHasUnsavedChanges(true);
   }, []);
 
-  // Add an attachment (for both new and existing tasks)
   const uploadAttachment = useCallback(
     async (file: File) => {
-      console.log("[useTaskManagement] uploadAttachment file:", file);
       if (currentTaskId && currentUser?.id) {
         try {
           const result = await uploadAttachmentMutation({
@@ -209,7 +181,6 @@ export const useTaskManagement = ({
             taskId: currentTaskId,
             userId: currentUser.id,
           }).unwrap();
-          console.log("[useTaskManagement] attachment uploaded:", result);
           setTask((prev) => {
             if (!prev) return prev;
             const newList: Attachment[] = prev.attachments
@@ -218,9 +189,8 @@ export const useTaskManagement = ({
             return { ...prev, attachments: newList };
           });
           return result;
-        } catch (err) {
+        } catch {
           setError("Failed to upload attachment");
-          console.error(err);
           return null;
         }
       } else {
@@ -231,19 +201,15 @@ export const useTaskManagement = ({
     [currentTaskId, currentUser?.id, uploadAttachmentMutation]
   );
 
-  // Save updates to an existing task (edit mode)
   const saveExistingTask = useCallback(async (): Promise<boolean> => {
-    console.log("[useTaskManagement] saveExistingTask, task:", task);
     if (!currentTaskId || !task) return false;
     const payload: Partial<TaskDetail> = pickUpdatable(task);
-    console.log("[useTaskManagement] saveExistingTask payload:", payload);
     const prevAssigned = prevUserId.current;
     try {
       const result = await updateTaskMutation({
         taskId: currentTaskId,
         data: payload,
       }).unwrap();
-      console.log("[useTaskManagement] saveExistingTask result:", result);
       if (result.user_id && result.user_id !== prevAssigned) {
         await addNotification({
           user_id: result.user_id,
@@ -257,16 +223,13 @@ export const useTaskManagement = ({
       setHasUnsavedChanges(false);
       onTaskUpdate?.(result);
       return true;
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Failed to update task");
       return false;
     }
   }, [currentTaskId, task, updateTaskMutation, onTaskUpdate, addNotification]);
 
-  // Save a new task (add mode)
   const saveNewTask = useCallback(async (): Promise<boolean> => {
-    console.log("[useTaskManagement] saveNewTask, task:", task);
     if (!task || !columnId) return false;
     const payload: Partial<TaskDetail> & { column_id: string } = {
       column_id: columnId,
@@ -280,10 +243,8 @@ export const useTaskManagement = ({
       due_date: task.due_date ?? null,
       status: task.status ?? null,
     };
-    console.log("[useTaskManagement] saveNewTask payload:", payload);
     try {
       const result = await addTaskMutation(payload).unwrap();
-      console.log("[useTaskManagement] saveNewTask result:", result);
       setCurrentTaskId(result.id);
       setHasUnsavedChanges(false);
       setTask((prev) => {
@@ -313,16 +274,13 @@ export const useTaskManagement = ({
         updated_at: result.updated_at ?? undefined,
       });
       return true;
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Failed to create task");
       return false;
     }
   }, [task, columnId, boardId, addTaskMutation, onTaskAdded, addNotification]);
 
-  // Remove the task
   const deleteTask = useCallback(async () => {
-    console.log("[useTaskManagement] deleteTask, id:", currentTaskId);
     if (!currentTaskId || !task) return;
     const effectiveColumnId = columnId || task.column_id;
     if (!effectiveColumnId) {
@@ -335,25 +293,21 @@ export const useTaskManagement = ({
         columnId: effectiveColumnId,
       }).unwrap();
       onClose();
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Failed to delete task");
     }
   }, [currentTaskId, task, columnId, removeTaskMutation, onClose]);
 
-  // Refetch the task data (edit mode)
   const fetchTaskData = useCallback(async () => {
-    console.log("[useTaskManagement] fetchTaskData for id:", currentTaskId);
     if (currentTaskId) {
       try {
         const { data } = await refetchTask();
         if (data) {
-          console.log("[useTaskManagement] refetched task:", data);
           setTask(data);
           setHasUnsavedChanges(false);
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // ignore
       }
     }
   }, [currentTaskId, refetchTask]);
