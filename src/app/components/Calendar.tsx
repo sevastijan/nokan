@@ -1,4 +1,3 @@
-// src/app/components/Calendar.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -8,6 +7,7 @@ import { FaRegCalendarDays } from "react-icons/fa6";
 import {
   useGetUserBoardsQuery,
   useGetTasksByBoardsAndDateQuery,
+  useGetColumnsByBoardIdQuery, // now available
 } from "@/app/store/slices/calendarApiSlice";
 import {
   format,
@@ -67,6 +67,15 @@ const Calendar = () => {
     }
   }, [boards]);
 
+  // Fetch columns for the selected board
+  const {
+    data: columns = [],
+    isLoading: columnsLoading,
+    isError: columnsError,
+  } = useGetColumnsByBoardIdQuery(selectedBoardId ?? "", {
+    skip: !selectedBoardId,
+  });
+
   // Month navigation
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const monthStart = useMemo(() => startOfMonth(currentMonth), [currentMonth]);
@@ -82,6 +91,7 @@ const Calendar = () => {
     data: tasksRaw = [],
     isLoading: tasksLoading,
     isError: tasksError,
+    refetch: refetchTasks,
   } = useGetTasksByBoardsAndDateQuery(
     { boardIds: boardIdsToFetch, start: fetchStart, end: fetchEnd },
     { skip: !selectedBoardId || boardIdsToFetch.length === 0 }
@@ -107,6 +117,20 @@ const Calendar = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(
     undefined
   );
+  // New: wybrana kolumna przy tworzeniu
+  const [selectedColumnForNew, setSelectedColumnForNew] = useState<
+    string | undefined
+  >(undefined);
+
+  // Whenever columns load and mamy modal add otwarty, lub resetujemy modal, ustawiamy domyślną kolumnę
+  useEffect(() => {
+    if (isTaskModalOpen && taskModalMode === "add" && columns.length > 0) {
+      // jeśli jeszcze nie ustawiono, wybierz pierwszą
+      if (!selectedColumnForNew) {
+        setSelectedColumnForNew(columns[0].id);
+      }
+    }
+  }, [columns, isTaskModalOpen, taskModalMode, selectedColumnForNew]);
 
   // Filter UI state placeholder
   const [filterOpen, setFilterOpen] = useState(false);
@@ -190,11 +214,13 @@ const Calendar = () => {
     setSelectedDate(dateStr);
     setSelectedTaskId(undefined);
     setTaskModalMode("add");
+    setSelectedColumnForNew(undefined); // wymusi wybór domyślnej kolumny po załadowaniu columns
     setIsTaskModalOpen(true);
   };
   const handleTaskClick = (taskId: string) => {
     setSelectedTaskId(taskId);
     setTaskModalMode("edit");
+    setSelectedColumnForNew(undefined);
     setIsTaskModalOpen(true);
   };
   const prevMonth = () => setCurrentMonth((m) => addDays(startOfMonth(m), -1));
@@ -203,6 +229,7 @@ const Calendar = () => {
     setIsTaskModalOpen(false);
     setSelectedDate(undefined);
     setSelectedTaskId(undefined);
+    setSelectedColumnForNew(undefined);
   };
   // Close board-select modal even if no board chosen
   const closeBoardSelectModal = () => {
@@ -373,6 +400,7 @@ const Calendar = () => {
                   setSelectedDate(todayStr);
                   setSelectedTaskId(undefined);
                   setTaskModalMode("add");
+                  setSelectedColumnForNew(undefined);
                   setIsTaskModalOpen(true);
                 }}
               >
@@ -521,24 +549,26 @@ const Calendar = () => {
                       taskModalMode === "edit" ? selectedTaskId : undefined
                     }
                     mode={taskModalMode === "edit" ? "edit" : "add"}
-                    // TS fix: coalesce null to undefined
                     columnId={
                       taskModalMode === "edit"
                         ? tasksRaw.find((t) => t.id === selectedTaskId)
                             ?.column_id ?? undefined
-                        : undefined
+                        : selectedColumnForNew
                     }
                     boardId={selectedBoardId}
                     initialStartDate={selectedDate}
                     onClose={closeTaskModal}
                     onTaskAdded={() => {
-                      // RTK Query will refetch tasks
+                      // po dodaniu: odśwież zadania w kalendarzu
+                      refetchTasks();
                     }}
                     onTaskUpdate={() => {
+                      // po edycji: odśwież zadania
+                      refetchTasks();
                       closeTaskModal();
                     }}
-                    currentUser={currentUser ?? undefined}
-                    columns={[]}
+                    currentUser={currentUser!}
+                    columns={columns}
                   />
                 </motion.div>
               </motion.div>

@@ -1,20 +1,42 @@
-// ColumnSelector.tsx
+// src/app/components/ColumnSelector.tsx
+"use client";
 
 import { useRef, useState, useEffect } from "react";
 import { FaCheck, FaChevronDown, FaColumns } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface Column {
-  id: string;
-  title: string;
-}
+// Import the global Column type (adjust path if in Twoim projekcie jest inny)
+import type { Column } from "@/app/types/globalTypes";
 
 interface ColumnSelectorProps {
+  /**
+   * Array of columns to display.
+   * Uses the global Column type, which includes at least: id: string, title: string.
+   */
   columns: Column[];
-  value?: string; // allow undefined
+  /**
+   * Currently selected column ID, or undefined if none selected.
+   */
+  value?: string;
+  /**
+   * Callback invoked when user selects a column.
+   * Receives the column ID. Should return void.
+   */
   onChange: (columnId: string) => void;
+  /**
+   * Optional label text displayed above the selector.
+   * If not provided, defaults to "Move to column:".
+   */
+  label?: string;
+  /**
+   * Optional disabled flag: if true, selector is not interactive.
+   * If columns array is empty, selector is rendered as non-interactive info.
+   */
+  disabled?: boolean;
 }
 
+/**
+ * Animation variants for dropdown list.
+ */
 const dropdownAnim = {
   initial: { opacity: 0, y: -10, pointerEvents: "none" as any },
   animate: { opacity: 1, y: 0, pointerEvents: "auto" as any },
@@ -22,11 +44,23 @@ const dropdownAnim = {
   transition: { duration: 0.18 },
 };
 
-const ColumnSelector = ({ columns, value, onChange }: ColumnSelectorProps) => {
+/**
+ * ColumnSelector renders a custom dropdown for choosing a column from a list.
+ * - Uses global Column type for items.
+ * - If columns array is empty or props.disabled is true, shows a non-interactive placeholder.
+ * - value can be undefined or a string matching one of columns[].id.
+ */
+const ColumnSelector = ({
+  columns,
+  value,
+  onChange,
+  label,
+  disabled = false,
+}: ColumnSelectorProps) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click or ESC
+  // Close dropdown on outside click or Escape key
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -35,7 +69,9 @@ const ColumnSelector = ({ columns, value, onChange }: ColumnSelectorProps) => {
       }
     };
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEsc);
@@ -45,27 +81,27 @@ const ColumnSelector = ({ columns, value, onChange }: ColumnSelectorProps) => {
     };
   }, [open]);
 
-  // If columns is empty or undefined:
-  if (!Array.isArray(columns) || columns.length === 0) {
+  // If disabled or no columns available: render a non-interactive placeholder
+  if (disabled || !Array.isArray(columns) || columns.length === 0) {
     return (
       <div className="mb-4">
         <label className="block text-sm text-slate-300 mb-1">
-          Move to column:
+          {label ?? "Move to column:"}
         </label>
         <div className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-400">
-          No columns available
+          {columns.length === 0 ? "No columns available" : "Disabled"}
         </div>
       </div>
     );
   }
 
-  // Determine selected: either match value, or fallback to first column if value is undefined or not found
+  // Determine selected column: match by value, or fallback to first element
   const selected = columns.find((c) => c.id === value) || columns[0];
 
   return (
     <div ref={ref} className="mb-4 relative w-full max-w-lg">
       <label className="block text-sm text-slate-300 mb-1">
-        Move to column:
+        {label ?? "Move to column:"}
       </label>
       <button
         type="button"
@@ -94,9 +130,7 @@ const ColumnSelector = ({ columns, value, onChange }: ColumnSelectorProps) => {
             className="absolute left-0 right-0 mt-1 z-20 rounded-xl bg-slate-800/95 backdrop-blur-sm border border-slate-700 shadow-2xl py-1 overflow-auto"
             {...dropdownAnim}
             role="listbox"
-            style={{
-              maxHeight: "15rem",
-            }}
+            style={{ maxHeight: "15rem" }}
           >
             {columns.map((col) => (
               <li key={col.id}>
@@ -108,6 +142,7 @@ const ColumnSelector = ({ columns, value, onChange }: ColumnSelectorProps) => {
                       : "text-white hover:bg-slate-700 hover:text-purple-300"
                   }`}
                   onClick={() => {
+                    // Invoke callback and close dropdown
                     onChange(col.id);
                     setOpen(false);
                   }}

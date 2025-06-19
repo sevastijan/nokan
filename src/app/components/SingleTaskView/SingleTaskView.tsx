@@ -1,4 +1,3 @@
-// src/app/components/SingleTaskView/SingleTaskView.tsx
 "use client";
 
 import {
@@ -23,7 +22,7 @@ import ImagePreviewModal from "./ImagePreviewModal";
 import ConfirmDialog from "./ConfirmDialog";
 import Button from "../Button/Button";
 import Avatar from "../Avatar/Avatar";
-import ColumnSelector from "@/app/components/ColumnSelector";
+import ColumnSelector from "@/app/components/ColumnSelector"; // already imported
 
 import {
   formatDate,
@@ -47,6 +46,7 @@ interface LocalFilePreview {
 
 /**
  * SingleTaskView component renders a modal for viewing, creating, or editing a task.
+ * Now includes column selection for add/edit.
  */
 const SingleTaskView = ({
   taskId,
@@ -58,8 +58,8 @@ const SingleTaskView = ({
   onTaskAdded,
   currentUser: propCurrentUser,
   initialStartDate,
-  columns,
-}: SingleTaskViewProps) => {
+  columns, // now we receive columns list
+}: SingleTaskViewProps & { columns: { id: string; title: string }[] }) => {
   const { data: session } = useSession();
   const { currentUser, loading: userLoading } = useCurrentUser();
 
@@ -80,9 +80,10 @@ const SingleTaskView = ({
   } = useTaskManagement({
     taskId,
     mode,
-    columnId,
+    columnId, // initial columnId
     boardId: boardId!,
     currentUser: propCurrentUser || currentUser || undefined,
+    initialStartDate,
     onTaskUpdate,
     onTaskAdded,
     onClose,
@@ -106,6 +107,11 @@ const SingleTaskView = ({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
+  // Local state for column selection in UI (to reflect immediate choice before saving)
+  const [localColumnId, setLocalColumnId] = useState<string | undefined>(
+    columnId
+  );
+
   // Apply initialStartDate once
   const appliedInitialDate = useRef(false);
 
@@ -114,12 +120,22 @@ const SingleTaskView = ({
       setTempTitle(task.title || "");
       setTempDescription(task.description || "");
       setSelectedAssigneeId(task.assignee?.id || task.user_id || null);
+      // Initialize localColumnId from task data when editing
       if (!isNewTask) {
+        setLocalColumnId(task.column_id || undefined);
         setStartDate(task.start_date || "");
         setEndDate(task.end_date || "");
       }
     }
   }, [task, isNewTask]);
+
+  // When columnId prop changes (e.g. in add mode), update localColumnId
+  useEffect(() => {
+    if (isNewTask && columnId) {
+      setLocalColumnId(columnId);
+      updateTask({ column_id: columnId });
+    }
+  }, [isNewTask, columnId, updateTask]);
 
   useEffect(() => {
     if (isNewTask && initialStartDate && !appliedInitialDate.current) {
@@ -187,6 +203,13 @@ const SingleTaskView = ({
       return;
     }
     await updateTask({ user_id: assigneeId, assignee: sel });
+  };
+
+  // Column selection
+  const handleColumnChange = async (newColId: string) => {
+    setLocalColumnId(newColId);
+    // update local state and hook state
+    await updateTask({ column_id: newColId });
   };
 
   // Date fields
@@ -259,6 +282,11 @@ const SingleTaskView = ({
   const handleSave = async () => {
     if (!tempTitle.trim()) {
       toast.error("Title is required");
+      return;
+    }
+    // Ensure column is selected for new task
+    if (isNewTask && !localColumnId) {
+      toast.error("Column is required");
       return;
     }
     if (isNewTask) {
@@ -417,10 +445,9 @@ const SingleTaskView = ({
               <div className="block md:hidden mb-4">
                 <ColumnSelector
                   columns={columns}
-                  value={task?.column_id || columnId}
-                  onChange={async (newColId) => {
-                    await updateTask({ column_id: newColId });
-                  }}
+                  value={localColumnId}
+                  onChange={handleColumnChange}
+                  label="Column"
                 />
               </div>
 
@@ -437,6 +464,18 @@ const SingleTaskView = ({
                 <PrioritySelector
                   selectedPriority={task?.priority || null}
                   onChange={(newId) => updateTask({ priority: newId })}
+                />
+              </div>
+
+              {/* DESKTOP COLUMN SELECT */}
+              <div className="hidden md:block mt-4">
+                <label className="text-sm text-slate-300 uppercase mb-1 block">
+                  Column
+                </label>
+                <ColumnSelector
+                  columns={columns}
+                  value={localColumnId}
+                  onChange={handleColumnChange}
                 />
               </div>
 
@@ -610,6 +649,15 @@ const SingleTaskView = ({
                   className={task?.updated_at ? "text-white" : "text-slate-400"}
                 >
                   {task?.updated_at ? formatDate(task.updated_at) : "-"}
+                </div>
+              </div>
+              {/* Show column info */}
+              <div className="mb-6">
+                <h3 className="text-sm text-slate-300 uppercase mb-2">
+                  Column
+                </h3>
+                <div className="text-sm text-white truncate">
+                  {columns.find((c) => c.id === localColumnId)?.title || "—"}
                 </div>
               </div>
               {task?.start_date && task?.end_date && (
