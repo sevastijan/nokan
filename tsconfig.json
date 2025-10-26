@@ -13,9 +13,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "baseUrl": ".", // Root of the project
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"] // Map @/ to src/
+      "@/*": ["./src/*"]
     },
     "incremental": true,
     "plugins": [{ "name": "next" }]
