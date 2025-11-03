@@ -5,13 +5,12 @@ steps:
           when:
                event: push
                branch: main
+          volumes:
+               - /var/run/docker.sock:/var/run/docker.sock
           commands:
                - echo "🐳 Checking Docker daemon..."
                - docker version
-               - echo "🚀 Building nokan-taskboard Docker image..."
+               - echo "🚀 Building nokan-taskboard image..."
                - docker build -t nokan-taskboard:latest .
-               - echo "🧹 Removing old container if exists..."
                - docker rm -f nokan-taskboard || true
-               - echo "▶️ Starting new nokan-taskboard container..."
                - docker run -d --name nokan-taskboard -p 3000:3000 nokan-taskboard:latest
-               - echo "nokan-taskboard deployed successfully!"
