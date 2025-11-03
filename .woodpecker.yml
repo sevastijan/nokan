@@ -8,7 +8,7 @@ steps:
           volumes:
                - /var/run/docker.sock:/var/run/docker.sock
           environment:
-               # Wstrzyknięcie secretów z UI Woodpeckera
+               # --- Secrets z UI Woodpeckera ---
                - NEXT_PUBLIC_SUPABASE_URL
                - NEXT_PUBLIC_SUPABASE_ANON_KEY
                - GOOGLE_CLIENT_ID
