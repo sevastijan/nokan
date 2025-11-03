@@ -1,16 +1,8 @@
 steps:
-     deploy:
-          name: build_and_deploy
+     test_docker:
           image: docker:26
-          when:
-               event: push
-               branch: main
           volumes:
                - /var/run/docker.sock:/var/run/docker.sock
           commands:
-               - echo "🚀 Building new Docker image..."
-               - docker build -t my-app:latest .
-               - echo "🧹 Removing old container..."
-               - docker rm -f my-app || true
-               - echo "▶️ Starting updated container..."
-               - docker run -d --name my-app -p 3000:3000 my-app:latest
+               - docker ps
+               - echo "✅ Docker socket available"
