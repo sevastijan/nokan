@@ -1,98 +1,70 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { createClient } from "@supabase/supabase-js";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { createClient } from '@supabase/supabase-js';
+import { authOptions } from '../../auth/[...nextauth]/route';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 /**
  * Update board by ID
- * @param request - Next.js request object
- * @param params - Route parameters containing board ID
- * @returns Promise<NextResponse> - Updated board data or error response
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+     try {
+          const session = await getServerSession(authOptions);
 
-    const { title } = await request.json();
-    
-    if (!title || typeof title !== "string" || !title.trim()) {
-      return NextResponse.json({ error: "Valid title is required" }, { status: 400 });
-    }
+          if (!session?.user?.email) {
+               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+          }
 
-    const boardId = params.id;
+          const { title } = await request.json();
 
-    const { data, error } = await supabase
-      .from("boards")
-      .update({ title: title.trim() })
-      .eq("id", boardId)
-      .eq("owner", session.user.email)
-      .select()
-      .single();
+          if (!title || typeof title !== 'string' || !title.trim()) {
+               return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
+          }
 
-    if (error) {
-      return NextResponse.json({ error: "Failed to update board" }, { status: 500 });
-    }
+          const boardId = params.id;
 
-    return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+          const { data, error } = await supabase.from('boards').update({ title: title.trim() }).eq('id', boardId).eq('owner', session.user.email).select().single();
+
+          if (error) {
+               return NextResponse.json({ error: 'Failed to update board' }, { status: 500 });
+          }
+
+          return NextResponse.json(data);
+     } catch {
+          return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+     }
 }
 
 /**
  * Delete board by ID
- * @param request - Next.js request object
- * @param params - Route parameters containing board ID
- * @returns Promise<NextResponse> - Success message or error response
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+     try {
+          const session = await getServerSession(authOptions);
 
-    const boardId = params.id;
+          if (!session?.user?.email) {
+               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+          }
 
-    // First delete all columns and tasks related to this board
-    const { error: columnsError } = await supabase
-      .from("columns")
-      .delete()
-      .eq("board_id", boardId);
+          const boardId = params.id;
 
-    if (columnsError) {
-      return NextResponse.json({ error: "Failed to delete board columns" }, { status: 500 });
-    }
+          // Delete all columns related to this board
+          const { error: columnsError } = await supabase.from('columns').delete().eq('board_id', boardId);
 
-    // Then delete the board itself
-    const { error: boardError } = await supabase
-      .from("boards")
-      .delete()
-      .eq("id", boardId)
-      .eq("owner", session.user.email);
+          if (columnsError) {
+               return NextResponse.json({ error: 'Failed to delete board columns' }, { status: 500 });
+          }
 
-    if (boardError) {
-      return NextResponse.json({ error: "Failed to delete board" }, { status: 500 });
-    }
+          // Delete the board itself
+          const { error: boardError } = await supabase.from('boards').delete().eq('id', boardId).eq('owner', session.user.email);
 
-    return NextResponse.json({ message: "Board deleted successfully" });
-  } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+          if (boardError) {
+               return NextResponse.json({ error: 'Failed to delete board' }, { status: 500 });
+          }
+
+          return NextResponse.json({ message: 'Board deleted successfully' });
+     } catch {
+          return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+     }
 }
