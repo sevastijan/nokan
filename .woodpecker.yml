@@ -29,14 +29,14 @@ steps:
       - echo "NEXTAUTH_URL -> ${NEXTAUTH_URL}"
       - echo "📝 Rendering .env for build stage..."
       - |
-        cat <<EOF > .env
-        NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-        GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-        NEXTAUTH_URL=${NEXTAUTH_URL}
-        NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-        EOF
+        printf '%s\n' \
+          "NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}" \
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+          "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
+          "GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
+          "NEXTAUTH_URL=${NEXTAUTH_URL}" \
+          "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" \
+          > .env
       - echo "🚀 Building nokan-taskboard image..."
       - docker build -t nokan-taskboard:latest .
       - echo "🧹 Removing old container if exists..."
