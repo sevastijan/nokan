@@ -5,6 +5,8 @@ steps:
           when:
                event: push
                branch: main
+          volumes:
+               - /var/run/docker.sock:/var/run/docker.sock
           commands:
                - echo "🚀 Building new Docker image..."
                - docker build -t my-app:latest .
