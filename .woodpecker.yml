@@ -1,14 +1,17 @@
 steps:
      deploy:
+          name: build_and_deploy_nokan
           image: docker:26-cli
           when:
                event: push
                branch: main
           commands:
+               - echo "🐳 Checking Docker daemon..."
                - docker version
-               - echo "🚀 Building Docker image..."
-               - docker build -t my-next-app:latest .
-               - echo "🧹 Removing old container..."
-               - docker rm -f my-next-app || true
-               - echo "▶️ Starting new container..."
-               - docker run -d --name my-next-app -p 3000:3000 my-next-app:latest
+               - echo "🚀 Building nokan-taskboard Docker image..."
+               - docker build -t nokan-taskboard:latest .
+               - echo "🧹 Removing old container if exists..."
+               - docker rm -f nokan-taskboard || true
+               - echo "▶️ Starting new nokan-taskboard container..."
+               - docker run -d --name nokan-taskboard -p 3000:3000 nokan-taskboard:latest
+               - echo "✅ nokan-taskboard deployed successfully!"
