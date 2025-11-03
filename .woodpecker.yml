@@ -1,12 +1,14 @@
 steps:
      build_and_run:
+          when:
+               event: [push]
+               branch: main
           image: docker:26
           volumes:
                - /var/run/docker.sock:/var/run/docker.sock
           commands:
-               - echo "🚀 Building local Docker image..."
+               - echo "Building Docker image..."
                - docker build -t my-local-app:latest .
-               - echo "🧹 Stopping old container if exists..."
+               - echo "Restarting container..."
                - docker rm -f my-local-app || true
-               - echo "▶️ Running new container..."
                - docker run -d --name my-local-app -p 3000:3000 my-local-app:latest
