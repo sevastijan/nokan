@@ -1,9 +1,8 @@
 steps:
      deploy:
-          image: node:20-slim
+          image: docker:26-cli
           commands:
-               - apt-get update && apt-get install -y docker-cli
-               - docker ps
+               - docker version
                - docker build -t my-next-app:latest .
                - docker rm -f my-next-app || true
                - docker run -d --name my-next-app -p 3000:3000 my-next-app:latest
