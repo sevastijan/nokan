@@ -18,15 +18,13 @@ steps:
                - echo "🐳 Checking Docker daemon..."
                - docker version
 
-               # 🔍 Environment test (safe partial output)
                - echo "🔍 Checking injected envs..."
                - echo "NEXT_PUBLIC_SUPABASE_URL -> $NEXT_PUBLIC_SUPABASE_URL"
                - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix -> $(echo $NEXT_PUBLIC_SUPABASE_ANON_KEY | cut -c1-6)"
                - echo "GOOGLE_CLIENT_ID prefix -> $(echo $GOOGLE_CLIENT_ID | cut -c1-6)"
                - echo "NEXTAUTH_URL -> $NEXTAUTH_URL"
 
-               # 🚀 Build image
-               - echo "🚀 Building nokan-taskboard Docker image..."
+               - echo "🚀 Building nokan-taskboard image..."
                - docker build -t nokan-taskboard:latest \
                  --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
                  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
@@ -35,8 +33,7 @@ steps:
                  --build-arg NEXTAUTH_URL=$NEXTAUTH_URL \
                  --build-arg NEXTAUTH_SECRET=$NEXTAUTH_SECRET .
 
-               # 🧹 Cleanup + redeploy
-               - echo "🧹 Removing old container if exists..."
+               - echo "🧹 Removing old container..."
                - docker rm -f nokan-taskboard || true
 
                - echo "▶️ Running new nokan-taskboard container..."
