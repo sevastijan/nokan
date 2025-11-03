@@ -1,3 +1,5 @@
+[![status-badge](http://57.131.20.39:8000/api/badges/1/status.svg)](http://57.131.20.39:8000/repos/1)
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
