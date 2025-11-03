@@ -33,10 +33,10 @@ The build stage reads the `.env` file (if present in the project root), so ensur
 Run the container (update the `.env` path if needed to forward the same values at runtime):
 
 ```bash
-docker run --env-file .env -p 3000:3000 nokan-taskboard
+docker run --env-file .env -p 6969:3000 nokan-taskboard
 ```
 
-The app listens on port `3000` by default.
+The app listens on port `3000` inside the container; the command above maps it to host port `6969`.
 
 ## Learn More
 

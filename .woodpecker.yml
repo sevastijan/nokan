@@ -43,7 +43,7 @@ steps:
             - docker rm -f nokan-taskboard || true
             - echo "▶️ Running new nokan-taskboard container..."
             - |
-                 docker run -d --name nokan-taskboard -p 3000:3000 \
+                 docker run -d --name nokan-taskboard -p 6969:3000 \
                    -e NEXT_PUBLIC_SUPABASE_URL="$${NEXT_PUBLIC_SUPABASE_URL}" \
                    -e NEXT_PUBLIC_SUPABASE_ANON_KEY="$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
                    -e GOOGLE_CLIENT_ID="$${GOOGLE_CLIENT_ID}" \
