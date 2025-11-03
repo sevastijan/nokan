@@ -6,19 +6,19 @@ steps:
       branch: main
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    secrets:
-      - source: NEXT_PUBLIC_SUPABASE_URL
-        target: NEXT_PUBLIC_SUPABASE_URL
-      - source: NEXT_PUBLIC_SUPABASE_ANON_KEY
-        target: NEXT_PUBLIC_SUPABASE_ANON_KEY
-      - source: GOOGLE_CLIENT_ID
-        target: GOOGLE_CLIENT_ID
-      - source: GOOGLE_CLIENT_SECRET
-        target: GOOGLE_CLIENT_SECRET
-      - source: NEXTAUTH_URL
-        target: NEXTAUTH_URL
-      - source: NEXTAUTH_SECRET
-        target: NEXTAUTH_SECRET
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL:
+        from_secret: NEXT_PUBLIC_SUPABASE_URL
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        from_secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
+      GOOGLE_CLIENT_ID:
+        from_secret: GOOGLE_CLIENT_ID
+      GOOGLE_CLIENT_SECRET:
+        from_secret: GOOGLE_CLIENT_SECRET
+      NEXTAUTH_URL:
+        from_secret: NEXTAUTH_URL
+      NEXTAUTH_SECRET:
+        from_secret: NEXTAUTH_SECRET
     commands:
       - echo "🐳 Checking Docker daemon..."
       - docker version
@@ -29,7 +29,7 @@ steps:
       - echo "NEXTAUTH_URL -> ${NEXTAUTH_URL}"
       - echo "📝 Rendering .env for build stage..."
       - |
-        cat <<'EOF' > .env
+        cat <<EOF > .env
         NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
