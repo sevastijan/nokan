@@ -1,300 +1,307 @@
-import { ChangeEvent } from "react";
+import { ChangeEvent } from 'react';
 
 // === Core Types ===
 
-export type SingleTaskMode = "edit" | "add";
+export type SingleTaskMode = 'edit' | 'add';
 
 // === Core Types ===
 
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  image?: string;
-  role?: "OWNER" | "PROJECT_MANAGER" | "MEMBER";
-  created_at?: string;
+     id: string;
+     name: string;
+     email: string;
+     image?: string;
+     role?: 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER';
+     created_at?: string;
 }
 
 export interface Priority {
-  id: string;
-  label: string;
-  color: string;
+     id: string;
+     label: string;
+     color: string;
 }
 
 export interface PrioritySelectorProps {
-  selectedPriority: string | null;
-  onChange: (newPriorityId: string | null) => void;
-  onDropdownToggle?: (isOpen: boolean) => void;
-  priorities?: Priority[];
+     selectedPriority: string | null;
+     onChange: (newPriorityId: string | null) => void;
+     onDropdownToggle?: (isOpen: boolean) => void;
+     priorities?: Priority[];
 }
 
 export interface ApiTask {
-  id: string;
-  title: string;
-  description?: string | null;
-  column_id: string;
-  board_id: string;
-  start_date?: string | null;
-  end_date?: string | null;
-  due_date?: string | null;
-  completed: boolean;
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-    image?: string | null;
-  } | null;
-  priority?: {
-    id: string;
-    label: string;
-    color: string;
-  } | null;
-  user_id?: string | null;
-  status?: string | null;
-  images?: string[] | null;
+     id: string;
+     title: string;
+     description?: string | null;
+     column_id: string;
+     board_id: string;
+     start_date?: string | null;
+     end_date?: string | null;
+     due_date?: string | null;
+     completed: boolean;
+     assignee?: {
+          id: string;
+          name: string;
+          email: string;
+          image?: string | null;
+     } | null;
+     priority?: {
+          id: string;
+          label: string;
+          color: string;
+     } | null;
+     user_id?: string | null;
+     status?: string | null;
+     images?: string[] | null;
 }
 
 export interface Attachment {
-  id: string;
-  task_id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  mime_type: string;
-  uploaded_by: string;
-  created_at: string;
+     id: string;
+     task_id: string;
+     file_name: string;
+     file_path: string;
+     file_size: number;
+     mime_type: string;
+     uploaded_by: string;
+     created_at: string;
 }
 
 export interface Comment {
-  id: string;
-  task_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  updated_at?: string;
-  author: {
-    id: string;
-    name: string;
-    email: string;
-    image?: string;
-  };
+     id: string;
+     task_id: string;
+     user_id: string;
+     content: string;
+     created_at: string;
+     updated_at?: string;
+     author: {
+          id: string;
+          name: string;
+          email: string;
+          image?: string;
+     };
 }
 
 export interface Task {
-  sort_order: number;
-  id: string;
-  title: string;
-  description: string;
-  column_id: string;
-  board_id: string;
-  priority: string;
-  user_id?: string;
-  order: number;
-  completed: boolean;
-  created_at?: string;
-  taskIndex?: number;
-  updated_at?: string;
-  images?: any[];
-  assignee?: User | null;
-  start_date?: string;
-  end_date?: string;
-  due_date?: string;
-  status?: string;
+     sort_order: number;
+     id: string;
+     title: string;
+     description: string;
+     column_id: string;
+     board_id: string;
+     priority: string;
+     user_id?: string;
+     order: number;
+     completed: boolean;
+     created_at?: string;
+     taskIndex?: number;
+     updated_at?: string;
+     images?: unknown[];
+     assignee?: User | null;
+     start_date?: string;
+     end_date?: string;
+     due_date?: string;
+     status?: string;
 }
 
 export interface TaskDetail {
-  id?: string;
-  title: string | null;
-  description?: string | null;
-  column_id: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  priority?: string | null;
-  images?: string[] | null;
-  priority_info?: Priority | null;
-  user_id?: string | null;
-  assignee?: User | null;
-  attachments?: Attachment[];
-  comments?: Comment[];
-  order?: number;
-  start_date?: string | null;
-  end_date?: string | null;
-  due_date?: string | null;
-  status?: string | null;
-  board_id?: string | null;
-  imagePreview?: string | null;
-  hasUnsavedChanges?: boolean;
-  completed?: boolean;
+     id?: string;
+     title: string | null;
+     description?: string | null;
+     column_id: string | null;
+     created_at?: string | null;
+     updated_at?: string | null;
+     priority?: string | null;
+     images?: string[] | null;
+     priority_info?: Priority | null;
+     user_id?: string | null;
+     assignee?: User | null;
+     attachments?: Attachment[];
+     comments?: Comment[];
+     order?: number;
+     start_date?: string | null;
+     end_date?: string | null;
+     due_date?: string | null;
+     status?: string | null;
+     board_id?: string | null;
+     imagePreview?: string | null;
+     hasUnsavedChanges?: boolean;
+     completed?: boolean;
 }
 
 export interface Column {
-  id: string;
-  boardId: string;
-  title: string;
-  order: number;
-  tasks: Task[];
+     id: string;
+     boardId: string;
+     title: string;
+     order: number;
+     tasks: Task[];
 }
 
 export interface Board {
-  id: string;
-  title: string;
-  user_id: string;
-  ownerName?: string;
-  ownerEmail?: string;
-  columns: Column[];
-  created_at?: string;
-  updated_at?: string;
-  _count?: {
-    tasks: number;
-    teamMembers: number;
-    completedTasks?: number;
-  };
+     id: string;
+     title: string;
+     user_id: string;
+     ownerName?: string;
+     ownerEmail?: string;
+     columns: Column[];
+     created_at?: string;
+     updated_at?: string;
+     _count?: {
+          tasks: number;
+          teamMembers: number;
+          completedTasks?: number;
+     };
+}
+export interface BoardWithCounts extends Board {
+     _count: {
+          tasks: number;
+          teamMembers: number;
+          completedTasks?: number;
+     };
 }
 
 export interface BoardHeaderProps {
-  boardTitle: string;
-  onTitleChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onTitleBlur: () => void;
-  onAddColumn: () => void;
-  viewMode: "columns" | "list";
-  onViewModeChange: (mode: "columns" | "list") => void;
-  totalTasks: number;
-  searchTerm: string;
-  onSearchChange: (term: string) => void;
-  priorities: PriorityOption[];
-  filterPriority: string | null;
-  onFilterPriorityChange: (prio: string | null) => void;
-  assignees: AssigneeOption[];
-  filterAssignee: string | null;
-  onFilterAssigneeChange: (assigneeId: string | null) => void;
+     boardTitle: string;
+     onTitleChange: (e: ChangeEvent<HTMLInputElement>) => void;
+     onTitleBlur: () => void;
+     onAddColumn: () => void;
+     viewMode: 'columns' | 'list';
+     onViewModeChange: (mode: 'columns' | 'list') => void;
+     totalTasks: number;
+     searchTerm: string;
+     onSearchChange: (term: string) => void;
+     priorities: PriorityOption[];
+     filterPriority: string | null;
+     onFilterPriorityChange: (prio: string | null) => void;
+     assignees: AssigneeOption[];
+     filterAssignee: string | null;
+     onFilterAssigneeChange: (assigneeId: string | null) => void;
 }
 
 export interface AssigneeOption {
-  id: string;
-  name: string;
+     id: string;
+     name: string;
 }
 
 export interface PriorityOption {
-  id: string;
-  label: string;
-  color: string;
+     id: string;
+     label: string;
+     color: string;
 }
 
 export interface TeamMember {
-  id: string;
-  team_id: string;
-  user_id: string;
-  created_at?: string;
-  user: User;
+     id: string;
+     team_id: string;
+     user_id: string;
+     created_at?: string;
+     user: User;
 }
 
 export interface Team {
-  id: string;
-  name: string;
-  board_id?: string | null;
-  owner_id?: string;
-  users: TeamMember[];
-  created_at?: string;
+     id: string;
+     name: string;
+     board_id?: string | null;
+     owner_id?: string;
+     users: TeamMember[];
+     created_at?: string;
 }
 
 // Option for CustomSelect
 export interface CustomSelectOption {
-  value: string;
-  label: string;
-  image?: string;
+     value: string;
+     label: string;
+     image?: string;
 }
 export interface CustomSelectProps {
-  options: CustomSelectOption[];
-  value: string[];
-  onChange: (val: string[]) => void;
-  isMulti?: boolean;
-  placeholder?: string;
-  label?: string;
-  disabled?: boolean;
+     options: CustomSelectOption[];
+     value: string[];
+     onChange: (val: string[]) => void;
+     isMulti?: boolean;
+     placeholder?: string;
+     label?: string;
+     disabled?: boolean;
 }
 
 // === Props Interfaces ===
 
 // Team Management:
 export interface TeamFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: () => Promise<void>;
-  isCreatingTeam: boolean;
-  editingTeamId: string | null;
+     isOpen: boolean;
+     onClose: () => void;
+     onSubmit: () => Promise<void>;
+     isCreatingTeam: boolean;
+     editingTeamId: string | null;
 
-  newTeamName: string;
-  setNewTeamName: (val: string) => void;
-  newTeamMembers: string[];
-  setNewTeamMembers: (val: string[]) => void;
+     newTeamName: string;
+     setNewTeamName: (val: string) => void;
+     newTeamMembers: string[];
+     setNewTeamMembers: (val: string[]) => void;
 
-  editedTeamName: string;
-  setEditedTeamName: (val: string) => void;
-  editedTeamMembers: string[];
-  setEditedTeamMembers: (val: string[]) => void;
+     editedTeamName: string;
+     setEditedTeamName: (val: string) => void;
+     editedTeamMembers: string[];
+     setEditedTeamMembers: (val: string[]) => void;
 
-  availableUsers: User[];
-  boards: Board[];
+     availableUsers: User[];
+     boards: Board[];
 
-  selectedBoardIds: string[];
-  setSelectedBoardIds: (ids: string[]) => void;
+     selectedBoardIds: string[];
+     setSelectedBoardIds: (ids: string[]) => void;
 }
 
 export interface TeamListProps {
-  teams: Team[];
-  onEditTeam: (team: Team) => void;
-  onDeleteTeam: (teamId: string) => void;
-  availableUsers: User[];
+     teams: Team[];
+     onEditTeam: (team: Team) => void;
+     onDeleteTeam: (teamId: string) => void;
+     availableUsers: User[];
 }
 
 export interface TeamListItemProps {
-  team: Team;
-  onEditTeam: (team: Team) => void;
-  onDeleteTeam: (teamId: string) => void;
-  availableUsers: User[];
+     team: Team;
+     onEditTeam: (team: Team) => void;
+     onDeleteTeam: (teamId: string) => void;
+     availableUsers: User[];
 }
 
 // Board List:
 export interface BoardListItemType {
-  id: string;
-  title: string;
-  owner: string;
-  _count?: {
-    tasks: number;
-    teamMembers: number;
-  };
+     id: string;
+     title: string;
+     owner: string;
+     _count?: {
+          tasks: number;
+          teamMembers: number;
+     };
 }
 export interface BoardListProps {
-  boards: BoardListItemType[];
-  onEdit: (boardId: string) => void;
-  onDelete: (boardId: string) => void;
+     boards: BoardListItemType[];
+     onEdit: (boardId: string) => void;
+     onDelete: (boardId: string) => void;
 }
 
 interface TemplateTask {
-  id: string;
-  title: string;
-  description?: string;
+     id: string;
+     title: string;
+     description?: string;
 }
 
 export interface TemplateColumn {
-  id: string;
-  title: string;
-  order: number;
-  tasks: TemplateTask[]; // Each column has its own starter tasks
+     id: string;
+     title: string;
+     order: number;
+     tasks: TemplateTask[]; // Each column has its own starter tasks
 }
 
 export interface BoardTemplate {
-  id: string;
-  name: string;
-  description: string | null;
-  is_custom: boolean;
-  template_columns: Array<{
-    id: string;
-    template_id: string;
-    title: string;
-    order: number;
-    created_at?: string;
-  }>;
+     id: string;
+     name: string;
+     description: string | null;
+     is_custom: boolean;
+     template_columns: Array<{
+          id: string;
+          template_id: string;
+          title: string;
+          order: number;
+          created_at?: string;
+     }>;
 }
 
 /**
@@ -302,245 +309,234 @@ export interface BoardTemplate {
  * selectedTemplate can be null or undefined if nothing selected.
  */
 export interface TemplateSelectorProps {
-  selectedTemplate?: BoardTemplate | null;
-  onTemplateSelect: (tpl: BoardTemplate | null) => void;
-  onCreateTemplate: () => void;
-  disabled?: boolean;
-  refreshTrigger?: number;
+     selectedTemplate?: BoardTemplate | null;
+     onTemplateSelect: (tpl: BoardTemplate | null) => void;
+     onCreateTemplate: () => void;
+     disabled?: boolean;
+     refreshTrigger?: number;
 }
 
 export interface CreateTemplateModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  /**
-   * Called after a new template is created.
-   * Receives the created BoardTemplate.
-   */
-  onTemplateCreated: (newTpl: BoardTemplate) => void;
+     isOpen: boolean;
+     onClose: () => void;
+     /**
+      * Called after a new template is created.
+      * Receives the created BoardTemplate.
+      */
+     onTemplateCreated: (newTpl: BoardTemplate) => void;
 }
 
 // === Task-related component props ===
 
 export interface TaskContentProps {
-  task: TaskDetail | null;
-  currentUser: User;
-  availableUsers: User[];
-  priorities: Priority[];
-  onUpdateTask: (updates: Partial<TaskDetail>) => void;
-  taskId: string;
-  setHasUnsavedChanges: (value: boolean) => void;
-  isNewTask?: boolean;
-  onTaskUpdate?: () => Promise<void>;
-  onAttachmentsUpdate?: (
-    updater: (attachments: Attachment[]) => Attachment[]
-  ) => void;
-  teamMembers: TeamMember[];
-  onAssigneeChange?: (assigneeId: string | null) => void;
-  selectedAssigneeId?: string | null;
+     task: TaskDetail | null;
+     currentUser: User;
+     availableUsers: User[];
+     priorities: Priority[];
+     onUpdateTask: (updates: Partial<TaskDetail>) => void;
+     taskId: string;
+     setHasUnsavedChanges: (value: boolean) => void;
+     isNewTask?: boolean;
+     onTaskUpdate?: () => Promise<void>;
+     onAttachmentsUpdate?: (updater: (attachments: Attachment[]) => Attachment[]) => void;
+     teamMembers: TeamMember[];
+     onAssigneeChange?: (assigneeId: string | null) => void;
+     selectedAssigneeId?: string | null;
 }
 
 export interface TaskHeaderProps {
-  task: TaskDetail | null;
-  onClose: () => void;
-  onUpdateTask: (updates: Partial<TaskDetail>) => void;
-  hasUnsavedChanges?: boolean;
-  onUnsavedChangesAlert?: () => void;
+     task: TaskDetail | null;
+     onClose: () => void;
+     onUpdateTask: (updates: Partial<TaskDetail>) => void;
+     hasUnsavedChanges?: boolean;
+     onUnsavedChangesAlert?: () => void;
 }
 
 export interface TaskFooterProps {
-  task?: TaskDetail;
-  currentUser: User;
-  isNewTask?: boolean;
-  hasUnsavedChanges?: boolean;
-  isSaving?: boolean;
-  onSave?: () => void;
-  onClose?: () => void;
-  onDelete?: () => void;
+     task?: TaskDetail;
+     currentUser: User;
+     isNewTask?: boolean;
+     hasUnsavedChanges?: boolean;
+     isSaving?: boolean;
+     onSave?: () => void;
+     onClose?: () => void;
+     onDelete?: () => void;
 }
 
 export interface SingleTaskViewProps {
-  taskId?: string;
-  mode: SingleTaskMode;
-  columnId?: string;
-  boardId?: string;
-  onClose: () => void;
-  onTaskUpdate?: (task: TaskDetail) => void;
-  onTaskAdd?: () => void;
-  onTaskAdded?: (task: TaskDetail) => void;
-  currentUser?: User;
-  initialStartDate?: string;
-  columns: Column[]; // jeśli potrzebujesz listę kolumn
+     taskId?: string;
+     mode: SingleTaskMode;
+     columnId?: string;
+     boardId?: string;
+     onClose: () => void;
+     onTaskUpdate?: (task: TaskDetail) => void;
+     onTaskAdd?: () => void;
+     onTaskAdded?: (task: TaskDetail) => void;
+     currentUser?: User;
+     initialStartDate?: string;
+     columns: Column[]; // jeśli potrzebujesz listę kolumn
 }
 
 export interface AttachmentsListProps {
-  attachments: Attachment[];
-  currentUser: User;
-  taskId: string;
-  onTaskUpdate?: () => Promise<void>;
-  onAttachmentsUpdate?: (
-    updater: (attachments: Attachment[]) => Attachment[]
-  ) => void;
+     attachments: Attachment[];
+     currentUser: User;
+     taskId: string;
+     onTaskUpdate?: () => Promise<void>;
+     onAttachmentsUpdate?: (updater: (attachments: Attachment[]) => Attachment[]) => void;
 }
 
 // Inne propsy, które wymieniałeś:
 export interface UserSelectorProps {
-  selectedUser: User | null;
-  availableUsers: User[];
-  onUserSelect: (userId: string | null) => void;
-  label?: string;
+     selectedUser: User | null;
+     availableUsers: User[];
+     onUserSelect: (userId: string | null) => void;
+     label?: string;
 }
 
 export interface CommentListProps {
-  comments: Comment[];
-  currentUser: User;
-  task: TaskDetail;
-  onDeleteComment: (commentId: string) => Promise<void>;
-  onImagePreview: (url: string) => void;
+     comments: Comment[];
+     currentUser: User;
+     task: TaskDetail;
+     onDeleteComment: (commentId: string) => Promise<void>;
+     onImagePreview: (url: string) => void;
 }
 
 export interface CommentsSectionProps {
-  taskId: string;
-  comments: Comment[];
-  currentUser: User;
-  task: TaskDetail | null;
-  onRefreshComments: () => Promise<void>;
-  onImagePreview: (url: string) => void;
+     taskId: string;
+     comments: Comment[];
+     currentUser: User;
+     task: TaskDetail | null;
+     onRefreshComments: () => Promise<void>;
+     onImagePreview: (url: string) => void;
 }
 
 export interface CommentFormProps {
-  currentUser: User;
-  taskId: string;
-  onAddComment: (content: string) => Promise<void>;
-  onRefreshTask?: () => Promise<void>;
+     currentUser: User;
+     taskId: string;
+     onAddComment: (content: string) => Promise<void>;
+     onRefreshTask?: () => Promise<void>;
 }
 
 export interface ImagePreviewModalProps {
-  imageUrl: string | null;
-  onClose: () => void;
+     imageUrl: string | null;
+     onClose: () => void;
 }
 
 export interface CalendarEvent {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  priority: string;
-  assignee: User | null;
-  description: string;
-  backgroundColor: string;
-  borderColor: string;
-  extendedProps: {
-    priority: string;
-    assignee: User | null;
-    description: string;
-  };
+     id: string;
+     title: string;
+     start: string;
+     end: string;
+     priority: string;
+     assignee: User | null;
+     description: string;
+     backgroundColor: string;
+     borderColor: string;
+     extendedProps: {
+          priority: string;
+          assignee: User | null;
+          description: string;
+     };
 }
 
 export interface CalendarProps {
-  events: CalendarEvent[];
-  viewMode?: "month" | "week" | "day";
-  onTaskClick?: (taskId: string) => void;
+     events: CalendarEvent[];
+     viewMode?: 'month' | 'week' | 'day';
+     onTaskClick?: (taskId: string) => void;
 }
 
 export interface ConfirmDialogProps {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  type?: "warning" | "danger" | "info";
+     isOpen: boolean;
+     title: string;
+     message: string;
+     confirmText?: string;
+     cancelText?: string;
+     onConfirm: () => void;
+     onCancel: () => void;
+     type?: 'warning' | 'danger' | 'info';
 }
 
 export interface ActionFooterProps {
-  isNewTask: boolean;
-  hasUnsavedChanges: boolean;
-  isSaving: boolean;
-  onSave: () => void;
-  onClose: () => void;
-  onDelete?: () => void;
-  task?: TaskDetail;
-  tempTitle?: string;
+     isNewTask: boolean;
+     hasUnsavedChanges: boolean;
+     isSaving: boolean;
+     onSave: () => void;
+     onClose: () => void;
+     onDelete?: () => void;
+     task?: TaskDetail;
+     tempTitle?: string;
 }
 
 // Przykładowe domyślne szablony:
-export const DEFAULT_TEMPLATES: Omit<
-  BoardTemplate,
-  "id" | "created_at" | "updated_at"
->[] = [
-  {
-    name: "Basic Kanban",
-    description: "Prosty układ trzech kolumn",
-    is_custom: false,
-    template_columns: [
-      { id: "temp-1", template_id: "", title: "To Do", order: 0 },
-      { id: "temp-2", template_id: "", title: "In Progress", order: 1 },
-      { id: "temp-3", template_id: "", title: "Done", order: 2 },
-    ],
-  },
-  {
-    name: "Development Workflow",
-    description: "Szablon dla zespołów deweloperskich",
-    is_custom: false,
-    template_columns: [
-      { id: "temp-4", template_id: "", title: "Backlog", order: 0 },
-      { id: "temp-5", template_id: "", title: "In Development", order: 1 },
-      { id: "temp-6", template_id: "", title: "Code Review", order: 2 },
-      { id: "temp-7", template_id: "", title: "Testing", order: 3 },
-      { id: "temp-8", template_id: "", title: "Done", order: 4 },
-    ],
-  },
-  {
-    name: "Marketing Campaign",
-    description: "Szablon dla kampanii marketingowych",
-    is_custom: false,
-    template_columns: [
-      { id: "temp-9", template_id: "", title: "Ideas", order: 0 },
-      { id: "temp-10", template_id: "", title: "Planning", order: 1 },
-      { id: "temp-11", template_id: "", title: "In Progress", order: 2 },
-      { id: "temp-12", template_id: "", title: "Review", order: 3 },
-      { id: "temp-13", template_id: "", title: "Published", order: 4 },
-    ],
-  },
+export const DEFAULT_TEMPLATES: Omit<BoardTemplate, 'id' | 'created_at' | 'updated_at'>[] = [
+     {
+          name: 'Basic Kanban',
+          description: 'Prosty układ trzech kolumn',
+          is_custom: false,
+          template_columns: [
+               { id: 'temp-1', template_id: '', title: 'To Do', order: 0 },
+               { id: 'temp-2', template_id: '', title: 'In Progress', order: 1 },
+               { id: 'temp-3', template_id: '', title: 'Done', order: 2 },
+          ],
+     },
+     {
+          name: 'Development Workflow',
+          description: 'Szablon dla zespołów deweloperskich',
+          is_custom: false,
+          template_columns: [
+               { id: 'temp-4', template_id: '', title: 'Backlog', order: 0 },
+               { id: 'temp-5', template_id: '', title: 'In Development', order: 1 },
+               { id: 'temp-6', template_id: '', title: 'Code Review', order: 2 },
+               { id: 'temp-7', template_id: '', title: 'Testing', order: 3 },
+               { id: 'temp-8', template_id: '', title: 'Done', order: 4 },
+          ],
+     },
+     {
+          name: 'Marketing Campaign',
+          description: 'Szablon dla kampanii marketingowych',
+          is_custom: false,
+          template_columns: [
+               { id: 'temp-9', template_id: '', title: 'Ideas', order: 0 },
+               { id: 'temp-10', template_id: '', title: 'Planning', order: 1 },
+               { id: 'temp-11', template_id: '', title: 'In Progress', order: 2 },
+               { id: 'temp-12', template_id: '', title: 'Review', order: 3 },
+               { id: 'temp-13', template_id: '', title: 'Published', order: 4 },
+          ],
+     },
 ];
 
 export interface UseTaskManagementProps {
-  taskId?: string;
-  mode: "add" | "edit";
-  columnId?: string;
-  boardId: string;
-  currentUser?: User;
-  onTaskUpdate?: (task: TaskDetail) => void;
-  onTaskAdded?: (task: TaskDetail) => void;
-  onClose: () => void;
+     taskId?: string;
+     mode: 'add' | 'edit';
+     columnId?: string;
+     boardId: string;
+     currentUser?: User;
+     onTaskUpdate?: (task: TaskDetail) => void;
+     onTaskAdded?: (task: TaskDetail) => void;
+     onClose: () => void;
 }
 
 export interface UseTaskManagementReturn {
-  task: TaskDetail | null;
-  loading: boolean;
-  saving: boolean;
-  error: string | null;
-  hasUnsavedChanges: boolean;
-  isNewTask: boolean;
-  teamMembers: TeamMember[];
-  updateTask: (updates: Partial<TaskDetail>) => void;
-  updateTitle: (title: string) => void;
-  updateDescription: (desc: string) => void;
-  updatePriority: (priority: string | null) => Promise<void>;
-  updateAssignee: (id: string | null, data?: User | null) => Promise<void>;
-  updateDates: (dates: {
-    start_date?: string | null;
-    end_date?: string | null;
-    due_date?: string | null;
-  }) => Promise<void>;
-  updateImages: (images: string[] | null) => Promise<void>;
-  saveNewTask: () => Promise<boolean>;
-  saveExistingTask: () => Promise<boolean>;
-  deleteTask: () => Promise<boolean>;
-  markAsChanged: () => void;
-  markAsSaved: () => void;
-  fetchTaskData: () => Promise<void>;
-  setTask: React.Dispatch<React.SetStateAction<TaskDetail | null>>;
-  uploadAttachment: (file: File) => Promise<Attachment | null>;
+     task: TaskDetail | null;
+     loading: boolean;
+     saving: boolean;
+     error: string | null;
+     hasUnsavedChanges: boolean;
+     isNewTask: boolean;
+     teamMembers: TeamMember[];
+     updateTask: (updates: Partial<TaskDetail>) => void;
+     updateTitle: (title: string) => void;
+     updateDescription: (desc: string) => void;
+     updatePriority: (priority: string | null) => Promise<void>;
+     updateAssignee: (id: string | null, data?: User | null) => Promise<void>;
+     updateDates: (dates: { start_date?: string | null; end_date?: string | null; due_date?: string | null }) => Promise<void>;
+     updateImages: (images: string[] | null) => Promise<void>;
+     saveNewTask: () => Promise<boolean>;
+     saveExistingTask: () => Promise<boolean>;
+     deleteTask: () => Promise<boolean>;
+     markAsChanged: () => void;
+     markAsSaved: () => void;
+     fetchTaskData: () => Promise<void>;
+     setTask: React.Dispatch<React.SetStateAction<TaskDetail | null>>;
+     uploadAttachment: (file: File) => Promise<Attachment | null>;
 }
