@@ -26,28 +26,30 @@ steps:
                - echo "NEXTAUTH_URL: $NEXTAUTH_URL"
 
                - echo "🚀 Building nokan-taskboard image with secrets..."
-               - docker build \
-                 --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
-                 --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
-                 --build-arg GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
-                 --build-arg GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET \
-                 --build-arg NEXTAUTH_URL=$NEXTAUTH_URL \
-                 --build-arg NEXTAUTH_SECRET=$NEXTAUTH_SECRET \
-                 -t nokan-taskboard:latest .
+               - >
+                    docker build
+                    --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+                    --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+                    --build-arg GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+                    --build-arg GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+                    --build-arg NEXTAUTH_URL=$NEXTAUTH_URL
+                    --build-arg NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+                    -t nokan-taskboard:latest .
 
                - echo "🧹 Removing old container..."
                - docker rm -f nokan-taskboard || true
 
                - echo "▶️ Starting new nokan-taskboard container..."
-               - docker run -d \
-                 --name nokan-taskboard \
-                 -p 3000:3000 \
-                 -e NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
-                 -e NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
-                 -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
-                 -e GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET \
-                 -e NEXTAUTH_URL=$NEXTAUTH_URL \
-                 -e NEXTAUTH_SECRET=$NEXTAUTH_SECRET \
-                 nokan-taskboard:latest
+               - >
+                    docker run -d
+                    --name nokan-taskboard
+                    -p 3000:3000
+                    -e NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+                    -e NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+                    -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+                    -e GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+                    -e NEXTAUTH_URL=$NEXTAUTH_URL
+                    -e NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+                    nokan-taskboard:latest
 
                - echo "✅ Deploy completed successfully!"
