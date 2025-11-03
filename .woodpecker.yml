@@ -8,7 +8,6 @@ steps:
           volumes:
                - /var/run/docker.sock:/var/run/docker.sock
           environment:
-               # --- Secrets z UI Woodpeckera ---
                - NEXT_PUBLIC_SUPABASE_URL
                - NEXT_PUBLIC_SUPABASE_ANON_KEY
                - GOOGLE_CLIENT_ID
@@ -19,37 +18,35 @@ steps:
                - echo "🐳 Checking Docker daemon..."
                - docker version
 
-               - echo "🔍 Checking injected envs (partial output for safety)..."
-               - echo "NEXT_PUBLIC_SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL"
-               - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix: $(echo $NEXT_PUBLIC_SUPABASE_ANON_KEY | cut -c1-6)"
-               - echo "GOOGLE_CLIENT_ID prefix: $(echo $GOOGLE_CLIENT_ID | cut -c1-6)"
-               - echo "NEXTAUTH_URL: $NEXTAUTH_URL"
+               # 🔍 Environment test (safe partial output)
+               - echo "🔍 Checking injected envs..."
+               - echo "NEXT_PUBLIC_SUPABASE_URL -> $NEXT_PUBLIC_SUPABASE_URL"
+               - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix -> $(echo $NEXT_PUBLIC_SUPABASE_ANON_KEY | cut -c1-6)"
+               - echo "GOOGLE_CLIENT_ID prefix -> $(echo $GOOGLE_CLIENT_ID | cut -c1-6)"
+               - echo "NEXTAUTH_URL -> $NEXTAUTH_URL"
 
-               - echo "🚀 Building nokan-taskboard image with secrets..."
-               - >
-                    docker build
-                    --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-                    --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-                    --build-arg GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
-                    --build-arg GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
-                    --build-arg NEXTAUTH_URL=$NEXTAUTH_URL
-                    --build-arg NEXTAUTH_SECRET=$NEXTAUTH_SECRET
-                    -t nokan-taskboard:latest .
+               # 🚀 Build image
+               - echo "🚀 Building nokan-taskboard Docker image..."
+               - docker build -t nokan-taskboard:latest \
+                 --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+                 --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+                 --build-arg GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
+                 --build-arg GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET \
+                 --build-arg NEXTAUTH_URL=$NEXTAUTH_URL \
+                 --build-arg NEXTAUTH_SECRET=$NEXTAUTH_SECRET .
 
-               - echo "🧹 Removing old container..."
+               # 🧹 Cleanup + redeploy
+               - echo "🧹 Removing old container if exists..."
                - docker rm -f nokan-taskboard || true
 
-               - echo "▶️ Starting new nokan-taskboard container..."
-               - >
-                    docker run -d
-                    --name nokan-taskboard
-                    -p 3000:3000
-                    -e NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-                    -e NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-                    -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
-                    -e GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
-                    -e NEXTAUTH_URL=$NEXTAUTH_URL
-                    -e NEXTAUTH_SECRET=$NEXTAUTH_SECRET
-                    nokan-taskboard:latest
+               - echo "▶️ Running new nokan-taskboard container..."
+               - docker run -d --name nokan-taskboard -p 3000:3000 \
+                 -e NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+                 -e NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+                 -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
+                 -e GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET \
+                 -e NEXTAUTH_URL=$NEXTAUTH_URL \
+                 -e NEXTAUTH_SECRET=$NEXTAUTH_SECRET \
+                 nokan-taskboard:latest
 
                - echo "✅ Deploy completed successfully!"
