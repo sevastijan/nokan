@@ -1,8 +1,12 @@
-pipeline:
-     build_image:
+steps:
+     build_and_run:
           image: docker:26
           volumes:
                - /var/run/docker.sock:/var/run/docker.sock
           commands:
-               - docker build -t my-app:latest .
-               - docker images
+               - echo "🚀 Building local Docker image..."
+               - docker build -t my-local-app:latest .
+               - echo "🧹 Stopping old container if exists..."
+               - docker rm -f my-local-app || true
+               - echo "▶️ Running new container..."
+               - docker run -d --name my-local-app -p 3000:3000 my-local-app:latest
