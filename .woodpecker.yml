@@ -14,4 +14,4 @@ steps:
                - docker rm -f nokan-taskboard || true
                - echo "▶️ Starting new nokan-taskboard container..."
                - docker run -d --name nokan-taskboard -p 3000:3000 nokan-taskboard:latest
-               - echo "✅ nokan-taskboard deployed successfully!"
+               - echo "nokan-taskboard deployed successfully!"
