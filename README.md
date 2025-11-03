@@ -20,6 +20,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Docker
+
+Build the production image:
+
+```bash
+docker build -t nokan-taskboard .
+```
+
+The build stage reads the `.env` file (if present in the project root), so ensure it contains valid Supabase and auth credentials before you build.
+
+Run the container (update the `.env` path if needed to forward the same values at runtime):
+
+```bash
+docker run --env-file .env -p 3000:3000 nokan-taskboard
+```
+
+The app listens on port `3000` by default.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
