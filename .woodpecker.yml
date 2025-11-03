@@ -1,8 +1,8 @@
 steps:
-     build:
-          image: docker:26
-          volumes:
-               - /var/run/docker.sock:/var/run/docker.sock
+     deploy:
+          image: node:20-slim
           commands:
-               - docker version
-               - echo "✅ Docker socket works"
+               - docker ps
+               - docker build -t my-next-app:latest .
+               - docker rm -f my-next-app || true
+               - docker run -d --name my-next-app -p 3000:3000 my-next-app:latest
