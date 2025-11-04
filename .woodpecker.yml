@@ -26,8 +26,8 @@ steps:
                  from_secret: NEXTAUTH_SECRET
 
        commands:
-            - docker build -t nokan-taskboard:latest .
             - echo sbk $${NEXT_PUBLIC_SUPABASE_URL}
+            - docker build -t nokan-taskboard:latest .
             - docker rm -f nokan-taskboard || true
             - >
                  docker run -d --name nokan-taskboard \
