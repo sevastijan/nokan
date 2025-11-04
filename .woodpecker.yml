@@ -19,6 +19,18 @@ steps:
         from_secret: NEXTAUTH_URL
       NEXTAUTH_SECRET:
         from_secret: NEXTAUTH_SECRET
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED:
+        from_secret: GOTRUE_EXTERNAL_GOOGLE_ENABLED
+      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID:
+        from_secret: GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID
+      GOTRUE_EXTERNAL_GOOGLE_SECRET:
+        from_secret: GOTRUE_EXTERNAL_GOOGLE_SECRET
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI:
+        from_secret: GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI
+      SITE_URL:
+        from_secret: SITE_URL
+      API_EXTERNAL_URL:
+        from_secret: API_EXTERNAL_URL
     commands:
       - echo "🐳 Checking Docker daemon..."
       - docker version
@@ -27,6 +39,7 @@ steps:
       - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix -> $(echo "$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" | cut -c1-6)"
       - echo "GOOGLE_CLIENT_ID prefix -> $(echo "$${GOOGLE_CLIENT_ID}" | cut -c1-6)"
       - echo "NEXTAUTH_URL -> $${NEXTAUTH_URL}"
+      - echo "GOTRUE_EXTERNAL_GOOGLE_ENABLED -> $${GOTRUE_EXTERNAL_GOOGLE_ENABLED}"
       - echo "📝 Rendering .env for build stage..."
       - |
           printf '%s\n' \
@@ -36,6 +49,12 @@ steps:
             "GOOGLE_CLIENT_SECRET=$${GOOGLE_CLIENT_SECRET}" \
             "NEXTAUTH_URL=$${NEXTAUTH_URL}" \
             "NEXTAUTH_SECRET=$${NEXTAUTH_SECRET}" \
+            "GOTRUE_EXTERNAL_GOOGLE_ENABLED=$${GOTRUE_EXTERNAL_GOOGLE_ENABLED}" \
+            "GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID=$${GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID}" \
+            "GOTRUE_EXTERNAL_GOOGLE_SECRET=$${GOTRUE_EXTERNAL_GOOGLE_SECRET}" \
+            "GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI=$${GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI}" \
+            "SITE_URL=$${SITE_URL}" \
+            "API_EXTERNAL_URL=$${API_EXTERNAL_URL}" \
             > .env
       - echo "🚀 Building nokan-taskboard image..."
       - docker build -t nokan-taskboard:latest .
@@ -63,6 +82,18 @@ steps:
         from_secret: NEXTAUTH_URL
       NEXTAUTH_SECRET:
         from_secret: NEXTAUTH_SECRET
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED:
+        from_secret: GOTRUE_EXTERNAL_GOOGLE_ENABLED
+      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID:
+        from_secret: GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID
+      GOTRUE_EXTERNAL_GOOGLE_SECRET:
+        from_secret: GOTRUE_EXTERNAL_GOOGLE_SECRET
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI:
+        from_secret: GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI
+      SITE_URL:
+        from_secret: SITE_URL
+      API_EXTERNAL_URL:
+        from_secret: API_EXTERNAL_URL
     commands:
       - echo "🧹 Removing old container if exists..."
       - docker rm -f nokan-taskboard || true
@@ -81,6 +112,12 @@ steps:
             -e GOOGLE_CLIENT_SECRET="$${GOOGLE_CLIENT_SECRET}" \
             -e NEXTAUTH_URL="$${NEXTAUTH_URL}" \
             -e NEXTAUTH_SECRET="$${NEXTAUTH_SECRET}" \
+            -e GOTRUE_EXTERNAL_GOOGLE_ENABLED="$${GOTRUE_EXTERNAL_GOOGLE_ENABLED}" \
+            -e GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID="$${GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID}" \
+            -e GOTRUE_EXTERNAL_GOOGLE_SECRET="$${GOTRUE_EXTERNAL_GOOGLE_SECRET}" \
+            -e GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI="$${GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI}" \
+            -e SITE_URL="$${SITE_URL}" \
+            -e API_EXTERNAL_URL="$${API_EXTERNAL_URL}" \
             -l "traefik.enable=true" \
             -l "traefik.http.routers.nokan.rule=Host(\`nokan.nkdlab.space\`)" \
             -l "traefik.http.routers.nokan.entrypoints=websecure" \
