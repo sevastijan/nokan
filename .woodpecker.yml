@@ -20,14 +20,7 @@ steps:
             NEXTAUTH_SECRET:
                  from_secret: NEXTAUTH_SECRET
        commands:
-            - echo "🐳 Checking Docker daemon..."
             - docker version
-            - echo "🔍 Checking injected envs (safe preview)..."
-            - echo "NEXT_PUBLIC_SUPABASE_URL -> $${NEXT_PUBLIC_SUPABASE_URL}"
-            - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix -> $(echo "$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" | cut -c1-6)"
-            - echo "GOOGLE_CLIENT_ID prefix -> $(echo "$${GOOGLE_CLIENT_ID}" | cut -c1-6)"
-            - echo "NEXTAUTH_URL -> $${NEXTAUTH_URL}"
-            - echo "📝 Rendering .env for build stage..."
             - |
                  printf '%s\n' \
                    "NEXT_PUBLIC_SUPABASE_URL=$${NEXT_PUBLIC_SUPABASE_URL}" \
@@ -37,11 +30,8 @@ steps:
                    "NEXTAUTH_URL=$${NEXTAUTH_URL}" \
                    "NEXTAUTH_SECRET=$${NEXTAUTH_SECRET}" \
                    > .env
-            - echo "🚀 Building nokan-taskboard image..."
             - docker build -t nokan-taskboard:latest .
-            - echo "🧹 Removing old container if exists..."
             - docker rm -f nokan-taskboard || true
-            - echo "▶️ Running new nokan-taskboard container..."
             - |
                  docker run -d --name nokan-taskboard -p 6969:3000 \
                    -e NEXT_PUBLIC_SUPABASE_URL="$${NEXT_PUBLIC_SUPABASE_URL}" \
@@ -52,4 +42,3 @@ steps:
                    -e NEXTAUTH_SECRET="$${NEXTAUTH_SECRET}" \
                    nokan-taskboard:latest
             - rm -f .env
-            - echo "✅ Deploy completed successfully!"
