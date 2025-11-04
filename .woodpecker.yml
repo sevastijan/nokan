@@ -20,7 +20,6 @@ steps:
             NEXTAUTH_SECRET:
                  from_secret: NEXTAUTH_SECRET
        commands:
-            - echo "🐳 Checking Docker daemon..."
             - docker version
             - echo "🔍 Checking injected envs (safe preview)..."
             - echo "NEXT_PUBLIC_SUPABASE_URL -> $${NEXT_PUBLIC_SUPABASE_URL}"
