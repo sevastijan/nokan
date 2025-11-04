@@ -4,6 +4,7 @@ steps:
        when:
             event: push
             branch: main
+
        volumes:
             - /var/run/docker.sock:/var/run/docker.sock
 
@@ -23,22 +24,20 @@ steps:
 
        commands:
             - docker build -t nokan-taskboard:latest .
-
             - docker rm -f nokan-taskboard || true
-
             - >
-                 docker run -d --name nokan-taskboard
-                 --network traefik-network
-                 -e NEXT_PUBLIC_SUPABASE_URL="$${NEXT_PUBLIC_SUPABASE_URL}"
-                 -e NEXT_PUBLIC_SUPABASE_ANON_KEY="$${NEXT_PUBLIC_SUPABASE_ANON_KEY}"
-                 -e GOOGLE_CLIENT_ID="$${GOOGLE_CLIENT_ID}"
-                 -e GOOGLE_CLIENT_SECRET="$${GOOGLE_CLIENT_SECRET}"
-                 -e NEXTAUTH_URL="$${NEXTAUTH_URL}"
-                 -e NEXTAUTH_SECRET="$${NEXTAUTH_SECRET}"
-                 -l traefik.enable=true
-                 -l traefik.docker.network=traefik-network
-                 -l traefik.http.routers.nokan.rule=Host(`nokan.nkdlab.space`)
-                 -l traefik.http.routers.nokan.entrypoints=websecure
-                 -l traefik.http.routers.nokan.tls.certresolver=cf
-                 -l traefik.http.services.nokan.loadbalancer.server.port=3000
-                 nokan-taskboard:latest
+                 docker run -d --name nokan-taskboard \
+                   --network traefik-network \
+                   -e NEXT_PUBLIC_SUPABASE_URL="$${NEXT_PUBLIC_SUPABASE_URL}" \
+                   -e NEXT_PUBLIC_SUPABASE_ANON_KEY="$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+                   -e GOOGLE_CLIENT_ID="$${GOOGLE_CLIENT_ID}" \
+                   -e GOOGLE_CLIENT_SECRET="$${GOOGLE_CLIENT_SECRET}" \
+                   -e NEXTAUTH_URL="$${NEXTAUTH_URL}" \
+                   -e NEXTAUTH_SECRET="$${NEXTAUTH_SECRET}" \
+                   -l traefik.enable=true \
+                   -l traefik.docker.network=traefik-network \
+                   -l traefik.http.routers.nokan.rule=Host(`nokan.nkdlab.space`) \
+                   -l traefik.http.routers.nokan.entrypoints=websecure \
+                   -l traefik.http.routers.nokan.tls.certresolver=cf \
+                   -l traefik.http.services.nokan.loadbalancer.server.port=3000 \
+                   nokan-taskboard:latest
