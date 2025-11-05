@@ -46,8 +46,6 @@ const Avatar = ({ src, alt = 'User avatar', size = 'md', className = '' }: Avata
 
      const validSrc = typeof src === 'string' && src.startsWith('http') ? src : undefined;
 
-     console.log('Avatar src:', src);
-
      return (
           <div className={`${sizeClassName} ${className} flex items-center justify-center bg-slate-700 overflow-hidden`} style={style}>
                {validSrc ? (
