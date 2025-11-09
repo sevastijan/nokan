@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Loader from '../components/Loader';
@@ -13,26 +12,10 @@ const AuthButton = () => {
      const { data: session, status } = useSession();
      const router = useRouter();
 
-     useEffect(() => {
-          console.log('[GoogleLogin/AuthButton] Env snapshot', {
-               NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-               NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-               NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-               NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-               GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-               GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-          });
-     }, []);
-
      /**
       * Handle Google sign-in process
       */
      const handleSignIn = () => {
-          console.log('[GoogleLogin/AuthButton] Triggered signIn', {
-               hasSession: Boolean(session),
-               NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-               GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-          });
           signIn('google');
      };
 
