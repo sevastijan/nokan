@@ -17,10 +17,10 @@ const AuthButton = () => {
           console.log('[GoogleLogin/AuthButton] Env snapshot', {
                NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
                NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-               NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-               NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-               GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-               GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+               NEXT_PUBLIC_NEXTAUTH_URL: process.env.NEXT_PUBLIC_NEXTAUTH_URL,
+               NEXT_PUBLIC_NEXTAUTH_SECRET: process.env.NEXT_PUBLIC_NEXTAUTH_SECRET,
+               NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+               NEXT_PUBLIC_GOOGLE_CLIENT_SECRET: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET,
           });
      }, []);
 
@@ -30,8 +30,8 @@ const AuthButton = () => {
      const handleSignIn = () => {
           console.log('[GoogleLogin/AuthButton] Triggered signIn', {
                hasSession: Boolean(session),
-               NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-               GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+               NEXT_PUBLIC_NEXTAUTH_URL: process.env.NEXT_PUBLIC_NEXTAUTH_URL,
+               NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
           });
           signIn('google');
      };
