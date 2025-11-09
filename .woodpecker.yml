@@ -58,10 +58,10 @@ steps:
                  from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
             NEXT_PUBLIC_GOOGLE_CLIENT_SECRET:
                  from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_SECRET
-            NEXT_PUBLIC_NEXTAUTH_URL:
-                 from_secret: NEXT_PUBLIC_NEXTAUTH_URL
-            NEXT_PUBLIC_NEXTAUTH_SECRET:
-                 from_secret: NEXT_PUBLIC_NEXTAUTH_SECRET
+            NEXT_PUBLIC_NEXT_AUTH_URL:
+                 from_secret: NEXT_PUBLIC_NEXT_AUTH_URL
+            NEXT_PUBLIC_NEXT_AUTH_SECRET:
+                 from_secret: NEXT_PUBLIC_NEXT_AUTH_SECRET
        commands:
             - echo "🧹 Removing old container if exists..."
             - docker rm -f nokan-taskboard || true
@@ -78,8 +78,8 @@ steps:
                    -e NEXT_PUBLIC_SUPABASE_ANON_KEY="$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
                    -e NEXT_PUBLIC_GOOGLE_CLIENT_ID="$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" \
                    -e NEXT_PUBLIC_GOOGLE_CLIENT_SECRET="$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
-                   -e NEXT_PUBLIC_NEXTAUTH_URL="$${NEXT_PUBLIC_NEXTAUTH_URL}" \
-                   -e NEXT_PUBLIC_NEXTAUTH_SECRET="$${NEXT_PUBLIC_NEXTAUTH_SECRET}" \
+                   -e NEXT_PUBLIC_NEXT_AUTH_URL="$${NEXT_PUBLIC_NEXT_AUTH_URL}" \
+                   -e NEXT_PUBLIC_NEXT_AUTH_SECRET="$${NEXT_PUBLIC_NEXT_AUTH_SECRET}" \
                    -l "traefik.enable=true" \
                    -l "traefik.http.routers.nokan.rule=Host(\`nokan.nkdlab.space\`)" \
                    -l "traefik.http.routers.nokan.entrypoints=websecure" \
