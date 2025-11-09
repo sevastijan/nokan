@@ -16,7 +16,6 @@ export const authOptions: NextAuthOptions = {
      callbacks: {
           async signIn({ user }) {
                try {
-                    // Check if user exists in Supabase
                     const { data: existingUser, error: selectError } = await supabase.from('users').select('*').eq('google_id', user.id).single();
 
                     if (selectError && selectError.code !== 'PGRST116') {
