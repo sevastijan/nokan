@@ -235,7 +235,17 @@ export const getPriorities = async (): Promise<{ id: string; label: string; colo
  * Add a new priority.
  */
 export const addPriority = async (label: string, color: string): Promise<Priority> => {
-     const { data, error } = await supabase.from('priorities').insert({ label, color }).select().single();
+     const newId = uuidv4();
+
+     const { data, error } = await supabase
+          .from('priorities')
+          .insert({
+               id: newId,
+               label,
+               color,
+          })
+          .select()
+          .single();
 
      if (error) throw new Error(error.message);
 
@@ -293,7 +303,8 @@ export const getTasksWithDates = async (boardId: string): Promise<ApiTask[]> => 
 
      if (error) throw error;
 
-     const normalized: ApiTask[] = (data ?? []).map((task: any) => ({
+     // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+     const normalized: ApiTask[] = (data ?? []).map((task) => ({
           id: task.id,
           title: task.title,
           description: task.description ?? null,
@@ -303,12 +314,13 @@ export const getTasksWithDates = async (boardId: string): Promise<ApiTask[]> => 
           end_date: task.end_date ?? null,
           due_date: task.due_date ?? null,
           completed: task.completed,
-          assignee: Array.isArray(task.assignee) && task.assignee.length > 0 ? task.assignee[0] : task.assignee ?? null,
-          priority: Array.isArray(task.priority) && task.priority.length > 0 ? task.priority[0] : task.priority ?? null,
+          assignee: Array.isArray(task.assignee) && task.assignee.length > 0 ? task.assignee[0] : null,
+          priority: Array.isArray(task.priority) && task.priority.length > 0 ? task.priority[0] : null,
           user_id: task.user_id ?? null,
           status: task.status ?? null,
           images: task.images ?? null,
      }));
+     // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 
      // Sort tasks by due_date, earliest first (example)
      return normalized.sort((a, b) => {

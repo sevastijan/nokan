@@ -170,7 +170,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
       if (selectedPriority === id) {
         onChange(null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error deleting priority:", err);
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("being used")) {
