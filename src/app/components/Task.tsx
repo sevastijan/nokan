@@ -1,329 +1,249 @@
-// src/app/components/Task.tsx
-"use client";
+'use client';
 
-import {
-  useState,
-  useRef,
-  useEffect,
-  KeyboardEvent,
-  MouseEvent,
-  RefObject,
-} from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus } from "react-icons/fi";
-import Avatar from "./Avatar/Avatar";
-import { Task as TaskType, User } from "@/app/types/globalTypes";
-import {
-  getPriorityStyleConfig,
-  truncateText,
-  useUserAvatar,
-} from "@/app/utils/helpers";
-import { useOutsideClick } from "@/app/hooks/useOutsideClick";
+import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent, MouseEvent } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus } from 'react-icons/fi';
+import Avatar from './Avatar/Avatar';
+import { Task as TaskType, User } from '@/app/types/globalTypes';
+import { getPriorityStyleConfig, truncateText, useUserAvatar } from '@/app/utils/helpers';
+import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 
 interface TaskProps {
-  task: TaskType;
-  columnId: string;
-  onRemoveTask: (columnId: string, taskId: string) => void;
-  onOpenTaskDetail: (taskId: string) => void;
-  priorities?: Array<{ id: string; label: string; color: string }>;
-  taskIndex: number;
+     task: TaskType;
+     columnId: string;
+     onRemoveTask: (columnId: string, taskId: string) => void;
+     onOpenTaskDetail: (taskId: string) => void;
+     priorities?: Array<{ id: string; label: string; color: string }>;
+     taskIndex: number;
 }
 
-const Task = ({
-  task,
-  columnId,
-  onRemoveTask,
-  onOpenTaskDetail,
-  priorities = [],
-}: TaskProps) => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(0);
+const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] }: TaskProps) => {
+     const [menuOpen, setMenuOpen] = useState(false);
+     const [focusedIndex, setFocusedIndex] = useState(0);
 
-  // Refs for menu trigger & menu container & menu items
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const viewEditRef = useRef<HTMLButtonElement>(null);
-  const deleteRef = useRef<HTMLButtonElement>(null);
+     const triggerRef = useRef<HTMLButtonElement>(null);
+     const menuRef = useRef<HTMLDivElement>(null);
 
-  // Priority style: get config if priority exists
-  const prio =
-    task.priority &&
-    (() => {
-      const cfg = getPriorityStyleConfig(task.priority);
-      const found = priorities.find((p) => p.id === task.priority);
-      const label = found?.label || task.priority;
-      const dotColor = found?.color || cfg.dotColor;
-      return { label, cfg, dotColor };
-    })();
+     const priorityConfig = useMemo(() => {
+          if (!task.priority) return null;
+          const found = priorities.find((p) => p.id === task.priority);
+          const cfg = getPriorityStyleConfig(task.priority);
+          return {
+               label: found?.label || task.priority,
+               dotColor: found?.color || cfg.dotColor,
+               cfg,
+          };
+     }, [task.priority, priorities]);
 
-  // Assignee avatar
-  const assignee = (task.assignee as User) || null;
-  const avatarUrl = useUserAvatar(assignee);
+     const assignee = (task.assignee as User) || null;
+     const avatarUrl = useUserAvatar(assignee);
 
-  // Menu items
-  const menuItems: Array<{
-    label: string;
-    ref: RefObject<HTMLButtonElement | null>;
-    action: () => void;
-  }> = [
-    {
-      label: "View / Edit",
-      ref: viewEditRef,
-      action: () => {
-        onOpenTaskDetail(task.id);
-        closeMenu();
-      },
-    },
-    {
-      label: "Delete",
-      ref: deleteRef,
-      action: () => {
-        closeMenu();
-        setTimeout(() => onRemoveTask(columnId, task.id), 100);
-      },
-    },
-  ];
+     const openMenu = useCallback(() => {
+          setMenuOpen(true);
+          setFocusedIndex(0);
+     }, []);
 
-  const openMenu = () => {
-    setMenuOpen(true);
-    setFocusedIndex(0);
-  };
-  const closeMenu = () => {
-    setMenuOpen(false);
-    setFocusedIndex(0);
-    triggerRef.current?.focus();
-  };
+     const closeMenu = useCallback(() => {
+          setMenuOpen(false);
+          setFocusedIndex(0);
+          triggerRef.current?.focus();
+     }, []);
 
-  // Trigger click/key handlers
-  const onTriggerClick = (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    menuOpen ? closeMenu() : openMenu();
-  };
-  const onTriggerKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (["Enter", " ", "ArrowDown"].includes(e.key)) {
-      e.preventDefault();
-      openMenu();
-    }
-  };
+     const menuItems = useMemo(
+          () => [
+               {
+                    label: 'View / Edit',
+                    action: () => {
+                         onOpenTaskDetail(task.id);
+                         closeMenu();
+                    },
+               },
+               {
+                    label: 'Delete',
+                    action: () => {
+                         closeMenu();
+                         setTimeout(() => onRemoveTask(columnId, task.id), 150);
+                    },
+               },
+          ],
+          [closeMenu, columnId, onOpenTaskDetail, onRemoveTask, task.id],
+     );
 
-  // Menu keyboard navigation
-  const onMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setFocusedIndex((idx) => (idx + 1) % menuItems.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setFocusedIndex((idx) => (idx - 1 >= 0 ? idx - 1 : menuItems.length - 1));
-    } else if (["Escape", "Tab"].includes(e.key)) {
-      e.preventDefault();
-      closeMenu();
-    } else if (["Enter", " "].includes(e.key)) {
-      e.preventDefault();
-      menuItems[focusedIndex].ref.current?.focus();
-      menuItems[focusedIndex].action();
-    }
-  };
+     const handleTriggerClick = (e: MouseEvent<HTMLButtonElement>) => {
+          e.stopPropagation();
+          if (menuOpen) closeMenu();
+          else openMenu();
+     };
 
-  // Focus first item when opening menu
-  useEffect(() => {
-    if (menuOpen) {
-      setTimeout(() => {
-        menuItems[0].ref.current?.focus();
-      }, 0);
-    }
-  }, [menuOpen]);
+     const handleTriggerKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+          if (['Enter', ' ', 'ArrowDown'].includes(e.key)) {
+               e.preventDefault();
+               openMenu();
+          }
+     };
 
-  // Focus changed item
-  useEffect(() => {
-    if (menuOpen) {
-      menuItems[focusedIndex].ref.current?.focus();
-    }
-  }, [focusedIndex, menuOpen]);
+     const handleMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === 'ArrowDown') {
+               e.preventDefault();
+               setFocusedIndex((prev) => (prev + 1) % menuItems.length);
+          } else if (e.key === 'ArrowUp') {
+               e.preventDefault();
+               setFocusedIndex((prev) => (prev - 1 + menuItems.length) % menuItems.length);
+          } else if (e.key === 'Escape') {
+               e.preventDefault();
+               closeMenu();
+          } else if (e.key === 'Enter' || e.key === ' ') {
+               e.preventDefault();
+               menuItems[focusedIndex].action();
+          }
+     };
 
-  //@ts-expect-error
-  // Close on outside click/touch
-  useOutsideClick([menuRef, triggerRef], () => {
-    if (menuOpen) closeMenu();
-  });
+     useEffect(() => {
+          if (menuOpen) {
+               menuRef.current?.focus();
+          }
+     }, [menuOpen]);
 
-  // Card click opens detail if menu closed
-  const onCardClick = () => {
-    if (!menuOpen) {
-      onOpenTaskDetail(task.id);
-    }
-  };
+     useEffect(() => {
+          if (!menuOpen) return;
+          const buttons = menuRef.current?.querySelectorAll("button[role='menuitem']");
+          (buttons?.[focusedIndex] as HTMLElement | undefined)?.focus();
+     }, [focusedIndex, menuOpen]);
 
-  // Left border accent: 4px wide. If priority exists, color by priority.dotColor; else transparent.
-  const leftBorderStyle = prio
-    ? { borderLeftColor: prio.dotColor }
-    : { borderLeftColor: "transparent" };
+     useOutsideClick([menuRef, triggerRef], closeMenu);
 
-  // Title / description presence checks
-  const hasTitle = Boolean(task.title && task.title.trim());
-  const titleDisplay = hasTitle ? (
-    <span className="text-white">{task.title}</span>
-  ) : (
-    <span className="text-white/50 italic">Untitled</span>
-  );
-  const hasDesc = Boolean(task.description && task.description.trim());
+     const handleCardClick = () => {
+          if (!menuOpen) onOpenTaskDetail(task.id);
+     };
 
-  // Metadata presence: priority badge or due date
-  const showMeta = Boolean(prio || task.due_date);
+     const leftBorderStyle = priorityConfig ? { borderLeftColor: priorityConfig.dotColor } : { borderLeftColor: 'transparent' };
 
-  // If entirely empty (no title, no desc, no metadata), render minimal placeholder
-  const isEmptyCard = !hasTitle && !hasDesc && !showMeta;
+     const hasTitle = Boolean(task.title?.trim());
+     const hasDesc = Boolean(task.description?.trim());
+     const showMeta = Boolean(priorityConfig || task.due_date || assignee);
+     const isEmpty = !hasTitle && !hasDesc && !showMeta;
 
-  return (
-    <motion.div
-      layout
-      transition={{ layout: { duration: 0.1, ease: "easeOut" } }}
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
-      onClick={onCardClick}
-      className={`
-        relative cursor-pointer group transition-shadow duration-200 ease-in-out
-        bg-white/5 backdrop-blur-md border border-white/25 rounded-lg overflow-hidden hover:shadow-lg
-        ${isEmptyCard ? "min-h-[60px]" : "min-h-[88px]"}
+     return (
+          <motion.div
+               layout
+               initial={{ opacity: 0, y: 8 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95 }}
+               transition={{ duration: 0.15 }}
+               onClick={handleCardClick}
+               className={`
+        relative cursor-pointer group transition-all duration-200
+        bg-white/5 backdrop-blur-md border border-white/20 rounded-lg overflow-hidden
+        hover:bg-white/8 hover:shadow-xl
+        ${isEmpty ? 'min-h-16' : 'min-h-24'}
       `}
-      style={{
-        borderLeftWidth: "4px",
-        borderLeftStyle: "solid",
-        ...leftBorderStyle,
-      }}
-    >
-      {/* Trigger (three dots) */}
-      <button
-        ref={triggerRef}
-        onClick={onTriggerClick}
-        onKeyDown={onTriggerKeyDown}
-        className="
-          absolute top-3 right-3 p-1.5 rounded-full bg-transparent hover:bg-white/20 focus:bg-white/20 transition-colors z-10
-        "
-        aria-haspopup="true"
-        aria-expanded={menuOpen}
-      >
-        <FiMoreVertical size={18} className="text-white/80" />
-      </button>
+               style={{
+                    borderLeftWidth: '4px',
+                    borderLeftStyle: 'solid',
+                    ...leftBorderStyle,
+               }}
+          >
+               <button
+                    ref={triggerRef}
+                    onClick={handleTriggerClick}
+                    onKeyDown={handleTriggerKeyDown}
+                    aria-label="Task options"
+                    aria-haspopup="true"
+                    aria-expanded={menuOpen}
+                    className="absolute top-2.5 right-2.5 p-2 rounded-lg opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-white/20 focus:bg-white/20 transition-all z-10"
+               >
+                    <FiMoreVertical size={18} className="text-white/70" />
+               </button>
 
-      {/* Main content */}
-      {isEmptyCard ? (
-        // Center “Untitled” vertically if no content
-        <div className="h-full flex items-center justify-center px-4">
-          <h4 className="text-white/50 italic truncate">Untitled</h4>
-        </div>
-      ) : (
-        <div className="p-4 flex flex-col gap-3 md:gap-2">
-          {/* Title */}
-          <h4 className="text-white font-semibold text-base leading-snug truncate">
-            {titleDisplay}
-          </h4>
+               {isEmpty ? (
+                    <div className="flex h-16 items-center justify-center px-4">
+                         <span className="text-white/40 italic text-sm">Untitled task</span>
+                    </div>
+               ) : (
+                    <div className="p-4 flex flex-col gap-2">
+                         <h4 className="font-semibold text-white text-base leading-tight truncate">{hasTitle ? task.title : <span className="text-white/40 italic">Untitled</span>}</h4>
 
-          {/* Description or spacer */}
-          {hasDesc ? (
-            <p className="text-white/75 text-sm mt-1 truncate">
-              {truncateText(task.description!, 20)}
-            </p>
-          ) : (
-            <div className="mt-1 h-[4px]" />
-          )}
+                         {hasDesc && <p className="text-white/70 text-sm line-clamp-2">{truncateText(task.description!, 80)}</p>}
 
-          {/* Metadata row */}
-          <div className="mt-3 flex items-center justify-between">
-            {/* Left: priority badge and/or due date */}
-            <div className="flex items-center gap-2">
-              {prio && (
-                <span
-                  className={`
-                    inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-medium
-                    ${prio.cfg.bgColor} ${prio.cfg.textColor} ${prio.cfg.borderColor}
-                  `}
-                >
-                  <FiFlag size={12} style={{ color: prio.dotColor }} />
-                  {prio.label}
-                </span>
-              )}
-              {task.due_date && (
-                <span className="flex items-center gap-1 text-xs text-white/70">
-                  <FiCalendar size={12} />
-                  {new Date(task.due_date).toLocaleDateString("pl-PL", {
-                    day: "2-digit",
-                    month: "short",
-                  })}
-                </span>
-              )}
-            </div>
+                         {showMeta && (
+                              <div className="flex items-center justify-between mt-3">
+                                   <div className="flex items-center gap-3 text-xs">
+                                        {priorityConfig && (
+                                             <span
+                                                  className={`
+                      inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium
+                      ${priorityConfig.cfg.bgColor} ${priorityConfig.cfg.textColor}
+                    `}
+                                             >
+                                                  <FiFlag size={11} style={{ color: priorityConfig.dotColor }} />
+                                                  {priorityConfig.label}
+                                             </span>
+                                        )}
+                                        {task.due_date && (
+                                             <span className="flex items-center gap-1 text-white/60">
+                                                  <FiCalendar size={11} />
+                                                  {new Date(task.due_date).toLocaleDateString('pl-PL', {
+                                                       day: 'numeric',
+                                                       month: 'short',
+                                                  })}
+                                             </span>
+                                        )}
+                                   </div>
 
-            {/* Right: avatar or “assign” placeholder */}
-            {assignee && avatarUrl ? (
-              <Avatar
-                src={avatarUrl}
-                alt={assignee.name}
-                size={32}
-                className="border-2 border-white/20 cursor-pointer"
-              />
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenTaskDetail(task.id);
-                }}
-                className="
-                  w-8 h-8 flex items-center justify-center rounded-full border-2 border-white/20
-                  text-white/50 hover:text-white hover:border-white transition-colors
-                "
-                aria-label="Assign user"
-              >
-                <FiUserPlus size={16} />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+                                   {assignee && avatarUrl ? (
+                                        <Avatar src={avatarUrl} alt={assignee.name} size={30} className="border-2 border-white/10" />
+                                   ) : (
+                                        <button
+                                             onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  onOpenTaskDetail(task.id);
+                                             }}
+                                             className="w-8 h-8 rounded-full border-2 border-dashed border-white/30 hover:border-white/60 transition-colors flex items-center justify-center"
+                                             aria-label="Assign user"
+                                        >
+                                             <FiUserPlus size={15} className="text-white/50" />
+                                        </button>
+                                   )}
+                              </div>
+                         )}
+                    </div>
+               )}
 
-      {/* Context menu */}
-      <AnimatePresence>
-        {menuOpen && (
-          <>
-            {/* Overlay to catch outside clicks */}
-            <div className="fixed inset-0 z-40" onClick={closeMenu} />
-            <motion.div
-              ref={menuRef}
-              role="menu"
-              tabIndex={-1}
-              onKeyDown={onMenuKeyDown}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.15 }}
-              className="
-                absolute top-3 right-3 z-50
-                bg-white text-gray-800 border border-gray-200 rounded-md shadow-lg overflow-hidden focus:outline-none min-w-[140px]
-              "
-            >
-              {menuItems.map((item, idx) => (
-                <button
-                  key={`${item.label}-${idx}`} // Unique key using label and index
-                  ref={item.ref}
-                  role="menuitem"
-                  tabIndex={-1}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    item.action();
-                  }}
-                  className="
-                    w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-sm cursor-pointer
-                  "
-                >
-                  {item.label}
-                </button>
-              ))}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
+               <AnimatePresence>
+                    {menuOpen && (
+                         <>
+                              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40" onClick={closeMenu} />
+                              <motion.div
+                                   ref={menuRef}
+                                   role="menu"
+                                   tabIndex={-1}
+                                   onKeyDown={handleMenuKeyDown}
+                                   initial={{ opacity: 0, scale: 0.92, y: -8 }}
+                                   animate={{ opacity: 1, scale: 1, y: 0 }}
+                                   exit={{ opacity: 0, scale: 0.92, y: -8 }}
+                                   transition={{ duration: 0.12 }}
+                                   className="absolute top-10 right-3 z-50 bg-white text-gray-900 rounded-md shadow-xl border border-gray-200 overflow-hidden min-w-40"
+                              >
+                                   {menuItems.map((item, idx) => (
+                                        <button
+                                             key={idx}
+                                             role="menuitem"
+                                             tabIndex={-1}
+                                             onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  item.action();
+                                             }}
+                                             className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
+                                        >
+                                             {item.label}
+                                        </button>
+                                   ))}
+                              </motion.div>
+                         </>
+                    )}
+               </AnimatePresence>
+          </motion.div>
+     );
 };
 
 export default Task;

@@ -517,27 +517,34 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                { type: 'TasksWithDates', id: taskId },
           ],
      }),
-
      uploadAttachment: builder.mutation<Attachment, { file: File; taskId: string; userId: string }>({
           async queryFn({ file, taskId, userId }) {
                try {
-                    const ext = file.name.split('.').pop();
-                    const path = `${Date.now()}.${ext}`;
-                    const { error: upErr } = await supabase.storage.from('attachments').upload(path, file);
+                    const fileExt = file.name.split('.').pop();
+                    const filePath = `${taskId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+                    const { error: upErr } = await supabase.storage.from('attachments').upload(filePath, file, {
+                         upsert: false,
+                         contentType: file.type,
+                    });
+
                     if (upErr) throw upErr;
+
                     const { data, error: dbErr } = await supabase
                          .from('task_attachments')
                          .insert({
                               task_id: taskId,
                               file_name: file.name,
-                              file_path: path,
+                              file_path: filePath,
                               file_size: file.size,
                               mime_type: file.type,
                               uploaded_by: userId,
                          })
                          .select('*')
                          .single();
+
                     if (dbErr || !data) throw dbErr || new Error('Attachment insert failed');
+
                     return { data };
                } catch (err) {
                     const error = err as Error;
@@ -545,6 +552,23 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     return { error: { status: 'CUSTOM_ERROR', error: error.message } };
                }
           },
-          invalidatesTags: () => [],
+          invalidatesTags: (_result, _error, arg) => [{ type: 'Task', id: arg.taskId }],
+     }),
+
+     getPriorities: builder.query<{ id: string; label: string; color: string }[], void>({
+          async queryFn() {
+               try {
+                    const { data, error } = await supabase.from('priorities').select('id,label,color').order('created_at', { ascending: true }); // ← to działa zawsze
+
+                    if (error) throw error;
+
+                    return { data: data ?? [] };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[getPriorities] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          providesTags: ['Priority'],
      }),
 });

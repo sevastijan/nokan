@@ -11,14 +11,28 @@ export interface User {
      name: string;
      email: string;
      image?: string;
-     role?: 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER';
+     role?: 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | 'CLIENT';
      created_at?: string;
 }
+
+export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | 'CLIENT';
 
 export interface Priority {
      id: string;
      label: string;
      color: string;
+}
+
+export interface BoardClient {
+     id: string;
+     board_id: string;
+     client_id: string;
+     assigned_by: string | null;
+     can_delete_own: boolean;
+     can_edit_after_submission: boolean;
+     created_at: string;
+     updated_at: string;
+     client?: User;
 }
 
 export interface PrioritySelectorProps {
@@ -539,4 +553,23 @@ export interface UseTaskManagementReturn {
      fetchTaskData: () => Promise<void>;
      setTask: React.Dispatch<React.SetStateAction<TaskDetail | null>>;
      uploadAttachment: (file: File) => Promise<Attachment | null>;
+}
+
+export interface SubmissionForm {
+     id: string;
+     title: string;
+     description: string;
+     priority: string;
+     client_id: string;
+     board_id: string;
+     column_id: string;
+     status: string;
+     created_at?: string;
+     updated_at?: string;
+}
+
+export interface ClientSubmission extends Task {
+     submission_id: string;
+     client_name?: string;
+     client_email?: string;
 }

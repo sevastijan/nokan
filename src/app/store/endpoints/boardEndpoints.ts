@@ -414,4 +414,59 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
           },
           providesTags: (_result, _error, teamId) => [{ type: 'Team', id: teamId }],
      }),
+
+     getAllBoards: builder.query<BoardWithCounts[], void>({
+          async queryFn() {
+               try {
+                    const { data: boards, error: boardsError } = await supabase.from('boards').select('id, title, user_id, created_at, updated_at').order('created_at', { ascending: false });
+
+                    if (boardsError) throw boardsError;
+                    if (!boards || boards.length === 0) return { data: [] };
+
+                    const boardsWithCounts: BoardWithCounts[] = await Promise.all(
+                         boards.map(async (board) => {
+                              const { count: taskCount = 0 } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('board_id', board.id);
+
+                              const { data: teamsData } = await supabase.from('teams').select('id').eq('board_id', board.id);
+
+                              const teamIds = (teamsData ?? []).map((t: { id: string }) => t.id);
+
+                              let memberCount = 0;
+                              if (teamIds.length > 0) {
+                                   const { count } = await supabase.from('team_members').select('*', { count: 'exact', head: true }).in('team_id', teamIds);
+
+                                   memberCount = count ?? 0;
+                              }
+
+                              return {
+                                   id: board.id,
+                                   title: board.title,
+                                   user_id: board.user_id,
+                                   created_at: board.created_at,
+                                   updated_at: board.updated_at,
+                                   columns: [],
+                                   ownerName: undefined,
+                                   ownerEmail: undefined,
+                                   _count: {
+                                        tasks: taskCount ?? 0,
+                                        teamMembers: memberCount,
+                                   },
+                              } as BoardWithCounts;
+                         }),
+                    );
+
+                    return { data: boardsWithCounts };
+               } catch (err) {
+                    console.error('[getAllBoards] error:', err);
+                    return {
+                         error: {
+                              status: 'CUSTOM_ERROR',
+                              error: (err as Error)?.message || 'Failed to fetch boards',
+                         },
+                    };
+               }
+          },
+
+          providesTags: (result) => (result ? [{ type: 'Board', id: 'LIST' }, ...result.map(({ id }) => ({ type: 'Board' as const, id }))] : [{ type: 'Board', id: 'LIST' }]),
+     }),
 });

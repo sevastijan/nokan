@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel, Menu } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
-import { FaHome, FaTachometerAlt, FaCalendarAlt, FaSignOutAlt, FaUsers, FaBars, FaChevronRight, FaBell, FaCheck, FaTrash, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaHome, FaTachometerAlt, FaCalendarAlt, FaSignOutAlt, FaUsers, FaBars, FaChevronRight, FaBell, FaCheck, FaTrash, FaExternalLinkAlt, FaUserCog, FaFileAlt } from 'react-icons/fa';
 import Avatar from '../components/Avatar/Avatar';
 import Button from '../components/Button/Button';
 import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery } from '@/app/store/apiSlice';
@@ -54,49 +54,43 @@ const Navbar = () => {
      const getBoardName = (boardId: string) => boards?.find((b: { id: string }) => b.id === boardId)?.title || 'Unknown board';
 
      const getRoleBadge = () => {
-          if (roleLoading) return null;
-          let badgeColor = '';
-          let roleText = '';
+          if (roleLoading) return <span className="text-xs text-slate-500">Loading...</span>;
+
           switch (userRole) {
                case 'OWNER':
-                    badgeColor = 'bg-yellow-600/20 text-yellow-300 border-yellow-400/30';
-                    roleText = 'Owner';
-                    break;
+                    return <span className="px-2 py-1 rounded-lg text-xs font-medium bg-yellow-600/20 text-yellow-300 border border-yellow-400/30">Owner</span>;
                case 'PROJECT_MANAGER':
-                    badgeColor = 'bg-blue-600/20 text-blue-300 border-blue-400/30';
-                    roleText = 'Project Manager';
-                    break;
+                    return <span className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-600/20 text-blue-300 border border-blue-400/30">Project Manager</span>;
+               case 'CLIENT':
+                    return <span className="px-2 py-1 rounded-lg text-xs font-medium bg-purple-600/20 text-purple-300 border border-purple-400/30">Client</span>;
+               case 'MEMBER':
                default:
-                    badgeColor = 'bg-slate-600/20 text-slate-300 border-slate-400/30';
-                    roleText = 'Member';
+                    return <span className="px-2 py-1 rounded-lg text-xs font-medium bg-slate-600/20 text-slate-300 border border-slate-400/30">Member</span>;
           }
-          return <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${badgeColor}`}>{roleText}</span>;
      };
 
      const nav = [
           { href: '/dashboard', label: 'Dashboard', icon: <FaTachometerAlt /> },
           { href: '/calendar', label: 'Calendar', icon: <FaCalendarAlt /> },
+          { href: '/submissions', label: 'Submissions', icon: <FaFileAlt /> },
+
           ...(hasManagementAccess()
                ? [
-                      {
-                           href: '/team-management',
-                           label: 'Manage Teams',
-                           icon: <FaUsers />,
-                      },
+                      { href: '/users', label: 'Users', icon: <FaUserCog /> },
+                      { href: '/team-management', label: 'Manage Teams', icon: <FaUsers /> },
                  ]
                : []),
      ];
 
      const SidebarContent = () => (
           <div className="flex flex-col h-full">
-               {/* Logo */}
                <div className="p-4 border-b border-slate-700/50">
                     <button
                          onClick={() => {
                               router.push('/');
                               setSidebarOpen(false);
                          }}
-                         className="flex items-center gap-2 text-xl font-bold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text"
+                         className="flex items-center gap-2 text-xl font-bold cursor-pointer text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text"
                     >
                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
                               <FaHome className="w-4 h-4 text-white" />
@@ -116,7 +110,6 @@ const Navbar = () => {
                               </div>
                          </div>
 
-                         {/* Notifications */}
                          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-slate-700/30">
                               <Menu as="div" className="relative">
                                    <Menu.Button className="relative p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
@@ -222,7 +215,6 @@ const Navbar = () => {
                     </div>
                )}
 
-               {/* Navigation */}
                <div className="flex-1 mt-8">
                     <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider px-6 mb-2">NAVIGATION</h4>
                     <div className="space-y-1 px-2">
@@ -238,7 +230,6 @@ const Navbar = () => {
                     </div>
                </div>
 
-               {/* Sign out */}
                {session.user && (
                     <div className="p-4 border-t border-slate-700/50">
                          <Button variant="danger" size="sm" fullWidth onClick={() => signOut({ callbackUrl: '/', redirect: true })} icon={<FaSignOutAlt />}>
@@ -290,7 +281,7 @@ const Navbar = () => {
                                         onClick={() => setSidebarOpen(false)}
                                         className="absolute right-4 top-4 z-50 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
                                    >
-                                        ✕
+                                        Close
                                    </button>
                                    <SidebarContent />
                               </DialogPanel>

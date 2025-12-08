@@ -11,11 +11,13 @@ import { teamEndpoints } from './endpoints/teamEndpoints';
 import { notificationEndpoints } from './endpoints/notificationEndpoints';
 import { userEndpoints } from './endpoints/userEndpoints';
 import { templateEndpoints } from './endpoints/templateEndpoints';
+import { submissionEndpoints } from './endpoints/submissionEndpoints';
+import { clientManagementEndpoints } from './endpoints/clientMenagmentEndpoints';
 
 /**
  * UserRole type in your application.
  */
-export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER';
+export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | 'CLIENT';
 
 /**
  * The main API slice using RTK Query with fakeBaseQuery.
@@ -23,7 +25,24 @@ export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER';
 export const apiSlice = createApi({
      reducerPath: 'api',
      baseQuery: fakeBaseQuery(),
-     tagTypes: ['Board', 'Column', 'Task', 'TeamMember', 'UserRole', 'TeamsList', 'Team', 'TasksWithDates', 'Notification', 'Boards', 'Tasks'],
+     tagTypes: [
+          'Board',
+          'Column',
+          'Task',
+          'TeamMember',
+          'UserRole',
+          'TeamsList',
+          'Team',
+          'TasksWithDates',
+          'Notification',
+          'Boards',
+          'Tasks',
+          'Submission',
+          'Client',
+          'BoardClient',
+          'ClientBoard',
+          'Priority',
+     ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
           ...columnEndpoints(builder),
@@ -32,6 +51,8 @@ export const apiSlice = createApi({
           ...notificationEndpoints(builder),
           ...userEndpoints(builder),
           ...templateEndpoints(builder),
+          ...submissionEndpoints(builder),
+          ...clientManagementEndpoints(builder),
      }),
 });
 
@@ -75,4 +96,16 @@ export const {
      useGetMyTeamsQuery,
      useGetUserBoardsQuery,
      useGetTasksByBoardsAndDateQuery,
+     useGetClientSubmissionsQuery,
+     useUpdateSubmissionMutation,
+     useDeleteSubmissionMutation,
+     useCreateSubmissionMutation,
+     useAssignClientToBoardMutation,
+     useGetClientBoardsQuery,
+     useGetAllClientsQuery,
+     useGetAllBoardsQuery,
+     useGetClientBoardAssignmentsQuery,
+     useRemoveClientFromBoardMutation,
+     useGetPrioritiesQuery,
+     useGetClientBoardsWithDetailsQuery,
 } = apiSlice;
