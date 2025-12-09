@@ -42,6 +42,7 @@ export const apiSlice = createApi({
           'BoardClient',
           'ClientBoard',
           'Priority',
+          'User',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
