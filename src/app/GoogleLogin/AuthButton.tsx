@@ -33,15 +33,15 @@ const AuthButton = () => {
      return (
           <div className="space-y-4">
                {!session ? (
-                    <button onClick={handleSignIn} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer">
+                    <button onClick={handleSignIn} className="bg-slate-700 hover:bg-slate-600 text-slate-100 px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer border border-slate-600">
                          Sign in with Google
                     </button>
                ) : (
                     <div className="text-center space-y-4">
-                         <p className="text-xl text-white">Welcome back, {session.user?.name}!</p>
+                         <p className="text-xl text-slate-100">Welcome back, {session.user?.name}!</p>
                          <button
                               onClick={goToDashboard}
-                              className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer"
+                              className="bg-slate-700 hover:bg-slate-600 text-slate-100 px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer border border-slate-600"
                          >
                               Go to Dashboard
                          </button>

@@ -116,7 +116,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
           if (!menuOpen) onOpenTaskDetail(task.id);
      };
 
-     const leftBorderStyle = priorityConfig ? { borderLeftColor: priorityConfig.dotColor } : { borderLeftColor: 'transparent' };
+     const leftBorderStyle = priorityConfig ? { borderLeftColor: priorityConfig.dotColor } : { borderLeftColor: '#475569' };
 
      const hasTitle = Boolean(task.title?.trim());
      const hasDesc = Boolean(task.description?.trim());
@@ -132,9 +132,9 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                transition={{ duration: 0.15 }}
                onClick={handleCardClick}
                className={`
-        relative cursor-pointer group transition-all duration-200
-        bg-white/5 backdrop-blur-md border border-white/20 rounded-lg overflow-hidden
-        hover:bg-white/8 hover:shadow-xl
+        relative cursor-pointer group transition-colors duration-200
+        bg-slate-800 border border-slate-700 rounded-lg overflow-hidden
+        hover:bg-slate-750 hover:border-slate-600
         ${isEmpty ? 'min-h-16' : 'min-h-24'}
       `}
                style={{
@@ -222,7 +222,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                                    animate={{ opacity: 1, scale: 1, y: 0 }}
                                    exit={{ opacity: 0, scale: 0.92, y: -8 }}
                                    transition={{ duration: 0.12 }}
-                                   className="absolute top-10 right-3 z-50 bg-white text-gray-900 rounded-md shadow-xl border border-gray-200 overflow-hidden min-w-40"
+                                   className="absolute top-10 right-3 z-50 bg-slate-800 text-slate-100 rounded-md shadow-xl border border-slate-600/50 overflow-hidden min-w-40"
                               >
                                    {menuItems.map((item, idx) => (
                                         <button
@@ -233,7 +233,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                                                   e.stopPropagation();
                                                   item.action();
                                              }}
-                                             className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
+                                             className="w-full px-4 py-2.5 text-left text-sm hover:bg-slate-700/70 focus:bg-slate-700/70 focus:outline-none transition-colors"
                                         >
                                              {item.label}
                                         </button>

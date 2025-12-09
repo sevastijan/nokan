@@ -217,8 +217,8 @@ export default function DashboardPage() {
 
      return (
           <>
-               <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent pointer-events-none" />
+               <div className="min-h-screen bg-slate-900">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800/40 via-transparent to-transparent pointer-events-none" />
 
                     <div className="relative">
                          <section className="px-4 sm:px-6 lg:px-8 pt-8 pb-6">
@@ -259,8 +259,8 @@ export default function DashboardPage() {
                                         </div>
                                    ) : (
                                         <div className="flex flex-col items-center justify-center py-20 px-4">
-                                             <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm border border-purple-500/20">
-                                                  <Layers className="w-10 h-10 text-purple-400" />
+                                             <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 border border-slate-700">
+                                                  <Layers className="w-10 h-10 text-slate-400" />
                                              </div>
                                              <h3 className="text-2xl font-semibold text-white mb-2">{hasActiveFilters ? 'Nie znaleziono projektów' : 'Brak projektów'}</h3>
                                              <p className="text-slate-400 text-center max-w-md mb-6">
@@ -277,7 +277,7 @@ export default function DashboardPage() {
                                              ) : (
                                                   <button
                                                        onClick={openCreate}
-                                                       className="group px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-purple-500/25 cursor-pointer"
+                                                       className="group px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer"
                                                        aria-label="Utwórz nowy projekt"
                                                   >
                                                        <Sparkles className="w-5 h-5" />
@@ -302,7 +302,7 @@ export default function DashboardPage() {
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                                              <div>
                                                   <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                                                       <div className="w-1.5 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full" />
+                                                       <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
                                                        Projekty przypisane
                                                   </h2>
                                                   <p className="text-slate-400 text-sm">Projekty udostępnione Ci przez administratora</p>
@@ -325,9 +325,9 @@ export default function DashboardPage() {
                                                   return (
                                                        <div
                                                             key={board.id}
-                                                            className="group relative bg-slate-900/60 backdrop-blur-sm border border-slate-800 rounded-xl p-6 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 overflow-hidden"
+                                                            className="group relative bg-slate-800/60 border border-slate-700 rounded-xl p-6 hover:border-slate-600 transition-all duration-300 hover:shadow-lg overflow-hidden"
                                                        >
-                                                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                                            <div className="absolute inset-0 bg-slate-700/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                                                             <div className="relative">
                                                                  <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 min-h-[3.5rem]">{board.title}</h3>
@@ -336,7 +336,7 @@ export default function DashboardPage() {
                                                                  </p>
                                                                  <button
                                                                       onClick={() => router.push(`/submit?boardId=${board.id}`)}
-                                                                      className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 cursor-pointer group/button"
+                                                                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 cursor-pointer group/button"
                                                                       aria-label={`Dodaj zgłoszenie do projektu ${board.title}`}
                                                                  >
                                                                       Dodaj zgłoszenie

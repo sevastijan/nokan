@@ -19,9 +19,8 @@ html, body {
 
 /* Glass card helper */
 .glass-card {
-  @apply bg-white/20 dark:bg-gray-900/20
-         backdrop-blur-lg
-         border border-white/30 dark:border-gray-700/30
+  @apply bg-slate-800
+         border border-slate-700
          rounded-lg
          shadow-sm hover:shadow-md
          transition duration-150;
@@ -32,55 +31,54 @@ html, body {
     z-index: 9999 !important;
   }
   
-  /* Glass effect toast */
+  /* Toast styling */
   .Toastify__toast {
-    background: rgba(20, 18, 30, 0.75) !important; 
-    backdrop-filter: blur(16px) !important;
-    border-radius: 1rem !important;
-    color: #fff !important;
-    border: 1.5px solid rgba(140, 80, 255, 0.22);
-    box-shadow: 0 6px 24px 0 rgba(80, 30, 200, 0.13);
-    font-size: 1.08rem;
+    background: #1e293b !important;
+    border-radius: 0.5rem !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #334155;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 1rem;
     min-height: 56px;
     padding: 16px 20px !important;
     display: flex;
     align-items: center;
   }
-  
+
   /* Success - left border */
   .Toastify__toast--success {
-    border-left: 5px solid #22d34d !important;
+    border-left: 5px solid #4ade80 !important;
   }
-  
+
   /* Error - left border */
   .Toastify__toast--error {
-    border-left: 5px solid #ef4444 !important;
+    border-left: 5px solid #f87171 !important;
   }
-  
+
   /* Info - left border */
   .Toastify__toast--info {
-    border-left: 5px solid #38bdf8 !important;
+    border-left: 5px solid #7dd3fc !important;
   }
-  
+
   /* Warning - left border */
   .Toastify__toast--warning {
-    border-left: 5px solid #f59e0b !important;
+    border-left: 5px solid #fbbf24 !important;
   }
   
   .Toastify__close-button {
-    color: #fff !important;
+    color: #cbd5e1 !important;
     opacity: 0.7 !important;
     transition: opacity 0.2s;
   }
   .Toastify__close-button:hover {
     opacity: 1 !important;
   }
-  
+
   /* Progress bar style */
   .Toastify__progress-bar {
-    background: linear-gradient(90deg, #8b5cf6 0%, #22d34d 100%) !important;
-    height: 4px !important;
-    border-radius: 8px !important;
-    bottom: 8px !important;
+    background: #64748b !important;
+    height: 3px !important;
+    border-radius: 2px !important;
+    bottom: 0 !important;
   }
   

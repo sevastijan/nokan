@@ -171,10 +171,10 @@ export default function Page() {
 
      if (!boardId) {
           return (
-               <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white">
+               <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
                     <div className="text-center">
                          <h2 className="text-2xl font-bold text-red-400 mb-4">Brak ID boarda w URL</h2>
-                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition">
+                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition">
                               Powrót do dashboardu
                          </button>
                     </div>
@@ -188,10 +188,10 @@ export default function Page() {
 
      if (boardError) {
           return (
-               <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white">
+               <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
                     <div className="text-center">
                          <h2 className="text-2xl font-bold text-red-400 mb-4">Błąd ładowania boarda</h2>
-                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition">
+                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition">
                               Powrót do dashboardu
                          </button>
                     </div>
@@ -270,7 +270,7 @@ export default function Page() {
      };
 
      return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex flex-col">
+          <div className="min-h-screen bg-slate-900 flex flex-col">
                <BoardHeader
                     boardTitle={boardTitle}
                     onTitleChange={onBoardTitleChange}

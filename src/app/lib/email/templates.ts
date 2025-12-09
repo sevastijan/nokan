@@ -13,7 +13,7 @@ const baseStyles = `
     background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   }
   .header {
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     padding: 32px 24px;
     text-align: center;
   }
@@ -68,9 +68,9 @@ const baseStyles = `
     border: 1px solid rgba(59, 130, 246, 0.3);
   }
   .badge-purple {
-    background: rgba(139, 92, 246, 0.2);
-    color: #a78bfa;
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
   }
   .badge-green {
     background: rgba(34, 197, 94, 0.2);
@@ -89,7 +89,7 @@ const baseStyles = `
   }
   .button {
     display: inline-block;
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white !important;
     padding: 14px 32px;
     text-decoration: none;
@@ -119,7 +119,7 @@ const baseStyles = `
   .comment-box {
     background: rgba(15, 23, 42, 0.5);
     border-left: 4px solid;
-    border-image: linear-gradient(180deg, #3b82f6, #8b5cf6) 1;
+    border-image: linear-gradient(180deg, #3b82f6, #2563eb) 1;
     padding: 16px 20px;
     margin: 16px 0;
     border-radius: 0 12px 12px 0;
@@ -146,7 +146,7 @@ const baseStyles = `
   .logo {
     font-weight: 800;
     font-size: 20px;
-    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -319,7 +319,7 @@ export function taskPriorityChangedTemplate(
      taskUrl: string
 ): string {
      return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);">
+    <div class="header" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
       <div class="icon">🎯</div>
       <h1>Zmiana priorytetu zadania</h1>
     </div>
@@ -334,7 +334,7 @@ export function taskPriorityChangedTemplate(
         </div>
       </div>
       <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);">🔗 Zobacz zadanie</a>
+        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">🔗 Zobacz zadanie</a>
       </div>
     </div>
   `);

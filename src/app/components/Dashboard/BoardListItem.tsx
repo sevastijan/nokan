@@ -32,7 +32,7 @@ export const BoardListItem = ({ board, isMenuOpen, onMenuToggle, onEdit, onDelet
 
                     <div className="flex items-center gap-6 text-sm text-slate-400">
                          <div className="flex items-center gap-2">
-                              <FaCalendarAlt className="w-4 h-4 text-purple-400" />
+                              <FaCalendarAlt className="w-4 h-4 text-blue-400" />
                               <span>{board._count?.tasks ?? 0} tasks</span>
                          </div>
                          <div className="flex items-center gap-2">
