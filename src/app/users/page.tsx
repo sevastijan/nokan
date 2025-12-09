@@ -197,10 +197,9 @@ export default function UsersManagementPage() {
                                                        initial={{ opacity: 0, x: -20 }}
                                                        animate={{ opacity: 1, x: 0 }}
                                                        transition={{ delay: i * 0.05 }}
-                                                       whileHover={{ scale: 1.02, x: 4 }}
                                                        whileTap={{ scale: 0.98 }}
                                                        onClick={() => setSelectedClientId(client.id)}
-                                                       className={`w-full text-left p-4 rounded-xl flex items-center gap-3 border transition-all ${
+                                                       className={`w-full text-left p-4 rounded-xl flex items-center cursor-pointer gap-3 border transition-all ${
                                                             selectedClientId === client.id
                                                                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-500 shadow-lg shadow-purple-500/30'
                                                                  : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/70 hover:border-purple-500/50 text-slate-200'
@@ -277,8 +276,7 @@ export default function UsersManagementPage() {
                                                             initial={{ opacity: 0, x: -20 }}
                                                             animate={{ opacity: 1, x: 0 }}
                                                             transition={{ delay: i * 0.05 }}
-                                                            whileHover={{ scale: 1.01, y: -2 }}
-                                                            className={`relative flex items-center justify-between p-5 rounded-xl border overflow-hidden ${
+                                                            className={`relative flex items-center justify-between cursor-pointer p-5 rounded-xl border overflow-hidden ${
                                                                  board.isAssigned
                                                                       ? 'bg-gradient-to-r from-green-900/20 to-emerald-900/20 border-green-500/30'
                                                                       : 'bg-slate-700/30 border-slate-600/50 hover:border-purple-500/50'
@@ -301,22 +299,20 @@ export default function UsersManagementPage() {
                                                             </div>
                                                             {board.isAssigned ? (
                                                                  <motion.button
-                                                                      whileHover={{ scale: 1.05 }}
                                                                       whileTap={{ scale: 0.95 }}
                                                                       onClick={() => handleRemove(board.assignmentId!)}
                                                                       disabled={isProcessing}
-                                                                      className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
+                                                                      className="px-5 py-2.5 bg-gradient-to-r cursor-pointer from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
                                                                  >
                                                                       <UserX className="w-4 h-4" />
                                                                       Odepnij
                                                                  </motion.button>
                                                             ) : (
                                                                  <motion.button
-                                                                      whileHover={{ scale: 1.05 }}
                                                                       whileTap={{ scale: 0.95 }}
                                                                       onClick={() => handleAssign(board.id)}
                                                                       disabled={isProcessing}
-                                                                      className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
+                                                                      className="px-5 py-2.5 bg-gradient-to-r from-purple-600 cursor-pointer to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
                                                                  >
                                                                       <UserCheck className="w-4 h-4" />
                                                                       Przypisz
@@ -326,10 +322,9 @@ export default function UsersManagementPage() {
                                                   ))}
                                                   {visibleBoards < filteredBoards.length && (
                                                        <motion.button
-                                                            whileHover={{ scale: 1.02 }}
                                                             whileTap={{ scale: 0.98 }}
                                                             onClick={handleLoadMoreBoards}
-                                                            className="w-full mt-4 px-6 py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl font-medium"
+                                                            className="w-full mt-4 px-6 py-3 bg-purple-600/20 cursor-pointer hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl font-medium"
                                                        >
                                                             Załaduj więcej ({filteredBoards.length - visibleBoards})
                                                        </motion.button>
@@ -360,8 +355,7 @@ export default function UsersManagementPage() {
                                                        initial={{ opacity: 0, x: -20 }}
                                                        animate={{ opacity: 1, x: 0 }}
                                                        transition={{ delay: i * 0.03 }}
-                                                       whileHover={{ scale: 1.01, y: -2 }}
-                                                       className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl border border-slate-600/50 hover:border-purple-500/50 transition-all"
+                                                       className="flex items-center justify-between cursor-pointer p-4 bg-slate-700/30 rounded-xl border border-slate-600/50 hover:border-purple-500/50 transition-all"
                                                   >
                                                        <div className="flex items-center gap-4">
                                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
@@ -375,21 +369,19 @@ export default function UsersManagementPage() {
                                                        </div>
                                                        {user.role === 'CLIENT' ? (
                                                             <motion.button
-                                                                 whileHover={{ scale: 1.05 }}
                                                                  whileTap={{ scale: 0.95 }}
                                                                  onClick={() => handleRoleChange(user.id, false)}
                                                                  disabled={isProcessing}
-                                                                 className="px-3 py-1 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white rounded-lg text-sm disabled:opacity-50 shadow-lg"
+                                                                 className="px-3 py-1 bg-gradient-to-r cursor-pointer from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white rounded-lg text-sm disabled:opacity-50 shadow-lg"
                                                             >
                                                                  Odejmij CLIENT
                                                             </motion.button>
                                                        ) : (
                                                             <motion.button
-                                                                 whileHover={{ scale: 1.05 }}
                                                                  whileTap={{ scale: 0.95 }}
                                                                  onClick={() => handleRoleChange(user.id, true)}
                                                                  disabled={isProcessing}
-                                                                 className="px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-lg text-sm disabled:opacity-50 shadow-lg"
+                                                                 className="px-3 py-1 bg-gradient-to-r cursor-pointer from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-lg text-sm disabled:opacity-50 shadow-lg"
                                                             >
                                                                  Nadaj CLIENT
                                                             </motion.button>
