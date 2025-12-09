@@ -109,4 +109,6 @@ export const {
      useGetPrioritiesQuery,
      useGetClientBoardsWithDetailsQuery,
      useGetAllSubmissionsQuery,
+     useGetAllUsersQuery,
+     useSetUserRoleMutation,
 } = apiSlice;

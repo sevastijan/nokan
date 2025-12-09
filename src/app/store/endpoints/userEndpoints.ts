@@ -114,4 +114,38 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                return trimmedEmail ? [{ type: 'UserRole', id: trimmedEmail }] : [];
           },
      }),
+
+     getAllUsers: builder.query<User[], void>({
+          async queryFn() {
+               try {
+                    const { data, error } = await supabase.from('users').select('*');
+                    if (error) throw error;
+                    return { data: data || [] };
+               } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Unknown error';
+                    console.error('[getAllUsers] Error:', message);
+                    return { error: { status: 'FETCH_ERROR', error: message } };
+               }
+          },
+          providesTags: (result) => (result ? [...result.map((user) => ({ type: 'User', id: user.id } as const)), { type: 'User', id: 'LIST' }] : [{ type: 'User', id: 'LIST' }]),
+     }),
+
+     setUserRole: builder.mutation<void, { userId: string; role: UserRole }>({
+          async queryFn({ userId, role }) {
+               if (!isValidUserRole(role)) {
+                    return { error: { status: 'VALIDATION_ERROR', error: `Invalid role: ${role}` } };
+               }
+
+               try {
+                    const { error } = await supabase.from('users').update({ role }).eq('id', userId);
+                    if (error) throw error;
+                    return { data: undefined };
+               } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Unknown error';
+                    console.error('[setUserRole] Error:', message);
+                    return { error: { status: 'UPDATE_ERROR', error: message } };
+               }
+          },
+          invalidatesTags: [{ type: 'User', id: 'LIST' }],
+     }),
 });
