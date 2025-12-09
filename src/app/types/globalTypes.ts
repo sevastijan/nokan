@@ -589,6 +589,7 @@ export interface ClientSubmission {
      board_id: string;
      priority: string;
      user_id?: string | null;
+     board_title: string;
      order: number;
      sort_order: number;
      completed: boolean;
