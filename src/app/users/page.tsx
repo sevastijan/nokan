@@ -23,33 +23,25 @@ export default function UsersManagementPage() {
 
      const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
      const [searchTerm, setSearchTerm] = useState('');
+     const [boardSearch, setBoardSearch] = useState('');
+     const [visibleBoards, setVisibleBoards] = useState(5);
 
-     // Queries
-     const { data: clientsFromQuery = [] } = useGetAllClientsQuery();
+     const { data: clients = [] } = useGetAllClientsQuery();
      const { data: allBoards = [] } = useGetAllBoardsQuery();
      const { data: assignments = [], isFetching: loadingAssignments } = useGetClientBoardAssignmentsQuery(selectedClientId || '', {
           skip: !selectedClientId,
      });
      const { data: allUsers = [], isLoading: loadingAllUsers } = useGetAllUsersQuery();
 
-     // Mutations
      const [assign, { isLoading: assigning }] = useAssignClientToBoardMutation();
      const [remove, { isLoading: removing }] = useRemoveClientFromBoardMutation();
      const [setUserRole, { isLoading: changingRole }] = useSetUserRoleMutation();
 
      const isProcessing = assigning || removing || changingRole;
 
-     // Local state for clients to update immediately after role change
-     const [clientsState, setClientsState] = useState(clientsFromQuery);
-
-     // Update clientsState when clientsFromQuery changes
-     // (initial fetch or background refetch)
-     useMemo(() => setClientsState(clientsFromQuery), [clientsFromQuery]);
-
-     // Filtering
      const filteredClients = useMemo(
-          () => clientsState.filter((c) => c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || c.email?.toLowerCase().includes(searchTerm.toLowerCase())),
-          [clientsState, searchTerm],
+          () => clients.filter((c) => c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || c.email?.toLowerCase().includes(searchTerm.toLowerCase())),
+          [clients, searchTerm],
      );
 
      const filteredUsers = useMemo(
@@ -66,7 +58,10 @@ export default function UsersManagementPage() {
           [allBoards, assignments],
      );
 
-     // Handlers
+     const filteredBoards = useMemo(() => boardsWithStatus.filter((b) => b.title.toLowerCase().includes(boardSearch.toLowerCase())), [boardsWithStatus, boardSearch]);
+
+     const boardsToShow = useMemo(() => filteredBoards.slice(0, visibleBoards), [filteredBoards, visibleBoards]);
+
      const handleAssign = useCallback(
           async (boardId: string) => {
                if (!selectedClientId) return;
@@ -95,26 +90,17 @@ export default function UsersManagementPage() {
           async (userId: string, promote: boolean) => {
                try {
                     await setUserRole({ userId, role: promote ? 'CLIENT' : 'MEMBER' }).unwrap();
-
-                    if (promote) {
-                         const newClient = allUsers.find((u) => u.id === userId);
-                         if (newClient && !clientsState.some((c) => c.id === userId)) {
-                              setClientsState((prev) => [...prev, newClient]);
-                         }
-                    } else {
-                         setClientsState((prev) => prev.filter((c) => c.id !== userId));
-                         if (selectedClientId === userId) setSelectedClientId(null);
-                    }
+                    if (!promote && selectedClientId === userId) setSelectedClientId(null);
                } catch {
                     alert('Nie udało się zmienić roli');
                }
           },
-          [setUserRole, clientsState, allUsers, selectedClientId],
+          [setUserRole, selectedClientId],
      );
 
      const handleClearSearch = useCallback(() => setSearchTerm(''), []);
+     const handleLoadMoreBoards = useCallback(() => setVisibleBoards((prev) => prev + 5), []);
 
-     // Auth check
      if (authStatus === 'loading' || roleLoading || loadingAllUsers) return <Loader text="Ładowanie..." />;
      if (authStatus === 'unauthenticated' || !hasManagementAccess()) {
           router.push('/');
@@ -181,14 +167,21 @@ export default function UsersManagementPage() {
                          <main className="lg:col-span-2">
                               {selectedClientId ? (
                                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+                                        <input
+                                             type="text"
+                                             placeholder="Szukaj boardu..."
+                                             value={boardSearch}
+                                             onChange={(e) => setBoardSearch(e.target.value)}
+                                             className="w-full pl-4 pr-12 py-2 mb-4 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder:text-slate-500"
+                                        />
                                         <h2 className="text-xl font-semibold text-white mb-4">Boardy klienta</h2>
                                         {loadingAssignments ? (
                                              <Loader text="Ładowanie boardów..." />
-                                        ) : boardsWithStatus.length === 0 ? (
+                                        ) : boardsToShow.length === 0 ? (
                                              <p className="text-slate-400">Brak boardów w systemie</p>
                                         ) : (
                                              <div className="space-y-3">
-                                                  {boardsWithStatus.map((board) => (
+                                                  {boardsToShow.map((board) => (
                                                        <div
                                                             key={board.id}
                                                             className="flex items-center justify-between p-4 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:border-slate-500/50 transition-colors"
@@ -218,12 +211,17 @@ export default function UsersManagementPage() {
                                                             )}
                                                        </div>
                                                   ))}
+                                                  {visibleBoards < filteredBoards.length && (
+                                                       <button onClick={handleLoadMoreBoards} className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
+                                                            Load more
+                                                       </button>
+                                                  )}
                                              </div>
                                         )}
                                    </div>
                               ) : (
                                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-20 text-center">
-                                        <p className="text-slate-400">Wybierz klienta aby przypisać mu odpowiedni board.</p>
+                                        <p className="text-slate-400">Wybierz klienta aby zarządzać jego boardami</p>
                                    </div>
                               )}
 
