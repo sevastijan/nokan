@@ -5,7 +5,22 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel, Menu } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
-import { FaHome, FaTachometerAlt, FaCalendarAlt, FaSignOutAlt, FaUsers, FaBars, FaChevronRight, FaBell, FaCheck, FaTrash, FaExternalLinkAlt, FaUserCog, FaFileAlt } from 'react-icons/fa';
+import {
+     FaHome,
+     FaTachometerAlt,
+     FaCalendarAlt,
+     FaSignOutAlt,
+     FaUsers,
+     FaBars,
+     FaChevronRight,
+     FaBell,
+     FaCheck,
+     FaTrash,
+     FaExternalLinkAlt,
+     FaUserCog,
+     FaFileAlt,
+     FaCheckDouble,
+} from 'react-icons/fa';
 import Avatar from '../components/Avatar/Avatar';
 import Button from '../components/Button/Button';
 import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery } from '@/app/store/apiSlice';
@@ -44,11 +59,13 @@ const Navbar = () => {
      });
 
      const [sidebarOpen, setSidebarOpen] = useState(false);
+     const [showRead, setShowRead] = useState(false);
 
      if (!session?.user) return <></>;
 
      const hasManagementAccess = () => userRole === 'OWNER' || userRole === 'PROJECT_MANAGER';
 
+     const filteredNotifications = showRead ? notifications : notifications.filter((n) => !n.read);
      const unreadCount = notifications.filter((n) => !n.read).length;
 
      const getBoardName = (boardId: string) => boards?.find((b: { id: string }) => b.id === boardId)?.title || 'Unknown board';
@@ -67,6 +84,16 @@ const Navbar = () => {
                default:
                     return <span className="px-2 py-1 rounded-lg text-xs font-medium bg-slate-600/20 text-slate-300 border border-slate-400/30">Member</span>;
           }
+     };
+
+     const handleMarkAllAsRead = async () => {
+          const unreadNotifications = notifications.filter((n) => !n.read);
+          for (const n of unreadNotifications) {
+               if (n.id) {
+                    await markNotificationRead({ id: String(n.id) });
+               }
+          }
+          refetchNotifications();
      };
 
      const nav = [
@@ -99,7 +126,6 @@ const Navbar = () => {
                     </button>
                </div>
 
-               {/* Profil */}
                {session.user && (
                     <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 shadow-xl mt-5 mx-4">
                          <div className="flex items-center gap-4">
@@ -133,19 +159,34 @@ const Navbar = () => {
                                         <Menu.Items className="absolute left-0 z-30 mt-3 w-96 max-w-xs bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden">
                                              <div className="flex items-center justify-between p-3 border-b border-slate-700">
                                                   <span className="font-semibold text-white text-base">Notifications</span>
-                                                  <button className="text-xs text-blue-400 hover:underline" onClick={refetchNotifications} tabIndex={-1}>
-                                                       Refresh
-                                                  </button>
+                                                  <div className="flex items-center gap-2">
+                                                       {unreadCount > 0 && (
+                                                            <button
+                                                                 className="text-xs text-green-400 hover:text-green-300 hover:underline flex items-center gap-1"
+                                                                 onClick={handleMarkAllAsRead}
+                                                                 tabIndex={-1}
+                                                                 title="Mark all as read"
+                                                            >
+                                                                 <FaCheckDouble className="w-3 h-3" />
+                                                                 Mark all
+                                                            </button>
+                                                       )}
+                                                       <button className="text-xs text-blue-400 hover:text-blue-300 hover:underline" onClick={() => setShowRead(!showRead)} tabIndex={-1}>
+                                                            {showRead ? 'Hide read' : 'Show all'}
+                                                       </button>
+                                                  </div>
                                              </div>
                                              <div className="max-h-96 overflow-y-auto">
-                                                  {notifications.length === 0 && <div className="px-4 py-5 text-slate-400 text-center text-sm">No notifications</div>}
-                                                  {notifications.map((n: Notification) => (
+                                                  {filteredNotifications.length === 0 && (
+                                                       <div className="px-4 py-5 text-slate-400 text-center text-sm">{showRead ? 'No notifications' : 'No unread notifications'}</div>
+                                                  )}
+                                                  {filteredNotifications.map((n: Notification) => (
                                                        <Menu.Item key={String(n.id)}>
                                                             {({ active }) => (
                                                                  <div
-                                                                      className={`group px-4 py-3 ${n.read ? '' : 'bg-slate-800/60'} ${
+                                                                      className={`group px-4 py-3 ${n.read ? 'opacity-70' : 'bg-slate-800/60'} ${
                                                                            active ? 'bg-slate-800/80' : ''
-                                                                      } text-white flex flex-col gap-1 cursor-pointer transition-all rounded`}
+                                                                      } text-white flex flex-col gap-1 cursor-pointer transition-all`}
                                                                       onClick={() => {
                                                                            if (n.board_id && n.task_id) {
                                                                                 router.push(`/board/${n.board_id}?task=${n.task_id}`);
@@ -170,13 +211,9 @@ const Navbar = () => {
                                                                                      title="Mark as read"
                                                                                      onClick={async (e) => {
                                                                                           e.stopPropagation();
-                                                                                          if (n.id)
-                                                                                               await markNotificationRead({
-                                                                                                    id: String(n.id),
-                                                                                               });
-                                                                                          refetchNotifications();
+                                                                                          if (n.id) await markNotificationRead({ id: String(n.id) });
                                                                                      }}
-                                                                                     className="text-green-400 hover:bg-green-700/20 rounded p-1.5"
+                                                                                     className="text-green-400 hover:bg-green-700/20 rounded p-1.5 transition-colors"
                                                                                 >
                                                                                      <FaCheck />
                                                                                 </button>
@@ -185,13 +222,9 @@ const Navbar = () => {
                                                                                 title="Delete"
                                                                                 onClick={async (e) => {
                                                                                      e.stopPropagation();
-                                                                                     if (n.id)
-                                                                                          await deleteNotification({
-                                                                                               id: String(n.id),
-                                                                                          });
-                                                                                     refetchNotifications();
+                                                                                     if (n.id) await deleteNotification({ id: String(n.id) });
                                                                                 }}
-                                                                                className="text-red-400 hover:bg-red-700/20 rounded p-1.5"
+                                                                                className="text-red-400 hover:bg-red-700/20 rounded p-1.5 transition-colors"
                                                                            >
                                                                                 <FaTrash />
                                                                            </button>
