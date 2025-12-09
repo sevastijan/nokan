@@ -4,6 +4,13 @@ import { ChangeEvent } from 'react';
 
 export type SingleTaskMode = 'edit' | 'add';
 
+// === Status Type ===
+export interface Status {
+     id: string;
+     label: string;
+     color: string;
+}
+
 // === Core Types ===
 
 export interface User {
@@ -65,6 +72,7 @@ export interface ApiTask {
      } | null;
      user_id?: string | null;
      status?: string | null;
+     status_id?: string | null;
      images?: string[] | null;
 }
 
@@ -77,6 +85,21 @@ export interface Attachment {
      mime_type: string;
      uploaded_by: string;
      created_at: string;
+}
+
+export interface ApiTemplateColumn {
+     id: string;
+     title: string;
+     order: number;
+     created_at?: string | null;
+}
+
+export interface ApiTemplateResponse {
+     id: string;
+     name: string;
+     description?: string | null;
+     template_columns?: ApiTemplateColumn[] | null;
+     columns?: ApiTemplateColumn[] | null;
 }
 
 export interface Comment {
@@ -108,12 +131,14 @@ export interface Task {
      created_at?: string;
      taskIndex?: number;
      updated_at?: string;
-     images?: unknown[];
+     images?: string[];
      assignee?: User | null;
      start_date?: string;
      end_date?: string;
      due_date?: string;
      status?: string;
+     status_id?: string | null;
+     statuses?: Status[];
 }
 
 export interface TaskDetail {
@@ -135,10 +160,12 @@ export interface TaskDetail {
      end_date?: string | null;
      due_date?: string | null;
      status?: string | null;
+     status_id?: string | null;
      board_id?: string | null;
      imagePreview?: string | null;
      hasUnsavedChanges?: boolean;
      completed?: boolean;
+     statuses?: Status[];
 }
 
 export interface Column {
@@ -150,6 +177,7 @@ export interface Column {
 }
 
 export interface Board {
+     statuses: Status[];
      id: string;
      title: string;
      user_id: string;
@@ -164,6 +192,7 @@ export interface Board {
           completedTasks?: number;
      };
 }
+
 export interface BoardWithCounts extends Board {
      _count: {
           tasks: number;
@@ -218,12 +247,12 @@ export interface Team {
      created_at?: string;
 }
 
-// Option for CustomSelect
 export interface CustomSelectOption {
      value: string;
      label: string;
      image?: string;
 }
+
 export interface CustomSelectProps {
      options: CustomSelectOption[];
      value: string[];
@@ -234,29 +263,22 @@ export interface CustomSelectProps {
      disabled?: boolean;
 }
 
-// === Props Interfaces ===
-
-// Team Management:
 export interface TeamFormModalProps {
      isOpen: boolean;
      onClose: () => void;
      onSubmit: () => Promise<void>;
      isCreatingTeam: boolean;
      editingTeamId: string | null;
-
      newTeamName: string;
      setNewTeamName: (val: string) => void;
      newTeamMembers: string[];
      setNewTeamMembers: (val: string[]) => void;
-
      editedTeamName: string;
      setEditedTeamName: (val: string) => void;
      editedTeamMembers: string[];
      setEditedTeamMembers: (val: string[]) => void;
-
      availableUsers: User[];
      boards: Board[];
-
      selectedBoardIds: string[];
      setSelectedBoardIds: (ids: string[]) => void;
 }
@@ -275,7 +297,6 @@ export interface TeamListItemProps {
      availableUsers: User[];
 }
 
-// Board List:
 export interface BoardListItemType {
      id: string;
      title: string;
@@ -285,6 +306,7 @@ export interface BoardListItemType {
           teamMembers: number;
      };
 }
+
 export interface BoardListProps {
      boards: BoardListItemType[];
      onEdit: (boardId: string) => void;
@@ -301,7 +323,7 @@ export interface TemplateColumn {
      id: string;
      title: string;
      order: number;
-     tasks: TemplateTask[]; // Each column has its own starter tasks
+     tasks: TemplateTask[];
 }
 
 export interface BoardTemplate {
@@ -318,10 +340,6 @@ export interface BoardTemplate {
      }>;
 }
 
-/**
- * Props for TemplateSelector.
- * selectedTemplate can be null or undefined if nothing selected.
- */
 export interface TemplateSelectorProps {
      selectedTemplate?: BoardTemplate | null;
      onTemplateSelect: (tpl: BoardTemplate | null) => void;
@@ -333,14 +351,8 @@ export interface TemplateSelectorProps {
 export interface CreateTemplateModalProps {
      isOpen: boolean;
      onClose: () => void;
-     /**
-      * Called after a new template is created.
-      * Receives the created BoardTemplate.
-      */
      onTemplateCreated: (newTpl: BoardTemplate) => void;
 }
-
-// === Task-related component props ===
 
 export interface TaskContentProps {
      task: TaskDetail | null;
@@ -388,7 +400,8 @@ export interface SingleTaskViewProps {
      onTaskAdded?: (task: TaskDetail) => void;
      currentUser?: User;
      initialStartDate?: string;
-     columns: Column[]; // jeśli potrzebujesz listę kolumn
+     columns: Column[];
+     statuses: Status[];
 }
 
 export interface AttachmentsListProps {
@@ -399,7 +412,6 @@ export interface AttachmentsListProps {
      onAttachmentsUpdate?: (updater: (attachments: Attachment[]) => Attachment[]) => void;
 }
 
-// Inne propsy, które wymieniałeś:
 export interface UserSelectorProps {
      selectedUser: User | null;
      availableUsers: User[];
@@ -481,7 +493,6 @@ export interface ActionFooterProps {
      tempTitle?: string;
 }
 
-// Przykładowe domyślne szablony:
 export const DEFAULT_TEMPLATES: Omit<BoardTemplate, 'id' | 'created_at' | 'updated_at'>[] = [
      {
           name: 'Basic Kanban',
@@ -525,6 +536,7 @@ export interface UseTaskManagementProps {
      columnId?: string;
      boardId: string;
      currentUser?: User;
+     initialStartDate?: string;
      onTaskUpdate?: (task: TaskDetail) => void;
      onTaskAdded?: (task: TaskDetail) => void;
      onClose: () => void;
@@ -564,12 +576,34 @@ export interface SubmissionForm {
      board_id: string;
      column_id: string;
      status: string;
+     status_id?: string;
      created_at?: string;
      updated_at?: string;
 }
 
-export interface ClientSubmission extends Task {
+export interface ClientSubmission {
+     id: string;
+     title: string;
+     description: string;
+     column_id: string;
+     board_id: string;
+     priority: string;
+     user_id?: string | null;
+     order: number;
+     sort_order: number;
+     completed: boolean;
+     created_at?: string;
+     updated_at?: string;
+     images?: string[] | null;
+     assignee?: User | null;
+     start_date?: string | null;
+     end_date?: string | null;
+     due_date?: string | null;
+     status_id?: string | null;
+
      submission_id: string;
      client_name?: string;
      client_email?: string;
+
+     status?: Status | null;
 }

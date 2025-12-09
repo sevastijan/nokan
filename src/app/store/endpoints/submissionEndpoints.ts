@@ -1,32 +1,8 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { supabase } from '@/app/lib/supabase';
-import { ClientSubmission } from '@/app/types/globalTypes';
-
-interface RawSubmission {
-     id: string;
-     title: string;
-     description: string;
-     priority: string;
-     client_id: string;
-     board_id: string;
-     column_id: string;
-     status: string;
-     task_id?: string;
-     created_at?: string;
-     updated_at?: string;
-     task?: unknown;
-     client?: unknown;
-}
-
-interface RawUser {
-     id: string;
-     name: string;
-     email: string;
-     image?: string;
-}
+import { ClientSubmission, Status } from '@/app/types/globalTypes';
 
 export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
-     // Utworzenie zgłoszenia przez klienta
      createSubmission: builder.mutation<
           ClientSubmission,
           {
@@ -39,16 +15,18 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
      >({
           async queryFn({ title, description, priority, client_id, board_id }) {
                try {
-                    // Znajdź pierwszą kolumnę na boardzie (domyślnie "To Do" lub pierwsza dostępna)
-                    const { data: columns, error: colErr } = await supabase.from('columns').select('id').eq('board_id', board_id).order('order', { ascending: true }).limit(1);
+                    const { data: columns } = await supabase.from('columns').select('id').eq('board_id', board_id).order('order', { ascending: true }).limit(1);
 
-                    if (colErr || !columns || columns.length === 0) {
+                    if (!columns || columns.length === 0) {
                          throw new Error('No columns found on this board');
                     }
 
                     const column_id = columns[0].id;
 
-                    // Utwórz zadanie
+                    const { data: defaultStatuses } = await supabase.from('statuses').select('id').eq('board_id', board_id).order('order_index', { ascending: true }).limit(1);
+
+                    const defaultStatusId = defaultStatuses && defaultStatuses.length > 0 ? defaultStatuses[0].id : null;
+
                     const { data: task, error: taskErr } = await supabase
                          .from('tasks')
                          .insert({
@@ -60,14 +38,13 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                               user_id: client_id,
                               completed: false,
                               sort_order: 0,
-                              status: 'pending',
+                              status_id: defaultStatusId,
                          })
                          .select('*')
                          .single();
 
                     if (taskErr || !task) throw taskErr || new Error('Failed to create task');
 
-                    // Utwórz wpis zgłoszenia
                     const { data: submission, error: subErr } = await supabase
                          .from('submissions')
                          .insert({
@@ -98,8 +75,8 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                          completed: task.completed,
                          created_at: task.created_at,
                          updated_at: task.updated_at,
-                         status: task.status,
                          submission_id: submission.id,
+                         status: null,
                     };
 
                     return { data: result };
@@ -112,48 +89,48 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
           invalidatesTags: [{ type: 'Submission', id: 'LIST' }],
      }),
 
-     // Pobierz zgłoszenia klienta
      getClientSubmissions: builder.query<ClientSubmission[], string>({
           async queryFn(clientId) {
                try {
-                    const { data: submissions, error: subErr } = await supabase
+                    const { data: submissions } = await supabase
                          .from('submissions')
                          .select(
                               `
             *,
             task:tasks!submissions_task_id_fkey(*),
-            client:users!submissions_client_id_fkey(id, name, email, image)
+            client:users!submissions_client_id_fkey(id, name, email, image),
+            status_obj:statuses!tasks_status_id_fkey(id, label, color)
           `,
                          )
                          .eq('client_id', clientId)
                          .order('created_at', { ascending: false });
 
-                    if (subErr) throw subErr;
+                    if (!submissions) return { data: [] };
 
-                    const mapped: ClientSubmission[] = ((submissions as RawSubmission[]) || []).map((s) => {
-                         const taskData = Array.isArray(s.task) ? s.task[0] : s.task;
-                         const clientData = Array.isArray(s.client) ? s.client[0] : s.client;
+                    const mapped: ClientSubmission[] = submissions.map((s) => {
+                         const task = Array.isArray(s.task) ? s.task[0] : s.task;
+                         const client = Array.isArray(s.client) ? s.client[0] : s.client;
+                         const statusObj = Array.isArray(s.status_obj) ? s.status_obj[0] : s.status_obj;
 
-                         const client = clientData as RawUser | undefined;
+                         const status: Status | null = statusObj ? { id: statusObj.id, label: statusObj.label, color: statusObj.color } : null;
 
                          return {
-                              id: s.task_id || s.id,
+                              id: task?.id || s.task_id || '',
                               title: s.title,
-                              description: s.description,
+                              description: s.description || '',
                               column_id: s.column_id,
                               board_id: s.board_id,
                               priority: s.priority,
                               user_id: s.client_id,
-                              order: 0,
-                              sort_order: 0,
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              completed: taskData ? (taskData as any).completed : false,
-                              status: s.status,
-                              created_at: s.created_at,
-                              updated_at: s.updated_at,
+                              order: task?.sort_order ?? 0,
+                              sort_order: task?.sort_order ?? 0,
+                              completed: task?.completed ?? false,
+                              created_at: task?.created_at || s.created_at,
+                              updated_at: task?.updated_at || s.updated_at,
                               submission_id: s.id,
                               client_name: client?.name,
                               client_email: client?.email,
+                              status,
                          };
                     });
 
@@ -168,7 +145,6 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                result ? [...result.map((s) => ({ type: 'Submission' as const, id: s.submission_id })), { type: 'Submission', id: 'LIST' }] : [{ type: 'Submission', id: 'LIST' }],
      }),
 
-     // Aktualizacja zgłoszenia przez klienta
      updateSubmission: builder.mutation<
           ClientSubmission,
           {
@@ -178,26 +154,19 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                     title?: string;
                     description?: string;
                     priority?: string;
-                    status?: string;
                };
           }
      >({
           async queryFn({ submissionId, taskId, data }) {
                try {
-                    // Aktualizuj zadanie
-                    const { error: taskErr } = await supabase.from('tasks').update(data).eq('id', taskId);
+                    const taskPayload = { ...data };
 
+                    const { error: taskErr } = await supabase.from('tasks').update(taskPayload).eq('id', taskId);
                     if (taskErr) throw taskErr;
 
-                    // Aktualizuj zgłoszenie
-                    const { data: submission, error: subErr } = await supabase.from('submissions').update(data).eq('id', submissionId).select('*').single();
+                    const { data: submission } = await supabase.from('submissions').update(data).eq('id', submissionId).select('*').single();
 
-                    if (subErr || !submission) throw subErr || new Error('Failed to update submission');
-
-                    // Pobierz zaktualizowane zadanie
-                    const { data: task, error: getTaskErr } = await supabase.from('tasks').select('*').eq('id', taskId).single();
-
-                    if (getTaskErr || !task) throw getTaskErr || new Error('Failed to fetch updated task');
+                    const { data: task } = await supabase.from('tasks').select('*').eq('id', taskId).single();
 
                     const result: ClientSubmission = {
                          id: task.id,
@@ -210,10 +179,10 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                          order: task.sort_order ?? 0,
                          sort_order: task.sort_order ?? 0,
                          completed: task.completed,
-                         status: task.status,
                          created_at: task.created_at,
                          updated_at: task.updated_at,
                          submission_id: submission.id,
+                         status: null,
                     };
 
                     return { data: result };
@@ -229,20 +198,11 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
           ],
      }),
 
-     // Usuń zgłoszenie
      deleteSubmission: builder.mutation<void, { submissionId: string; taskId: string }>({
           async queryFn({ submissionId, taskId }) {
                try {
-                    // Usuń zgłoszenie
-                    const { error: subErr } = await supabase.from('submissions').delete().eq('id', submissionId);
-
-                    if (subErr) throw subErr;
-
-                    // Usuń zadanie
-                    const { error: taskErr } = await supabase.from('tasks').delete().eq('id', taskId);
-
-                    if (taskErr) throw taskErr;
-
+                    await supabase.from('submissions').delete().eq('id', submissionId);
+                    await supabase.from('tasks').delete().eq('id', taskId);
                     return { data: undefined };
                } catch (err) {
                     const error = err as Error;

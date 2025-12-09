@@ -6,12 +6,18 @@ import { useRouter } from 'next/navigation';
 import { useGetClientSubmissionsQuery, useUpdateSubmissionMutation, useDeleteSubmissionMutation } from '@/app/store/apiSlice';
 import { supabase } from '@/app/lib/supabase';
 import Loader from '@/app/components/Loader';
-import { ClientSubmission } from '@/app/types/globalTypes';
+import { ClientSubmission as ImportedClientSubmission } from '@/app/types/globalTypes';
 
 const priorityColors: Record<string, string> = {
      low: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
      high: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
      urgent: 'bg-red-500/20 text-red-400 border-red-500/30',
+};
+
+const priorityLabels: Record<string, string> = {
+     low: 'Niski',
+     high: 'Wysoki',
+     urgent: 'Pilny',
 };
 
 const allowedPriorities = ['low', 'high', 'urgent'] as const;
@@ -59,7 +65,6 @@ export default function SubmissionsPage() {
      const [editForm, setEditForm] = useState({
           title: '',
           description: '',
-          priority: 'low' as Priority,
      });
 
      if (authStatus === 'loading' || isFetchingUuid || loadingSubmissions) {
@@ -84,20 +89,17 @@ export default function SubmissionsPage() {
           );
      }
 
-     const startEdit = (submission: ClientSubmission) => {
-          const safePriority = isValidPriority(submission.priority) ? submission.priority : 'low';
-
+     const startEdit = (submission: ImportedClientSubmission) => {
           setEditingId(submission.submission_id);
           setEditForm({
                title: submission.title,
                description: submission.description ?? '',
-               priority: safePriority,
           });
      };
 
      const cancelEdit = () => {
           setEditingId(null);
-          setEditForm({ title: '', description: '', priority: 'low' });
+          setEditForm({ title: '', description: '' });
      };
 
      const saveEdit = async (submissionId: string, taskId: string) => {
@@ -119,19 +121,6 @@ export default function SubmissionsPage() {
                await deleteSubmission({ submissionId, taskId }).unwrap();
           } catch {
                alert('Nie udało się usunąć zgłoszenia');
-          }
-     };
-
-     const changePriority = async (submission: ClientSubmission, newPriority: Priority) => {
-          if (!submission.id) return;
-          try {
-               await updateSubmission({
-                    submissionId: submission.submission_id,
-                    taskId: submission.id,
-                    data: { priority: newPriority },
-               }).unwrap();
-          } catch {
-               alert('Nie udało się zmienić priorytetu');
           }
      };
 
@@ -176,15 +165,6 @@ export default function SubmissionsPage() {
                                                             placeholder="Opis"
                                                        />
                                                        <div className="flex items-center gap-3">
-                                                            <select
-                                                                 value={editForm.priority}
-                                                                 onChange={(e) => setEditForm({ ...editForm, priority: e.target.value as Priority })}
-                                                                 className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
-                                                            >
-                                                                 <option value="low">Low</option>
-                                                                 <option value="high">High</option>
-                                                                 <option value="urgent">Urgent</option>
-                                                            </select>
                                                             <button onClick={() => saveEdit(sub.submission_id, sub.id)} className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
                                                                  Zapisz
                                                             </button>
@@ -228,15 +208,21 @@ export default function SubmissionsPage() {
                                                        <p className="text-slate-300 mb-5 whitespace-pre-wrap">{sub.description || '—'}</p>
 
                                                        <div className="flex flex-wrap items-center gap-4 text-sm">
-                                                            <select
-                                                                 value={currentPriority}
-                                                                 onChange={(e) => changePriority(sub, e.target.value as Priority)}
-                                                                 className={`px-3 py-1 rounded-full border cursor-pointer transition ${priorityColors[currentPriority]}`}
-                                                            >
-                                                                 <option value="low">Low</option>
-                                                                 <option value="high">High</option>
-                                                                 <option value="urgent">Urgent</option>
-                                                            </select>
+                                                            <div className={`px-4 py-1.5 rounded-full border ${priorityColors[currentPriority]}`}>
+                                                                 <span className="font-medium">{priorityLabels[currentPriority]}</span>
+                                                            </div>
+
+                                                            {sub.status ? (
+                                                                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border bg-slate-700/30 border-slate-600/50">
+                                                                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: sub.status.color || '#94a3b8' }} />
+                                                                      <span className="text-slate-200 font-medium">{sub.status.label}</span>
+                                                                 </div>
+                                                            ) : (
+                                                                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border bg-slate-700/30 border-slate-600/50">
+                                                                      <div className="w-2.5 h-2.5 rounded-full bg-slate-500" />
+                                                                      <span className="text-slate-400 font-medium">Brak statusu</span>
+                                                                 </div>
+                                                            )}
 
                                                             {sub.created_at && <span className="text-slate-500">Utworzono: {new Date(sub.created_at).toLocaleDateString('pl-PL')}</span>}
                                                        </div>

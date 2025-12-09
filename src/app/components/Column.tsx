@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import AddTaskForm from './TaskColumn/AddTaskForm';
 import Task from './Task';
@@ -38,10 +38,9 @@ const Column = ({
      priorities = [],
      dragHandleProps,
 }: ColumnProps) => {
-     const [localTasks, setLocalTasks] = useState<TaskType[]>([]);
      const [isEditingTitle, setIsEditingTitle] = useState(false);
 
-     useEffect(() => {
+     const localTasks = useMemo(() => {
           const arr = Array.isArray(column.tasks) ? column.tasks : [];
           const filtered = arr.filter((t) => t != null);
           const sorted = [...filtered].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -53,11 +52,11 @@ const Column = ({
                     deduped.push(t);
                }
           }
-          setLocalTasks(deduped);
-     }, [column.tasks, column.id]);
+          return deduped;
+     }, [column.tasks]);
 
      return (
-          <div className="h-full flex flex-col bg-gradient-to-br from-slate-900/50 via-purple-900/30 to-slate-900/5 border border-purple-500/20 rounded-2xl shadow-2xl overflow-hidden  hover:border-purple-500/40 hover:shadow-purple-500/10">
+          <div className="h-full flex flex-col bg-gradient-to-br from-slate-900/50 via-purple-900/30 to-slate-900/5 border border-purple-500/20 rounded-2xl shadow-2xl overflow-hidden hover:border-purple-500/40 hover:shadow-purple-500/10">
                <div className="flex items-center gap-3 px-4 py-4 bg-gradient-to-r from-slate-800/80 to-purple-900/40 border-b border-purple-500/20">
                     <div className="text-purple-400/60 hover:text-purple-300 cursor-grab active:cursor-grabbing transition-colors duration-200" {...dragHandleProps}>
                          <FaGripVertical size={18} />
@@ -82,7 +81,7 @@ const Column = ({
             transition-all duration-200
             ${isEditingTitle ? 'bg-slate-800/50' : ''}
           `}
-                         placeholder="Column Title"
+                         placeholder="Tytuł kolumny"
                     />
 
                     <div className="flex items-center gap-2">

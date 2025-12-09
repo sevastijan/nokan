@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -25,6 +25,7 @@ export default function Page() {
 
      const {
           board,
+          statuses,
           loading: boardLoading,
           error: boardError,
           fetchBoardData,
@@ -50,15 +51,23 @@ export default function Page() {
      const [filterPriority, setFilterPriority] = useState<string | null>(null);
      const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
 
+     const prevBoardIdRef = useRef<string | null>(null);
+
      useEffect(() => {
           if (!board) return;
-          setBoardTitle(board.title);
+
+          if (prevBoardIdRef.current !== board.id) {
+               prevBoardIdRef.current = board.id;
+               setBoardTitle(board.title);
+          }
+
           const sortedCols = board.columns
                .map((c) => ({
                     ...c,
                     tasks: (c.tasks || []).map((t) => ({ ...t, order: t.sort_order ?? 0 })).sort((a, b) => a.order - b.order),
                }))
                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
           setLocalColumns(sortedCols);
      }, [board]);
 
@@ -98,7 +107,7 @@ export default function Page() {
                     });
                }
           })();
-     }, [session]);
+     }, [session?.user?.email, session?.user?.name, session?.user?.image]);
 
      useEffect(() => {
           if (status === 'unauthenticated') router.push('/auth/signin');
@@ -160,7 +169,6 @@ export default function Page() {
           [localColumns, fetchBoardData],
      );
 
-     // Dopiero TERAZ możemy sprawdzać warunki i robić early return
      if (!boardId) {
           return (
                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white">
@@ -209,7 +217,10 @@ export default function Page() {
           setIsAddingColumn(false);
      };
 
-     const openAddTask = (colId: string) => setAddTaskColumnId(colId);
+     const openAddTask = (colId: string) => {
+          setAddTaskColumnId(colId);
+     };
+
      const onTaskAdded = async (columnId: string, title: string, priority?: string, userId?: string) => {
           const task = await handleAddTask(columnId, title, priority, userId);
           setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: [...(c.tasks || []), task] } : c)));
@@ -247,6 +258,16 @@ export default function Page() {
      });
 
      const currentColumnId = addTaskColumnId || (selectedTaskId ? localColumns.find((c) => c.tasks.some((t) => t.id === selectedTaskId))?.id : null);
+
+     const handleOpenTaskDetail = (taskId: string) => {
+          setSelectedTaskId(taskId);
+     };
+
+     const handleCloseTaskView = () => {
+          setSelectedTaskId(null);
+          setAddTaskColumnId(null);
+          fetchBoardData();
+     };
 
      return (
           <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex flex-col">
@@ -293,7 +314,7 @@ export default function Page() {
                                                                  onRemoveColumn={handleRemoveColumn}
                                                                  onTaskAdded={onTaskAdded}
                                                                  onRemoveTask={onTaskRemoved}
-                                                                 onOpenTaskDetail={setSelectedTaskId}
+                                                                 onOpenTaskDetail={handleOpenTaskDetail}
                                                                  selectedTaskId={selectedTaskId}
                                                                  currentUser={currentUser}
                                                                  onOpenAddTask={openAddTask}
@@ -311,7 +332,7 @@ export default function Page() {
                     </DragDropContext>
                ) : (
                     <div className="flex-1 overflow-auto p-6">
-                         <ListView columns={filteredColumns} onOpenTaskDetail={setSelectedTaskId} onRemoveTask={onTaskRemoved} priorities={priorities} />
+                         <ListView columns={filteredColumns} onOpenTaskDetail={handleOpenTaskDetail} onRemoveTask={onTaskRemoved} priorities={priorities} />
                     </div>
                )}
 
@@ -332,20 +353,11 @@ export default function Page() {
                          columns={localColumns}
                          boardId={boardId}
                          columnId={currentColumnId}
-                         onClose={() => {
-                              setSelectedTaskId(null);
-                              setAddTaskColumnId(null);
-                              fetchBoardData();
-                         }}
-                         onTaskUpdate={() => {
-                              setSelectedTaskId(null);
-                              fetchBoardData();
-                         }}
-                         onTaskAdded={() => {
-                              setAddTaskColumnId(null);
-                              fetchBoardData();
-                         }}
+                         onClose={handleCloseTaskView}
+                         onTaskUpdate={handleCloseTaskView}
+                         onTaskAdded={handleCloseTaskView}
                          currentUser={currentUser!}
+                         statuses={statuses}
                     />
                )}
           </div>

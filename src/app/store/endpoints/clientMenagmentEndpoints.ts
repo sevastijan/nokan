@@ -1,6 +1,6 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { supabase } from '@/app/lib/supabase';
-import { User, BoardWithCounts } from '@/app/types/globalTypes';
+import { User, BoardWithCounts, ClientSubmission } from '@/app/types/globalTypes';
 
 interface BoardClient {
      id: string;
@@ -252,6 +252,105 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
           invalidatesTags: (_result, _error, { boardClientId }) => [{ type: 'BoardClient', id: boardClientId }],
      }),
 
+     getClientSubmissions: builder.query<ClientSubmission[], string>({
+          async queryFn(clientId) {
+               try {
+                    const { data: submissionsData, error: subError } = await supabase
+                         .from('submissions')
+                         .select(
+                              `
+                         *,
+                         tasks!inner(
+                              id,
+                              title,
+                              description,
+                              priority,
+                              status_id,
+                              created_at,
+                              updated_at,
+                              column_id,
+                              board_id,
+                              user_id,
+                              sort_order,
+                              completed
+                         )
+                    `,
+                         )
+                         .eq('client_id', clientId)
+                         .order('created_at', { ascending: false });
+
+                    if (subError) throw subError;
+
+                    const statusIds = [
+                         ...new Set(
+                              submissionsData
+                                   ?.map((item) => {
+                                        const task = Array.isArray(item.tasks) ? item.tasks[0] : item.tasks;
+                                        return task?.status_id;
+                                   })
+                                   .filter((id): id is string => typeof id === 'string'),
+                         ),
+                    ];
+
+                    const statusesMap: Record<string, { id: string; label: string; color: string }> = {};
+                    if (statusIds.length > 0) {
+                         const { data: statusesData } = await supabase.from('statuses').select('id, label, color').in('id', statusIds);
+
+                         statusesData?.forEach((status: { id: string; label: string; color: string }) => {
+                              statusesMap[status.id] = status;
+                         });
+                    }
+
+                    const submissions: ClientSubmission[] = (submissionsData || []).map((item) => {
+                         const task = Array.isArray(item.tasks) ? item.tasks[0] : item.tasks;
+                         const status = task?.status_id ? statusesMap[task.status_id] : null;
+
+                         return {
+                              submission_id: item.id,
+                              client_name: item.client_name || undefined,
+                              client_email: item.client_email || undefined,
+
+                              id: task?.id || '',
+                              title: task?.title || '',
+                              description: task?.description || '',
+                              column_id: task?.column_id || '',
+                              board_id: task?.board_id || '',
+                              priority: task?.priority || 'low',
+                              user_id: task?.user_id || null,
+                              order: task?.sort_order || 0,
+                              sort_order: task?.sort_order || 0,
+                              completed: task?.completed || false,
+                              created_at: task?.created_at || item.created_at,
+                              updated_at: task?.updated_at || undefined,
+                              images: undefined,
+                              assignee: null,
+                              start_date: null,
+                              end_date: null,
+                              due_date: null,
+                              status_id: task?.status_id || null,
+
+                              status: status
+                                   ? {
+                                          id: status.id,
+                                          label: status.label,
+                                          color: status.color,
+                                     }
+                                   : null,
+                         };
+                    });
+
+                    return { data: submissions };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[apiSlice.getClientSubmissions] error:', error);
+                    return {
+                         error: { status: 'CUSTOM_ERROR', error: error.message },
+                    };
+               }
+          },
+          providesTags: (result) =>
+               result ? [...result.map(({ submission_id }) => ({ type: 'Submission' as const, id: submission_id })), { type: 'Submission', id: 'LIST' }] : [{ type: 'Submission', id: 'LIST' }],
+     }),
      getClientBoardsWithDetails: builder.query<BoardWithCounts[], string>({
           async queryFn(clientId) {
                try {
