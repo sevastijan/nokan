@@ -149,16 +149,31 @@ const SingleTaskView = ({
 
      const handleAssigneeChange = async (assigneeId: string | null) => {
           setSelectedAssigneeId(assigneeId);
+
           if (!assigneeId) {
-               await updateTask({ user_id: null, assignee: null });
-               return;
+               updateTask({ user_id: null, assignee: null });
+          } else {
+               const member = teamMembers.find((u) => u.id === assigneeId);
+               if (member) {
+                    updateTask({ user_id: assigneeId, assignee: member });
+               }
           }
-          const member = teamMembers.find((u) => u.id === assigneeId);
-          if (member) {
-               await updateTask({ user_id: assigneeId, assignee: member });
+
+          if (!isNewTask && currentTaskId) {
+               try {
+                    await updateTaskMutation({
+                         taskId: currentTaskId,
+                         data: { user_id: assigneeId },
+                    }).unwrap();
+
+                    await fetchTaskData();
+                    toast.success('Przypisanie zaktualizowane');
+               } catch (error) {
+                    console.error('❌ Failed to update assignee:', error);
+                    toast.error('Nie udało się zaktualizować przypisania');
+               }
           }
      };
-
      const handleColumnChange = async (newColId: string) => {
           setLocalColumnId(newColId);
           await updateTask({ column_id: newColId });
@@ -174,7 +189,7 @@ const SingleTaskView = ({
                          taskId: currentTaskId,
                          data: { status_id: newStatusId },
                     }).unwrap();
-                    await fetchTaskData(); // Refresh task data
+                    await fetchTaskData();
 
                     // Send notifications for status change
                     if (oldStatusId !== newStatusId) {
