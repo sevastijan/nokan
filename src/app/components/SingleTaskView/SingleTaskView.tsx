@@ -165,15 +165,54 @@ const SingleTaskView = ({
      };
 
      const handleStatusChange = async (newStatusId: string) => {
+          const oldStatusId = task?.status_id;
           updateTask({ status_id: newStatusId });
 
-          if (!isNewTask && currentTaskId) {
+          if (!isNewTask && currentTaskId && task) {
                try {
                     await updateTaskMutation({
                          taskId: currentTaskId,
                          data: { status_id: newStatusId },
                     }).unwrap();
                     await fetchTaskData(); // Refresh task data
+
+                    // Send notifications for status change
+                    if (oldStatusId !== newStatusId) {
+                         const oldStatusLabel = task.statuses?.find((s) => s.id === oldStatusId)?.label || 'Nieznany';
+                         const newStatusLabel = task.statuses?.find((s) => s.id === newStatusId)?.label || 'Nieznany';
+
+                         // Send to assignee (if different from current user)
+                         if (task.user_id && task.user_id !== currentUser?.id && boardId) {
+                              fetch('/api/notifications/email', {
+                                   method: 'POST',
+                                   headers: { 'Content-Type': 'application/json' },
+                                   body: JSON.stringify({
+                                        type: 'status_changed',
+                                        taskId: currentTaskId,
+                                        taskTitle: task.title || 'Task',
+                                        boardId,
+                                        recipientId: task.user_id,
+                                        metadata: { oldStatus: oldStatusLabel, newStatus: newStatusLabel },
+                                   }),
+                              }).catch((e) => console.error('Email notification failed:', e));
+                         }
+
+                         // Send to creator (if different from assignee and current user)
+                         if (task.created_by && task.created_by !== currentUser?.id && task.created_by !== task.user_id && boardId) {
+                              fetch('/api/notifications/email', {
+                                   method: 'POST',
+                                   headers: { 'Content-Type': 'application/json' },
+                                   body: JSON.stringify({
+                                        type: 'status_changed',
+                                        taskId: currentTaskId,
+                                        taskTitle: task.title || 'Task',
+                                        boardId,
+                                        recipientId: task.created_by,
+                                        metadata: { oldStatus: oldStatusLabel, newStatus: newStatusLabel },
+                                   }),
+                              }).catch((e) => console.error('Email notification failed:', e));
+                         }
+                    }
                } catch (error) {
                     console.error('❌ Failed to save status:', error);
                     toast.error('Nie udało się zapisać statusu');
@@ -481,6 +520,21 @@ const SingleTaskView = ({
                                              </div>
                                         ) : (
                                              <div className="text-slate-400">Brak przypisania</div>
+                                        )}
+                                   </div>
+
+                                   <div className="mb-6">
+                                        <h3 className="text-sm text-slate-300 uppercase mb-2">Autor zadania</h3>
+                                        {task?.creator ? (
+                                             <div className="flex items-center bg-slate-700 p-3 rounded-lg">
+                                                  <Avatar src={getAvatarUrl(task.creator) || ''} alt={task.creator.name} size={32} className="mr-3 border-2 border-white/20" />
+                                                  <div className="flex flex-col min-w-0">
+                                                       <span className="text-white font-medium truncate">{task.creator.name}</span>
+                                                       <span className="text-slate-400 text-sm truncate">{task.creator.email}</span>
+                                                  </div>
+                                             </div>
+                                        ) : (
+                                             <div className="text-slate-400">Nieznany</div>
                                         )}
                                    </div>
 

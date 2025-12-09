@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { CommentsSectionProps } from "@/app/types/globalTypes";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
@@ -6,6 +5,7 @@ import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
 import { formatDate } from "@/app/utils/helpers";
 import Avatar from "../Avatar/Avatar";
+import { notifyTaskStakeholders } from "@/app/lib/email/triggerNotification";
 
 /**
  * Wrapper component that manages comment form, comment list,
@@ -40,6 +40,21 @@ const CommentsSection = ({
 
       await onRefreshComments();
       toast.success("Comment added");
+
+      // Send email notifications to assignee and creator
+      if (task?.board_id) {
+        const commentPreview = content.length > 100 ? content.substring(0, 100) + "..." : content;
+        notifyTaskStakeholders(
+          {
+            type: "new_comment",
+            taskId,
+            taskTitle: task.title || "Task",
+            boardId: task.board_id,
+            metadata: { commenterName: currentUser.name, commentPreview },
+          },
+          { assigneeId: task.user_id, creatorId: task.created_by, currentUserId: currentUser.id }
+        );
+      }
     } catch (error) {
       console.error("Error adding comment:", error);
       toast.error("Error adding comment");

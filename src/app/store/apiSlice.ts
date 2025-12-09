@@ -13,6 +13,7 @@ import { userEndpoints } from './endpoints/userEndpoints';
 import { templateEndpoints } from './endpoints/templateEndpoints';
 import { submissionEndpoints } from './endpoints/submissionEndpoints';
 import { clientManagementEndpoints } from './endpoints/clientMenagmentEndpoints';
+import { preferencesEndpoints } from './endpoints/preferencesEndpoints';
 
 /**
  * UserRole type in your application.
@@ -35,6 +36,7 @@ export const apiSlice = createApi({
           'Team',
           'TasksWithDates',
           'Notification',
+          'NotificationPreferences',
           'Boards',
           'Tasks',
           'Submission',
@@ -54,6 +56,7 @@ export const apiSlice = createApi({
           ...templateEndpoints(builder),
           ...submissionEndpoints(builder),
           ...clientManagementEndpoints(builder),
+          ...preferencesEndpoints(builder),
      }),
 });
 
@@ -112,4 +115,6 @@ export const {
      useGetAllSubmissionsQuery,
      useGetAllUsersQuery,
      useSetUserRoleMutation,
+     useGetNotificationPreferencesQuery,
+     useUpdateNotificationPreferencesMutation,
 } = apiSlice;

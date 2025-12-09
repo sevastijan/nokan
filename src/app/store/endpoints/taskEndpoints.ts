@@ -10,6 +10,7 @@ interface RawTask {
      board_id: string;
      priority?: string;
      user_id?: string;
+     created_by?: string;
      sort_order?: number;
      completed: boolean;
      created_at?: string;
@@ -20,6 +21,7 @@ interface RawTask {
      due_date?: string;
      status_id?: string;
      assignee?: unknown;
+     creator?: unknown;
      attachments?: unknown[];
      comments?: unknown[];
      priority_data?: unknown;
@@ -176,6 +178,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                author:users!task_comments_user_id_fkey(id,name,email,image)
              ),
              assignee:users!tasks_user_id_fkey(id,name,email,image,role,created_at),
+             creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at),
              priority_data:priorities!tasks_priority_fkey(id,label,color)
             `,
                          )
@@ -198,6 +201,29 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     } else if (rawTask.assignee) {
                          const u = rawTask.assignee as RawUser;
                          assignee = {
+                              id: u.id,
+                              name: u.name,
+                              email: u.email,
+                              image: u.image,
+                              role: u.role as 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | undefined,
+                              created_at: u.created_at,
+                         };
+                    }
+
+                    let creator: User | null = null;
+                    if (Array.isArray(rawTask.creator) && rawTask.creator.length > 0) {
+                         const u = rawTask.creator[0] as RawUser;
+                         creator = {
+                              id: u.id,
+                              name: u.name,
+                              email: u.email,
+                              image: u.image,
+                              role: u.role as 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | undefined,
+                              created_at: u.created_at,
+                         };
+                    } else if (rawTask.creator) {
+                         const u = rawTask.creator as RawUser;
+                         creator = {
                               id: u.id,
                               name: u.name,
                               email: u.email,
@@ -276,6 +302,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          board_id: rawTask.board_id,
                          priority: rawTask.priority ?? null,
                          user_id: rawTask.user_id ?? null,
+                         created_by: rawTask.created_by ?? null,
+                         creator,
                          order: rawTask.sort_order ?? 0,
                          completed: rawTask.completed,
                          created_at: rawTask.created_at ?? null,
@@ -285,7 +313,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          start_date: rawTask.start_date ?? null,
                          end_date: rawTask.end_date ?? null,
                          due_date: rawTask.due_date ?? null,
-                         status_id: rawTask.status_id ?? null, // ZMIANA
+                         status_id: rawTask.status_id ?? null,
                          priority_info,
                          attachments,
                          comments,

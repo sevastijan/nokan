@@ -153,6 +153,8 @@ export interface TaskDetail {
      priority_info?: Priority | null;
      user_id?: string | null;
      assignee?: User | null;
+     created_by?: string | null;
+     creator?: User | null;
      attachments?: Attachment[];
      comments?: Comment[];
      order?: number;
