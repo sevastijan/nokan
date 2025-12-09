@@ -17,15 +17,13 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                try {
                     const { data: columns } = await supabase.from('columns').select('id').eq('board_id', board_id).order('order', { ascending: true }).limit(1);
 
-                    if (!columns || columns.length === 0) {
-                         throw new Error('No columns found on this board');
-                    }
+                    if (!columns || columns.length === 0) throw new Error('No columns found on this board');
 
                     const column_id = columns[0].id;
 
                     const { data: defaultStatuses } = await supabase.from('statuses').select('id').eq('board_id', board_id).order('order_index', { ascending: true }).limit(1);
 
-                    const defaultStatusId = defaultStatuses && defaultStatuses.length > 0 ? defaultStatuses[0].id : null;
+                    const defaultStatusId = defaultStatuses?.[0]?.id ?? null;
 
                     const { data: task, error: taskErr } = await supabase
                          .from('tasks')
@@ -89,30 +87,30 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
           invalidatesTags: [{ type: 'Submission', id: 'LIST' }],
      }),
 
-     getClientSubmissions: builder.query<ClientSubmission[], string>({
-          async queryFn(clientId) {
+     getAllSubmissions: builder.query<ClientSubmission[], void>({
+          async queryFn() {
                try {
-                    const { data: submissions } = await supabase
+                    const { data: submissions, error } = await supabase
                          .from('submissions')
                          .select(
                               `
-            *,
-            task:tasks!submissions_task_id_fkey(*),
-            client:users!submissions_client_id_fkey(id, name, email, image),
-            status_obj:statuses!tasks_status_id_fkey(id, label, color)
-          `,
+                    *,
+                    task:tasks!submissions_task_id_fkey(*),
+                    client:users!submissions_client_id_fkey(id,name,email,image)
+                `,
                          )
-                         .eq('client_id', clientId)
                          .order('created_at', { ascending: false });
 
-                    if (!submissions) return { data: [] };
+                    console.log('[getAllSubmissionsQuery] raw submissions:', submissions);
+                    if (error) console.error('[getAllSubmissionsQuery] error:', error);
+
+                    if (!submissions) {
+                         return { data: [] };
+                    }
 
                     const mapped: ClientSubmission[] = submissions.map((s) => {
                          const task = Array.isArray(s.task) ? s.task[0] : s.task;
                          const client = Array.isArray(s.client) ? s.client[0] : s.client;
-                         const statusObj = Array.isArray(s.status_obj) ? s.status_obj[0] : s.status_obj;
-
-                         const status: Status | null = statusObj ? { id: statusObj.id, label: statusObj.label, color: statusObj.color } : null;
 
                          return {
                               id: task?.id || s.task_id || '',
@@ -128,8 +126,68 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                               created_at: task?.created_at || s.created_at,
                               updated_at: task?.updated_at || s.updated_at,
                               submission_id: s.id,
-                              client_name: client?.name,
-                              client_email: client?.email,
+                              client_name: client?.name || '',
+                              client_email: client?.email || '',
+                              status: null,
+                         };
+                    });
+
+                    console.log('[getAllSubmissionsQuery] mapped submissions:', mapped);
+
+                    return { data: mapped };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[getAllSubmissionsQuery] exception:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          providesTags: (result) => {
+               if (!result) return [{ type: 'Submission', id: 'LIST' }];
+               return [...result.map((s) => ({ type: 'Submission' as const, id: s.submission_id })), { type: 'Submission', id: 'LIST' }];
+          },
+     }),
+
+     getClientSubmissions: builder.query<ClientSubmission[], string>({
+          async queryFn(clientId) {
+               try {
+                    const { data: submissions } = await supabase
+                         .from('submissions')
+                         .select(
+                              `
+                        *,
+                        task:tasks!submissions_task_id_fkey(*),
+                        client:users!submissions_client_id_fkey(id, name, email, image),
+                        status_obj:statuses!tasks_status_id_fkey(id, label, color)
+                    `,
+                         )
+                         .eq('client_id', clientId)
+                         .order('created_at', { ascending: false });
+
+                    if (!submissions || submissions.length === 0) return { data: [] };
+
+                    const mapped: ClientSubmission[] = submissions.map((s) => {
+                         const task = Array.isArray(s.task) && s.task.length > 0 ? s.task[0] : null;
+                         const client = Array.isArray(s.client) && s.client.length > 0 ? s.client[0] : null;
+                         const statusObj = Array.isArray(s.status_obj) && s.status_obj.length > 0 ? s.status_obj[0] : null;
+
+                         const status: Status | null = statusObj ? { id: statusObj.id, label: statusObj.label, color: statusObj.color } : null;
+
+                         return {
+                              id: task?.id || s.task_id || '',
+                              title: s.title,
+                              description: s.description || '',
+                              column_id: task?.column_id || s.column_id,
+                              board_id: task?.board_id || s.board_id,
+                              priority: task?.priority || s.priority || 'low',
+                              user_id: task?.user_id || s.client_id,
+                              order: task?.sort_order ?? 0,
+                              sort_order: task?.sort_order ?? 0,
+                              completed: task?.completed ?? false,
+                              created_at: task?.created_at || s.created_at,
+                              updated_at: task?.updated_at || s.updated_at,
+                              submission_id: s.id,
+                              client_name: client?.name || 'Nieznany',
+                              client_email: client?.email || 'Nieznany',
                               status,
                          };
                     });
@@ -150,22 +208,13 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
           {
                submissionId: string;
                taskId: string;
-               data: {
-                    title?: string;
-                    description?: string;
-                    priority?: string;
-               };
+               data: { title?: string; description?: string; priority?: string };
           }
      >({
           async queryFn({ submissionId, taskId, data }) {
                try {
-                    const taskPayload = { ...data };
-
-                    const { error: taskErr } = await supabase.from('tasks').update(taskPayload).eq('id', taskId);
-                    if (taskErr) throw taskErr;
-
+                    await supabase.from('tasks').update(data).eq('id', taskId);
                     const { data: submission } = await supabase.from('submissions').update(data).eq('id', submissionId).select('*').single();
-
                     const { data: task } = await supabase.from('tasks').select('*').eq('id', taskId).single();
 
                     const result: ClientSubmission = {
@@ -184,7 +233,6 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                          submission_id: submission.id,
                          status: null,
                     };
-
                     return { data: result };
                } catch (err) {
                     const error = err as Error;

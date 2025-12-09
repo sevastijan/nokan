@@ -108,4 +108,5 @@ export const {
      useRemoveClientFromBoardMutation,
      useGetPrioritiesQuery,
      useGetClientBoardsWithDetailsQuery,
+     useGetAllSubmissionsQuery,
 } = apiSlice;
