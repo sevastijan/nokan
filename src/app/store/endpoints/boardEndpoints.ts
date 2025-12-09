@@ -44,6 +44,7 @@ interface RawTask {
      end_date?: string;
      due_date?: string;
      status?: string;
+     status_id?: string;
      assignee?: unknown;
 }
 
@@ -67,6 +68,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          ownerName: undefined,
                          ownerEmail: undefined,
                          columns: [],
+                         statuses: [],
                          created_at: data.created_at,
                          updated_at: data.updated_at,
                     };
@@ -87,21 +89,24 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          .from('boards')
                          .select(
                               `
-            *,
-            owner:users!boards_user_id_fkey(id, name, email)
-          `,
+          *,
+          owner:users!boards_user_id_fkey(id, name, email),
+          statuses!statuses_board_id_fkey(id, label, color)
+        `,
                          )
                          .eq('id', boardId)
                          .single();
                     if (be || !bRaw) throw be || new Error('Board not found');
 
-                    const rawBoard = bRaw as RawBoard;
+                    const rawBoard = bRaw as RawBoard & { statuses?: { id: string; label: string; color: string }[] };
+
                     let ownerObj: { name: string; email: string } | null = null;
                     if (Array.isArray(rawBoard.owner) && rawBoard.owner.length > 0) {
                          ownerObj = rawBoard.owner[0] as { name: string; email: string };
                     } else if (rawBoard.owner) {
                          ownerObj = rawBoard.owner as { name: string; email: string };
                     }
+
                     const boardBase: Board = {
                          id: rawBoard.id,
                          title: rawBoard.title,
@@ -109,6 +114,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          ownerName: ownerObj?.name,
                          ownerEmail: ownerObj?.email,
                          columns: [],
+                         statuses: Array.isArray(rawBoard.statuses) ? rawBoard.statuses : [],
                          created_at: rawBoard.created_at,
                          updated_at: rawBoard.updated_at,
                     };
@@ -117,17 +123,12 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          .from('columns')
                          .select(
                               `
+          *,
+          tasks:tasks(
             *,
-            tasks:tasks(
-              *,
-              assignee:users!tasks_user_id_fkey(
-                id,
-                name,
-                email,
-                image
-              )
-            )
-          `,
+            assignee:users!tasks_user_id_fkey(id, name, email, image)
+          )
+        `,
                          )
                          .eq('board_id', boardId)
                          .order('order', { ascending: true });
@@ -164,7 +165,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                    start_date: t.start_date,
                                    end_date: t.end_date,
                                    due_date: t.due_date,
-                                   status: t.status,
+                                   status_id: t.status_id || null,
                               };
                          });
                          const col: Column = {
@@ -225,6 +226,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                               ownerName: ownerObj?.name,
                               ownerEmail: ownerObj?.email,
                               columns: [],
+                              statuses: [],
                               created_at: b.created_at,
                               updated_at: b.updated_at,
                          } as Board;
@@ -263,6 +265,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                         ownerName: ownerObj?.name,
                                         ownerEmail: ownerObj?.email,
                                         columns: [],
+                                        statuses: [],
                                         created_at: b.created_at,
                                         updated_at: b.updated_at,
                                    } as Board;
@@ -376,10 +379,10 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     const map = new Map<string, Board>();
                     own.forEach((b: { id: string; title: string; user_id: string; created_at?: string }) =>
-                         map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, columns: [], updated_at: undefined } as Board),
+                         map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, columns: [], statuses: [], updated_at: undefined } as Board),
                     );
                     teamBoards.forEach((b: { id: string; title: string; user_id: string; created_at?: string }) => {
-                         if (!map.has(b.id)) map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, columns: [], updated_at: undefined } as Board);
+                         if (!map.has(b.id)) map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, statuses: [], columns: [], updated_at: undefined } as Board);
                     });
                     const result: Board[] = Array.from(map.values());
                     return { data: result };
@@ -413,5 +416,61 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                }
           },
           providesTags: (_result, _error, teamId) => [{ type: 'Team', id: teamId }],
+     }),
+
+     getAllBoards: builder.query<BoardWithCounts[], void>({
+          async queryFn() {
+               try {
+                    const { data: boards, error: boardsError } = await supabase.from('boards').select('id, title, user_id, created_at, updated_at').order('created_at', { ascending: false });
+
+                    if (boardsError) throw boardsError;
+                    if (!boards || boards.length === 0) return { data: [] };
+
+                    const boardsWithCounts: BoardWithCounts[] = await Promise.all(
+                         boards.map(async (board) => {
+                              const { count: taskCount = 0 } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('board_id', board.id);
+
+                              const { data: teamsData } = await supabase.from('teams').select('id').eq('board_id', board.id);
+
+                              const teamIds = (teamsData ?? []).map((t: { id: string }) => t.id);
+
+                              let memberCount = 0;
+                              if (teamIds.length > 0) {
+                                   const { count } = await supabase.from('team_members').select('*', { count: 'exact', head: true }).in('team_id', teamIds);
+
+                                   memberCount = count ?? 0;
+                              }
+
+                              return {
+                                   id: board.id,
+                                   title: board.title,
+                                   user_id: board.user_id,
+                                   created_at: board.created_at,
+                                   updated_at: board.updated_at,
+                                   columns: [],
+                                   statuses: [],
+                                   ownerName: undefined,
+                                   ownerEmail: undefined,
+                                   _count: {
+                                        tasks: taskCount ?? 0,
+                                        teamMembers: memberCount,
+                                   },
+                              } as BoardWithCounts;
+                         }),
+                    );
+
+                    return { data: boardsWithCounts };
+               } catch (err) {
+                    console.error('[getAllBoards] error:', err);
+                    return {
+                         error: {
+                              status: 'CUSTOM_ERROR',
+                              error: (err as Error)?.message || 'Failed to fetch boards',
+                         },
+                    };
+               }
+          },
+
+          providesTags: (result) => (result ? [{ type: 'Board', id: 'LIST' }, ...result.map(({ id }) => ({ type: 'Board' as const, id }))] : [{ type: 'Board', id: 'LIST' }]),
      }),
 });

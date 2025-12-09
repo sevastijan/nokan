@@ -18,7 +18,7 @@ interface RawTask {
      start_date?: string;
      end_date?: string;
      due_date?: string;
-     status?: string;
+     status_id?: string;
      assignee?: unknown;
      attachments?: unknown[];
      comments?: unknown[];
@@ -91,7 +91,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          start_date: data.start_date,
                          end_date: data.end_date,
                          due_date: data.due_date,
-                         status: data.status,
+                         status_id: data.status_id, // ZMIANA
                     };
                     return { data: mapped };
                } catch (err) {
@@ -151,7 +151,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          start_date: newTask.start_date,
                          end_date: newTask.end_date,
                          due_date: newTask.due_date,
-                         status: newTask.status,
+                         status_id: newTask.status_id, // ZMIANA
                     };
                     return { data: mapped };
                } catch (err) {
@@ -285,7 +285,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          start_date: rawTask.start_date ?? null,
                          end_date: rawTask.end_date ?? null,
                          due_date: rawTask.due_date ?? null,
-                         status: rawTask.status ?? null,
+                         status_id: rawTask.status_id ?? null, // ZMIANA
                          priority_info,
                          attachments,
                          comments,
@@ -324,7 +324,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
               column_id,
               board_id,
               sort_order,
-              status,
+              status_id,
               users (
                 id,
                 name,
@@ -364,7 +364,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               start_date: t.start_date,
                               end_date: t.end_date,
                               due_date: t.due_date,
-                              status: t.status,
+                              status_id: t.status_id, // ZMIANA
                          };
                     });
 
@@ -389,7 +389,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                try {
                     const { data, error } = await supabase
                          .from('tasks')
-                         .select('id,title,description,start_date,end_date,board_id,priority,color,column_id,sort_order,completed,status')
+                         .select('id,title,description,start_date,end_date,board_id,priority,color,column_id,sort_order,completed,status_id')
                          .in('board_id', boardIds)
                          .gte('start_date', start)
                          .lte('start_date', end);
@@ -409,7 +409,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          sort_order: t.sort_order ?? 0,
                          order: t.sort_order ?? 0,
                          completed: t.completed,
-                         status: t.status,
+                         status_id: t.status_id, // ZMIANA
                     }));
                     return { data: tasks };
                } catch (err) {
@@ -444,8 +444,14 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          dbPayload.sort_order = dbPayload.order;
                          delete dbPayload.order;
                     }
+
                     const { data: updated, error } = await supabase.from('tasks').update(dbPayload).eq('id', taskId).select('*').single();
-                    if (error || !updated) throw error || new Error('Update failed');
+
+                    if (error || !updated) {
+                         console.error('❌ updateTask mutation failed:', error);
+                         throw error || new Error('Update failed');
+                    }
+
                     const mapped: Task = {
                          id: updated.id,
                          title: updated.title,
@@ -464,7 +470,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          start_date: updated.start_date,
                          end_date: updated.end_date,
                          due_date: updated.due_date,
-                         status: updated.status,
+                         status_id: updated.status_id, // ZMIANA
                     };
                     return { data: mapped };
                } catch (err) {
@@ -517,27 +523,34 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                { type: 'TasksWithDates', id: taskId },
           ],
      }),
-
      uploadAttachment: builder.mutation<Attachment, { file: File; taskId: string; userId: string }>({
           async queryFn({ file, taskId, userId }) {
                try {
-                    const ext = file.name.split('.').pop();
-                    const path = `${Date.now()}.${ext}`;
-                    const { error: upErr } = await supabase.storage.from('attachments').upload(path, file);
+                    const fileExt = file.name.split('.').pop();
+                    const filePath = `${taskId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+                    const { error: upErr } = await supabase.storage.from('attachments').upload(filePath, file, {
+                         upsert: false,
+                         contentType: file.type,
+                    });
+
                     if (upErr) throw upErr;
+
                     const { data, error: dbErr } = await supabase
                          .from('task_attachments')
                          .insert({
                               task_id: taskId,
                               file_name: file.name,
-                              file_path: path,
+                              file_path: filePath,
                               file_size: file.size,
                               mime_type: file.type,
                               uploaded_by: userId,
                          })
                          .select('*')
                          .single();
+
                     if (dbErr || !data) throw dbErr || new Error('Attachment insert failed');
+
                     return { data };
                } catch (err) {
                     const error = err as Error;
@@ -545,6 +558,23 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     return { error: { status: 'CUSTOM_ERROR', error: error.message } };
                }
           },
-          invalidatesTags: () => [],
+          invalidatesTags: (_result, _error, arg) => [{ type: 'Task', id: arg.taskId }],
+     }),
+
+     getPriorities: builder.query<{ id: string; label: string; color: string }[], void>({
+          async queryFn() {
+               try {
+                    const { data, error } = await supabase.from('priorities').select('id,label,color').order('created_at', { ascending: true });
+
+                    if (error) throw error;
+
+                    return { data: data ?? [] };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[getPriorities] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          providesTags: ['Priority'],
      }),
 });

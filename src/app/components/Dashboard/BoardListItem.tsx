@@ -26,12 +26,10 @@ export const BoardListItem = ({ board, isMenuOpen, onMenuToggle, onEdit, onDelet
                }}
           >
                <div className="flex items-center justify-between gap-4">
-                    {/* Board Title */}
                     <div className="flex-1 min-w-0">
                          <h3 className="text-lg font-semibold text-white truncate">{board.title}</h3>
                     </div>
 
-                    {/* Stats */}
                     <div className="flex items-center gap-6 text-sm text-slate-400">
                          <div className="flex items-center gap-2">
                               <FaCalendarAlt className="w-4 h-4 text-purple-400" />
@@ -43,7 +41,6 @@ export const BoardListItem = ({ board, isMenuOpen, onMenuToggle, onEdit, onDelet
                          </div>
                     </div>
 
-                    {/* Menu Button */}
                     <div className="relative z-20">
                          <button
                               className="board-menu-btn p-2 rounded-full hover:bg-slate-700 text-slate-400 transition"
@@ -55,8 +52,6 @@ export const BoardListItem = ({ board, isMenuOpen, onMenuToggle, onEdit, onDelet
                          >
                               <FaEllipsisV />
                          </button>
-
-                         {/* Dropdown Menu */}
                          {isMenuOpen && (
                               <div className="board-menu-dropdown absolute right-0 mt-2 w-32 bg-slate-900 border border-slate-700 rounded-xl shadow-lg z-30">
                                    <button

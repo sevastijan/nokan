@@ -2,65 +2,116 @@ import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { supabase } from '@/app/lib/supabase';
 import { Session } from 'next-auth';
 import { User } from '@/app/types/globalTypes';
+import { UserRole } from '../apiSlice';
 
-export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER';
+const VALID_ROLES: UserRole[] = ['OWNER', 'PROJECT_MANAGER', 'MEMBER', 'CLIENT'];
+const DEFAULT_ROLE: UserRole = 'MEMBER';
+
+const isValidUserRole = (role: unknown): role is UserRole => {
+     return typeof role === 'string' && VALID_ROLES.includes(role as UserRole);
+};
 
 export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
      getCurrentUser: builder.query<User, Session>({
           async queryFn(session) {
                try {
-                    const email = session.user?.email || '';
+                    const email = session.user?.email?.trim();
+
                     if (!email) {
-                         throw new Error('No email in session');
+                         return {
+                              error: {
+                                   status: 'VALIDATION_ERROR',
+                                   error: 'Email address is required in session',
+                              },
+                         };
                     }
-                    const { data: existing, error: fetchErr } = await supabase.from('users').select('*').eq('email', email).single();
-                    if (fetchErr && !fetchErr.message?.includes('No rows')) {
-                         throw fetchErr;
+
+                    const { data: existingUser, error: fetchError } = await supabase.from('users').select('*').eq('email', email).maybeSingle();
+
+                    if (fetchError) {
+                         throw new Error(`Failed to fetch user: ${fetchError.message}`);
                     }
-                    if (existing) {
-                         return { data: existing };
+
+                    if (existingUser) {
+                         return { data: existingUser };
                     }
-                    const { data: created, error: createErr } = await supabase
+
+                    const { data: createdUser, error: createError } = await supabase
                          .from('users')
                          .insert({
                               email,
-                              name: session.user?.name,
-                              image: session.user?.image,
+                              name: session.user?.name?.trim() || null,
+                              image: session.user?.image?.trim() || null,
                          })
                          .select('*')
                          .single();
-                    if (createErr || !created) {
-                         throw createErr || new Error('Failed to create user row');
+
+                    if (createError) {
+                         throw new Error(`Failed to create user: ${createError.message}`);
                     }
-                    return { data: created };
-               } catch (err) {
-                    const error = err as Error;
-                    console.error('[apiSlice.getCurrentUser] error:', error);
+
+                    if (!createdUser) {
+                         throw new Error('User creation returned no data');
+                    }
+
+                    return { data: createdUser };
+               } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                    console.error('[getCurrentUser] Error:', errorMessage);
+
                     return {
-                         error: { status: 'CUSTOM_ERROR', error: error.message },
+                         error: {
+                              status: 'FETCH_ERROR',
+                              error: errorMessage,
+                         },
                     };
                }
           },
-          providesTags: (_result, _error, session) => (session?.user?.email ? [{ type: 'UserRole', id: session.user.email }] : []),
+          providesTags: (_result, _error, session) => {
+               const email = session?.user?.email;
+               return email ? [{ type: 'UserRole', id: email }] : [];
+          },
      }),
 
      getUserRole: builder.query<UserRole, string>({
           async queryFn(email) {
                try {
-                    const { data, error } = await supabase.from('users').select('role').eq('email', email).single();
-                    if (error) {
-                         return { data: 'MEMBER' };
+                    const trimmedEmail = email?.trim();
+
+                    if (!trimmedEmail) {
+                         console.warn('[getUserRole] No email provided, returning default role');
+                         return { data: DEFAULT_ROLE };
                     }
-                    const role = data?.role as UserRole | null;
-                    return {
-                         data: role === 'OWNER' || role === 'PROJECT_MANAGER' ? role : 'MEMBER',
-                    };
-               } catch (err) {
-                    const error = err as Error;
-                    console.error('[apiSlice.getUserRole] error:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+
+                    const { data, error } = await supabase.from('users').select('role').eq('email', trimmedEmail).maybeSingle();
+
+                    if (error) {
+                         console.error('[getUserRole] Database error:', error.message);
+                         return { data: DEFAULT_ROLE };
+                    }
+
+                    if (!data) {
+                         console.warn('[getUserRole] User not found, returning default role');
+                         return { data: DEFAULT_ROLE };
+                    }
+
+                    const role = data.role;
+
+                    if (!isValidUserRole(role)) {
+                         console.warn(`[getUserRole] Invalid role "${role}" for ${trimmedEmail}, returning default`);
+                         return { data: DEFAULT_ROLE };
+                    }
+
+                    return { data: role };
+               } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    console.error('[getUserRole] Unexpected error:', errorMessage);
+                    return { data: DEFAULT_ROLE };
                }
           },
-          providesTags: (_result, _error, email) => [{ type: 'UserRole', id: email }],
+          providesTags: (_result, _error, email) => {
+               const trimmedEmail = email?.trim();
+               return trimmedEmail ? [{ type: 'UserRole', id: trimmedEmail }] : [];
+          },
      }),
 });
