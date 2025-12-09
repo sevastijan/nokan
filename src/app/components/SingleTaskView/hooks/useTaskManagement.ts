@@ -9,9 +9,12 @@ import {
      useGetTeamMembersByBoardIdQuery,
      useRemoveTaskMutation,
      useAddNotificationMutation,
+     useGetBoardQuery,
+     useGetPrioritiesQuery,
 } from '@/app/store/apiSlice';
 import { TaskDetail, User, Attachment } from '@/app/types/globalTypes';
 import { pickUpdatable } from '@/app/utils/helpers';
+import { triggerEmailNotification, notifyTaskStakeholders } from '@/app/lib/email/triggerNotification';
 
 export const useTaskManagement = ({
      taskId: propTaskId,
@@ -45,6 +48,12 @@ export const useTaskManagement = ({
      const [addNotification] = useAddNotificationMutation();
 
      const prevUserId = useRef<string | null | undefined>(null);
+     const prevColumnId = useRef<string | null | undefined>(null);
+     const prevDueDate = useRef<string | null | undefined>(null);
+     const prevPriority = useRef<string | null | undefined>(null);
+
+     // Get board data for email notifications
+     const { data: boardData } = useGetBoardQuery(boardId, { skip: !boardId });
 
      const { data: fetchedTask, error: fetchError, isLoading, refetch: refetchTask } = useGetTaskByIdQuery({ taskId: currentTaskId! }, { skip: !currentTaskId });
 
@@ -56,6 +65,9 @@ export const useTaskManagement = ({
      const { data: teamMembers = [] } = useGetTeamMembersByBoardIdQuery(boardId, {
           skip: !boardId,
      });
+
+     // Cache priorities for email notifications
+     const { data: priorities = [] } = useGetPrioritiesQuery();
 
      const [statuses, setStatuses] = useState<Array<{ id: string; label: string; color: string }>>(propStatuses || []);
 
@@ -99,6 +111,9 @@ export const useTaskManagement = ({
                setHasUnsavedChanges(false);
                setError(null);
                prevUserId.current = fetchedTask.user_id;
+               prevColumnId.current = fetchedTask.column_id;
+               prevDueDate.current = fetchedTask.due_date;
+               prevPriority.current = fetchedTask.priority;
 
                if (pendingAttachments.length > 0) {
                     pendingAttachments.forEach(async (file) => {
@@ -224,6 +239,9 @@ export const useTaskManagement = ({
           if (!currentTaskId || !task) return false;
           const payload: Partial<TaskDetail> = pickUpdatable(task);
           const prevAssigned = prevUserId.current;
+          const prevColumn = prevColumnId.current;
+          const prevDue = prevDueDate.current;
+          const prevPriorityVal = prevPriority.current;
 
           try {
                const result = await updateTaskMutation({
@@ -231,6 +249,9 @@ export const useTaskManagement = ({
                     data: payload,
                }).unwrap();
 
+               const boardName = boardData?.title;
+
+               // Send notifications for assignment change
                if (result.user_id && result.user_id !== prevAssigned) {
                     await addNotification({
                          user_id: result.user_id,
@@ -239,9 +260,110 @@ export const useTaskManagement = ({
                          board_id: result.board_id,
                          message: `You've been assigned to "${result.title}"`,
                     });
+
+                    // Send email notification
+                    triggerEmailNotification({
+                         type: 'task_assigned',
+                         taskId: result.id,
+                         taskTitle: result.title,
+                         boardId: result.board_id,
+                         boardName,
+                         recipientId: result.user_id,
+                         metadata: { assignerName: currentUser?.name || 'Someone' },
+                    });
+               }
+
+               // Send email notification to previously assigned user when unassigned
+               if (prevAssigned && prevAssigned !== result.user_id && prevAssigned !== currentUser?.id) {
+                    triggerEmailNotification({
+                         type: 'task_unassigned',
+                         taskId: result.id,
+                         taskTitle: result.title,
+                         boardId: result.board_id,
+                         boardName,
+                         recipientId: prevAssigned,
+                         metadata: { unassignerName: currentUser?.name || 'Someone' },
+                    });
+               }
+
+               // Send email for status/column change
+               if (result.column_id && result.column_id !== prevColumn) {
+                    const oldColumnName = boardData?.columns?.find((c) => c.id === prevColumn)?.title || 'Unknown';
+                    const newColumnName = boardData?.columns?.find((c) => c.id === result.column_id)?.title || 'Unknown';
+
+                    notifyTaskStakeholders(
+                         {
+                              type: 'status_changed',
+                              taskId: result.id,
+                              taskTitle: result.title,
+                              boardId: result.board_id,
+                              boardName,
+                              metadata: { oldStatus: oldColumnName, newStatus: newColumnName },
+                         },
+                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id }
+                    );
+               }
+
+               // Send email for due date change
+               if (result.due_date !== prevDue) {
+                    notifyTaskStakeholders(
+                         {
+                              type: 'due_date_changed',
+                              taskId: result.id,
+                              taskTitle: result.title,
+                              boardId: result.board_id,
+                              boardName,
+                              metadata: { newDueDate: result.due_date || 'Removed' },
+                         },
+                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id }
+                    );
+               }
+
+               // Notify creator about assignment changes (if creator is different from current user and assignees)
+               if (result.user_id !== prevAssigned && task.created_by && task.created_by !== currentUser?.id) {
+                    // Don't send if creator is the new assignee or the previous assignee (they get their own notifications)
+                    if (task.created_by !== result.user_id && task.created_by !== prevAssigned) {
+                         const assigneeName = teamMembers.find((m) => m.id === result.user_id)?.name;
+                         const assignerName = currentUser?.name || 'Ktoś';
+
+                         triggerEmailNotification({
+                              type: 'task_assigned',
+                              taskId: result.id,
+                              taskTitle: result.title,
+                              boardId: result.board_id,
+                              boardName,
+                              recipientId: task.created_by,
+                              metadata: {
+                                   assignerName: assigneeName
+                                        ? `${assignerName} przypisał/a: ${assigneeName}`
+                                        : `${assignerName} usunął/ęła przypisanie`
+                              },
+                         });
+                    }
+               }
+
+               // Send email for priority change (using cached priorities)
+               if (result.priority !== prevPriorityVal) {
+                    const oldPriorityLabel = priorities.find((p) => p.id === prevPriorityVal)?.label || 'Brak';
+                    const newPriorityLabel = priorities.find((p) => p.id === result.priority)?.label || 'Brak';
+
+                    notifyTaskStakeholders(
+                         {
+                              type: 'priority_changed',
+                              taskId: result.id,
+                              taskTitle: result.title,
+                              boardId: result.board_id,
+                              boardName,
+                              metadata: { oldPriority: oldPriorityLabel, newPriority: newPriorityLabel },
+                         },
+                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id }
+                    );
                }
 
                prevUserId.current = result.user_id;
+               prevColumnId.current = result.column_id;
+               prevDueDate.current = result.due_date;
+               prevPriority.current = result.priority;
                setHasUnsavedChanges(false);
                onTaskUpdate?.(result);
                return true;
@@ -250,7 +372,7 @@ export const useTaskManagement = ({
                setError('Failed to update task');
                return false;
           }
-     }, [currentTaskId, task, updateTaskMutation, onTaskUpdate, addNotification]);
+     }, [currentTaskId, task, updateTaskMutation, onTaskUpdate, addNotification, boardData, currentUser, priorities, teamMembers]);
 
      const saveNewTask = useCallback(async (): Promise<boolean> => {
           if (!task || !columnId) return false;
@@ -261,6 +383,7 @@ export const useTaskManagement = ({
                board_id: boardId,
                priority: task.priority ?? null,
                user_id: task.user_id ?? null,
+               created_by: currentUser?.id ?? null,
                start_date: task.start_date ?? null,
                end_date: task.end_date ?? null,
                due_date: task.due_date ?? null,
@@ -289,6 +412,17 @@ export const useTaskManagement = ({
                          board_id: result.board_id,
                          message: `You've been assigned to "${result.title}"`,
                     });
+
+                    // Send email notification for new task assignment
+                    triggerEmailNotification({
+                         type: 'task_assigned',
+                         taskId: result.id,
+                         taskTitle: result.title,
+                         boardId: result.board_id,
+                         boardName: boardData?.title,
+                         recipientId: result.user_id,
+                         metadata: { assignerName: currentUser?.name || 'Someone' },
+                    });
                }
 
                onTaskAdded?.({
@@ -305,7 +439,7 @@ export const useTaskManagement = ({
                setError('Failed to create task');
                return false;
           }
-     }, [task, columnId, boardId, addTaskMutation, onTaskAdded, addNotification]);
+     }, [task, columnId, boardId, addTaskMutation, onTaskAdded, addNotification, boardData, currentUser]);
 
      const deleteTask = useCallback(async () => {
           if (!currentTaskId || !task) return;

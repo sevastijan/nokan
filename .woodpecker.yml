@@ -19,6 +19,10 @@ steps:
                  from_secret: NEXTAUTH_URL
             NEXTAUTH_SECRET:
                  from_secret: NEXTAUTH_SECRET
+            RESEND_API_KEY:
+                 from_secret: RESEND_API_KEY
+            EMAIL_FROM:
+                 from_secret: EMAIL_FROM
        commands:
             - docker version
             - echo "🔍 Checking injected envs (safe preview)..."
@@ -35,6 +39,8 @@ steps:
                    "NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
                    "NEXTAUTH_URL=$${NEXTAUTH_URL}" \
                    "NEXTAUTH_SECRET=$${NEXTAUTH_SECRET}" \
+                   "RESEND_API_KEY=$${RESEND_API_KEY}" \
+                   "EMAIL_FROM=$${EMAIL_FROM}" \
                    > .env
             - echo "🚀 Building nokan-taskboard image..."
             - docker build -t nokan-taskboard:latest .
@@ -62,6 +68,10 @@ steps:
                  from_secret: NEXTAUTH_URL
             NEXTAUTH_SECRET:
                  from_secret: NEXTAUTH_SECRET
+            RESEND_API_KEY:
+                 from_secret: RESEND_API_KEY
+            EMAIL_FROM:
+                 from_secret: EMAIL_FROM
        commands:
             - echo "🧹 Removing old container if exists..."
             - docker rm -f nokan-taskboard || true
@@ -80,6 +90,8 @@ steps:
                    -e NEXT_PUBLIC_GOOGLE_CLIENT_SECRET="$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
                    -e NEXTAUTH_URL="$${NEXTAUTH_URL}" \
                    -e NEXTAUTH_SECRET="$${NEXTAUTH_SECRET}" \
+                   -e RESEND_API_KEY="$${RESEND_API_KEY}" \
+                   -e EMAIL_FROM="$${EMAIL_FROM}" \
                    -l "traefik.enable=true" \
                    -l "traefik.http.routers.nokan.rule=Host(\`nokan.nkdlab.space\`)" \
                    -l "traefik.http.routers.nokan.entrypoints=websecure" \
