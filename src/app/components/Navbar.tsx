@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel, Menu } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
+<<<<<<< HEAD
 import {
      FaHome,
      FaTachometerAlt,
@@ -21,6 +22,9 @@ import {
      FaFileAlt,
      FaCheckDouble,
 } from 'react-icons/fa';
+=======
+import { FaHome, FaTachometerAlt, FaCalendarAlt, FaSignOutAlt, FaUsers, FaBars, FaChevronRight, FaBell, FaCheck, FaTrash, FaExternalLinkAlt, FaUserCog, FaFileAlt, FaCog } from 'react-icons/fa';
+>>>>>>> eed3dc49e43aa7b30095dbb52bf7959f7232f619
 import Avatar from '../components/Avatar/Avatar';
 import Button from '../components/Button/Button';
 import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery } from '@/app/store/apiSlice';
@@ -100,6 +104,7 @@ const Navbar = () => {
           { href: '/dashboard', label: 'Dashboard', icon: <FaTachometerAlt /> },
           { href: '/calendar', label: 'Calendar', icon: <FaCalendarAlt /> },
           { href: '/submissions', label: 'Submissions', icon: <FaFileAlt /> },
+          { href: '/settings', label: 'Settings', icon: <FaCog /> },
 
           ...(hasManagementAccess()
                ? [
