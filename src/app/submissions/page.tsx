@@ -138,34 +138,10 @@ export default function SubmissionsPage() {
      };
 
      return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
+          <div className="min-h-screen bg-slate-900 relative overflow-hidden">
                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <motion.div
-                         animate={{
-                              scale: [1, 1.2, 1],
-                              rotate: [0, 90, 0],
-                              opacity: [0.03, 0.06, 0.03],
-                         }}
-                         transition={{
-                              duration: 20,
-                              repeat: Infinity,
-                              ease: 'easeInOut',
-                         }}
-                         className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-full blur-3xl"
-                    />
-                    <motion.div
-                         animate={{
-                              scale: [1.2, 1, 1.2],
-                              rotate: [90, 0, 90],
-                              opacity: [0.03, 0.06, 0.03],
-                         }}
-                         transition={{
-                              duration: 25,
-                              repeat: Infinity,
-                              ease: 'easeInOut',
-                         }}
-                         className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-blue-500 to-cyan-500 rounded-full blur-3xl"
-                    />
+                    <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-slate-800/30 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-slate-800/30 rounded-full blur-3xl" />
                </div>
 
                <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 relative z-10">
@@ -175,7 +151,7 @@ export default function SubmissionsPage() {
                                    initial={{ opacity: 0, x: -20 }}
                                    animate={{ opacity: 1, x: 0 }}
                                    transition={{ duration: 0.6, delay: 0.1 }}
-                                   className="text-5xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-2"
+                                   className="text-5xl font-bold text-white mb-2"
                               >
                                    {isAdmin ? 'Wszystkie zgłoszenia' : 'Moje zgłoszenia'}
                               </motion.h1>
@@ -191,7 +167,7 @@ export default function SubmissionsPage() {
                                    whileTap={{ scale: 0.95 }}
                                    transition={{ duration: 0.2 }}
                                    onClick={() => router.push('/submit')}
-                                   className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-2xl shadow-lg shadow-purple-500/30 overflow-hidden"
+                                   className="group relative px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl shadow-lg shadow-blue-500/30 overflow-hidden"
                               >
                                    <motion.div
                                         className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
@@ -259,7 +235,7 @@ export default function SubmissionsPage() {
                                                        <motion.span
                                                             initial={{ scale: 0 }}
                                                             animate={{ scale: 1 }}
-                                                            className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm border border-purple-400/30"
+                                                            className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm border border-blue-400/30"
                                                        >
                                                             {group.subs.length}
                                                        </motion.span>
@@ -301,7 +277,7 @@ export default function SubmissionsPage() {
                                                                                      y: -2,
                                                                                      transition: { duration: 0.2 },
                                                                                 }}
-                                                                                className={`group relative bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all cursor-pointer overflow-hidden ${
+                                                                                className={`group relative bg-slate-800/60 border border-slate-700/50 rounded-xl p-6 hover:border-slate-600 hover:shadow-lg transition-all cursor-pointer overflow-hidden ${
                                                                                      currentPriority === 'urgent' ? 'ring-2 ring-red-500/50' : ''
                                                                                 }`}
                                                                                 onClick={() => {
@@ -311,10 +287,10 @@ export default function SubmissionsPage() {
                                                                                 }}
                                                                            >
                                                                                 <motion.div
-                                                                                     className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0"
-                                                                                     initial={{ x: '-100%' }}
-                                                                                     whileHover={{ x: '100%' }}
-                                                                                     transition={{ duration: 0.6 }}
+                                                                                     className="absolute inset-0 bg-slate-700/10"
+                                                                                     initial={{ opacity: 0 }}
+                                                                                     whileHover={{ opacity: 1 }}
+                                                                                     transition={{ duration: 0.3 }}
                                                                                 />
 
                                                                                 {editingId === sub.submission_id && !isOwner ? (
@@ -330,7 +306,7 @@ export default function SubmissionsPage() {
                                                                                                          title: e.target.value,
                                                                                                     })
                                                                                                }
-                                                                                               className="w-full px-5 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                                                                               className="w-full px-5 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                                                           />
                                                                                           <motion.textarea
                                                                                                initial={{ opacity: 0, y: -10 }}
@@ -344,7 +320,7 @@ export default function SubmissionsPage() {
                                                                                                     })
                                                                                                }
                                                                                                rows={4}
-                                                                                               className="w-full px-5 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                                                                               className="w-full px-5 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                                                           />
                                                                                           <div className="flex gap-3">
                                                                                                <motion.button
@@ -381,7 +357,7 @@ export default function SubmissionsPage() {
                                                                                                                    e.stopPropagation();
                                                                                                                    startEdit(sub);
                                                                                                               }}
-                                                                                                              className="p-2.5 rounded-lg bg-slate-700/50 hover:bg-purple-500/20 text-slate-400 hover:text-purple-400 transition-all"
+                                                                                                              className="p-2.5 rounded-lg bg-slate-700/50 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 transition-all"
                                                                                                          >
                                                                                                               ✏️
                                                                                                          </motion.button>

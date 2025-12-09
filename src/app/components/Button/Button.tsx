@@ -28,28 +28,24 @@ const Button = ({
 }: ButtonProps): JSX.Element => {
   // Base classes for all buttons
   const baseClasses =
-    "inline-flex items-center justify-center font-medium cursor-pointer rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm border";
+    "inline-flex items-center justify-center font-medium cursor-pointer rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed border";
 
-  // Define styles per variant.
+  // Define styles per variant - professional, muted colors
   const variantClasses: Record<string, string> = {
     primary:
-      "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-blue-500/50 focus:ring-blue-500 shadow-lg hover:shadow-xl",
+      "bg-blue-600 hover:bg-blue-700 text-white border-blue-500/50 focus:ring-blue-500 shadow-md hover:shadow-lg",
     secondary:
-      "bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border-slate-700/50 focus:ring-slate-500 shadow-md hover:shadow-lg",
+      "bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-slate-100 border-slate-700/50 focus:ring-slate-500 shadow-sm hover:shadow-md",
     success:
-      "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white border-emerald-500/50 focus:ring-emerald-500 shadow-lg hover:shadow-xl",
+      "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500/50 focus:ring-emerald-500 shadow-md hover:shadow-lg",
     danger:
-      "bg-gradient-to-r from-red-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white border-red-500/50 focus:ring-red-500 shadow-lg hover:shadow-xl",
+      "bg-slate-800 hover:bg-red-900/80 text-red-400 hover:text-red-300 border-slate-700/50 hover:border-red-800/50 focus:ring-red-500/50 shadow-md hover:shadow-lg",
     warning:
-      "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white border-amber-500/50 focus:ring-amber-500 shadow-lg hover:shadow-xl",
+      "bg-amber-900/50 hover:bg-amber-900/70 text-amber-200 border-amber-700/30 focus:ring-amber-500/50 shadow-md hover:shadow-lg",
     ghost:
-      "bg-transparent hover:bg-slate-800/60 text-slate-300 hover:text-white border-slate-600/50 hover:border-slate-500/50 focus:ring-slate-500",
+      "bg-transparent hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 border-transparent hover:border-slate-700/50 focus:ring-slate-500",
     destructive:
-      // Often similar to danger but you may adjust to be more prominent.
-      "bg-red-600 hover:bg-red-700 text-white border-red-500/50 focus:ring-red-500 shadow-lg hover:shadow-xl",
-    // If you want an "outline" variant (not in your original union, uncomment in types accordingly):
-    // outline:
-    //   "bg-transparent text-white border-white/50 hover:bg-white/10 focus:ring-white",
+      "bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-300 border-red-900/30 focus:ring-red-500/50 shadow-md hover:shadow-lg",
   };
 
   // Size padding/font-size

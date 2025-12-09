@@ -105,18 +105,10 @@ export default function UsersManagementPage() {
      }
 
      return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
+          <div className="min-h-screen bg-slate-900 relative overflow-hidden">
                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <motion.div
-                         animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0], opacity: [0.03, 0.06, 0.03] }}
-                         transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-                         className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-full blur-3xl"
-                    />
-                    <motion.div
-                         animate={{ scale: [1.2, 1, 1.2], rotate: [90, 0, 90], opacity: [0.03, 0.06, 0.03] }}
-                         transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
-                         className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-blue-500 to-cyan-500 rounded-full blur-3xl"
-                    />
+                    <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-slate-800/30 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-slate-800/30 rounded-full blur-3xl" />
                </div>
 
                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 relative z-10">
@@ -134,7 +126,7 @@ export default function UsersManagementPage() {
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ duration: 0.6, delay: 0.1 }}
-                              className="text-5xl font-bold bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent mb-3"
+                              className="text-5xl font-bold text-white mb-3"
                          >
                               Zarządzanie użytkownikami
                          </motion.h1>
@@ -150,7 +142,7 @@ export default function UsersManagementPage() {
                               placeholder="Szukaj po nazwie lub emailu..."
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
-                              className="w-full pl-12 pr-12 py-4 bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-lg"
+                              className="w-full pl-12 pr-12 py-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-lg"
                          />
                          <AnimatePresence>
                               {searchTerm && (
@@ -175,14 +167,14 @@ export default function UsersManagementPage() {
                                    <div className="flex items-center justify-between mb-6">
                                         <h2 className="text-xl font-semibold text-white flex items-center gap-3">
                                              <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                                                  <Users className="w-6 h-6 text-purple-400" />
+                                                  <Users className="w-6 h-6 text-blue-400" />
                                              </motion.div>
                                              Klienci
                                         </h2>
                                         <motion.span
                                              initial={{ scale: 0 }}
                                              animate={{ scale: 1 }}
-                                             className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm border border-purple-400/30"
+                                             className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm border border-blue-400/30"
                                         >
                                              {filteredClients.length}
                                         </motion.span>
@@ -201,13 +193,13 @@ export default function UsersManagementPage() {
                                                        onClick={() => setSelectedClientId(client.id)}
                                                        className={`w-full text-left p-4 rounded-xl flex items-center cursor-pointer gap-3 border transition-all ${
                                                             selectedClientId === client.id
-                                                                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-500 shadow-lg shadow-purple-500/30'
-                                                                 : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/70 hover:border-purple-500/50 text-slate-200'
+                                                                 ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/30'
+                                                                 : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/70 hover:border-slate-600 text-slate-200'
                                                        }`}
                                                   >
                                                        <div
                                                             className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-                                                                 selectedClientId === client.id ? 'bg-white/20' : 'bg-gradient-to-br from-purple-500 to-pink-500'
+                                                                 selectedClientId === client.id ? 'bg-white/20' : 'bg-blue-600'
                                                             }`}
                                                        >
                                                             {client.name?.[0]?.toUpperCase() || '?'}
@@ -228,9 +220,9 @@ export default function UsersManagementPage() {
                               {selectedClientId ? (
                                    <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
                                         {selectedClient && (
-                                             <div className="mb-6 p-5 bg-gradient-to-r from-purple-900/40 to-pink-900/40 rounded-xl border border-purple-500/30">
+                                             <div className="mb-6 p-5 bg-slate-800 rounded-xl border border-slate-700">
                                                   <div className="flex items-center gap-4 mb-3">
-                                                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+                                                       <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold text-white shadow-lg">
                                                             {selectedClient.name?.[0]?.toUpperCase() || '?'}
                                                        </div>
                                                        <div>
@@ -257,11 +249,11 @@ export default function UsersManagementPage() {
                                                   placeholder="Szukaj boardu..."
                                                   value={boardSearch}
                                                   onChange={(e) => setBoardSearch(e.target.value)}
-                                                  className="w-full pl-11 pr-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                                  className="w-full pl-11 pr-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                              />
                                         </div>
                                         <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-                                             <Briefcase className="w-6 h-6 text-purple-400" />
+                                             <Briefcase className="w-6 h-6 text-blue-400" />
                                              Boardy klienta
                                         </h2>
                                         {loadingAssignments ? (
@@ -279,7 +271,7 @@ export default function UsersManagementPage() {
                                                             className={`relative flex items-center justify-between cursor-pointer p-5 rounded-xl border overflow-hidden ${
                                                                  board.isAssigned
                                                                       ? 'bg-gradient-to-r from-green-900/20 to-emerald-900/20 border-green-500/30'
-                                                                      : 'bg-slate-700/30 border-slate-600/50 hover:border-purple-500/50'
+                                                                      : 'bg-slate-700/30 border-slate-600/50 hover:border-slate-500'
                                                             }`}
                                                        >
                                                             <div className="flex-1 min-w-0 mr-4">
@@ -312,7 +304,7 @@ export default function UsersManagementPage() {
                                                                       whileTap={{ scale: 0.95 }}
                                                                       onClick={() => handleAssign(board.id)}
                                                                       disabled={isProcessing}
-                                                                      className="px-5 py-2.5 bg-gradient-to-r from-purple-600 cursor-pointer to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
+                                                                      className="px-5 py-2.5 bg-blue-600 cursor-pointer hover:bg-blue-700 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
                                                                  >
                                                                       <UserCheck className="w-4 h-4" />
                                                                       Przypisz
@@ -324,7 +316,7 @@ export default function UsersManagementPage() {
                                                        <motion.button
                                                             whileTap={{ scale: 0.98 }}
                                                             onClick={handleLoadMoreBoards}
-                                                            className="w-full mt-4 px-6 py-3 bg-purple-600/20 cursor-pointer hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl font-medium"
+                                                            className="w-full mt-4 px-6 py-3 bg-slate-700/50 cursor-pointer hover:bg-slate-700 text-slate-300 border border-slate-600 rounded-xl font-medium"
                                                        >
                                                             Załaduj więcej ({filteredBoards.length - visibleBoards})
                                                        </motion.button>
@@ -341,9 +333,9 @@ export default function UsersManagementPage() {
 
                               <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
                                    <h2 className="text-2xl font-semibold text-white mb-5 flex items-center gap-3">
-                                        <Shield className="w-6 h-6 text-purple-400" />
+                                        <Shield className="w-6 h-6 text-blue-400" />
                                         Wszyscy użytkownicy
-                                        <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm border border-purple-400/30">{filteredUsers.length}</span>
+                                        <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm border border-blue-400/30">{filteredUsers.length}</span>
                                    </h2>
                                    <div className="max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/50 pr-2 space-y-3">
                                         {filteredUsers.length === 0 ? (
@@ -355,7 +347,7 @@ export default function UsersManagementPage() {
                                                        initial={{ opacity: 0, x: -20 }}
                                                        animate={{ opacity: 1, x: 0 }}
                                                        transition={{ delay: i * 0.03 }}
-                                                       className="flex items-center justify-between cursor-pointer p-4 bg-slate-700/30 rounded-xl border border-slate-600/50 hover:border-purple-500/50 transition-all"
+                                                       className="flex items-center justify-between cursor-pointer p-4 bg-slate-700/30 rounded-xl border border-slate-600/50 hover:border-slate-500 transition-all"
                                                   >
                                                        <div className="flex items-center gap-4">
                                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">

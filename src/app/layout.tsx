@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-950 text-white">
+      <body className="bg-slate-900 text-slate-100">
         <Providers>
           {/* ClientLayout is a client-only component that uses useSession */}
           <ClientLayout>{children}</ClientLayout>

@@ -56,28 +56,28 @@ export const formatDate = (dateString: string | null | undefined): string => {
 export function getPriorityStyleConfig(priorityId: string): PriorityStyleConfig {
      const configs: Record<string, PriorityStyleConfig> = {
           urgent: {
-               bgColor: 'bg-red-500/20',
-               textColor: 'text-red-400',
-               borderColor: 'border-red-500/30',
-               dotColor: '#ef4444',
+               bgColor: 'bg-red-950/40',
+               textColor: 'text-red-400/90',
+               borderColor: 'border-red-900/30',
+               dotColor: '#dc2626',
           },
           high: {
-               bgColor: 'bg-orange-500/20',
-               textColor: 'text-orange-500',
-               borderColor: 'border-orange-500/30',
-               dotColor: '#f97316',
+               bgColor: 'bg-orange-950/40',
+               textColor: 'text-orange-400/90',
+               borderColor: 'border-orange-900/30',
+               dotColor: '#ea580c',
           },
           medium: {
-               bgColor: 'bg-yellow-500/20',
-               textColor: 'text-yellow-400',
-               borderColor: 'border-yellow-500/30',
-               dotColor: '#f59e0b',
+               bgColor: 'bg-amber-950/40',
+               textColor: 'text-amber-400/90',
+               borderColor: 'border-amber-900/30',
+               dotColor: '#d97706',
           },
           low: {
-               bgColor: 'bg-green-500/20',
-               textColor: 'text-green-400',
-               borderColor: 'border-green-500/30',
-               dotColor: '#10b981',
+               bgColor: 'bg-slate-700/40',
+               textColor: 'text-slate-400',
+               borderColor: 'border-slate-600/30',
+               dotColor: '#64748b',
           },
      };
      // fallback to 'medium' if unknown

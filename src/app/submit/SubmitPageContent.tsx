@@ -67,13 +67,13 @@ export default function SubmitPage() {
 
      if (availableBoards.length === 0) {
           return (
-               <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+               <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
                     <div className="max-w-md w-full bg-slate-800/50 border border-slate-700 rounded-lg p-8 text-center">
                          <h2 className="text-xl font-bold text-white mb-2">Brak dostępu do projektów</h2>
                          <p className="text-slate-400 mb-6">
                               Aby wysyłać zgłoszenia, musisz mieć rangę <b>CLIENT</b> oraz być przypisanym do przynajmniej jednego projektu.
                          </p>
-                         <button onClick={() => router.push('/')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg">
+                         <button onClick={() => router.push('/')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">
                               Powrót do strony głównej
                          </button>
                     </div>
@@ -85,7 +85,7 @@ export default function SubmitPage() {
      const canShowForm = selectedBoardId && currentUserId;
 
      return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+          <div className="min-h-screen bg-slate-900">
                <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
                     <div className="mb-8">
                          <button onClick={() => router.back()} className="text-slate-400 hover:text-white mb-6">

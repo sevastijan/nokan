@@ -91,10 +91,10 @@ const Navbar = () => {
                               router.push('/');
                               setSidebarOpen(false);
                          }}
-                         className="flex items-center gap-2 text-xl font-bold cursor-pointer text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text"
+                         className="flex items-center gap-2 text-xl font-bold cursor-pointer text-slate-200"
                     >
-                         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                              <FaHome className="w-4 h-4 text-white" />
+                         <div className="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center">
+                              <FaHome className="w-4 h-4 text-slate-300" />
                          </div>
                          NOKAN
                     </button>
@@ -116,7 +116,7 @@ const Navbar = () => {
                                    <Menu.Button className="relative p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
                                         <FaBell className="w-4 h-4" />
                                         {unreadCount > 0 && (
-                                             <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-lg">
+                                             <span className="absolute -top-1 -right-1 bg-rose-500/90 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-lg">
                                                   {unreadCount}
                                              </span>
                                         )}
@@ -251,7 +251,7 @@ const Navbar = () => {
                     <FaBars className="w-5 h-5" />
                </button>
 
-               <nav className="hidden md:flex fixed top-0 left-0 h-full w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 flex-col z-30 shadow-2xl">
+               <nav className="hidden md:flex fixed top-0 left-0 h-full w-64 bg-slate-900 border-r border-slate-700 flex-col z-30 shadow-lg">
                     <SidebarContent />
                </nav>
 

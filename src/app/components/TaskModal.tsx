@@ -35,13 +35,13 @@ const SimplePrioritySelector = ({
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-gray-300 mb-2">
+      <label className="block text-sm font-medium text-slate-300 mb-2">
         Priority
       </label>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-2.5 border border-gray-600 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors"
+        className="w-full flex items-center justify-between p-2.5 border border-slate-600 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
       >
         <span>{selectedPriority}</span>
         <span
@@ -53,7 +53,7 @@ const SimplePrioritySelector = ({
         </span>
       </button>
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+        <div className="absolute z-10 w-full mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg">
           {priorities.map((priority) => (
             <button
               key={priority}
@@ -62,7 +62,7 @@ const SimplePrioritySelector = ({
                 onChange(priority);
                 setIsOpen(false);
               }}
-              className="w-full text-left p-2.5 hover:bg-gray-600 transition-colors first:rounded-t-lg last:rounded-b-lg"
+              className="w-full text-left p-2.5 hover:bg-slate-600 transition-colors first:rounded-t-lg last:rounded-b-lg"
             >
               {priority}
             </button>
@@ -210,7 +210,7 @@ const TaskModal = ({
           transition={{ duration: 0.3 }}
         >
           <motion.div
-            className="bg-gray-800 text-white rounded-lg p-3 sm:p-4 w-full max-w-xs sm:max-w-sm mx-4"
+            className="bg-slate-800 text-slate-100 rounded-lg p-3 sm:p-4 w-full max-w-xs sm:max-w-sm mx-4 border border-slate-700"
             initial={{ scale: 0.8, opacity: 0, y: 50 }}
             animate={{
               scale: 1,
@@ -233,10 +233,10 @@ const TaskModal = ({
               </h2>
               <button
                 onClick={triggerClose}
-                className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors duration-200 group"
+                className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors duration-200 group"
                 title="Close modal (ESC)"
               >
-                <IoClose className="w-4 h-4 text-gray-400 group-hover:text-white" />
+                <IoClose className="w-4 h-4 text-slate-400 group-hover:text-slate-100" />
               </button>
             </div>
             <div className="space-y-3">
@@ -245,7 +245,7 @@ const TaskModal = ({
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-2.5 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-700 text-slate-100 border border-slate-600 rounded-lg p-2.5 text-sm focus:outline-none focus:border-slate-500"
                   placeholder="Enter task title"
                   autoFocus
                 />
@@ -255,7 +255,7 @@ const TaskModal = ({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={2}
-                  className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-700 text-slate-100 border border-slate-600 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-slate-500"
                   placeholder="Enter task description"
                 />
               </div>
@@ -267,14 +267,14 @@ const TaskModal = ({
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={triggerClose}
-                className="w-full sm:w-auto bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm order-2 sm:order-1"
+                className="w-full sm:w-auto bg-slate-700 text-slate-200 px-3 py-2 rounded-lg hover:bg-slate-600 transition-colors duration-200 text-sm order-2 sm:order-1"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={!title.trim() || loading}
-                className="w-full sm:w-auto bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 text-sm order-1 sm:order-2"
+                className="w-full sm:w-auto bg-slate-600 text-slate-100 px-3 py-2 rounded-lg hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 text-sm order-1 sm:order-2"
               >
                 {loading
                   ? "Saving..."
