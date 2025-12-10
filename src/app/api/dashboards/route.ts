@@ -4,7 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+function getSupabase() {
+     return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+}
 
 /**
  * Get all boards for the authenticated user
@@ -18,7 +20,7 @@ export async function GET(request: NextRequest) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const { data, error } = await supabase.from('boards').select('*').eq('owner', token.email).order('created_at', { ascending: false });
+          const { data, error } = await getSupabase().from('boards').select('*').eq('owner', token.email).order('created_at', { ascending: false });
 
           if (error) {
                return NextResponse.json({ error: 'Database error' }, { status: 500 });
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
                { title: 'Done', order: 2, board_id: boardData.id },
           ];
 
-          await supabase.from('columns').insert(defaultColumns);
+          await getSupabase().from('columns').insert(defaultColumns);
 
           return NextResponse.json(boardData);
      } catch {

@@ -4,7 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+function getSupabase() {
+     return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+}
 
 export const authOptions: NextAuthOptions = {
      providers: [
@@ -19,7 +21,7 @@ export const authOptions: NextAuthOptions = {
                try {
                     console.log('SignIn callback - user:', user.id);
 
-                    const { data: existingUser, error: selectError } = await supabase.from('users').select('*').eq('google_id', user.id).single();
+                    const { data: existingUser, error: selectError } = await getSupabase().from('users').select('*').eq('google_id', user.id).single();
 
                     if (selectError && selectError.code !== 'PGRST116') {
                          console.error('Error checking existing Supabase user:', selectError.message);
@@ -27,7 +29,7 @@ export const authOptions: NextAuthOptions = {
                     }
 
                     if (!existingUser) {
-                         const { error: insertError } = await supabase.from('users').insert({
+                         const { error: insertError } = await getSupabase().from('users').insert({
                               google_id: user.id,
                               name: user.name || '',
                               email: user.email || '',

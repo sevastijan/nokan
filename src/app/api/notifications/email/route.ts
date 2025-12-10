@@ -4,7 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 import { sendEmailNotification } from '@/app/lib/email/emailService';
 import type { EmailNotificationType } from '@/app/types/emailTypes';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+function getSupabase() {
+     return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+}
 
 interface EmailRequestBody {
      type: EmailNotificationType;
@@ -51,14 +53,14 @@ export async function POST(request: NextRequest) {
           }
 
           // Get recipient's email and preferences
-          const { data: recipient, error: userError } = await supabase.from('users').select('id, email, name').eq('id', recipientId).single();
+          const { data: recipient, error: userError } = await getSupabase().from('users').select('id, email, name').eq('id', recipientId).single();
 
           if (userError || !recipient) {
                return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
           }
 
           // Check notification preferences
-          const { data: preferences } = await supabase.from('notification_preferences').select('*').eq('user_id', recipientId).single();
+          const { data: preferences } = await getSupabase().from('notification_preferences').select('*').eq('user_id', recipientId).single();
 
           // If no preferences exist, default to all enabled
           const preferenceKey = preferenceKeyMap[type];
