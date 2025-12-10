@@ -28,6 +28,10 @@ steps:
        commands:
             - docker version
             - echo "🔍 Checking injected envs (safe preview)..."
+            - echo "NEXT_PUBLIC_SUPABASE_URL length -> ${#NEXT_PUBLIC_SUPABASE_URL}"
+            - echo "NEXTAUTH_SECRET length -> ${#NEXTAUTH_SECRET}"
+            - if [ -z "${NEXT_PUBLIC_SUPABASE_URL}" ]; then echo "❌ NEXT_PUBLIC_SUPABASE_URL is EMPTY!"; else echo "✅ NEXT_PUBLIC_SUPABASE_URL is set"; fi
+            - if [ -z "${NEXTAUTH_SECRET}" ]; then echo "❌ NEXTAUTH_SECRET is EMPTY!"; else echo "✅ NEXTAUTH_SECRET is set"; fi
             - echo "NEXT_PUBLIC_SUPABASE_URL -> ${NEXT_PUBLIC_SUPABASE_URL}"
             - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix -> $(echo "${NEXT_PUBLIC_SUPABASE_ANON_KEY}" | cut -c1-6)"
             - echo "SERVICE_ROLE_KEY prefix -> $(echo "${SERVICE_ROLE_KEY}" | cut -c1-6)"
