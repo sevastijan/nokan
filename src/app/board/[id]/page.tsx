@@ -187,13 +187,25 @@ export default function Page() {
           async (result: DropResult) => {
                const { source, destination, type } = result;
                if (!destination) return;
+               if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
                if (type === 'COLUMN') {
                     const cols = Array.from(localColumns);
                     const [moved] = cols.splice(source.index, 1);
                     cols.splice(destination.index, 0, moved);
                     setLocalColumns(cols);
-                    await Promise.all(cols.map((c, i) => getSupabase().from('columns').update({ order: i }).eq('id', c.id)));
+
+                    try {
+                         const updates = await Promise.all(
+                              cols.map((c, i) => getSupabase().from('columns').update({ order: i }).eq('id', c.id))
+                         );
+                         const hasError = updates.some((u) => u.error);
+                         if (hasError) {
+                              console.error('Error updating column order:', updates.find((u) => u.error)?.error);
+                         }
+                    } catch (err) {
+                         console.error('Error updating column order:', err);
+                    }
                     await fetchBoardData();
                     return;
                }
@@ -208,26 +220,79 @@ export default function Page() {
                     const [movedTask] = srcTasks.splice(source.index, 1);
                     if (!movedTask) return;
 
-                    const dstTasks = srcCol.id === dstCol.id ? srcTasks : Array.from(dstCol.tasks || []);
+                    console.log('[DnD] Moving task:', movedTask.id, movedTask.title);
+                    console.log('[DnD] From:', srcCol.id, 'index', source.index, '-> To:', dstCol.id, 'index', destination.index);
+
+                    const isSameColumn = srcCol.id === dstCol.id;
+                    const dstTasks = isSameColumn ? srcTasks : Array.from(dstCol.tasks || []);
                     dstTasks.splice(destination.index, 0, movedTask);
 
-                    const updatedSrc = srcTasks.map((t, i) => ({ ...t, order: i }));
-                    const updatedDst = dstTasks.map((t, i) => ({
-                         ...t,
-                         order: i,
-                         column_id: dstCol.id,
-                    }));
+                    // Update local state
+                    if (isSameColumn) {
+                         const updatedTasks = dstTasks.map((t, i) => ({ ...t, order: i, sort_order: i }));
+                         const srcColIndex = cols.findIndex((c) => c.id === srcCol.id);
+                         cols[srcColIndex] = { ...cols[srcColIndex], tasks: updatedTasks };
+                         setLocalColumns([...cols]);
 
-                    cols[cols.indexOf(srcCol)].tasks = updatedSrc;
-                    cols[cols.indexOf(dstCol)].tasks = updatedDst;
-                    setLocalColumns(cols);
+                         // Update DB - only destination tasks (same column)
+                         try {
+                              console.log('[DnD] Saving to DB:', updatedTasks.map(t => ({ id: t.id, sort_order: t.order })));
+                              const updates = await Promise.all(
+                                   updatedTasks.map((t) =>
+                                        getSupabase().from('tasks').update({ sort_order: t.order }).eq('id', t.id)
+                                   )
+                              );
+                              const errors = updates.filter((u) => u.error);
+                              if (errors.length > 0) {
+                                   console.error('[DnD] DB errors:', errors.map(e => e.error));
+                              } else {
+                                   console.log('[DnD] DB update successful');
+                              }
+                         } catch (err) {
+                              console.error('[DnD] Exception:', err);
+                         }
+                    } else {
+                         // Different columns - update both
+                         const updatedSrc = srcTasks.map((t, i) => ({ ...t, order: i, sort_order: i }));
+                         const updatedDst = dstTasks.map((t, i) => ({
+                              ...t,
+                              order: i,
+                              sort_order: i,
+                              column_id: dstCol.id,
+                         }));
 
-                    await Promise.all([
-                         ...updatedSrc.map((t) => getSupabase().from('tasks').update({ sort_order: t.order }).eq('id', t.id)),
-                         ...updatedDst.map((t) => getSupabase().from('tasks').update({ sort_order: t.order, column_id: t.column_id }).eq('id', t.id)),
-                    ]);
+                         const srcColIndex = cols.findIndex((c) => c.id === srcCol.id);
+                         const dstColIndex = cols.findIndex((c) => c.id === dstCol.id);
+                         cols[srcColIndex] = { ...cols[srcColIndex], tasks: updatedSrc };
+                         cols[dstColIndex] = { ...cols[dstColIndex], tasks: updatedDst };
+                         setLocalColumns([...cols]);
 
+                         try {
+                              console.log('[DnD] Saving src to DB:', updatedSrc.map(t => ({ id: t.id, sort_order: t.order })));
+                              console.log('[DnD] Saving dst to DB:', updatedDst.map(t => ({ id: t.id, sort_order: t.order, column_id: t.column_id })));
+                              const updates = await Promise.all([
+                                   ...updatedSrc.map((t) =>
+                                        getSupabase().from('tasks').update({ sort_order: t.order }).eq('id', t.id)
+                                   ),
+                                   ...updatedDst.map((t) =>
+                                        getSupabase().from('tasks').update({ sort_order: t.order, column_id: t.column_id }).eq('id', t.id)
+                                   ),
+                              ]);
+                              const errors = updates.filter((u) => u.error);
+                              if (errors.length > 0) {
+                                   console.error('[DnD] DB errors:', errors.map(e => e.error));
+                              } else {
+                                   console.log('[DnD] DB update successful');
+                              }
+                         } catch (err) {
+                              console.error('[DnD] Exception:', err);
+                         }
+                    }
+
+                    // Wait a bit for DB to settle, then refetch
+                    console.log('[DnD] Refetching board data...');
                     await fetchBoardData();
+                    console.log('[DnD] Done');
                }
           },
           [localColumns, fetchBoardData],
