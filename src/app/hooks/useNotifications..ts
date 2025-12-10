@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { supabase } from "@/app/lib/supabase";
+import { getSupabase } from "@/app/lib/supabase";
 import {
   useGetNotificationsQuery,
   useDeleteNotificationMutation,
@@ -40,7 +40,7 @@ export const useNotifications = (userId?: string) => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      getSupabase().removeChannel(channel);
     };
   }, [userId, refetch]);
 

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { SubmissionForm } from '@/app/components/SubmissionForm/SubmissionForm';
 import Loader from '@/app/components/Loader';
 import { useGetClientBoardsQuery, useGetAllBoardsQuery } from '@/app/store/apiSlice';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 
 export default function SubmitPage() {
      const { data: session, status: authStatus } = useSession();
@@ -27,7 +27,7 @@ export default function SubmitPage() {
                }
 
                try {
-                    const { data } = await supabase.from('users').select('id').eq('email', session.user.email).single();
+                    const { data } = await getSupabase().from('users').select('id').eq('email', session.user.email).single();
 
                     if (data) {
                          setCurrentUserId(data.id);

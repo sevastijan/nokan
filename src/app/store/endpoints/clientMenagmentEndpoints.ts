@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { User, BoardWithCounts, ClientSubmission } from '@/app/types/globalTypes';
 
 interface BoardClient {
@@ -37,7 +37,7 @@ interface UpdatePermissionsPayload {
 export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
      getAllClients: builder.query<User[], void>({
           async queryFn() {
-               const { data, error } = await supabase.from('users').select('*').eq('role', 'CLIENT').order('created_at', { ascending: false });
+               const { data, error } = await getSupabase().from('users').select('*').eq('role', 'CLIENT').order('created_at', { ascending: false });
 
                if (error) {
                     return { error: { status: 'FETCH_ERROR', error: error.message } };
@@ -51,7 +51,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
      assignClientToBoard: builder.mutation<BoardClient, AssignClientPayload>({
           async queryFn({ boardId, clientExternalId, assignedBy, can_delete_own = true, can_edit_after_submission = true }) {
                try {
-                    const { data: userData, error: userError } = await supabase.from('users').select('id').eq('id', clientExternalId).single();
+                    const { data: userData, error: userError } = await getSupabase().from('users').select('id').eq('id', clientExternalId).single();
 
                     if (userError || !userData) {
                          return {
@@ -62,7 +62,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                          };
                     }
 
-                    const { data: existing } = await supabase.from('board_clients').select('id').eq('board_id', boardId).eq('client_id', userData.id).maybeSingle();
+                    const { data: existing } = await getSupabase().from('board_clients').select('id').eq('board_id', boardId).eq('client_id', userData.id).maybeSingle();
 
                     if (existing) {
                          return {
@@ -92,7 +92,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                          payload.assigned_by = assignedBy;
                     }
 
-                    const { data, error } = await supabase.from('board_clients').insert(payload).select('*').single();
+                    const { data, error } = await getSupabase().from('board_clients').insert(payload).select('*').single();
 
                     if (error) {
                          return { error: { status: 'INSERT_ERROR', error: error.message } };
@@ -118,7 +118,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
 
      getClientBoardAssignments: builder.query<{ id: string; board_id: string }[], string>({
           async queryFn(clientId) {
-               const { data, error } = await supabase.from('board_clients').select('id, board_id').eq('client_id', clientId);
+               const { data, error } = await getSupabase().from('board_clients').select('id, board_id').eq('client_id', clientId);
 
                if (error) {
                     return { error: { status: 'FETCH_ERROR', error: error.message } };
@@ -138,9 +138,9 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
      removeClientFromBoard: builder.mutation<RemoveClientResult, { boardClientId: string }>({
           async queryFn({ boardClientId }) {
                try {
-                    const { data: boardClient } = await supabase.from('board_clients').select('client_id, board_id').eq('id', boardClientId).single();
+                    const { data: boardClient } = await getSupabase().from('board_clients').select('client_id, board_id').eq('id', boardClientId).single();
 
-                    const { error } = await supabase.from('board_clients').delete().eq('id', boardClientId);
+                    const { error } = await getSupabase().from('board_clients').delete().eq('id', boardClientId);
 
                     if (error) {
                          return { error: { status: 'DELETE_ERROR', error: error.message } };
@@ -178,7 +178,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
 
      getClientBoards: builder.query<string[], string>({
           async queryFn(clientId) {
-               const { data, error } = await supabase.from('board_clients').select('board_id').eq('client_id', clientId);
+               const { data, error } = await getSupabase().from('board_clients').select('board_id').eq('client_id', clientId);
 
                if (error) {
                     return { error: { status: 'FETCH_ERROR', error: error.message } };
@@ -191,7 +191,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
 
      getBoardClients: builder.query<BoardClient[], string>({
           async queryFn(boardId) {
-               const { data, error } = await supabase.from('board_clients').select('*, client:users!board_clients_client_id_fkey(*)').eq('board_id', boardId);
+               const { data, error } = await getSupabase().from('board_clients').select('*, client:users!board_clients_client_id_fkey(*)').eq('board_id', boardId);
 
                if (error) {
                     return { error: { status: 'FETCH_ERROR', error: error.message } };
@@ -233,7 +233,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                          };
                     }
 
-                    const { data, error } = await supabase.from('board_clients').update(updates).eq('id', boardClientId).select('*').single();
+                    const { data, error } = await getSupabase().from('board_clients').update(updates).eq('id', boardClientId).select('*').single();
 
                     if (error) {
                          return { error: { status: 'UPDATE_ERROR', error: error.message } };
@@ -294,7 +294,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
 
                     const statusesMap: Record<string, { id: string; label: string; color: string }> = {};
                     if (statusIds.length > 0) {
-                         const { data: statusesData } = await supabase.from('statuses').select('id, label, color').in('id', statusIds);
+                         const { data: statusesData } = await getSupabase().from('statuses').select('id, label, color').in('id', statusIds);
 
                          statusesData?.forEach((status: { id: string; label: string; color: string }) => {
                               statusesMap[status.id] = status;
@@ -354,7 +354,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
      getClientBoardsWithDetails: builder.query<BoardWithCounts[], string>({
           async queryFn(clientId) {
                try {
-                    const { data: assignments, error: assignErr } = await supabase.from('board_clients').select('board_id').eq('client_id', clientId);
+                    const { data: assignments, error: assignErr } = await getSupabase().from('board_clients').select('board_id').eq('client_id', clientId);
 
                     if (assignErr) {
                          return {
@@ -371,7 +371,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
 
                     const boardIds = assignments.map((a) => a.board_id);
 
-                    const { data: boards, error: boardErr } = await supabase.from('boards').select('id, title, created_at, updated_at').in('id', boardIds);
+                    const { data: boards, error: boardErr } = await getSupabase().from('boards').select('id, title, created_at, updated_at').in('id', boardIds);
 
                     if (boardErr) {
                          return {
@@ -384,7 +384,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
 
                     const boardsWithCounts = await Promise.all(
                          (boards ?? []).map(async (board) => {
-                              const { count = 0 } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('board_id', board.id);
+                              const { count = 0 } = await getSupabase().from('tasks').select('*', { count: 'exact', head: true }).eq('board_id', board.id);
 
                               return {
                                    id: board.id,

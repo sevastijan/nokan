@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 
 interface Notification {
      id: string;
@@ -43,7 +43,7 @@ export const notificationEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
      getNotifications: builder.query<Notification[], string>({
           async queryFn(userId) {
                try {
-                    const { data, error } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+                    const { data, error } = await getSupabase().from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
                     if (error) throw error;
                     return { data: data || [] };
                } catch (err) {
@@ -57,7 +57,7 @@ export const notificationEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
      deleteNotification: builder.mutation<{ id: string }, { id: string }>({
           async queryFn({ id }) {
                try {
-                    const { error } = await supabase.from('notifications').delete().eq('id', id);
+                    const { error } = await getSupabase().from('notifications').delete().eq('id', id);
                     if (error) throw error;
                     return { data: { id } };
                } catch (err) {
@@ -71,7 +71,7 @@ export const notificationEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
      markNotificationRead: builder.mutation<{ id: string }, { id: string }>({
           async queryFn({ id }) {
                try {
-                    const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
+                    const { error } = await getSupabase().from('notifications').update({ read: true }).eq('id', id);
                     if (error) throw error;
                     return { data: { id } };
                } catch (err) {

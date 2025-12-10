@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../../../lib/api";
+import { getSupabase } from "../../../lib/api";
 import { Comment } from "../types";
 
 interface UseTaskCommentsResult {

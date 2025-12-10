@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useGetClientSubmissionsQuery, useGetAllSubmissionsQuery, useUpdateSubmissionMutation, useDeleteSubmissionMutation } from '@/app/store/apiSlice';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import Loader from '@/app/components/Loader';
 import { ClientSubmission as ImportedClientSubmission } from '@/app/types/globalTypes';
 import { motion, AnimatePresence } from 'framer-motion';

@@ -1,12 +1,12 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query/react';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { Column } from '@/app/types/globalTypes';
 
 export const columnEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
      addColumn: builder.mutation<Column, { board_id: string; title: string; order: number }>({
           async queryFn({ board_id, title, order }) {
                try {
-                    const { data, error } = await supabase.from('columns').insert({ board_id, title, order }).select('*').single();
+                    const { data, error } = await getSupabase().from('columns').insert({ board_id, title, order }).select('*').single();
                     if (error || !data) throw error || new Error('Add column failed');
                     const mapped: Column = {
                          id: data.id,
@@ -28,8 +28,8 @@ export const columnEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, st
      removeColumn: builder.mutation<{ id: string }, { columnId: string }>({
           async queryFn({ columnId }) {
                try {
-                    await supabase.from('tasks').delete().eq('column_id', columnId);
-                    const { error } = await supabase.from('columns').delete().eq('id', columnId);
+                    await getSupabase().from('tasks').delete().eq('column_id', columnId);
+                    const { error } = await getSupabase().from('columns').delete().eq('id', columnId);
                     if (error) throw error;
                     return { data: { id: columnId } };
                } catch (err) {
@@ -44,7 +44,7 @@ export const columnEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, st
      updateColumnOrder: builder.mutation<{ id: string; order: number }, { columnId: string; order: number }>({
           async queryFn({ columnId, order }) {
                try {
-                    const { data, error } = await supabase.from('columns').update({ order }).eq('id', columnId).select('id, order').single();
+                    const { data, error } = await getSupabase().from('columns').update({ order }).eq('id', columnId).select('id, order').single();
                     if (error || !data) throw error || new Error('Update column order failed');
                     return { data };
                } catch (err) {
@@ -62,7 +62,7 @@ export const columnEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, st
      updateColumnTitle: builder.mutation<{ id: string; title: string }, { columnId: string; title: string }>({
           async queryFn({ columnId, title }) {
                try {
-                    const { error } = await supabase.from('columns').update({ title }).eq('id', columnId);
+                    const { error } = await getSupabase().from('columns').update({ title }).eq('id', columnId);
                     if (error) throw error;
                     return { data: { id: columnId, title } };
                } catch (err) {

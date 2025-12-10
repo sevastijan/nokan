@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { Session } from 'next-auth';
 import { User } from '@/app/types/globalTypes';
 import { UserRole } from '../apiSlice';
@@ -26,7 +26,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          };
                     }
 
-                    const { data: existingUser, error: fetchError } = await supabase.from('users').select('*').eq('email', email).maybeSingle();
+                    const { data: existingUser, error: fetchError } = await getSupabase().from('users').select('*').eq('email', email).maybeSingle();
 
                     if (fetchError) {
                          throw new Error(`Failed to fetch user: ${fetchError.message}`);
@@ -83,7 +83,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          return { data: DEFAULT_ROLE };
                     }
 
-                    const { data, error } = await supabase.from('users').select('role').eq('email', trimmedEmail).maybeSingle();
+                    const { data, error } = await getSupabase().from('users').select('role').eq('email', trimmedEmail).maybeSingle();
 
                     if (error) {
                          console.error('[getUserRole] Database error:', error.message);
@@ -118,7 +118,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getAllUsers: builder.query<User[], void>({
           async queryFn() {
                try {
-                    const { data, error } = await supabase.from('users').select('*');
+                    const { data, error } = await getSupabase().from('users').select('*');
                     if (error) throw error;
                     return { data: data || [] };
                } catch (error) {
@@ -137,7 +137,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                }
 
                try {
-                    const { error } = await supabase.from('users').update({ role }).eq('id', userId);
+                    const { error } = await getSupabase().from('users').update({ role }).eq('id', userId);
                     if (error) throw error;
                     return { data: undefined };
                } catch (error) {

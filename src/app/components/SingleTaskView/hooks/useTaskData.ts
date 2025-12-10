@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getTaskById } from "../../../lib/api";
 import { TaskDetail, Attachment } from "@/app/types/globalTypes";
-import { supabase } from "../../../lib/api";
+import { getSupabase } from "../../../lib/api";
 
 interface UseTaskDataResult {
   task: TaskDetail | null;

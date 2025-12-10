@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/store/hooks';
 import { setAvatar, removeAvatar } from '@/app/store/slices/avatarSlice';
 import { toast } from 'react-toastify';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { User, TaskDetail } from '@/app/types/globalTypes';
 
 export type PriorityStyleConfig = {
@@ -108,7 +108,7 @@ export function getAvatarUrl(user: User | null): string | null {
      // If image is a non-empty string but not URL, treat as Supabase bucket path.
      if (user.image) {
           try {
-               const { data } = supabase.storage.from('avatars').getPublicUrl(user.image);
+               const { data } = getSupabase().storage.from('avatars').getPublicUrl(user.image);
                if (data && data.publicUrl) {
                     return data.publicUrl;
                }

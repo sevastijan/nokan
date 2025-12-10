@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { Task, TaskDetail, Attachment, User } from '@/app/types/globalTypes';
 
 interface RawTask {
@@ -73,7 +73,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          completed: false,
                          sort_order: 0,
                     };
-                    const { data, error } = await supabase.from('tasks').insert(payload).select('*').single();
+                    const { data, error } = await getSupabase().from('tasks').insert(payload).select('*').single();
                     if (error || !data) throw error || new Error('Add task failed');
                     const mapped: Task = {
                          id: data.id,
@@ -116,7 +116,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      >({
           async queryFn({ templateTaskId, boardId, columnId, order }) {
                try {
-                    const { data: templateTask, error } = await supabase.from('template_tasks').select('*').eq('id', templateTaskId).single();
+                    const { data: templateTask, error } = await getSupabase().from('template_tasks').select('*').eq('id', templateTaskId).single();
                     if (error || !templateTask) {
                          throw error || new Error('Template task not found');
                     }
@@ -130,7 +130,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          sort_order: order,
                          completed: false,
                     };
-                    const { data: newTask, error: insertErr } = await supabase.from('tasks').insert(insertPayload).select('*').single();
+                    const { data: newTask, error: insertErr } = await getSupabase().from('tasks').insert(insertPayload).select('*').single();
                     if (insertErr || !newTask) {
                          throw insertErr || new Error('Insert failed');
                     }
@@ -452,7 +452,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      removeTask: builder.mutation<{ id: string; columnId: string }, { taskId: string; columnId: string }>({
           async queryFn({ taskId, columnId }) {
                try {
-                    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+                    const { error } = await getSupabase().from('tasks').delete().eq('id', taskId);
                     if (error) throw error;
                     return { data: { id: taskId, columnId } };
                } catch (err) {
@@ -473,7 +473,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          delete dbPayload.order;
                     }
 
-                    const { data: updated, error } = await supabase.from('tasks').update(dbPayload).eq('id', taskId).select('*').single();
+                    const { data: updated, error } = await getSupabase().from('tasks').update(dbPayload).eq('id', taskId).select('*').single();
 
                     if (error || !updated) {
                          console.error('❌ updateTask mutation failed:', error);
@@ -522,7 +522,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      updateTaskCompletion: builder.mutation<void, { taskId: string; completed: boolean }>({
           async queryFn({ taskId, completed }) {
                try {
-                    const { error } = await supabase.from('tasks').update({ completed }).eq('id', taskId);
+                    const { error } = await getSupabase().from('tasks').update({ completed }).eq('id', taskId);
                     if (error) throw error;
                     return { data: undefined };
                } catch (err) {
@@ -537,7 +537,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      updateTaskDates: builder.mutation<void, { taskId: string; start_date: string | null; end_date: string | null }>({
           async queryFn({ taskId, start_date, end_date }) {
                try {
-                    const { error } = await supabase.from('tasks').update({ start_date, end_date }).eq('id', taskId);
+                    const { error } = await getSupabase().from('tasks').update({ start_date, end_date }).eq('id', taskId);
                     if (error) throw error;
                     return { data: undefined };
                } catch (err) {
@@ -588,7 +588,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getPriorities: builder.query<{ id: string; label: string; color: string }[], void>({
           async queryFn() {
                try {
-                    const { data, error } = await supabase.from('priorities').select('id,label,color').order('created_at', { ascending: true });
+                    const { data, error } = await getSupabase().from('priorities').select('id,label,color').order('created_at', { ascending: true });
 
                     if (error) throw error;
 

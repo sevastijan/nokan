@@ -1,7 +1,7 @@
 // src/app/store/slices/calendarApiSlice.ts
 
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { supabase } from "@/app/lib/supabase";
+import { getSupabase } from "@/app/lib/supabase";
 import type { Board, TaskDetail, Column, User } from "@/app/types/globalTypes";
 
 /**
@@ -34,7 +34,7 @@ export const calendarApi = createApi({
             return { data: [] };
           }
           // 1) Fetch team_members rows for this user
-          const { data: tmRows, error: tmError } = await supabase
+          const { data: tmRows, error: tmError } = await getSupabase()
             .from("team_members")
             .select("team_id")
             .eq("user_id", userId);
@@ -50,7 +50,7 @@ export const calendarApi = createApi({
           let boardsFromTeam: Board[] = [];
           // 2) Fetch team_boards entries for those team IDs
           if (teamIds.length) {
-            const { data: tbRows, error: tbError } = await supabase
+            const { data: tbRows, error: tbError } = await getSupabase()
               .from("team_boards")
               .select("board_id")
               .in("team_id", teamIds);
@@ -63,7 +63,7 @@ export const calendarApi = createApi({
               new Set(tbRows?.map((r) => r.board_id).filter(Boolean))
             );
             if (teamBoardIds.length) {
-              const { data: boardsData, error: bError } = await supabase
+              const { data: boardsData, error: bError } = await getSupabase()
                 .from("boards")
                 .select("id, title")
                 .in("id", teamBoardIds);
@@ -78,7 +78,7 @@ export const calendarApi = createApi({
 
           // 3) Fetch personal boards: where user_id = userId
           let personalBoards: Board[] = [];
-          const { data: personalData, error: pError } = await supabase
+          const { data: personalData, error: pError } = await getSupabase()
             .from("boards")
             .select("id, title")
             .eq("user_id", userId);
@@ -93,7 +93,7 @@ export const calendarApi = createApi({
           let boardsFromTasks: Board[] = [];
           if (teamIds.length === 0) {
             // Query distinct board_id from tasks where user_id = userId
-            const { data: taskRows, error: taskError } = await supabase
+            const { data: taskRows, error: taskError } = await getSupabase()
               .from("tasks")
               .select("board_id")
               .eq("user_id", userId);
@@ -108,7 +108,7 @@ export const calendarApi = createApi({
                 new Set(taskRows.map((r) => r.board_id).filter(Boolean))
               );
               if (taskBoardIds.length) {
-                const { data: boardsData2, error: bError2 } = await supabase
+                const { data: boardsData2, error: bError2 } = await getSupabase()
                   .from("boards")
                   .select("id, title")
                   .in("id", taskBoardIds);
@@ -165,7 +165,7 @@ export const calendarApi = createApi({
             return { data: [] };
           }
           // Supabase returns snake_case: board_id
-          const { data: cols, error } = await supabase
+          const { data: cols, error } = await getSupabase()
             .from("columns")
             .select("id, title, board_id, order")
             .eq("board_id", boardId)
@@ -229,7 +229,7 @@ export const calendarApi = createApi({
           ].join(",");
           // Select all fields plus join assignee user:
           // Adjust foreign key alias if needed
-          const { data: tasks, error } = await supabase
+          const { data: tasks, error } = await getSupabase()
             .from("tasks")
             .select(
               `
@@ -277,7 +277,7 @@ export const calendarApi = createApi({
             return { data: [] };
           }
           // 1) Fetch associated teams for this board
-          const { data: tbRows, error: tbError } = await supabase
+          const { data: tbRows, error: tbError } = await getSupabase()
             .from("team_boards")
             .select("team_id")
             .eq("board_id", boardId);
@@ -293,7 +293,7 @@ export const calendarApi = createApi({
             return { data: [] };
           }
           // 2) Fetch members of those teams
-          const { data: tmRows, error: tmError } = await supabase
+          const { data: tmRows, error: tmError } = await getSupabase()
             .from("team_members")
             .select("user(id, name, email, image)")
             .in("team_id", teamIds);

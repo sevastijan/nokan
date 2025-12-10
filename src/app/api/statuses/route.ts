@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
                return NextResponse.json({ error: 'board_id is required' }, { status: 400 });
           }
 
-          const { data, error } = await supabase.from('statuses').select('*').eq('board_id', boardId).order('order_index', { ascending: true });
+          const { data, error } = await getSupabase().from('statuses').select('*').eq('board_id', boardId).order('order_index', { ascending: true });
 
           if (error) {
                console.error('Error fetching statuses:', error);
@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest) {
           if (color !== undefined) updates.color = color;
           if (order_index !== undefined) updates.order_index = order_index;
 
-          const { data, error } = await supabase.from('statuses').update(updates).eq('id', id).select().single();
+          const { data, error } = await getSupabase().from('statuses').update(updates).eq('id', id).select().single();
 
           if (error) {
                console.error('Error updating status:', error);
@@ -101,7 +101,7 @@ export async function DELETE(request: NextRequest) {
                return NextResponse.json({ error: 'id is required' }, { status: 400 });
           }
 
-          const { error } = await supabase.from('statuses').delete().eq('id', id);
+          const { error } = await getSupabase().from('statuses').delete().eq('id', id);
 
           if (error) {
                console.error('Error deleting status:', error);
