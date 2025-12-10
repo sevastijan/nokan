@@ -14,6 +14,7 @@ import { templateEndpoints } from './endpoints/templateEndpoints';
 import { submissionEndpoints } from './endpoints/submissionEndpoints';
 import { clientManagementEndpoints } from './endpoints/clientMenagmentEndpoints';
 import { preferencesEndpoints } from './endpoints/preferencesEndpoints';
+import { collaboratorEndpoints } from './endpoints/collaboratorEndpoints';
 
 /**
  * UserRole type in your application.
@@ -45,6 +46,7 @@ export const apiSlice = createApi({
           'ClientBoard',
           'Priority',
           'User',
+          'TaskCollaborators',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -57,6 +59,7 @@ export const apiSlice = createApi({
           ...submissionEndpoints(builder),
           ...clientManagementEndpoints(builder),
           ...preferencesEndpoints(builder),
+          ...collaboratorEndpoints(builder),
      }),
 });
 
@@ -117,4 +120,8 @@ export const {
      useSetUserRoleMutation,
      useGetNotificationPreferencesQuery,
      useUpdateNotificationPreferencesMutation,
+     useGetTaskCollaboratorsQuery,
+     useAddTaskCollaboratorMutation,
+     useRemoveTaskCollaboratorMutation,
+     useUpdateTaskCollaboratorsMutation,
 } = apiSlice;

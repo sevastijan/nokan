@@ -339,3 +339,63 @@ export function taskPriorityChangedTemplate(
     </div>
   `);
 }
+
+export function collaboratorAddedTemplate(
+     taskTitle: string,
+     boardName: string,
+     taskUrl: string,
+     adderName?: string
+): string {
+     return wrapHtml(`
+    <div class="header" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);">
+      <div class="icon">👥</div>
+      <h1>Dodano Cię jako współpracownika</h1>
+    </div>
+    <div class="content">
+      <div class="card">
+        <p class="task-title">${taskTitle}</p>
+        <div class="divider"></div>
+        <p class="meta">
+          <span class="badge badge-blue">${boardName}</span>
+          ${adderName ? `<span class="badge badge-purple">przez ${adderName}</span>` : ''}
+        </p>
+        <p class="meta" style="margin-top: 16px;">
+          Zostałeś/aś dodany/a jako współpracownik do tego zadania. Będziesz otrzymywać powiadomienia o zmianach.
+        </p>
+      </div>
+      <div style="text-align: center;">
+        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);">👥 Zobacz zadanie</a>
+      </div>
+    </div>
+  `);
+}
+
+export function collaboratorRemovedTemplate(
+     taskTitle: string,
+     boardName: string,
+     taskUrl: string,
+     removerName?: string
+): string {
+     return wrapHtml(`
+    <div class="header" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
+      <div class="icon">👤</div>
+      <h1>Usunięto Cię ze współpracowników</h1>
+    </div>
+    <div class="content">
+      <div class="card">
+        <p class="task-title">${taskTitle}</p>
+        <div class="divider"></div>
+        <p class="meta">
+          <span class="badge badge-blue">${boardName}</span>
+          ${removerName ? `<span class="badge badge-yellow">przez ${removerName}</span>` : ''}
+        </p>
+        <p class="meta" style="margin-top: 16px;">
+          Nie jesteś już współpracownikiem tego zadania. Możesz nadal śledzić jego postęp na tablicy.
+        </p>
+      </div>
+      <div style="text-align: center;">
+        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">📋 Zobacz zadanie</a>
+      </div>
+    </div>
+  `);
+}

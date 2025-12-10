@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus } from 'react-icons/fi';
 import Avatar from './Avatar/Avatar';
 import { Task as TaskType, User } from '@/app/types/globalTypes';
-import { getPriorityStyleConfig, truncateText, useUserAvatar } from '@/app/utils/helpers';
+import { getPriorityStyleConfig, truncateText } from '@/app/utils/helpers';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 
 interface TaskProps {
@@ -35,8 +35,23 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
           };
      }, [task.priority, priorities]);
 
-     const assignee = (task.assignee as User) || null;
-     const avatarUrl = useUserAvatar(assignee);
+     // Use collaborators if available, fallback to single assignee for backwards compatibility
+     const collaborators = (task.collaborators as User[]) || [];
+     const assignees = collaborators.length > 0
+          ? collaborators
+          : task.assignee
+               ? [task.assignee]
+               : [];
+     const hasAssignees = assignees.length > 0;
+
+     // Debug: Log what Task component receives
+     console.log('🎯 Task component:', task.id, {
+          collaboratorsCount: collaborators.length,
+          assigneesCount: assignees.length,
+          hasAssignees,
+          rawCollaborators: task.collaborators,
+          firstAssignee: assignees[0],
+     });
 
      const openMenu = useCallback(() => {
           setMenuOpen(true);
@@ -120,7 +135,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
 
      const hasTitle = Boolean(task.title?.trim());
      const hasDesc = Boolean(task.description?.trim());
-     const showMeta = Boolean(priorityConfig || task.due_date || assignee);
+     const showMeta = Boolean(priorityConfig || task.due_date || hasAssignees);
      const isEmpty = !hasTitle && !hasDesc && !showMeta;
 
      return (
@@ -190,8 +205,27 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                                         )}
                                    </div>
 
-                                   {assignee && avatarUrl ? (
-                                        <Avatar src={avatarUrl} alt={assignee.name} size={30} className="border-2 border-white/10" />
+                                   {hasAssignees ? (
+                                        <div className="flex items-center -space-x-2">
+                                             {assignees.slice(0, 3).map((assignee, idx) => {
+                                                  console.log('🖼️ Avatar src for', assignee.name, ':', assignee.image);
+                                                  return (
+                                                       <div key={assignee.id} style={{ zIndex: 3 - idx }}>
+                                                            <Avatar
+                                                                 src={assignee.image || ''}
+                                                                 alt={assignee.name}
+                                                                 size={28}
+                                                                 className="border-2 border-slate-800 ring-1 ring-white/10"
+                                                            />
+                                                       </div>
+                                                  );
+                                             })}
+                                             {assignees.length > 3 && (
+                                                  <div className="w-7 h-7 rounded-full bg-slate-700 border-2 border-slate-800 flex items-center justify-center text-xs text-white/70 font-medium">
+                                                       +{assignees.length - 3}
+                                                  </div>
+                                             )}
+                                        </div>
                                    ) : (
                                         <button
                                              onClick={(e) => {

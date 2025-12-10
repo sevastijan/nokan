@@ -4,17 +4,28 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiChevronDown, FiX, FiPlus, FiCheck } from 'react-icons/fi';
 import Avatar from '../Avatar/Avatar';
-import { UserSelectorProps } from '@/app/types/globalTypes';
+import { User } from '@/app/types/globalTypes';
 
-/**
- * UserSelector: Multi-select dropdown for selecting users.
- * - Dark theme, rounded corners.
- * - Shows avatars and names as chips.
- * - Checkbox-style selection in dropdown.
- */
-const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'Przypisani' }: UserSelectorProps) => {
+interface CollaboratorsSelectorProps {
+     selectedCollaborators: User[];
+     availableUsers: User[];
+     onCollaboratorsChange: (collaboratorIds: string[]) => void;
+     assigneeId?: string | null;
+     label?: string;
+}
+
+const CollaboratorsSelector = ({
+     selectedCollaborators,
+     availableUsers,
+     onCollaboratorsChange,
+     assigneeId,
+     label = 'Współpracownicy',
+}: CollaboratorsSelectorProps) => {
      const [isOpen, setIsOpen] = useState(false);
      const selectRef = useRef<HTMLDivElement>(null);
+
+     // Filter out assignee from available collaborators
+     const filteredUsers = availableUsers.filter((u) => u.id !== assigneeId);
 
      const toggleOpen = () => setIsOpen((prev) => !prev);
 
@@ -36,9 +47,9 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
           };
      }, [isOpen]);
 
-     const handleToggleUser = useCallback(
+     const handleToggleCollaborator = useCallback(
           (userId: string) => {
-               const currentIds = selectedUsers.map((u) => u.id);
+               const currentIds = selectedCollaborators.map((c) => c.id);
                let newIds: string[];
 
                if (currentIds.includes(userId)) {
@@ -47,21 +58,21 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                     newIds = [...currentIds, userId];
                }
 
-               onUsersChange(newIds);
+               onCollaboratorsChange(newIds);
           },
-          [selectedUsers, onUsersChange]
+          [selectedCollaborators, onCollaboratorsChange]
      );
 
-     const handleRemoveUser = useCallback(
+     const handleRemoveCollaborator = useCallback(
           (userId: string, e: React.MouseEvent) => {
                e.stopPropagation();
-               const newIds = selectedUsers.filter((u) => u.id !== userId).map((u) => u.id);
-               onUsersChange(newIds);
+               const newIds = selectedCollaborators.filter((c) => c.id !== userId).map((c) => c.id);
+               onCollaboratorsChange(newIds);
           },
-          [selectedUsers, onUsersChange]
+          [selectedCollaborators, onCollaboratorsChange]
      );
 
-     const isSelected = (userId: string) => selectedUsers.some((u) => u.id === userId);
+     const isSelected = (userId: string) => selectedCollaborators.some((c) => c.id === userId);
 
      return (
           <div className="relative w-full" ref={selectRef}>
@@ -85,22 +96,22 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                >
                     <div className="flex items-center justify-between">
                          <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
-                              {selectedUsers.length === 0 ? (
+                              {selectedCollaborators.length === 0 ? (
                                    <span className="text-slate-400 italic truncate flex items-center gap-2">
                                         <FiPlus className="w-4 h-4" />
-                                        Przypisz osoby...
+                                        Dodaj współpracowników...
                                    </span>
                               ) : (
-                                   selectedUsers.map((user) => (
+                                   selectedCollaborators.map((collaborator) => (
                                         <span
-                                             key={user.id}
+                                             key={collaborator.id}
                                              className="inline-flex items-center gap-1.5 bg-slate-600/50 px-2 py-1 rounded-lg text-sm"
                                         >
-                                             <Avatar src={user.image || ''} alt={user.name} size={18} />
-                                             <span className="text-white truncate max-w-[100px]">{user.name}</span>
+                                             <Avatar src={collaborator.image || ''} alt={collaborator.name} size={18} />
+                                             <span className="text-white truncate max-w-[100px]">{collaborator.name}</span>
                                              <button
                                                   type="button"
-                                                  onClick={(e) => handleRemoveUser(user.id, e)}
+                                                  onClick={(e) => handleRemoveCollaborator(collaborator.id, e)}
                                                   className="text-slate-400 hover:text-red-400 transition-colors"
                                              >
                                                   <FiX className="w-3.5 h-3.5" />
@@ -129,12 +140,12 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                               transition={{ duration: 0.2 }}
                               role="listbox"
                          >
-                              {availableUsers.length === 0 ? (
+                              {filteredUsers.length === 0 ? (
                                    <li className="px-4 py-3 text-slate-500 text-sm text-center">
                                         Brak dostępnych użytkowników
                                    </li>
                               ) : (
-                                   availableUsers.map((user) => {
+                                   filteredUsers.map((user) => {
                                         const selected = isSelected(user.id);
                                         return (
                                              <li
@@ -144,7 +155,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                                                             ? 'bg-purple-600/20 text-white'
                                                             : 'text-slate-300 hover:bg-slate-700'
                                                   }`}
-                                                  onClick={() => handleToggleUser(user.id)}
+                                                  onClick={() => handleToggleCollaborator(user.id)}
                                                   role="option"
                                                   aria-selected={selected}
                                              >
@@ -173,4 +184,4 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
      );
 };
 
-export default UserSelector;
+export default CollaboratorsSelector;

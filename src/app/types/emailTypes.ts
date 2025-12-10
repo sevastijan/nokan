@@ -4,7 +4,9 @@ export type EmailNotificationType =
      | 'status_changed'
      | 'priority_changed'
      | 'new_comment'
-     | 'due_date_changed';
+     | 'due_date_changed'
+     | 'collaborator_added'
+     | 'collaborator_removed';
 
 export interface EmailNotificationPayload {
      type: EmailNotificationType;
@@ -24,6 +26,8 @@ export interface EmailNotificationPayload {
           newDueDate?: string;
           assignerName?: string;
           unassignerName?: string;
+          adderName?: string;
+          removerName?: string;
      };
 }
 
@@ -36,6 +40,8 @@ export interface NotificationPreferences {
      email_priority_changed: boolean;
      email_new_comment: boolean;
      email_due_date_changed: boolean;
+     email_collaborator_added: boolean;
+     email_collaborator_removed: boolean;
      created_at: string;
      updated_at: string;
 }
@@ -47,4 +53,6 @@ export interface NotificationPreferencesInput {
      email_priority_changed?: boolean;
      email_new_comment?: boolean;
      email_due_date_changed?: boolean;
+     email_collaborator_added?: boolean;
+     email_collaborator_removed?: boolean;
 }
