@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { getToken } from 'next-auth/jwt';
 import { NextRequest } from 'next/server';
 
 const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SERVICE_ROLE_KEY!, {
@@ -12,9 +11,9 @@ const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, proces
 
 export async function POST(request: NextRequest) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.id) {
+          if (!token?.id) {
                return Response.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -47,7 +46,7 @@ export async function POST(request: NextRequest) {
                return Response.json({ error: uploadError.message }, { status: 500 });
           }
 
-          const { data: userData } = await supabaseAdmin.from('users').select('id').eq('google_id', session.user.id).single();
+          const { data: userData } = await supabaseAdmin.from('users').select('id').eq('google_id', token.id).single();
 
           if (!userData) {
                await supabaseAdmin.storage.from('attachments').remove([filePath]);
@@ -91,9 +90,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.id) {
+          if (!token?.id) {
                return Response.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -134,9 +133,9 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.id) {
+          if (!token?.id) {
                return Response.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
