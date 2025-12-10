@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent, MouseEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus } from 'react-icons/fi';
 import Avatar from './Avatar/Avatar';
 import { Task as TaskType, User } from '@/app/types/globalTypes';
@@ -44,15 +43,6 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                : [];
      const hasAssignees = assignees.length > 0;
 
-     // Debug: Log what Task component receives
-     console.log('🎯 Task component:', task.id, {
-          collaboratorsCount: collaborators.length,
-          assigneesCount: assignees.length,
-          hasAssignees,
-          rawCollaborators: task.collaborators,
-          firstAssignee: assignees[0],
-     });
-
      const openMenu = useCallback(() => {
           setMenuOpen(true);
           setFocusedIndex(0);
@@ -61,7 +51,8 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
      const closeMenu = useCallback(() => {
           setMenuOpen(false);
           setFocusedIndex(0);
-          triggerRef.current?.focus();
+          // Don't focus trigger - it causes scroll jump
+          // triggerRef.current?.focus();
      }, []);
 
      const menuItems = useMemo(
@@ -139,12 +130,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
      const isEmpty = !hasTitle && !hasDesc && !showMeta;
 
      return (
-          <motion.div
-               layout
-               initial={{ opacity: 0, y: 8 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.95 }}
-               transition={{ duration: 0.15 }}
+          <div
                onClick={handleCardClick}
                className={`
         relative cursor-pointer group transition-colors duration-200
@@ -207,19 +193,16 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
 
                                    {hasAssignees ? (
                                         <div className="flex items-center -space-x-2">
-                                             {assignees.slice(0, 3).map((assignee, idx) => {
-                                                  console.log('🖼️ Avatar src for', assignee.name, ':', assignee.image);
-                                                  return (
-                                                       <div key={assignee.id} style={{ zIndex: 3 - idx }}>
-                                                            <Avatar
-                                                                 src={assignee.image || ''}
-                                                                 alt={assignee.name}
-                                                                 size={28}
-                                                                 className="border-2 border-slate-800 ring-1 ring-white/10"
-                                                            />
-                                                       </div>
-                                                  );
-                                             })}
+                                             {assignees.slice(0, 3).map((assignee, idx) => (
+                                                  <div key={assignee.id} style={{ zIndex: 3 - idx }}>
+                                                       <Avatar
+                                                            src={assignee.image || ''}
+                                                            alt={assignee.name}
+                                                            size={28}
+                                                            className="border-2 border-slate-800 ring-1 ring-white/10"
+                                                       />
+                                                  </div>
+                                             ))}
                                              {assignees.length > 3 && (
                                                   <div className="w-7 h-7 rounded-full bg-slate-700 border-2 border-slate-800 flex items-center justify-center text-xs text-white/70 font-medium">
                                                        +{assignees.length - 3}
@@ -243,40 +226,34 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                     </div>
                )}
 
-               <AnimatePresence>
-                    {menuOpen && (
-                         <>
-                              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40" onClick={closeMenu} />
-                              <motion.div
-                                   ref={menuRef}
-                                   role="menu"
-                                   tabIndex={-1}
-                                   onKeyDown={handleMenuKeyDown}
-                                   initial={{ opacity: 0, scale: 0.92, y: -8 }}
-                                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                                   exit={{ opacity: 0, scale: 0.92, y: -8 }}
-                                   transition={{ duration: 0.12 }}
-                                   className="absolute top-10 right-3 z-50 bg-slate-800 text-slate-100 rounded-md shadow-xl border border-slate-600/50 overflow-hidden min-w-40"
-                              >
-                                   {menuItems.map((item, idx) => (
-                                        <button
-                                             key={idx}
-                                             role="menuitem"
-                                             tabIndex={-1}
-                                             onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  item.action();
-                                             }}
-                                             className="w-full px-4 py-2.5 text-left text-sm hover:bg-slate-700/70 focus:bg-slate-700/70 focus:outline-none transition-colors"
-                                        >
-                                             {item.label}
-                                        </button>
-                                   ))}
-                              </motion.div>
-                         </>
-                    )}
-               </AnimatePresence>
-          </motion.div>
+               {menuOpen && (
+                    <>
+                         <div className="fixed inset-0 z-40" onClick={closeMenu} />
+                         <div
+                              ref={menuRef}
+                              role="menu"
+                              tabIndex={-1}
+                              onKeyDown={handleMenuKeyDown}
+                              className="absolute top-10 right-3 z-50 bg-slate-800 text-slate-100 rounded-md shadow-xl border border-slate-600/50 overflow-hidden min-w-40"
+                         >
+                              {menuItems.map((item, idx) => (
+                                   <button
+                                        key={idx}
+                                        role="menuitem"
+                                        tabIndex={-1}
+                                        onClick={(e) => {
+                                             e.stopPropagation();
+                                             item.action();
+                                        }}
+                                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-slate-700/70 focus:bg-slate-700/70 focus:outline-none transition-colors"
+                                   >
+                                        {item.label}
+                                   </button>
+                              ))}
+                         </div>
+                    </>
+               )}
+          </div>
      );
 };
 

@@ -76,6 +76,7 @@ const SingleTaskView = ({
 
      const overlayRef = useRef<HTMLDivElement>(null);
      const modalRef = useRef<HTMLDivElement>(null);
+     const titleInputRef = useRef<HTMLInputElement>(null);
 
      const [updateCollaboratorsMutation] = useUpdateTaskCollaboratorsMutation();
 
@@ -138,6 +139,22 @@ const SingleTaskView = ({
           document.addEventListener('keydown', onKeyDown);
           return () => document.removeEventListener('keydown', onKeyDown);
      }, [onClose]);
+
+     // Focus title input without scrolling background
+     useEffect(() => {
+          if (isNewTask && titleInputRef.current) {
+               titleInputRef.current.focus({ preventScroll: true });
+          }
+     }, [isNewTask]);
+
+     // Lock body scroll when modal is open
+     useEffect(() => {
+          const originalOverflow = document.body.style.overflow;
+          document.body.style.overflow = 'hidden';
+          return () => {
+               document.body.style.overflow = originalOverflow;
+          };
+     }, []);
 
      useOutsideClick([modalRef], onClose);
 
@@ -409,13 +426,13 @@ const SingleTaskView = ({
                                         <span className="bg-slate-700 text-slate-300 text-xs font-mono px-2 py-1 rounded">#{task.id.slice(-6)}</span>
                                    ) : null}
                                    <input
+                                        ref={titleInputRef}
                                         type="text"
                                         className="bg-transparent text-lg font-semibold text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 truncate min-w-0"
                                         placeholder="Tytuł zadania (wymagany)"
                                         value={tempTitle}
                                         onChange={handleTitleChange}
                                         onKeyDown={handleTitleKeyDown}
-                                        autoFocus={isNewTask}
                                    />
                               </div>
                               <div className="flex items-center gap-2">

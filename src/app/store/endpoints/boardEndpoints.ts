@@ -145,14 +145,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          .eq('board_id', boardId)
                          .order('order', { ascending: true });
 
-                    // Debug: Log the raw column/task data
-                    console.log('📊 getBoard columns query result:', {
-                         columnsCount: colsRaw?.length,
-                         error: ce,
-                         firstColumnTasksCount: colsRaw?.[0]?.tasks?.length,
-                         firstTaskCollaborators: (colsRaw?.[0]?.tasks as RawTask[])?.[0]?.collaborators,
-                    });
-
                     if (ce) throw ce;
 
                     boardBase.columns = (colsRaw as RawColumn[]).map((c) => {
@@ -169,11 +161,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                      }
                                    : undefined;
 
-                              // Debug: Log raw collaborators data
-                              if (t.collaborators && t.collaborators.length > 0) {
-                                   console.log('📋 Raw collaborators for task', t.id, ':', JSON.stringify(t.collaborators, null, 2));
-                              }
-
                               // Process collaborators
                               const collaborators: User[] = (t.collaborators || [])
                                    .filter((c) => c.user)
@@ -186,11 +173,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                              image: u?.image,
                                         };
                                    });
-
-                              // Debug: Log processed collaborators
-                              if (collaborators.length > 0) {
-                                   console.log('✅ Processed collaborators for task', t.id, ':', collaborators);
-                              }
 
                               return {
                                    id: t.id,
@@ -223,12 +205,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          };
                          return col;
                     });
-
-                    // Debug: Log final board data with collaborators
-                    const tasksWithCollaborators = boardBase.columns.flatMap((c) =>
-                         c.tasks.filter((t) => t.collaborators && t.collaborators.length > 0),
-                    );
-                    console.log('🏁 Final board data - tasks with collaborators:', tasksWithCollaborators.length, tasksWithCollaborators.map((t) => ({ id: t.id, collabs: t.collaborators })));
 
                     return { data: boardBase };
                } catch (err) {
