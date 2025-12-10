@@ -23,7 +23,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      addTeam: builder.mutation<Team, { name: string; owner_id: string; board_id?: string; members: string[] }>({
           async queryFn({ name, owner_id, board_id, members }) {
                try {
-                    const { data, error: teamErr } = await supabase
+                    const { data, error: teamErr } = await getSupabase()
                          .from('teams')
                          .insert({
                               name,
@@ -40,7 +40,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          team_id: teamId,
                          user_id: userId,
                     }));
-                    const { data: insertedMembersData, error: membersErr } = await supabase
+                    const { data: insertedMembersData, error: membersErr } = await getSupabase()
                          .from('team_members')
                          .insert(inserts)
                          .select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)');
@@ -110,7 +110,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     const teamsRaw = data ?? [];
                     const teams: Team[] = [];
                     for (const t of teamsRaw) {
-                         const { data: membersData, error: membersErr } = await supabase
+                         const { data: membersData, error: membersErr } = await getSupabase()
                               .from('team_members')
                               .select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
                               .eq('team_id', t.id);
@@ -179,7 +179,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
 
                     const result: Team[] = await Promise.all(
                          allTeams.map(async (t) => {
-                              const { data: membersData, error: mErr } = await supabase
+                              const { data: membersData, error: mErr } = await getSupabase()
                                    .from('team_members')
                                    .select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
                                    .eq('team_id', t.id);
@@ -237,7 +237,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          return { data: [] };
                     }
 
-                    const { data: rawData, error: mErr } = await supabase
+                    const { data: rawData, error: mErr } = await getSupabase()
                          .from('team_members')
                          .select('user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
                          .in('team_id', teamIds);
@@ -310,7 +310,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          const { error: insertErr } = await getSupabase().from('team_members').insert(inserts).select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)');
                          if (insertErr) throw insertErr;
                     }
-                    const { data: finalMembersData, error: finalErr } = await supabase
+                    const { data: finalMembersData, error: finalErr } = await getSupabase()
                          .from('team_members')
                          .select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
                          .eq('team_id', id);

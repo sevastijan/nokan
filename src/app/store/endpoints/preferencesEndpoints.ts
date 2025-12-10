@@ -15,7 +15,7 @@ export const preferencesEndpoints = (builder: EndpointBuilder<BaseQueryFn, strin
      getNotificationPreferences: builder.query<NotificationPreferences, string>({
           async queryFn(userId) {
                try {
-                    const { data, error } = await supabase
+                    const { data, error } = await getSupabase()
                          .from('notification_preferences')
                          .select('*')
                          .eq('user_id', userId)
@@ -30,7 +30,7 @@ export const preferencesEndpoints = (builder: EndpointBuilder<BaseQueryFn, strin
                     }
 
                     // Create default preferences if none exist
-                    const { data: newPrefs, error: insertError } = await supabase
+                    const { data: newPrefs, error: insertError } = await getSupabase()
                          .from('notification_preferences')
                          .insert({
                               user_id: userId,
@@ -67,7 +67,7 @@ export const preferencesEndpoints = (builder: EndpointBuilder<BaseQueryFn, strin
      >({
           async queryFn({ userId, preferences }) {
                try {
-                    const { data, error } = await supabase
+                    const { data, error } = await getSupabase()
                          .from('notification_preferences')
                          .upsert(
                               {

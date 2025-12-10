@@ -167,7 +167,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getTaskById: builder.query<TaskDetail, { taskId: string }>({
           async queryFn({ taskId }) {
                try {
-                    const { data: taskData, error: te } = await supabase
+                    const { data: taskData, error: te } = await getSupabase()
                          .from('tasks')
                          .select(
                               `
@@ -336,7 +336,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getTasksWithDates: builder.query<Task[], string>({
           async queryFn(boardId) {
                try {
-                    const { data: rawTasks = [], error } = await supabase
+                    const { data: rawTasks = [], error } = await getSupabase()
                          .from('tasks')
                          .select(
                               `
@@ -415,7 +415,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     return { data: [] };
                }
                try {
-                    const { data, error } = await supabase
+                    const { data, error } = await getSupabase()
                          .from('tasks')
                          .select('id,title,description,start_date,end_date,board_id,priority,color,column_id,sort_order,completed,status_id')
                          .in('board_id', boardIds)

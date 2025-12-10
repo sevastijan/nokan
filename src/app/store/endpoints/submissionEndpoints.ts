@@ -20,13 +20,13 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                     const column_id = columns[0].id;
                     const { data: defaultStatuses } = await getSupabase().from('statuses').select('id').eq('board_id', board_id).order('order_index', { ascending: true }).limit(1);
                     const defaultStatusId = defaultStatuses?.[0]?.id ?? null;
-                    const { data: task, error: taskErr } = await supabase
+                    const { data: task, error: taskErr } = await getSupabase()
                          .from('tasks')
                          .insert({ title, description, priority, board_id, column_id, user_id: client_id, completed: false, sort_order: 0, status_id: defaultStatusId })
                          .select('*')
                          .single();
                     if (taskErr || !task) throw taskErr || new Error('Failed to create task');
-                    const { data: submission, error: subErr } = await supabase
+                    const { data: submission, error: subErr } = await getSupabase()
                          .from('submissions')
                          .insert({ title, description, priority, client_id, board_id, column_id, task_id: task.id, status: 'pending' })
                          .select('*')
@@ -66,7 +66,7 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
      getAllSubmissions: builder.query<ClientSubmission[], void>({
           async queryFn() {
                try {
-                    const { data: submissions } = await supabase
+                    const { data: submissions } = await getSupabase()
                          .from('submissions')
                          .select(
                               `
@@ -122,7 +122,7 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
      getClientSubmissions: builder.query<ClientSubmission[], string>({
           async queryFn(clientId) {
                try {
-                    const { data: submissions } = await supabase
+                    const { data: submissions } = await getSupabase()
                          .from('submissions')
                          .select(
                               `

@@ -36,7 +36,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          return { data: existingUser };
                     }
 
-                    const { data: createdUser, error: createError } = await supabase
+                    const { data: createdUser, error: createError } = await getSupabase()
                          .from('users')
                          .insert({
                               email,

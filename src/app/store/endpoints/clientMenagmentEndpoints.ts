@@ -255,7 +255,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
      getClientSubmissions: builder.query<ClientSubmission[], string>({
           async queryFn(clientId) {
                try {
-                    const { data: submissionsData, error: subError } = await supabase
+                    const { data: submissionsData, error: subError } = await getSupabase()
                          .from('submissions')
                          .select(
                               `

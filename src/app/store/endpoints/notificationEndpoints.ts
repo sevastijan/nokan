@@ -25,7 +25,7 @@ export const notificationEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
      >({
           async queryFn(payload) {
                try {
-                    const { data, error } = await supabase
+                    const { data, error } = await getSupabase()
                          .from('notifications')
                          .insert({ ...payload, read: false })
                          .select('*')

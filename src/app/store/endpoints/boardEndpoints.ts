@@ -85,7 +85,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      getBoard: builder.query<Board, string>({
           async queryFn(boardId) {
                try {
-                    const { data: bRaw, error: be } = await supabase
+                    const { data: bRaw, error: be } = await getSupabase()
                          .from('boards')
                          .select(
                               `
@@ -119,7 +119,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          updated_at: rawBoard.updated_at,
                     };
 
-                    const { data: colsRaw = [], error: ce } = await supabase
+                    const { data: colsRaw = [], error: ce } = await getSupabase()
                          .from('columns')
                          .select(
                               `
@@ -202,7 +202,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      getMyBoards: builder.query<BoardWithCounts[], string>({
           async queryFn(userId) {
                try {
-                    const { data: ownedRaw = [], error: ownedErr } = await supabase
+                    const { data: ownedRaw = [], error: ownedErr } = await getSupabase()
                          .from('boards')
                          .select(
                               `
@@ -241,7 +241,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          if (teamsErr) throw teamsErr;
                          const boardIds = Array.from(new Set((teamsRaw as { board_id: string }[]).map((t) => t.board_id)));
                          if (boardIds.length > 0) {
-                              const { data: boardsFromTeamsRaw = [], error: bErr } = await supabase
+                              const { data: boardsFromTeamsRaw = [], error: bErr } = await getSupabase()
                                    .from('boards')
                                    .select(
                                         `
