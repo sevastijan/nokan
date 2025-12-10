@@ -27,6 +27,12 @@ interface RawColumn {
      tasks?: unknown[];
 }
 
+interface RawCollaborator {
+     id: string;
+     user_id: string;
+     user?: { id: string; name: string; email: string; image?: string } | { id: string; name: string; email: string; image?: string }[];
+}
+
 interface RawTask {
      id: string;
      title: string;
@@ -46,6 +52,7 @@ interface RawTask {
      status?: string;
      status_id?: string;
      assignee?: unknown;
+     collaborators?: RawCollaborator[];
 }
 
 interface RawAssignee {
@@ -126,12 +133,26 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
           *,
           tasks:tasks(
             *,
-            assignee:users!tasks_user_id_fkey(id, name, email, image)
+            assignee:users!tasks_user_id_fkey(id, name, email, image),
+            collaborators:task_collaborators(
+              id,
+              user_id,
+              user:users!task_collaborators_user_id_fkey(id, name, email, image)
+            )
           )
         `,
                          )
                          .eq('board_id', boardId)
                          .order('order', { ascending: true });
+
+                    // Debug: Log the raw column/task data
+                    console.log('📊 getBoard columns query result:', {
+                         columnsCount: colsRaw?.length,
+                         error: ce,
+                         firstColumnTasksCount: colsRaw?.[0]?.tasks?.length,
+                         firstTaskCollaborators: (colsRaw?.[0]?.tasks as RawTask[])?.[0]?.collaborators,
+                    });
+
                     if (ce) throw ce;
 
                     boardBase.columns = (colsRaw as RawColumn[]).map((c) => {
@@ -147,6 +168,30 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                           image: rawAssignee.image,
                                      }
                                    : undefined;
+
+                              // Debug: Log raw collaborators data
+                              if (t.collaborators && t.collaborators.length > 0) {
+                                   console.log('📋 Raw collaborators for task', t.id, ':', JSON.stringify(t.collaborators, null, 2));
+                              }
+
+                              // Process collaborators
+                              const collaborators: User[] = (t.collaborators || [])
+                                   .filter((c) => c.user)
+                                   .map((c) => {
+                                        const u = Array.isArray(c.user) ? c.user[0] : c.user;
+                                        return {
+                                             id: u?.id || c.user_id,
+                                             name: u?.name || '',
+                                             email: u?.email || '',
+                                             image: u?.image,
+                                        };
+                                   });
+
+                              // Debug: Log processed collaborators
+                              if (collaborators.length > 0) {
+                                   console.log('✅ Processed collaborators for task', t.id, ':', collaborators);
+                              }
+
                               return {
                                    id: t.id,
                                    title: t.title,
@@ -162,6 +207,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                    updated_at: t.updated_at,
                                    images: t.images ? JSON.parse(t.images) : null,
                                    assignee: assigneeObj,
+                                   collaborators,
                                    start_date: t.start_date,
                                    end_date: t.end_date,
                                    due_date: t.due_date,
@@ -177,6 +223,12 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          };
                          return col;
                     });
+
+                    // Debug: Log final board data with collaborators
+                    const tasksWithCollaborators = boardBase.columns.flatMap((c) =>
+                         c.tasks.filter((t) => t.collaborators && t.collaborators.length > 0),
+                    );
+                    console.log('🏁 Final board data - tasks with collaborators:', tasksWithCollaborators.length, tasksWithCollaborators.map((t) => ({ id: t.id, collabs: t.collaborators })));
 
                     return { data: boardBase };
                } catch (err) {

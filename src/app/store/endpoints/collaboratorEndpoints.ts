@@ -13,7 +13,6 @@ interface RawCollaborator {
      id: string;
      task_id: string;
      user_id: string;
-     added_by?: string;
      created_at?: string;
      user?: RawUserData | RawUserData[];
 }
@@ -28,7 +27,6 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
                               id,
                               task_id,
                               user_id,
-                              added_by,
                               created_at,
                               user:users!task_collaborators_user_id_fkey(id, name, email, image)
                          `)
@@ -58,16 +56,15 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
 
      addTaskCollaborator: builder.mutation<
           { taskId: string; userId: string },
-          { taskId: string; userId: string; addedBy?: string }
+          { taskId: string; userId: string }
      >({
-          async queryFn({ taskId, userId, addedBy }) {
+          async queryFn({ taskId, userId }) {
                try {
                     const { error } = await supabase
                          .from('task_collaborators')
                          .insert({
                               task_id: taskId,
                               user_id: userId,
-                              added_by: addedBy,
                          });
 
                     if (error) {
@@ -119,10 +116,10 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
      }),
 
      updateTaskCollaborators: builder.mutation<
-          { taskId: string; collaboratorIds: string[] },
-          { taskId: string; collaboratorIds: string[]; addedBy?: string }
+          { taskId: string; collaboratorIds: string[]; boardId?: string },
+          { taskId: string; collaboratorIds: string[]; boardId?: string }
      >({
-          async queryFn({ taskId, collaboratorIds, addedBy }) {
+          async queryFn({ taskId, collaboratorIds }) {
                try {
                     // Get current collaborators
                     const { data: currentCollabs, error: fetchError } = await supabase
@@ -152,7 +149,6 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
                          const insertData = toAdd.map((userId) => ({
                               task_id: taskId,
                               user_id: userId,
-                              added_by: addedBy,
                          }));
 
                          const { error: insertError } = await supabase
@@ -169,9 +165,15 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
                     return { error: { status: 'CUSTOM_ERROR', error: error.message } };
                }
           },
-          invalidatesTags: (_result, _error, { taskId }) => [
-               { type: 'TaskCollaborators' as const, id: taskId },
-               { type: 'Task', id: taskId },
-          ],
+          invalidatesTags: (_result, _error, { taskId, boardId }) => {
+               const tags: Array<{ type: string; id: string }> = [
+                    { type: 'TaskCollaborators', id: taskId },
+                    { type: 'Task', id: taskId },
+               ];
+               if (boardId) {
+                    tags.push({ type: 'Board', id: boardId });
+               }
+               return tags;
+          },
      }),
 });

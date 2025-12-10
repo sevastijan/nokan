@@ -7,7 +7,6 @@ import { FaCalendarAlt, FaClock, FaLink, FaTimes } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
 import UserSelector from './UserSelector';
-import CollaboratorsSelector from './CollaboratorsSelector';
 import PrioritySelector from './PrioritySelector';
 import { useUpdateTaskCollaboratorsMutation } from '@/app/store/apiSlice';
 import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
@@ -84,8 +83,7 @@ const SingleTaskView = ({
      const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
      const [tempTitle, setTempTitle] = useState('');
      const [tempDescription, setTempDescription] = useState('');
-     const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(null);
-     const [selectedCollaborators, setSelectedCollaborators] = useState<typeof teamMembers>([]);
+     const [selectedAssignees, setSelectedAssignees] = useState<typeof teamMembers>([]);
      const [startDate, setStartDate] = useState<string>('');
      const [endDate, setEndDate] = useState<string>('');
      const [localColumnId, setLocalColumnId] = useState<string | undefined>(columnId);
@@ -96,8 +94,14 @@ const SingleTaskView = ({
           if (task) {
                setTempTitle(task.title || '');
                setTempDescription(task.description || '');
-               setSelectedAssigneeId(task.assignee?.id || task.user_id || null);
-               setSelectedCollaborators(task.collaborators || []);
+               // Use collaborators if available, fallback to single assignee for backwards compatibility
+               const collabs = task.collaborators || [];
+               const initialAssignees = collabs.length > 0
+                    ? collabs
+                    : task.assignee
+                         ? [task.assignee]
+                         : [];
+               setSelectedAssignees(initialAssignees);
                setLocalColumnId(task.column_id || columnId);
                setStartDate(task.start_date || '');
                setEndDate(task.end_date || '');
@@ -155,51 +159,23 @@ const SingleTaskView = ({
           updateTask({ description: value });
      };
 
-     const handleAssigneeChange = async (assigneeId: string | null) => {
-          setSelectedAssigneeId(assigneeId);
-
-          if (!assigneeId) {
-               updateTask({ user_id: null, assignee: null });
-          } else {
-               const member = teamMembers.find((u) => u.id === assigneeId);
-               if (member) {
-                    updateTask({ user_id: assigneeId, assignee: member });
-               }
-          }
-
-          if (!isNewTask && currentTaskId) {
-               try {
-                    await updateTaskMutation({
-                         taskId: currentTaskId,
-                         data: { user_id: assigneeId },
-                    }).unwrap();
-
-                    await fetchTaskData();
-                    toast.success('Przypisanie zaktualizowane');
-               } catch (error) {
-                    console.error('❌ Failed to update assignee:', error);
-                    toast.error('Nie udało się zaktualizować przypisania');
-               }
-          }
-     };
-
-     const handleCollaboratorsChange = async (collaboratorIds: string[]) => {
-          const prevCollaboratorIds = selectedCollaborators.map((c) => c.id);
-          const newCollaborators = teamMembers.filter((u) => collaboratorIds.includes(u.id));
-          setSelectedCollaborators(newCollaborators);
-          updateTask({ collaborators: newCollaborators });
+     const handleAssigneesChange = async (userIds: string[]) => {
+          const prevAssigneeIds = selectedAssignees.map((a) => a.id);
+          const newAssignees = teamMembers.filter((u) => userIds.includes(u.id));
+          setSelectedAssignees(newAssignees);
+          updateTask({ collaborators: newAssignees });
 
           if (!isNewTask && currentTaskId && task) {
                try {
                     await updateCollaboratorsMutation({
                          taskId: currentTaskId,
-                         collaboratorIds,
-                         addedBy: currentUser?.id,
+                         collaboratorIds: userIds,
+                         boardId: boardId!,
                     }).unwrap();
 
-                    // Send notifications to newly added collaborators
-                    const addedIds = collaboratorIds.filter((id) => !prevCollaboratorIds.includes(id));
-                    const removedIds = prevCollaboratorIds.filter((id) => !collaboratorIds.includes(id));
+                    // Send notifications to newly added assignees
+                    const addedIds = userIds.filter((id) => !prevAssigneeIds.includes(id));
+                    const removedIds = prevAssigneeIds.filter((id) => !userIds.includes(id));
 
                     for (const addedId of addedIds) {
                          if (addedId !== currentUser?.id) {
@@ -214,7 +190,7 @@ const SingleTaskView = ({
                          }
                     }
 
-                    // Send notifications to removed collaborators
+                    // Send notifications to removed assignees
                     for (const removedId of removedIds) {
                          if (removedId !== currentUser?.id) {
                               triggerEmailNotification({
@@ -229,10 +205,10 @@ const SingleTaskView = ({
                     }
 
                     await fetchTaskData();
-                    toast.success('Współpracownicy zaktualizowani');
+                    toast.success('Przypisani zaktualizowani');
                } catch (error) {
-                    console.error('❌ Failed to update collaborators:', error);
-                    toast.error('Nie udało się zaktualizować współpracowników');
+                    console.error('❌ Failed to update assignees:', error);
+                    toast.error('Nie udało się zaktualizować przypisanych');
                }
           }
      };
@@ -456,21 +432,13 @@ const SingleTaskView = ({
 
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <UserSelector
-                                             selectedUser={teamMembers.find((u) => u.id === selectedAssigneeId) || null}
+                                             selectedUsers={selectedAssignees}
                                              availableUsers={teamMembers}
-                                             onUserSelect={handleAssigneeChange}
-                                             label="Przypisany"
+                                             onUsersChange={handleAssigneesChange}
+                                             label="Przypisani"
                                         />
                                         <PrioritySelector selectedPriority={task?.priority || null} onChange={(id) => updateTask({ priority: id })} />
                                    </div>
-
-                                   <CollaboratorsSelector
-                                        selectedCollaborators={selectedCollaborators}
-                                        availableUsers={teamMembers}
-                                        onCollaboratorsChange={handleCollaboratorsChange}
-                                        assigneeId={selectedAssigneeId}
-                                        label="Współpracownicy"
-                                   />
 
                                    <div className="hidden md:block">
                                         <ColumnSelector columns={columns} value={localColumnId} onChange={handleColumnChange} />
@@ -599,35 +567,25 @@ const SingleTaskView = ({
                                    )}
 
                                    <div className="mb-6">
-                                        <h3 className="text-sm text-slate-300 uppercase mb-2">Przypisany</h3>
-                                        {task?.assignee ? (
-                                             <div className="flex items-center bg-slate-700 p-3 rounded-lg">
-                                                  <Avatar src={getAvatarUrl(task.assignee) || ''} alt={task.assignee.name} size={32} className="mr-3 border-2 border-white/20" />
-                                                  <div className="flex flex-col min-w-0">
-                                                       <span className="text-white font-medium truncate">{task.assignee.name}</span>
-                                                       <span className="text-slate-400 text-sm truncate">{task.assignee.email}</span>
-                                                  </div>
+                                        <h3 className="text-sm text-slate-300 uppercase mb-2">
+                                             Przypisani {selectedAssignees.length > 0 && `(${selectedAssignees.length})`}
+                                        </h3>
+                                        {selectedAssignees.length > 0 ? (
+                                             <div className="space-y-2">
+                                                  {selectedAssignees.map((assignee) => (
+                                                       <div key={assignee.id} className="flex items-center bg-slate-700 p-2 rounded-lg">
+                                                            <Avatar src={getAvatarUrl(assignee) || ''} alt={assignee.name} size={28} className="mr-2 border border-white/20" />
+                                                            <div className="flex flex-col min-w-0">
+                                                                 <span className="text-white text-sm font-medium truncate">{assignee.name}</span>
+                                                                 <span className="text-slate-400 text-xs truncate">{assignee.email}</span>
+                                                            </div>
+                                                       </div>
+                                                  ))}
                                              </div>
                                         ) : (
                                              <div className="text-slate-400">Brak przypisania</div>
                                         )}
                                    </div>
-
-                                   {selectedCollaborators.length > 0 && (
-                                        <div className="mb-6">
-                                             <h3 className="text-sm text-slate-300 uppercase mb-2">Współpracownicy ({selectedCollaborators.length})</h3>
-                                             <div className="space-y-2">
-                                                  {selectedCollaborators.map((collaborator) => (
-                                                       <div key={collaborator.id} className="flex items-center bg-slate-700 p-2 rounded-lg">
-                                                            <Avatar src={getAvatarUrl(collaborator) || ''} alt={collaborator.name} size={24} className="mr-2 border border-white/20" />
-                                                            <div className="flex flex-col min-w-0">
-                                                                 <span className="text-white text-sm font-medium truncate">{collaborator.name}</span>
-                                                            </div>
-                                                       </div>
-                                                  ))}
-                                             </div>
-                                        </div>
-                                   )}
 
                                    <div className="mb-6">
                                         <h3 className="text-sm text-slate-300 uppercase mb-2">Autor zadania</h3>

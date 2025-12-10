@@ -131,7 +131,6 @@ export interface TaskCollaborator {
      task_id: string;
      user_id: string;
      user: User;
-     added_by?: string;
      created_at?: string;
 }
 
@@ -427,9 +426,9 @@ export interface SingleTaskViewProps {
 }
 
 export interface UserSelectorProps {
-     selectedUser: User | null;
+     selectedUsers: User[];
      availableUsers: User[];
-     onUserSelect: (userId: string | null) => void;
+     onUsersChange: (userIds: string[]) => void;
      label?: string;
 }
 

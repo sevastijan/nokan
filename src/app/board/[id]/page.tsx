@@ -68,6 +68,10 @@ export default function Page() {
                }))
                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
+          // Debug: Log board data flow
+          const tasksWithCollabs = sortedCols.flatMap((c) => c.tasks.filter((t) => t.collaborators && t.collaborators.length > 0));
+          console.log('📌 page.tsx setLocalColumns - tasks with collaborators:', tasksWithCollabs.length, tasksWithCollabs.map((t) => ({ id: t.id, collabs: t.collaborators?.length })));
+
           setLocalColumns(sortedCols);
      }, [board]);
 

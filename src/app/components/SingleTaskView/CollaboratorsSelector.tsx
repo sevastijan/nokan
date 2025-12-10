@@ -78,14 +78,21 @@ const CollaboratorsSelector = ({
           <div className="relative w-full" ref={selectRef}>
                <label className="block text-sm text-slate-300 mb-1">{label}</label>
 
-               <button
-                    type="button"
+               <div
+                    role="button"
+                    tabIndex={0}
                     className={`relative w-full bg-slate-700/50 border border-slate-600 rounded-xl shadow-sm px-4 py-2 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 min-h-[42px] ${
                          isOpen ? 'ring-2 ring-purple-500 border-transparent' : 'hover:border-slate-500'
                     }`}
                     aria-haspopup="listbox"
                     aria-expanded={isOpen}
                     onClick={toggleOpen}
+                    onKeyDown={(e) => {
+                         if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleOpen();
+                         }
+                    }}
                >
                     <div className="flex items-center justify-between">
                          <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
@@ -121,7 +128,7 @@ const CollaboratorsSelector = ({
                               <FiChevronDown className="w-5 h-5 text-slate-400" />
                          </motion.div>
                     </div>
-               </button>
+               </div>
 
                <AnimatePresence>
                     {isOpen && (

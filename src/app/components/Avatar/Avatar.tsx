@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { FaUser } from 'react-icons/fa';
 import { AvatarProps } from './types';
 
@@ -49,21 +48,16 @@ const Avatar = ({ src, alt = 'User avatar', size = 'md', className = '' }: Avata
      return (
           <div className={`${sizeClassName} ${className} flex items-center justify-center bg-slate-700 overflow-hidden`} style={style}>
                {validSrc ? (
-                    <Image
+                    <img
                          src={validSrc}
                          alt={alt}
                          width={width}
                          height={height}
-                         className="rounded-full object-cover"
-                         unoptimized
-                         onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                         className="rounded-full object-cover w-full h-full"
+                         referrerPolicy="no-referrer"
+                         onError={(e) => {
                               const target = e.currentTarget;
                               target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                   const iconSizeClass = typeof size === 'number' ? `w-${Math.floor(size / 4)} h-${Math.floor(size / 4)}` : iconSize;
-                                   parent.innerHTML = `<svg class="${iconSizeClass} text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>`;
-                              }
                          }}
                     />
                ) : (
