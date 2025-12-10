@@ -2,6 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import { getToken } from 'next-auth/jwt';
 import { NextRequest } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SERVICE_ROLE_KEY!, {
      auth: {
           autoRefreshToken: false,
