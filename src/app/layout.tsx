@@ -4,6 +4,9 @@ import { Providers } from "./providers";
 import ClientLayout from "./ClientLayout";
 import "react-toastify/dist/ReactToastify.css";
 
+// Force dynamic rendering for all pages - no static generation during build
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Nokan Taskboard",
   description: "Taskboard application",
