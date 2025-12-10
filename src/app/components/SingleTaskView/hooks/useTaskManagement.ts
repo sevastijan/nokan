@@ -103,7 +103,6 @@ export const useTaskManagement = ({
                const taskWithStatuses = {
                     ...fetchedTask,
                     statuses: statuses,
-                    // Set default status if none exists
                     status_id: fetchedTask.status_id || statuses[0]?.id || null,
                };
 
@@ -118,11 +117,10 @@ export const useTaskManagement = ({
                if (pendingAttachments.length > 0) {
                     pendingAttachments.forEach(async (file) => {
                          try {
-                              if (currentTaskId && currentUser?.id) {
+                              if (currentTaskId) {
                                    const result = await uploadAttachmentMutation({
                                         file,
                                         taskId: currentTaskId,
-                                        userId: currentUser.id,
                                    }).unwrap();
                                    setTask((prev) => {
                                         if (!prev) return prev;
@@ -139,7 +137,7 @@ export const useTaskManagement = ({
           } else if (!isNewTask && fetchError) {
                setError('Task not found');
           }
-     }, [isLoading, fetchedTask, fetchError, pendingAttachments, currentTaskId, currentUser?.id, uploadAttachmentMutation, isNewTask, statuses]);
+     }, [isLoading, fetchedTask, fetchError, pendingAttachments, currentTaskId, uploadAttachmentMutation, isNewTask, statuses]);
 
      useEffect(() => {
           if (isNewTask && statuses.length > 0 && !task) {
@@ -210,12 +208,11 @@ export const useTaskManagement = ({
 
      const uploadAttachment = useCallback(
           async (file: File) => {
-               if (currentTaskId && currentUser?.id) {
+               if (currentTaskId) {
                     try {
                          const result = await uploadAttachmentMutation({
                               file,
                               taskId: currentTaskId,
-                              userId: currentUser.id,
                          }).unwrap();
                          setTask((prev) => {
                               if (!prev) return prev;
@@ -223,7 +220,8 @@ export const useTaskManagement = ({
                               return { ...prev, attachments: newList };
                          });
                          return result;
-                    } catch {
+                    } catch (error) {
+                         console.error('Upload error:', error); // ✅ DODANO więcej logów
                          setError('Failed to upload attachment');
                          return null;
                     }
@@ -232,7 +230,7 @@ export const useTaskManagement = ({
                     return null;
                }
           },
-          [currentTaskId, currentUser?.id, uploadAttachmentMutation],
+          [currentTaskId, uploadAttachmentMutation], // ❌ USUNIĘTO: currentUser?.id
      );
 
      const saveExistingTask = useCallback(async (): Promise<boolean> => {
@@ -300,7 +298,7 @@ export const useTaskManagement = ({
                               boardName,
                               metadata: { oldStatus: oldColumnName, newStatus: newColumnName },
                          },
-                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id }
+                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id },
                     );
                }
 
@@ -315,7 +313,7 @@ export const useTaskManagement = ({
                               boardName,
                               metadata: { newDueDate: result.due_date || 'Removed' },
                          },
-                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id }
+                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id },
                     );
                }
 
@@ -334,9 +332,7 @@ export const useTaskManagement = ({
                               boardName,
                               recipientId: task.created_by,
                               metadata: {
-                                   assignerName: assigneeName
-                                        ? `${assignerName} przypisał/a: ${assigneeName}`
-                                        : `${assignerName} usunął/ęła przypisanie`
+                                   assignerName: assigneeName ? `${assignerName} przypisał/a: ${assigneeName}` : `${assignerName} usunął/ęła przypisanie`,
                               },
                          });
                     }
@@ -356,7 +352,7 @@ export const useTaskManagement = ({
                               boardName,
                               metadata: { oldPriority: oldPriorityLabel, newPriority: newPriorityLabel },
                          },
-                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id }
+                         { assigneeId: result.user_id, creatorId: task.created_by, currentUserId: currentUser?.id },
                     );
                }
 
@@ -494,5 +490,6 @@ export const useTaskManagement = ({
           fetchedTask,
           updateTaskMutation,
           currentTaskId,
+          uploadAttachmentMutation,
      };
 };

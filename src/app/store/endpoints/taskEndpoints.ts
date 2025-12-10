@@ -392,7 +392,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               start_date: t.start_date,
                               end_date: t.end_date,
                               due_date: t.due_date,
-                              status_id: t.status_id, // ZMIANA
+                              status_id: t.status_id, 
                          };
                     });
 
@@ -437,7 +437,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          sort_order: t.sort_order ?? 0,
                          order: t.sort_order ?? 0,
                          completed: t.completed,
-                         status_id: t.status_id, // ZMIANA
+                         status_id: t.status_id,
                     }));
                     return { data: tasks };
                } catch (err) {
@@ -551,35 +551,31 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                { type: 'TasksWithDates', id: taskId },
           ],
      }),
-     uploadAttachment: builder.mutation<Attachment, { file: File; taskId: string; userId: string }>({
-          async queryFn({ file, taskId, userId }) {
+     uploadAttachment: builder.mutation<Attachment, { file: File; taskId: string }>({
+          async queryFn({ file, taskId }) {
                try {
-                    const fileExt = file.name.split('.').pop();
-                    const filePath = `${taskId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('taskId', taskId);
 
-                    const { error: upErr } = await supabase.storage.from('attachments').upload(filePath, file, {
-                         upsert: false,
-                         contentType: file.type,
+                    const response = await fetch('/api/upload', {
+                         method: 'POST',
+                         body: formData,
                     });
 
-                    if (upErr) throw upErr;
+                    if (!response.ok) {
+                         const error = await response.json();
+                         throw new Error(error.error || 'Upload failed');
+                    }
 
-                    const { data, error: dbErr } = await supabase
-                         .from('task_attachments')
-                         .insert({
-                              task_id: taskId,
-                              file_name: file.name,
-                              file_path: filePath,
-                              file_size: file.size,
-                              mime_type: file.type,
-                              uploaded_by: userId,
-                         })
-                         .select('*')
-                         .single();
+                    const { attachment } = await response.json();
 
-                    if (dbErr || !data) throw dbErr || new Error('Attachment insert failed');
+                    if (!attachment) {
+                         throw new Error('No attachment returned from API');
+                    }
 
-                    return { data };
+                    console.log('✅ File uploaded successfully:', attachment);
+                    return { data: attachment };
                } catch (err) {
                     const error = err as Error;
                     console.error('[apiSlice.uploadAttachment] error:', error);

@@ -87,6 +87,15 @@ export interface Attachment {
      created_at: string;
 }
 
+export interface AttachmentsListProps {
+     attachments: Attachment[];
+     currentUser: User;
+     taskId: string;
+     onTaskUpdate?: () => void;
+     onAttachmentsUpdate?: (updater: (prev: Attachment[]) => Attachment[]) => void;
+     onUploadAttachment?: (file: File) => Promise<Attachment | null>;
+}
+
 export interface ApiTemplateColumn {
      id: string;
      title: string;
@@ -404,14 +413,6 @@ export interface SingleTaskViewProps {
      initialStartDate?: string;
      columns: Column[];
      statuses: Status[];
-}
-
-export interface AttachmentsListProps {
-     attachments: Attachment[];
-     currentUser: User;
-     taskId: string;
-     onTaskUpdate?: () => Promise<void>;
-     onAttachmentsUpdate?: (updater: (attachments: Attachment[]) => Attachment[]) => void;
 }
 
 export interface UserSelectorProps {
