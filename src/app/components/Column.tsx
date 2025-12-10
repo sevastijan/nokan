@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import AddTaskForm from './TaskColumn/AddTaskForm';
 import Task from './Task';
@@ -23,6 +23,7 @@ interface ColumnProps {
      priorities?: Priority[];
      onReorderTasks?: (columnId: string, newOrder: TaskType[]) => void;
      dragHandleProps?: DraggableProvidedDragHandleProps;
+     onRegisterScrollRef?: (columnId: string, el: HTMLDivElement | null) => void;
 }
 
 const Column = ({
@@ -37,8 +38,10 @@ const Column = ({
      onOpenAddTask,
      priorities = [],
      dragHandleProps,
+     onRegisterScrollRef,
 }: ColumnProps) => {
      const [isEditingTitle, setIsEditingTitle] = useState(false);
+     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
      const localTasks = useMemo(() => {
           const arr = Array.isArray(column.tasks) ? column.tasks : [];
@@ -97,27 +100,35 @@ const Column = ({
                     </div>
                </div>
 
-               <Droppable droppableId={column.id} type="TASK">
+               <Droppable droppableId={column.id} type="task">
                     {(provided, snapshot) => (
                          <div
-                              ref={provided.innerRef}
+                              ref={(el) => {
+                                   provided.innerRef(el);
+                                   scrollContainerRef.current = el;
+                                   onRegisterScrollRef?.(column.id, el);
+                              }}
                               {...provided.droppableProps}
-                              className={`
-              flex-1 overflow-y-auto p-3 space-y-2.5
-              transition-all duration-200
-              ${snapshot.isDraggingOver ? 'bg-slate-600/10 ring-2 ring-slate-500/30 ring-inset' : ''}
-            `}
+                              className={`flex-1 overflow-y-auto p-3 space-y-2.5 ${snapshot.isDraggingOver ? 'bg-slate-700/30' : ''}`}
                               style={{
                                    minHeight: '400px',
                                    maxHeight: 'calc(100vh - 320px)',
+                                   overflowAnchor: 'none',
                               }}
                          >
-                              {localTasks.length === 0 && !snapshot.isDraggingOver && <div className="flex items-center justify-center h-32 text-slate-400/50 text-sm">Brak zadań</div>}
+                              {localTasks.length === 0 && !snapshot.isDraggingOver && (
+                                   <div className="flex items-center justify-center h-32 text-slate-400/50 text-sm">Brak zadań</div>
+                              )}
 
                               {localTasks.map((task, idx) => (
                                    <Draggable key={task.id} draggableId={task.id} index={idx}>
-                                        {(prov) => (
-                                             <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps} style={prov.draggableProps.style}>
+                                        {(dragProvided, dragSnapshot) => (
+                                             <div
+                                                  ref={dragProvided.innerRef}
+                                                  {...dragProvided.draggableProps}
+                                                  {...dragProvided.dragHandleProps}
+                                                  className={dragSnapshot.isDragging ? 'opacity-90 shadow-2xl' : ''}
+                                             >
                                                   <Task task={task} taskIndex={idx} columnId={column.id} onRemoveTask={onRemoveTask} onOpenTaskDetail={onOpenTaskDetail} priorities={priorities} />
                                              </div>
                                         )}

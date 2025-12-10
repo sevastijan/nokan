@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -52,6 +52,10 @@ export default function Page() {
      const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
 
      const prevBoardIdRef = useRef<string | null>(null);
+     const columnsContainerRef = useRef<HTMLDivElement>(null);
+     const savedScrollPosition = useRef<{ x: number; y: number } | null>(null);
+     const columnScrollRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+     const savedColumnScrollPositions = useRef<Map<string, number>>(new Map());
 
      useEffect(() => {
           if (!board) return;
@@ -67,10 +71,6 @@ export default function Page() {
                     tasks: (c.tasks || []).map((t) => ({ ...t, order: t.sort_order ?? 0 })).sort((a, b) => a.order - b.order),
                }))
                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-          // Debug: Log board data flow
-          const tasksWithCollabs = sortedCols.flatMap((c) => c.tasks.filter((t) => t.collaborators && t.collaborators.length > 0));
-          console.log('📌 page.tsx setLocalColumns - tasks with collaborators:', tasksWithCollabs.length, tasksWithCollabs.map((t) => ({ id: t.id, collabs: t.collaborators?.length })));
 
           setLocalColumns(sortedCols);
      }, [board]);
@@ -122,6 +122,66 @@ export default function Page() {
           const taskId = extractTaskIdFromUrl(window.location.href);
           if (taskId) setSelectedTaskId(taskId);
      }, []);
+
+     const saveScrollPosition = useCallback(() => {
+          if (columnsContainerRef.current) {
+               savedScrollPosition.current = {
+                    x: columnsContainerRef.current.scrollLeft,
+                    y: columnsContainerRef.current.scrollTop,
+               };
+          }
+          // Save each column's vertical scroll position
+          columnScrollRefs.current.forEach((el, colId) => {
+               if (el) {
+                    savedColumnScrollPositions.current.set(colId, el.scrollTop);
+               }
+          });
+     }, []);
+
+     const registerColumnScrollRef = useCallback((colId: string, el: HTMLDivElement | null) => {
+          if (el) {
+               columnScrollRefs.current.set(colId, el);
+          } else {
+               columnScrollRefs.current.delete(colId);
+          }
+     }, []);
+
+     // Restore scroll immediately and also after delays to catch late DOM changes
+     useLayoutEffect(() => {
+          const restoreScroll = () => {
+               if (savedScrollPosition.current && columnsContainerRef.current) {
+                    columnsContainerRef.current.scrollLeft = savedScrollPosition.current.x;
+                    columnsContainerRef.current.scrollTop = savedScrollPosition.current.y;
+               }
+               if (savedColumnScrollPositions.current.size > 0) {
+                    savedColumnScrollPositions.current.forEach((scrollTop, colId) => {
+                         const el = columnScrollRefs.current.get(colId);
+                         if (el) {
+                              el.scrollTop = scrollTop;
+                         }
+                    });
+               }
+          };
+
+          // Restore immediately
+          restoreScroll();
+
+          // Restore multiple times to catch framer-motion animations
+          const timeouts = [0, 50, 100, 200].map((delay) =>
+               setTimeout(restoreScroll, delay)
+          );
+
+          // Clear saved positions after all restores
+          const clearTimeout2 = setTimeout(() => {
+               savedScrollPosition.current = null;
+               savedColumnScrollPositions.current.clear();
+          }, 250);
+
+          return () => {
+               timeouts.forEach(clearTimeout);
+               clearTimeout(clearTimeout2);
+          };
+     });
 
      const onDragEnd = useCallback(
           async (result: DropResult) => {
@@ -222,6 +282,7 @@ export default function Page() {
      };
 
      const openAddTask = (colId: string) => {
+          saveScrollPosition();
           setAddTaskColumnId(colId);
      };
 
@@ -264,10 +325,12 @@ export default function Page() {
      const currentColumnId = addTaskColumnId || (selectedTaskId ? localColumns.find((c) => c.tasks.some((t) => t.id === selectedTaskId))?.id : null);
 
      const handleOpenTaskDetail = (taskId: string) => {
+          saveScrollPosition();
           setSelectedTaskId(taskId);
      };
 
      const handleCloseTaskView = () => {
+          saveScrollPosition();
           setSelectedTaskId(null);
           setAddTaskColumnId(null);
           fetchBoardData();
@@ -298,9 +361,13 @@ export default function Page() {
                          <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
                               {(provider) => (
                                    <div
-                                        ref={provider.innerRef}
+                                        ref={(el) => {
+                                             provider.innerRef(el);
+                                             (columnsContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                                        }}
                                         {...provider.droppableProps}
-                                        className="flex-1 flex overflow-x-auto gap-4 p-4 md:p-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-700"
+                                        className="flex-1 flex overflow-x-auto gap-4 p-4 md:p-6 scrollbar-thin scrollbar-thumb-slate-700"
+                                        style={{ overflowAnchor: 'none' }}
                                    >
                                         {filteredColumns.map((col, idx) => (
                                              <Draggable key={col.id} draggableId={col.id} index={idx}>
@@ -309,7 +376,7 @@ export default function Page() {
                                                             ref={prov.innerRef}
                                                             {...prov.draggableProps}
                                                             style={prov.draggableProps.style}
-                                                            className="flex-shrink-0 w-[88vw] sm:w-80 lg:w-96 snap-start"
+                                                            className="flex-shrink-0 w-[88vw] sm:w-80 lg:w-96"
                                                        >
                                                             <Column
                                                                  column={col}
@@ -324,6 +391,7 @@ export default function Page() {
                                                                  onOpenAddTask={openAddTask}
                                                                  priorities={priorities}
                                                                  dragHandleProps={prov.dragHandleProps ?? undefined}
+                                                                 onRegisterScrollRef={registerColumnScrollRef}
                                                             />
                                                        </div>
                                                   )}
