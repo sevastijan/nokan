@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../../lib/api";
-import { Comment } from "../types";
+import { supabase } from "../../../lib/api";
+import { Comment } from "@/app/types/globalTypes";
 
 interface UseTaskCommentsResult {
   comments: Comment[];

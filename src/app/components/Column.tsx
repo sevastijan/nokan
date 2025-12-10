@@ -100,7 +100,7 @@ const Column = ({
                     </div>
                </div>
 
-               <Droppable droppableId={column.id} type="task">
+               <Droppable droppableId={column.id} type="TASK">
                     {(provided, snapshot) => (
                          <div
                               ref={(el) => {
