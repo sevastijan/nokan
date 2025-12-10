@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/app/lib/supabase';
+import { getSupabase, supabase } from '@/app/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
 
           return NextResponse.json(data || []);
      } catch (error) {
-          
           console.error('Error in GET /api/statuses:', error);
           return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
      }
