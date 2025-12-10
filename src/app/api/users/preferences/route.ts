@@ -3,10 +3,12 @@ import { getServerSession } from 'next-auth/next';
 import { createClient } from '@supabase/supabase-js';
 import { authOptions } from '../../auth/[...nextauth]/route';
 
-const supabase = createClient(
-     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+function getSupabase() {
+     return createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+     );
+}
 
 const defaultPreferences = {
      email_task_assigned: true,
@@ -23,7 +25,7 @@ export async function GET() {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const { data, error } = await supabase
+          const { data, error } = await getSupabase()
                .from('notification_preferences')
                .select('*')
                .eq('user_id', session.user.id)
@@ -40,7 +42,7 @@ export async function GET() {
           }
 
           // Create default preferences for new user
-          const { data: newPrefs, error: insertError } = await supabase
+          const { data: newPrefs, error: insertError } = await getSupabase()
                .from('notification_preferences')
                .insert({
                     user_id: session.user.id,
@@ -92,7 +94,7 @@ export async function PUT(request: NextRequest) {
           }
 
           // Upsert preferences
-          const { data, error } = await supabase
+          const { data, error } = await getSupabase()
                .from('notification_preferences')
                .upsert(
                     {
