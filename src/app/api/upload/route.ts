@@ -4,12 +4,16 @@ import { authOptions } from '../auth/[...nextauth]/route';
 import { NextRequest } from 'next/server';
 
 function getSupabaseAdmin() {
-     return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SERVICE_ROLE_KEY!, {
-          auth: {
-               autoRefreshToken: false,
-               persistSession: false,
-          },
-     });
+     return createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+          process.env.SERVICE_ROLE_KEY || 'placeholder-key',
+          {
+               auth: {
+                    autoRefreshToken: false,
+                    persistSession: false,
+               },
+          }
+     );
 }
 
 export async function POST(request: NextRequest) {

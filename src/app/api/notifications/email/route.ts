@@ -5,7 +5,10 @@ import { sendEmailNotification } from '@/app/lib/email/emailService';
 import type { EmailNotificationType } from '@/app/types/emailTypes';
 
 function getSupabase() {
-     return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+     return createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+     );
 }
 
 interface EmailRequestBody {
