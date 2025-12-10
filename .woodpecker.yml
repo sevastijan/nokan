@@ -12,7 +12,7 @@ steps:
             NEXT_PUBLIC_SUPABASE_ANON_KEY:
                  from_secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
             SERVICE_ROLE_KEY:
-                 from_secret: SERVICE_ROLE_KEY
+                 from_secret: service_roley_key
             NEXT_PUBLIC_GOOGLE_CLIENT_ID:
                  from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
             NEXT_PUBLIC_GOOGLE_CLIENT_SECRET:
