@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { Board, Column, Task, User } from '@/app/types/globalTypes';
 
 export interface BoardWithCounts extends Board {
@@ -59,7 +59,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      addBoard: builder.mutation<Board, { title: string; user_id: string }>({
           async queryFn({ title, user_id }) {
                try {
-                    const { data, error } = await supabase.from('boards').insert({ title, user_id }).select('*').single();
+                    const { data, error } = await getSupabase().from('boards').insert({ title, user_id }).select('*').single();
                     if (error || !data) throw error || new Error('Add board failed');
                     const newBoard: Board = {
                          id: data.id,
@@ -85,7 +85,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      getBoard: builder.query<Board, string>({
           async queryFn(boardId) {
                try {
-                    const { data: bRaw, error: be } = await supabase
+                    const { data: bRaw, error: be } = await getSupabase()
                          .from('boards')
                          .select(
                               `
@@ -119,7 +119,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          updated_at: rawBoard.updated_at,
                     };
 
-                    const { data: colsRaw = [], error: ce } = await supabase
+                    const { data: colsRaw = [], error: ce } = await getSupabase()
                          .from('columns')
                          .select(
                               `
@@ -202,7 +202,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      getMyBoards: builder.query<BoardWithCounts[], string>({
           async queryFn(userId) {
                try {
-                    const { data: ownedRaw = [], error: ownedErr } = await supabase
+                    const { data: ownedRaw = [], error: ownedErr } = await getSupabase()
                          .from('boards')
                          .select(
                               `
@@ -232,16 +232,16 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          } as Board;
                     });
 
-                    const { data: memRaw = [], error: memErr } = await supabase.from('team_members').select('team_id').eq('user_id', userId);
+                    const { data: memRaw = [], error: memErr } = await getSupabase().from('team_members').select('team_id').eq('user_id', userId);
                     if (memErr) throw memErr;
                     const teamIds = (memRaw as { team_id: string }[]).map((m) => m.team_id);
                     let viaTeamsBoards: Board[] = [];
                     if (teamIds.length > 0) {
-                         const { data: teamsRaw = [], error: teamsErr } = await supabase.from('teams').select('board_id').in('id', teamIds);
+                         const { data: teamsRaw = [], error: teamsErr } = await getSupabase().from('teams').select('board_id').in('id', teamIds);
                          if (teamsErr) throw teamsErr;
                          const boardIds = Array.from(new Set((teamsRaw as { board_id: string }[]).map((t) => t.board_id)));
                          if (boardIds.length > 0) {
-                              const { data: boardsFromTeamsRaw = [], error: bErr } = await supabase
+                              const { data: boardsFromTeamsRaw = [], error: bErr } = await getSupabase()
                                    .from('boards')
                                    .select(
                                         `
@@ -280,15 +280,15 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     const boardsWithCounts: BoardWithCounts[] = await Promise.all(
                          uniqueBoards.map(async (b) => {
-                              const { count: taskCountRaw } = await supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('board_id', b.id);
+                              const { count: taskCountRaw } = await getSupabase().from('tasks').select('id', { count: 'exact', head: true }).eq('board_id', b.id);
                               const taskCount = taskCountRaw ?? 0;
 
-                              const { data: boardTeamsRaw = [] } = await supabase.from('teams').select('id').eq('board_id', b.id);
+                              const { data: boardTeamsRaw = [] } = await getSupabase().from('teams').select('id').eq('board_id', b.id);
                               const bTeamIds = (boardTeamsRaw as { id: string }[]).map((t) => t.id);
 
                               let memberCount = 0;
                               if (bTeamIds.length > 0) {
-                                   const { count: memberCountRaw } = await supabase.from('team_members').select('id', { count: 'exact', head: true }).in('team_id', bTeamIds);
+                                   const { count: memberCountRaw } = await getSupabase().from('team_members').select('id', { count: 'exact', head: true }).in('team_id', bTeamIds);
                                    memberCount = memberCountRaw ?? 0;
                               }
 
@@ -312,7 +312,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      removeBoard: builder.mutation<{ id: string }, { boardId: string }>({
           async queryFn({ boardId }) {
                try {
-                    const { error } = await supabase.from('boards').delete().eq('id', boardId);
+                    const { error } = await getSupabase().from('boards').delete().eq('id', boardId);
                     if (error) throw error;
                     return { data: { id: boardId } };
                } catch (err) {
@@ -330,7 +330,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      updateBoardTitle: builder.mutation<{ id: string; title: string }, { boardId: string; title: string }>({
           async queryFn({ boardId, title }) {
                try {
-                    const { error } = await supabase.from('boards').update({ title }).eq('id', boardId);
+                    const { error } = await getSupabase().from('boards').update({ title }).eq('id', boardId);
                     if (error) throw error;
                     return { data: { id: boardId, title } };
                } catch (err) {
@@ -345,13 +345,13 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      getUserBoards: builder.query<Board[], string>({
           async queryFn(userId) {
                try {
-                    const { data: ownBoardsData, error: ownErr } = await supabase.from('boards').select('id,title,user_id,created_at').eq('user_id', userId);
+                    const { data: ownBoardsData, error: ownErr } = await getSupabase().from('boards').select('id,title,user_id,created_at').eq('user_id', userId);
                     if (ownErr) {
                          console.error('getUserBoards – owned boards error:', ownErr.message);
                     }
                     const own = ownBoardsData || [];
 
-                    const { data: tm, error: tmErr } = await supabase.from('team_members').select('team_id').eq('user_id', userId);
+                    const { data: tm, error: tmErr } = await getSupabase().from('team_members').select('team_id').eq('user_id', userId);
                     if (tmErr) {
                          console.error('getUserBoards – team_members error:', tmErr.message);
                     }
@@ -359,7 +359,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     let teamBoardIds: string[] = [];
                     if (teamIds.length > 0) {
-                         const { data: tb, error: tbErr } = await supabase.from('team_boards').select('board_id').in('team_id', teamIds);
+                         const { data: tb, error: tbErr } = await getSupabase().from('team_boards').select('board_id').in('team_id', teamIds);
                          if (tbErr) {
                               console.error('getUserBoards – team_boards error:', tbErr.message);
                          } else {
@@ -369,7 +369,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     let teamBoards: { id: string; title: string; user_id: string; created_at?: string }[] = [];
                     if (teamBoardIds.length > 0) {
-                         const { data: tBoardsData, error: tBoardsErr } = await supabase.from('boards').select('id,title,user_id,created_at').in('id', teamBoardIds);
+                         const { data: tBoardsData, error: tBoardsErr } = await getSupabase().from('boards').select('id,title,user_id,created_at').in('id', teamBoardIds);
                          if (tBoardsErr) {
                               console.error('getUserBoards – fetch boards by IDs error:', tBoardsErr.message);
                          } else {
@@ -398,14 +398,14 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      getBoardsByTeamId: builder.query<Board[], string>({
           async queryFn(teamId) {
                try {
-                    const { data: links, error: linkErr } = await supabase.from('team_boards').select('board_id').eq('team_id', teamId);
+                    const { data: links, error: linkErr } = await getSupabase().from('team_boards').select('board_id').eq('team_id', teamId);
 
                     if (linkErr) throw linkErr;
 
                     const boardIds = (links ?? []).map((l) => l.board_id);
                     if (!boardIds.length) return { data: [] };
 
-                    const { data: boards, error: boardErr } = await supabase.from('boards').select('*').in('id', boardIds);
+                    const { data: boards, error: boardErr } = await getSupabase().from('boards').select('*').in('id', boardIds);
 
                     if (boardErr) throw boardErr;
 
@@ -421,22 +421,22 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      getAllBoards: builder.query<BoardWithCounts[], void>({
           async queryFn() {
                try {
-                    const { data: boards, error: boardsError } = await supabase.from('boards').select('id, title, user_id, created_at, updated_at').order('created_at', { ascending: false });
+                    const { data: boards, error: boardsError } = await getSupabase().from('boards').select('id, title, user_id, created_at, updated_at').order('created_at', { ascending: false });
 
                     if (boardsError) throw boardsError;
                     if (!boards || boards.length === 0) return { data: [] };
 
                     const boardsWithCounts: BoardWithCounts[] = await Promise.all(
                          boards.map(async (board) => {
-                              const { count: taskCount = 0 } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('board_id', board.id);
+                              const { count: taskCount = 0 } = await getSupabase().from('tasks').select('*', { count: 'exact', head: true }).eq('board_id', board.id);
 
-                              const { data: teamsData } = await supabase.from('teams').select('id').eq('board_id', board.id);
+                              const { data: teamsData } = await getSupabase().from('teams').select('id').eq('board_id', board.id);
 
                               const teamIds = (teamsData ?? []).map((t: { id: string }) => t.id);
 
                               let memberCount = 0;
                               if (teamIds.length > 0) {
-                                   const { count } = await supabase.from('team_members').select('*', { count: 'exact', head: true }).in('team_id', teamIds);
+                                   const { count } = await getSupabase().from('team_members').select('*', { count: 'exact', head: true }).in('team_id', teamIds);
 
                                    memberCount = count ?? 0;
                               }

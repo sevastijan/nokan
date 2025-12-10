@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getToken } from 'next-auth/jwt';
 import { createClient } from '@supabase/supabase-js';
-import { authOptions } from '../../auth/[...nextauth]/route';
 import { sendEmailNotification } from '@/app/lib/email/emailService';
 import type { EmailNotificationType } from '@/app/types/emailTypes';
 
-const supabase = createClient(
-     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+function getSupabase() {
+     return createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+     );
+}
 
 interface EmailRequestBody {
      type: EmailNotificationType;
@@ -45,9 +46,9 @@ const preferenceKeyMap: Record<EmailNotificationType, string> = {
 
 export async function POST(request: NextRequest) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.email) {
+          if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -59,22 +60,14 @@ export async function POST(request: NextRequest) {
           }
 
           // Get recipient's email and preferences
-          const { data: recipient, error: userError } = await supabase
-               .from('users')
-               .select('id, email, name')
-               .eq('id', recipientId)
-               .single();
+          const { data: recipient, error: userError } = await getSupabase().from('users').select('id, email, name').eq('id', recipientId).single();
 
           if (userError || !recipient) {
                return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
           }
 
           // Check notification preferences
-          const { data: preferences } = await supabase
-               .from('notification_preferences')
-               .select('*')
-               .eq('user_id', recipientId)
-               .single();
+          const { data: preferences } = await getSupabase().from('notification_preferences').select('*').eq('user_id', recipientId).single();
 
           // If no preferences exist, default to all enabled
           const preferenceKey = preferenceKeyMap[type];
@@ -89,7 +82,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Don't send email to yourself
-          if (recipient.email === session.user.email) {
+          if (recipient.email === token.email) {
                return NextResponse.json({
                     success: true,
                     skipped: true,
@@ -110,10 +103,7 @@ export async function POST(request: NextRequest) {
           });
 
           if (!result.success) {
-               return NextResponse.json(
-                    { error: result.error || 'Failed to send email' },
-                    { status: 500 }
-               );
+               return NextResponse.json({ error: result.error || 'Failed to send email' }, { status: 500 });
           }
 
           return NextResponse.json({ success: true });

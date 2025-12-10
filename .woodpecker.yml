@@ -11,6 +11,8 @@ steps:
                  from_secret: NEXT_PUBLIC_SUPABASE_URL
             NEXT_PUBLIC_SUPABASE_ANON_KEY:
                  from_secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
+            SERVICE_ROLE_KEY:
+                 from_secret: SERVICE_ROLE_KEY
             NEXT_PUBLIC_GOOGLE_CLIENT_ID:
                  from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
             NEXT_PUBLIC_GOOGLE_CLIENT_SECRET:
@@ -26,15 +28,21 @@ steps:
        commands:
             - docker version
             - echo "🔍 Checking injected envs (safe preview)..."
+            - echo "NEXT_PUBLIC_SUPABASE_URL length -> $${#NEXT_PUBLIC_SUPABASE_URL}"
+            - echo "NEXTAUTH_SECRET length -> $${#NEXTAUTH_SECRET}"
+            - if [ -z "$${NEXT_PUBLIC_SUPABASE_URL}" ]; then echo "❌ NEXT_PUBLIC_SUPABASE_URL is EMPTY!"; else echo "✅ NEXT_PUBLIC_SUPABASE_URL is set"; fi
+            - if [ -z "$${NEXTAUTH_SECRET}" ]; then echo "❌ NEXTAUTH_SECRET is EMPTY!"; else echo "✅ NEXTAUTH_SECRET is set"; fi
             - echo "NEXT_PUBLIC_SUPABASE_URL -> $${NEXT_PUBLIC_SUPABASE_URL}"
-            - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix -> $(echo "$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" | cut -c1-6)"
-            - echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID prefix -> $(echo "$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" | cut -c1-6)"
+            - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix -> $$(echo "$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" | cut -c1-6)"
+            - echo "SERVICE_ROLE_KEY prefix -> $$(echo "$${SERVICE_ROLE_KEY}" | cut -c1-6)"
+            - echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID prefix -> $$(echo "$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" | cut -c1-6)"
             - echo "NEXTAUTH_URL -> $${NEXTAUTH_URL}"
             - echo "📝 Rendering .env for build stage..."
             - |
                  printf '%s\n' \
                    "NEXT_PUBLIC_SUPABASE_URL=$${NEXT_PUBLIC_SUPABASE_URL}" \
                    "NEXT_PUBLIC_SUPABASE_ANON_KEY=$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+                   "SERVICE_ROLE_KEY=$${SERVICE_ROLE_KEY}" \
                    "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" \
                    "NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
                    "NEXTAUTH_URL=$${NEXTAUTH_URL}" \
@@ -60,6 +68,8 @@ steps:
                  from_secret: NEXT_PUBLIC_SUPABASE_URL
             NEXT_PUBLIC_SUPABASE_ANON_KEY:
                  from_secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
+            SERVICE_ROLE_KEY:
+                 from_secret: SERVICE_ROLE_KEY
             NEXT_PUBLIC_GOOGLE_CLIENT_ID:
                  from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
             NEXT_PUBLIC_GOOGLE_CLIENT_SECRET:
@@ -86,6 +96,7 @@ steps:
                    --network traefik-network \
                    -e NEXT_PUBLIC_SUPABASE_URL="$${NEXT_PUBLIC_SUPABASE_URL}" \
                    -e NEXT_PUBLIC_SUPABASE_ANON_KEY="$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+                   -e SERVICE_ROLE_KEY="$${SERVICE_ROLE_KEY}" \
                    -e NEXT_PUBLIC_GOOGLE_CLIENT_ID="$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" \
                    -e NEXT_PUBLIC_GOOGLE_CLIENT_SECRET="$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
                    -e NEXTAUTH_URL="$${NEXTAUTH_URL}" \

@@ -1,12 +1,26 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Session } from 'next-auth';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiTask, Board, Column, Priority, Task, User } from '@/app/types/globalTypes';
 
-// ---- Supabase Client ----
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// ---- Supabase Client (lazy initialization) ----
+let supabaseInstance: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+     if (!supabaseInstance) {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+          const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+          supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+     }
+     return supabaseInstance;
+}
+
+// For backward compatibility - lazy getter
+export const supabase = new Proxy({} as SupabaseClient, {
+     get(_, prop) {
+          return (getSupabase() as Record<string | symbol, unknown>)[prop];
+     },
+});
 
 // -------------------------------------
 // ------- Board CRUD / Templates ------
@@ -17,11 +31,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  */
 export const getBoardById = async (boardId: string): Promise<Board | null> => {
      try {
-          const { data: board, error: boardError } = await supabase.from('boards').select('*').eq('id', boardId).single();
+          const { data: board, error: boardError } = await getSupabase().from('boards').select('*').eq('id', boardId).single();
 
           if (boardError || !board) throw boardError || new Error('Board not found');
 
-          const { data: columns, error: colError } = await supabase.from('columns').select('*, tasks(*)').eq('board_id', boardId).order('order', { ascending: true });
+          const { data: columns, error: colError } = await getSupabase().from('columns').select('*, tasks(*)').eq('board_id', boardId).order('order', { ascending: true });
 
           if (colError) throw colError;
 
@@ -65,12 +79,12 @@ export const addBoard = async ({ title, owner, userId }: { title: string; owner:
  */
 export const getAllBoardsForUser = async (email: string): Promise<Board[]> => {
      try {
-          const { data: user, error: userError } = await supabase.from('users').select('id').eq('email', email).single();
+          const { data: user, error: userError } = await getSupabase().from('users').select('id').eq('email', email).single();
 
           if (userError || !user) throw userError || new Error('User not found');
           const userId = user.id;
 
-          const { data: ownedBoards, error: ownedError } = await supabase.from('boards').select('*').eq('user_id', userId);
+          const { data: ownedBoards, error: ownedError } = await getSupabase().from('boards').select('*').eq('user_id', userId);
 
           if (ownedError) throw ownedError;
 
@@ -101,7 +115,7 @@ export const createBoardFromTemplate = async (title: string, templateId: string,
      if (boardError || !newBoard) throw boardError || new Error('Board creation failed');
 
      // Get template columns
-     const { data: templateColumns, error: templateError } = await supabase.from('template_columns').select('*').eq('template_id', templateId);
+     const { data: templateColumns, error: templateError } = await getSupabase().from('template_columns').select('*').eq('template_id', templateId);
      if (templateError) throw templateError;
 
      if (!templateColumns || templateColumns.length === 0) {
@@ -116,7 +130,7 @@ export const createBoardFromTemplate = async (title: string, templateId: string,
           board_id: newBoard.id,
      }));
 
-     const { error: insertColsError } = await supabase.from('columns').insert(columnsToInsert);
+     const { error: insertColsError } = await getSupabase().from('columns').insert(columnsToInsert);
      if (insertColsError) throw insertColsError;
 
      return newBoard;
@@ -184,7 +198,7 @@ export async function addBoardTemplate(templateData: { name: string; description
           order: col.order,
      }));
 
-     const { data: columns, error: columnsError } = await supabase.from('template_columns').insert(columnsToInsert).select();
+     const { data: columns, error: columnsError } = await getSupabase().from('template_columns').insert(columnsToInsert).select();
 
      if (columnsError) throw new Error(columnsError.message);
 
@@ -198,11 +212,11 @@ export async function addBoardTemplate(templateData: { name: string; description
  * Delete a board template and its columns.
  */
 export async function deleteBoardTemplate(templateId: string) {
-     const { error: columnsError } = await supabase.from('template_columns').delete().eq('template_id', templateId);
+     const { error: columnsError } = await getSupabase().from('template_columns').delete().eq('template_id', templateId);
 
      if (columnsError) throw new Error(columnsError.message);
 
-     const { error: templateError } = await supabase.from('board_templates').delete().eq('id', templateId);
+     const { error: templateError } = await getSupabase().from('board_templates').delete().eq('id', templateId);
 
      if (templateError) throw new Error(templateError.message);
 }
@@ -215,7 +229,7 @@ export async function deleteBoardTemplate(templateId: string) {
  * Get all priorities, or fallback to defaults.
  */
 export const getPriorities = async (): Promise<{ id: string; label: string; color: string }[]> => {
-     const { data, error } = await supabase.from('priorities').select('id, label, color').order('id');
+     const { data, error } = await getSupabase().from('priorities').select('id, label, color').order('id');
 
      if (error) {
           throw new Error(error.message);
@@ -256,7 +270,7 @@ export const addPriority = async (label: string, color: string): Promise<Priorit
  * Update an existing priority.
  */
 export const updatePriority = async (id: string, label: string, color: string): Promise<Priority> => {
-     const { data, error } = await supabase.from('priorities').update({ label, color }).eq('id', id).select().single();
+     const { data, error } = await getSupabase().from('priorities').update({ label, color }).eq('id', id).select().single();
 
      if (error) throw new Error(error.message);
 
@@ -267,7 +281,7 @@ export const updatePriority = async (id: string, label: string, color: string): 
  * Delete a priority by ID.
  */
 export const deletePriority = async (id: string): Promise<void> => {
-     const { error } = await supabase.from('priorities').delete().eq('id', id);
+     const { error } = await getSupabase().from('priorities').delete().eq('id', id);
      if (error) throw new Error(error.message);
 };
 
@@ -372,7 +386,7 @@ export const getTaskById = async (taskId: string): Promise<ApiTask | null> => {
  * Update start and end dates for a task.
  */
 export const updateTaskDates = async (taskId: string, startDate: string | null, endDate: string | null) => {
-     const { error } = await supabase.from('tasks').update({ start_date: startDate, end_date: endDate }).eq('id', taskId);
+     const { error } = await getSupabase().from('tasks').update({ start_date: startDate, end_date: endDate }).eq('id', taskId);
      if (error) throw error;
 };
 
@@ -384,7 +398,7 @@ export const updateTaskDates = async (taskId: string, startDate: string | null, 
  * Get a user's ID by their email.
  */
 export async function getUserIdByEmail(email: string): Promise<string | null> {
-     const { data, error } = await supabase.from('users').select('id').eq('email', email).single();
+     const { data, error } = await getSupabase().from('users').select('id').eq('email', email).single();
 
      if (error) {
           console.error('getUserIdByEmail error:', error.message);
@@ -403,7 +417,7 @@ export async function fetchOrCreateUserFromSession(session: Session): Promise<Us
      if (!email) return null;
 
      try {
-          const { data: existingUser, error } = await supabase.from('users').select('*').eq('email', email).single();
+          const { data: existingUser, error } = await getSupabase().from('users').select('*').eq('email', email).single();
 
           if (existingUser) return existingUser;
 

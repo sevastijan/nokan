@@ -1,24 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getToken } from 'next-auth/jwt';
 import { createClient } from '@supabase/supabase-js';
-import { authOptions } from '../../auth/[...nextauth]/route';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+export const dynamic = 'force-dynamic';
+
+function getSupabase() {
+     return createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+     );
+}
 
 /**
  * Get board data by ID
  */
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.email) {
+          if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
           const boardId = params.id;
 
-          const { data: dashboardData, error } = await supabase.from('dashboards').select('*').eq('id', boardId).eq('owner', session.user.email).single();
+          const { data: dashboardData, error } = await getSupabase().from('dashboards').select('*').eq('id', boardId).eq('owner', token.email).single();
 
           if (error) {
                if (error.code === 'PGRST116') {
@@ -50,9 +56,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
  */
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.email) {
+          if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -63,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
                return NextResponse.json({ error: 'Title is required' }, { status: 400 });
           }
 
-          const { data, error } = await supabase.from('dashboards').update({ title: title.trim() }).eq('id', boardId).eq('owner', session.user.email).select().single();
+          const { data, error } = await getSupabase().from('dashboards').update({ title: title.trim() }).eq('id', boardId).eq('owner', token.email).select().single();
 
           if (error) {
                if (error.code === 'PGRST116') {
@@ -83,15 +89,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
  */
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.email) {
+          if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
           const boardId = params.id;
 
-          const { error } = await supabase.from('dashboards').delete().eq('id', boardId).eq('owner', session.user.email);
+          const { error } = await getSupabase().from('dashboards').delete().eq('id', boardId).eq('owner', token.email);
 
           if (error) {
                return NextResponse.json({ error: 'Database error' }, { status: 500 });

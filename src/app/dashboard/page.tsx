@@ -12,7 +12,7 @@ import {
      useRemoveBoardMutation,
      useCreateBoardFromTemplateMutation,
 } from '@/app/store/apiSlice';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import Loader from '@/app/components/Loader';
 import BoardModal from '@/app/components/Board/BoardModal';
 import { BoardTemplate } from '@/app/types/globalTypes';
@@ -33,7 +33,7 @@ export default function DashboardPage() {
           if (authStatus === 'authenticated' && session?.user?.email) {
                const fetchUserData = async () => {
                     try {
-                         const { data } = await supabase.from('users').select('id, role').eq('email', session.user.email).single();
+                         const { data } = await getSupabase().from('users').select('id, role').eq('email', session.user.email).single();
 
                          if (data) {
                               setClientUuid(data.id);

@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { Board } from '@/app/types/globalTypes';
 
 interface TemplateColumn {
@@ -50,7 +50,7 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
      >({
           async queryFn({ name, description, columns }) {
                try {
-                    const { data: template, error: templateErr } = await supabase.from('board_templates').insert({ name, description }).select('*').single();
+                    const { data: template, error: templateErr } = await getSupabase().from('board_templates').insert({ name, description }).select('*').single();
                     if (templateErr || !template) throw templateErr || new Error('Template creation failed');
                     const templateId = template.id;
 
@@ -59,7 +59,7 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
                          order: col.order ?? idx,
                          template_id: templateId,
                     }));
-                    const { data: insertedCols, error: colsErr } = await supabase.from('template_columns').insert(columnsToInsert).select('*');
+                    const { data: insertedCols, error: colsErr } = await getSupabase().from('template_columns').insert(columnsToInsert).select('*');
                     if (colsErr || !insertedCols) throw colsErr || new Error('Columns creation failed');
 
                     const templateTasksToInsert = (insertedCols as TemplateColumnData[]).flatMap((col, colIdx) =>
@@ -72,7 +72,7 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
                          })),
                     );
                     if (templateTasksToInsert.length > 0) {
-                         const { error: tasksErr } = await supabase.from('template_tasks').insert(templateTasksToInsert);
+                         const { error: tasksErr } = await getSupabase().from('template_tasks').insert(templateTasksToInsert);
                          if (tasksErr) throw tasksErr;
                     }
 
@@ -96,11 +96,11 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
      createBoardFromTemplate: builder.mutation<Board, { title: string; templateId: string; user_id: string }>({
           async queryFn({ title, templateId, user_id }) {
                try {
-                    const { data: newBoard, error: boardErr } = await supabase.from('boards').insert({ title, user_id }).select('*').single();
+                    const { data: newBoard, error: boardErr } = await getSupabase().from('boards').insert({ title, user_id }).select('*').single();
                     if (boardErr || !newBoard) throw boardErr || new Error('Failed to create board');
                     const boardId = newBoard.id;
 
-                    const { data: templateCols, error: templateColsErr } = await supabase.from('template_columns').select('*').eq('template_id', templateId).order('order', { ascending: true });
+                    const { data: templateCols, error: templateColsErr } = await getSupabase().from('template_columns').select('*').eq('template_id', templateId).order('order', { ascending: true });
                     if (templateColsErr) throw templateColsErr;
                     if (!templateCols || templateCols.length === 0) throw new Error('No columns found for this template');
 
@@ -109,7 +109,7 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
                          order: col.order ?? idx,
                          board_id: boardId,
                     }));
-                    const { data: insertedColumns, error: columnsErr } = await supabase.from('columns').insert(columnsToInsert).select('*');
+                    const { data: insertedColumns, error: columnsErr } = await getSupabase().from('columns').insert(columnsToInsert).select('*');
                     if (columnsErr || !insertedColumns) throw columnsErr || new Error('Failed to create columns');
 
                     const templateIdToColumnId: Record<string, string> = {};
@@ -117,7 +117,7 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
                          templateIdToColumnId[tc.id] = (insertedColumns as BoardColumnData[])[i].id;
                     });
 
-                    const { data: templateTasks, error: tasksErr } = await supabase.from('template_tasks').select('*').eq('template_id', templateId).order('sort_order', { ascending: true });
+                    const { data: templateTasks, error: tasksErr } = await getSupabase().from('template_tasks').select('*').eq('template_id', templateId).order('sort_order', { ascending: true });
                     if (tasksErr) throw tasksErr;
 
                     if (templateTasks && templateTasks.length > 0) {
@@ -130,13 +130,13 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
                               sort_order: task.sort_order ?? 0,
                               completed: false,
                          }));
-                         const { error: insertTasksErr } = await supabase.from('tasks').insert(tasksToInsert);
+                         const { error: insertTasksErr } = await getSupabase().from('tasks').insert(tasksToInsert);
                          if (insertTasksErr) throw insertTasksErr;
                     }
 
                     let ownerName, ownerEmail;
                     try {
-                         const { data: userData } = await supabase.from('users').select('name,email').eq('id', user_id).single();
+                         const { data: userData } = await getSupabase().from('users').select('name,email').eq('id', user_id).single();
                          if (userData) {
                               ownerName = userData.name;
                               ownerEmail = userData.email;

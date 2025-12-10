@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { useBoard } from '@/app/hooks/useBoard';
 import Column from '@/app/components/Column';
 import AddColumnPopup from '@/app/components/TaskColumn/AddColumnPopup';
@@ -87,7 +87,7 @@ export default function Page() {
      useEffect(() => {
           if (!session?.user?.email) return;
           (async () => {
-               const { data } = await supabase.from('users').select('*').eq('email', session.user.email).single();
+               const { data } = await getSupabase().from('users').select('*').eq('email', session.user.email).single();
                if (data) {
                     setCurrentUser({
                          id: data.id,
@@ -97,7 +97,7 @@ export default function Page() {
                          created_at: data.created_at!,
                     });
                } else {
-                    const { data: newUser } = await supabase.from('users').insert({ email: session.user.email, name: session.user.name, image: session.user.image }).select().single();
+                    const { data: newUser } = await getSupabase().from('users').insert({ email: session.user.email, name: session.user.name, image: session.user.image }).select().single();
                     setCurrentUser({
                          id: newUser.id,
                          name: newUser.name!,
@@ -129,7 +129,7 @@ export default function Page() {
                     const [moved] = cols.splice(source.index, 1);
                     cols.splice(destination.index, 0, moved);
                     setLocalColumns(cols);
-                    await Promise.all(cols.map((c, i) => supabase.from('columns').update({ order: i }).eq('id', c.id)));
+                    await Promise.all(cols.map((c, i) => getSupabase().from('columns').update({ order: i }).eq('id', c.id)));
                     await fetchBoardData();
                     return;
                }
@@ -159,8 +159,8 @@ export default function Page() {
                     setLocalColumns(cols);
 
                     await Promise.all([
-                         ...updatedSrc.map((t) => supabase.from('tasks').update({ sort_order: t.order }).eq('id', t.id)),
-                         ...updatedDst.map((t) => supabase.from('tasks').update({ sort_order: t.order, column_id: t.column_id }).eq('id', t.id)),
+                         ...updatedSrc.map((t) => getSupabase().from('tasks').update({ sort_order: t.order }).eq('id', t.id)),
+                         ...updatedDst.map((t) => getSupabase().from('tasks').update({ sort_order: t.order, column_id: t.column_id }).eq('id', t.id)),
                     ]);
 
                     await fetchBoardData();

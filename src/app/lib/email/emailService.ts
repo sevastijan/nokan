@@ -11,7 +11,9 @@ import {
 } from './templates';
 import type { EmailNotificationPayload } from '@/app/types/emailTypes';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+     return new Resend(process.env.RESEND_API_KEY);
+}
 
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@example.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -127,7 +129,7 @@ export async function sendEmailNotification(
                return { success: false, error: 'Unknown notification type' };
           }
 
-          const { error } = await resend.emails.send({
+          const { error } = await getResend().emails.send({
                from: EMAIL_FROM,
                to: payload.recipientEmail,
                subject,

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiPlus, FiUsers } from "react-icons/fi";
-import { supabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase";
 import DOMPurify from "dompurify";
 
 import TeamList from "./TeamList";

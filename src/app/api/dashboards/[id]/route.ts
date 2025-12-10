@@ -3,7 +3,12 @@ import { getServerSession } from 'next-auth/next';
 import { createClient } from '@supabase/supabase-js';
 import { authOptions } from '../../auth/[...nextauth]/route';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+function getSupabase() {
+     return createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+     );
+}
 
 /**
  * Update board by ID
@@ -24,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
           const boardId = params.id;
 
-          const { data, error } = await supabase.from('boards').update({ title: title.trim() }).eq('id', boardId).eq('owner', session.user.email).select().single();
+          const { data, error } = await getSupabase().from('boards').update({ title: title.trim() }).eq('id', boardId).eq('owner', session.user.email).select().single();
 
           if (error) {
                return NextResponse.json({ error: 'Failed to update board' }, { status: 500 });
@@ -50,14 +55,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
           const boardId = params.id;
 
           // Delete all columns related to this board
-          const { error: columnsError } = await supabase.from('columns').delete().eq('board_id', boardId);
+          const { error: columnsError } = await getSupabase().from('columns').delete().eq('board_id', boardId);
 
           if (columnsError) {
                return NextResponse.json({ error: 'Failed to delete board columns' }, { status: 500 });
           }
 
           // Delete the board itself
-          const { error: boardError } = await supabase.from('boards').delete().eq('id', boardId).eq('owner', session.user.email);
+          const { error: boardError } = await getSupabase().from('boards').delete().eq('id', boardId).eq('owner', session.user.email);
 
           if (boardError) {
                return NextResponse.json({ error: 'Failed to delete board' }, { status: 500 });

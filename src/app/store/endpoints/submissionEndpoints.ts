@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { ClientSubmission, Status } from '@/app/types/globalTypes';
 
 export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
@@ -15,25 +15,25 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
      >({
           async queryFn({ title, description, priority, client_id, board_id }) {
                try {
-                    const { data: columns } = await supabase.from('columns').select('id').eq('board_id', board_id).order('order', { ascending: true }).limit(1);
+                    const { data: columns } = await getSupabase().from('columns').select('id').eq('board_id', board_id).order('order', { ascending: true }).limit(1);
                     if (!columns || columns.length === 0) throw new Error('No columns found on this board');
                     const column_id = columns[0].id;
-                    const { data: defaultStatuses } = await supabase.from('statuses').select('id').eq('board_id', board_id).order('order_index', { ascending: true }).limit(1);
+                    const { data: defaultStatuses } = await getSupabase().from('statuses').select('id').eq('board_id', board_id).order('order_index', { ascending: true }).limit(1);
                     const defaultStatusId = defaultStatuses?.[0]?.id ?? null;
-                    const { data: task, error: taskErr } = await supabase
+                    const { data: task, error: taskErr } = await getSupabase()
                          .from('tasks')
                          .insert({ title, description, priority, board_id, column_id, user_id: client_id, completed: false, sort_order: 0, status_id: defaultStatusId })
                          .select('*')
                          .single();
                     if (taskErr || !task) throw taskErr || new Error('Failed to create task');
-                    const { data: submission, error: subErr } = await supabase
+                    const { data: submission, error: subErr } = await getSupabase()
                          .from('submissions')
                          .insert({ title, description, priority, client_id, board_id, column_id, task_id: task.id, status: 'pending' })
                          .select('*')
                          .single();
                     if (subErr || !submission) throw subErr || new Error('Failed to create submission');
 
-                    const { data: boards } = await supabase.from('boards').select('id, title');
+                    const { data: boards } = await getSupabase().from('boards').select('id, title');
                     const boardTitle = boards?.find((b) => b.id === task.board_id)?.title ?? 'Nieznany board';
 
                     const result: ClientSubmission = {
@@ -66,7 +66,7 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
      getAllSubmissions: builder.query<ClientSubmission[], void>({
           async queryFn() {
                try {
-                    const { data: submissions } = await supabase
+                    const { data: submissions } = await getSupabase()
                          .from('submissions')
                          .select(
                               `
@@ -79,7 +79,7 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
 
                     if (!submissions) return { data: [] };
 
-                    const { data: boards } = await supabase.from('boards').select('id, title');
+                    const { data: boards } = await getSupabase().from('boards').select('id, title');
 
                     const mapped: ClientSubmission[] = submissions.map((s) => {
                          const task = Array.isArray(s.task) ? s.task[0] : s.task;
@@ -122,7 +122,7 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
      getClientSubmissions: builder.query<ClientSubmission[], string>({
           async queryFn(clientId) {
                try {
-                    const { data: submissions } = await supabase
+                    const { data: submissions } = await getSupabase()
                          .from('submissions')
                          .select(
                               `
@@ -137,7 +137,7 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
 
                     if (!submissions || submissions.length === 0) return { data: [] };
 
-                    const { data: boards } = await supabase.from('boards').select('id, title');
+                    const { data: boards } = await getSupabase().from('boards').select('id, title');
 
                     const mapped: ClientSubmission[] = submissions.map((s) => {
                          const task = Array.isArray(s.task) && s.task.length > 0 ? s.task[0] : null;
@@ -180,10 +180,10 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
      updateSubmission: builder.mutation<ClientSubmission, { submissionId: string; taskId: string; data: { title?: string; description?: string; priority?: string } }>({
           async queryFn({ submissionId, taskId, data }) {
                try {
-                    await supabase.from('tasks').update(data).eq('id', taskId);
-                    const { data: submission } = await supabase.from('submissions').update(data).eq('id', submissionId).select('*').single();
-                    const { data: task } = await supabase.from('tasks').select('*').eq('id', taskId).single();
-                    const { data: boards } = await supabase.from('boards').select('id, title');
+                    await getSupabase().from('tasks').update(data).eq('id', taskId);
+                    const { data: submission } = await getSupabase().from('submissions').update(data).eq('id', submissionId).select('*').single();
+                    const { data: task } = await getSupabase().from('tasks').select('*').eq('id', taskId).single();
+                    const { data: boards } = await getSupabase().from('boards').select('id, title');
                     const boardTitle = boards?.find((b) => b.id === task.board_id)?.title ?? 'Nieznany board';
                     const result: ClientSubmission = {
                          id: task.id,
@@ -218,8 +218,8 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
      deleteSubmission: builder.mutation<void, { submissionId: string; taskId: string }>({
           async queryFn({ submissionId, taskId }) {
                try {
-                    await supabase.from('submissions').delete().eq('id', submissionId);
-                    await supabase.from('tasks').delete().eq('id', taskId);
+                    await getSupabase().from('submissions').delete().eq('id', submissionId);
+                    await getSupabase().from('tasks').delete().eq('id', taskId);
                     return { data: undefined };
                } catch (err) {
                     const error = err as Error;

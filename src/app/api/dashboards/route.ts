@@ -1,23 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getToken } from 'next-auth/jwt';
 import { createClient } from '@supabase/supabase-js';
-import { authOptions } from '../auth/[...nextauth]/route';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+export const dynamic = 'force-dynamic';
+
+function getSupabase() {
+     return createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+     );
+}
 
 /**
  * Get all boards for the authenticated user
  * @returns Promise<NextResponse> - Array of boards or error response
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.email) {
+          if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const { data, error } = await supabase.from('boards').select('*').eq('owner', session.user.email).order('created_at', { ascending: false });
+          const { data, error } = await getSupabase().from('boards').select('*').eq('owner', token.email).order('created_at', { ascending: false });
 
           if (error) {
                return NextResponse.json({ error: 'Database error' }, { status: 500 });
@@ -36,9 +42,9 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
      try {
-          const session = await getServerSession(authOptions);
+          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-          if (!session?.user?.email) {
+          if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -53,7 +59,7 @@ export async function POST(request: NextRequest) {
                .from('boards')
                .insert({
                     title: title.trim(),
-                    owner: session.user.email,
+                    owner: token.email,
                })
                .select()
                .single();
@@ -69,7 +75,7 @@ export async function POST(request: NextRequest) {
                { title: 'Done', order: 2, board_id: boardData.id },
           ];
 
-          await supabase.from('columns').insert(defaultColumns);
+          await getSupabase().from('columns').insert(defaultColumns);
 
           return NextResponse.json(boardData);
      } catch {

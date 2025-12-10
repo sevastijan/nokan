@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FaPaperclip } from "react-icons/fa";
 import { CommentFormProps } from "@/app/types/globalTypes";
-import { supabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase";
 import { toast } from "react-toastify";
 import Avatar from "../Avatar/Avatar";
 import Button from "../Button/Button";
@@ -58,14 +58,14 @@ const CommentForm = ({
           const fileName = `pasted-image-${Date.now()}.png`;
           const filePath = `task-attachments/${taskId}/${fileName}`;
 
-          const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await getSupabase().storage
             .from("attachments")
             .upload(filePath, file);
 
           if (uploadError) throw uploadError;
 
           const { data: signedUrlData, error: signedUrlError } =
-            await supabase.storage
+            await getSupabase().storage
               .from("attachments")
               .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
 

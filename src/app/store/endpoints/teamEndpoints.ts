@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { Team, TeamMember, User } from '@/app/types/globalTypes';
 
 interface RawTeamMember {
@@ -23,7 +23,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      addTeam: builder.mutation<Team, { name: string; owner_id: string; board_id?: string; members: string[] }>({
           async queryFn({ name, owner_id, board_id, members }) {
                try {
-                    const { data, error: teamErr } = await supabase
+                    const { data, error: teamErr } = await getSupabase()
                          .from('teams')
                          .insert({
                               name,
@@ -40,7 +40,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          team_id: teamId,
                          user_id: userId,
                     }));
-                    const { data: insertedMembersData, error: membersErr } = await supabase
+                    const { data: insertedMembersData, error: membersErr } = await getSupabase()
                          .from('team_members')
                          .insert(inserts)
                          .select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)');
@@ -85,9 +85,9 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      deleteTeam: builder.mutation<{ id: string }, string>({
           async queryFn(teamId) {
                try {
-                    const { error: delMembersErr } = await supabase.from('team_members').delete().eq('team_id', teamId);
+                    const { error: delMembersErr } = await getSupabase().from('team_members').delete().eq('team_id', teamId);
                     if (delMembersErr) throw delMembersErr;
-                    const { error: delTeamErr } = await supabase.from('teams').delete().eq('id', teamId);
+                    const { error: delTeamErr } = await getSupabase().from('teams').delete().eq('id', teamId);
                     if (delTeamErr) throw delTeamErr;
                     return { data: { id: teamId } };
                } catch (err) {
@@ -105,12 +105,12 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getTeams: builder.query<Team[], string>({
           async queryFn(ownerId) {
                try {
-                    const { data, error: teamsErr } = await supabase.from('teams').select('*').eq('owner_id', ownerId);
+                    const { data, error: teamsErr } = await getSupabase().from('teams').select('*').eq('owner_id', ownerId);
                     if (teamsErr) throw teamsErr;
                     const teamsRaw = data ?? [];
                     const teams: Team[] = [];
                     for (const t of teamsRaw) {
-                         const { data: membersData, error: membersErr } = await supabase
+                         const { data: membersData, error: membersErr } = await getSupabase()
                               .from('team_members')
                               .select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
                               .eq('team_id', t.id);
@@ -157,18 +157,18 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getMyTeams: builder.query<Team[], string>({
           async queryFn(userId) {
                try {
-                    const { data: ownedData, error: ownedErr } = await supabase.from('teams').select('*').eq('owner_id', userId);
+                    const { data: ownedData, error: ownedErr } = await getSupabase().from('teams').select('*').eq('owner_id', userId);
                     if (ownedErr) throw ownedErr;
                     const ownedRaw = ownedData ?? [];
 
-                    const { data: linkData, error: linkErr } = await supabase.from('team_members').select('team_id').eq('user_id', userId);
+                    const { data: linkData, error: linkErr } = await getSupabase().from('team_members').select('team_id').eq('user_id', userId);
                     if (linkErr) throw linkErr;
                     const memberLinks = linkData ?? [];
 
                     const teamIds = memberLinks.map((l) => l.team_id);
                     let memberRaw: Array<{ id: string; name: string; board_id: string | null; owner_id: string; created_at?: string }> = [];
                     if (teamIds.length > 0) {
-                         const { data: memberData, error } = await supabase.from('teams').select('*').in('id', teamIds);
+                         const { data: memberData, error } = await getSupabase().from('teams').select('*').in('id', teamIds);
                          if (error) throw error;
                          memberRaw = memberData ?? [];
                     }
@@ -179,7 +179,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
 
                     const result: Team[] = await Promise.all(
                          allTeams.map(async (t) => {
-                              const { data: membersData, error: mErr } = await supabase
+                              const { data: membersData, error: mErr } = await getSupabase()
                                    .from('team_members')
                                    .select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
                                    .eq('team_id', t.id);
@@ -228,7 +228,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getTeamMembersByBoardId: builder.query<User[], string>({
           async queryFn(boardId) {
                try {
-                    const { data: boardTeamsData, error: btErr } = await supabase.from('teams').select('id').eq('board_id', boardId);
+                    const { data: boardTeamsData, error: btErr } = await getSupabase().from('teams').select('id').eq('board_id', boardId);
                     if (btErr) throw btErr;
                     const boardTeams = boardTeamsData ?? [];
 
@@ -237,7 +237,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          return { data: [] };
                     }
 
-                    const { data: rawData, error: mErr } = await supabase
+                    const { data: rawData, error: mErr } = await getSupabase()
                          .from('team_members')
                          .select('user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
                          .in('team_id', teamIds);
@@ -287,18 +287,18 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     const updPayload: Record<string, unknown> = {};
                     if (name !== undefined) updPayload.name = name;
                     if (board_id !== undefined) updPayload.board_id = board_id;
-                    const { data, error: updErr } = await supabase.from('teams').update(updPayload).eq('id', id).select('*').single();
+                    const { data, error: updErr } = await getSupabase().from('teams').update(updPayload).eq('id', id).select('*').single();
                     if (updErr || !data) throw updErr || new Error('Failed to update team');
                     const updatedTeam = data;
 
-                    const { data: existingMembersData, error: existErr } = await supabase.from('team_members').select('*').eq('team_id', id);
+                    const { data: existingMembersData, error: existErr } = await getSupabase().from('team_members').select('*').eq('team_id', id);
                     if (existErr) throw existErr;
                     const existingMembersRaw = existingMembersData ?? [];
                     const existingUserIds = existingMembersRaw.map((r) => r.user_id);
                     const uniqueMembers = Array.from(new Set([owner_id, ...members]));
                     const toRemove = existingUserIds.filter((uid) => !uniqueMembers.includes(uid));
                     if (toRemove.length > 0) {
-                         const { error: delErr } = await supabase.from('team_members').delete().eq('team_id', id).in('user_id', toRemove);
+                         const { error: delErr } = await getSupabase().from('team_members').delete().eq('team_id', id).in('user_id', toRemove);
                          if (delErr) throw delErr;
                     }
                     const toAdd = uniqueMembers.filter((uid) => !existingUserIds.includes(uid));
@@ -307,10 +307,10 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               team_id: id,
                               user_id: userId,
                          }));
-                         const { error: insertErr } = await supabase.from('team_members').insert(inserts).select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)');
+                         const { error: insertErr } = await getSupabase().from('team_members').insert(inserts).select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)');
                          if (insertErr) throw insertErr;
                     }
-                    const { data: finalMembersData, error: finalErr } = await supabase
+                    const { data: finalMembersData, error: finalErr } = await getSupabase()
                          .from('team_members')
                          .select('*, user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
                          .eq('team_id', id);
@@ -355,7 +355,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      updateTeamBoards: builder.mutation<{ teamId: string; boardIds: string[] }, { teamId: string; boardIds: string[] }>({
           async queryFn({ teamId, boardIds }) {
                try {
-                    const { error: deleteErr } = await supabase.from('team_boards').delete().eq('team_id', teamId);
+                    const { error: deleteErr } = await getSupabase().from('team_boards').delete().eq('team_id', teamId);
                     if (deleteErr) throw deleteErr;
 
                     const inserts = boardIds.map((boardId) => ({
@@ -363,7 +363,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          board_id: boardId,
                     }));
 
-                    const { error: insertErr } = await supabase.from('team_boards').insert(inserts);
+                    const { error: insertErr } = await getSupabase().from('team_boards').insert(inserts);
 
                     if (insertErr) throw insertErr;
 

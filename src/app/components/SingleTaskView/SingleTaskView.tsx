@@ -57,10 +57,11 @@ const SingleTaskView = ({
           saveExistingTask,
           deleteTask,
           fetchTaskData,
-          uploadAttachment,
           teamMembers,
           updateTaskMutation,
           currentTaskId,
+          uploadAttachmentMutation,
+          uploadAttachment,
      } = useTaskManagement({
           taskId,
           mode,
@@ -334,18 +335,6 @@ const SingleTaskView = ({
           });
      };
 
-     const handleUploadAttachment = async (file: File) => {
-          if (!task?.id || !currentUser?.id) return null;
-          try {
-               const result = await uploadAttachment(file);
-               if (result) toast.success(`Uploaded ${file.name}`);
-               return result;
-          } catch {
-               toast.error(`Upload failed: ${file.name}`);
-               return null;
-          }
-     };
-
      const handleSave = async () => {
           if (!tempTitle.trim()) {
                toast.error('Tytuł jest wymagany');
@@ -359,11 +348,26 @@ const SingleTaskView = ({
           const success = isNewTask ? await saveNewTask() : await saveExistingTask();
 
           if (success) {
-               if (isNewTask && localFilePreviews.length > 0 && task?.id) {
+               if (isNewTask && localFilePreviews.length > 0 && currentTaskId) {
+                    console.log('🔍 Uploading attachments for new task:', currentTaskId);
+
                     for (const { file, previewUrl } of localFilePreviews) {
-                         await handleUploadAttachment(file);
-                         if (previewUrl) URL.revokeObjectURL(previewUrl);
+                         try {
+                              console.log('📤 Uploading file:', file.name);
+
+                              const result = await uploadAttachmentMutation({
+                                   file,
+                                   taskId: currentTaskId,
+                              }).unwrap();
+
+                              console.log('✅ Upload successful:', result);
+                              if (previewUrl) URL.revokeObjectURL(previewUrl);
+                         } catch (error) {
+                              console.error('❌ Upload failed:', error);
+                              toast.error(`Upload failed: ${file.name}`);
+                         }
                     }
+
                     setLocalFilePreviews([]);
                     await fetchTaskData();
                }
@@ -563,6 +567,7 @@ const SingleTaskView = ({
                                                        taskId={task.id!}
                                                        onTaskUpdate={fetchTaskData}
                                                        onAttachmentsUpdate={fetchTaskData}
+                                                       onUploadAttachment={uploadAttachment}
                                                   />
                                              </div>
                                         )}
