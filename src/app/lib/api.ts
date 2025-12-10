@@ -1,12 +1,26 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Session } from 'next-auth';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiTask, Board, Column, Priority, Task, User } from '@/app/types/globalTypes';
 
-// ---- Supabase Client ----
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// ---- Supabase Client (lazy initialization) ----
+let supabaseInstance: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+     if (!supabaseInstance) {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+          const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+          supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+     }
+     return supabaseInstance;
+}
+
+// For backward compatibility - lazy getter
+export const supabase = new Proxy({} as SupabaseClient, {
+     get(_, prop) {
+          return (getSupabase() as Record<string | symbol, unknown>)[prop];
+     },
+});
 
 // -------------------------------------
 // ------- Board CRUD / Templates ------
