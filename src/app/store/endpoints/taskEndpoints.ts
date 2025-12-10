@@ -25,6 +25,14 @@ interface RawTask {
      attachments?: unknown[];
      comments?: unknown[];
      priority_data?: unknown;
+     collaborators?: unknown[];
+}
+
+interface RawCollaborator {
+     id: string;
+     task_id: string;
+     user_id: string;
+     user?: RawUser;
 }
 
 interface RawUser {
@@ -179,7 +187,12 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
              ),
              assignee:users!tasks_user_id_fkey(id,name,email,image,role,created_at),
              creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at),
-             priority_data:priorities!tasks_priority_fkey(id,label,color)
+             priority_data:priorities!tasks_priority_fkey(id,label,color),
+             collaborators:task_collaborators(
+               id,
+               user_id,
+               user:users!task_collaborators_user_id_fkey(id,name,email,image)
+             )
             `,
                          )
                          .eq('id', taskId)
@@ -294,6 +307,21 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          });
                     }
 
+                    let collaborators: User[] = [];
+                    if (Array.isArray(rawTask.collaborators)) {
+                         collaborators = (rawTask.collaborators as RawCollaborator[])
+                              .filter((c) => c.user)
+                              .map((c) => {
+                                   const u = Array.isArray(c.user) ? c.user[0] : c.user;
+                                   return {
+                                        id: u?.id || c.user_id,
+                                        name: u?.name || '',
+                                        email: u?.email || '',
+                                        image: u?.image,
+                                   };
+                              });
+                    }
+
                     const result: TaskDetail = {
                          id: rawTask.id,
                          title: rawTask.title,
@@ -310,6 +338,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          updated_at: rawTask.updated_at ?? null,
                          images: rawTask.images ? JSON.parse(rawTask.images) : null,
                          assignee,
+                         collaborators,
                          start_date: rawTask.start_date ?? null,
                          end_date: rawTask.end_date ?? null,
                          due_date: rawTask.due_date ?? null,

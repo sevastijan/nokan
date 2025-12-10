@@ -7,7 +7,10 @@ import { FaCalendarAlt, FaClock, FaLink, FaTimes } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
 import UserSelector from './UserSelector';
+import CollaboratorsSelector from './CollaboratorsSelector';
 import PrioritySelector from './PrioritySelector';
+import { useUpdateTaskCollaboratorsMutation } from '@/app/store/apiSlice';
+import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 import StatusSelector from './StatusSelector';
 import CommentsSection from './CommentsSection';
 import AttachmentsList from './AttachmentsList';
@@ -74,11 +77,14 @@ const SingleTaskView = ({
      const overlayRef = useRef<HTMLDivElement>(null);
      const modalRef = useRef<HTMLDivElement>(null);
 
+     const [updateCollaboratorsMutation] = useUpdateTaskCollaboratorsMutation();
+
      const [localFilePreviews, setLocalFilePreviews] = useState<LocalFilePreview[]>([]);
      const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
      const [tempTitle, setTempTitle] = useState('');
      const [tempDescription, setTempDescription] = useState('');
      const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(null);
+     const [selectedCollaborators, setSelectedCollaborators] = useState<typeof teamMembers>([]);
      const [startDate, setStartDate] = useState<string>('');
      const [endDate, setEndDate] = useState<string>('');
      const [localColumnId, setLocalColumnId] = useState<string | undefined>(columnId);
@@ -90,6 +96,7 @@ const SingleTaskView = ({
                setTempTitle(task.title || '');
                setTempDescription(task.description || '');
                setSelectedAssigneeId(task.assignee?.id || task.user_id || null);
+               setSelectedCollaborators(task.collaborators || []);
                setLocalColumnId(task.column_id || columnId);
                setStartDate(task.start_date || '');
                setEndDate(task.end_date || '');
@@ -174,6 +181,61 @@ const SingleTaskView = ({
                }
           }
      };
+
+     const handleCollaboratorsChange = async (collaboratorIds: string[]) => {
+          const prevCollaboratorIds = selectedCollaborators.map((c) => c.id);
+          const newCollaborators = teamMembers.filter((u) => collaboratorIds.includes(u.id));
+          setSelectedCollaborators(newCollaborators);
+          updateTask({ collaborators: newCollaborators });
+
+          if (!isNewTask && currentTaskId && task) {
+               try {
+                    await updateCollaboratorsMutation({
+                         taskId: currentTaskId,
+                         collaboratorIds,
+                         addedBy: currentUser?.id,
+                    }).unwrap();
+
+                    // Send notifications to newly added collaborators
+                    const addedIds = collaboratorIds.filter((id) => !prevCollaboratorIds.includes(id));
+                    const removedIds = prevCollaboratorIds.filter((id) => !collaboratorIds.includes(id));
+
+                    for (const addedId of addedIds) {
+                         if (addedId !== currentUser?.id) {
+                              triggerEmailNotification({
+                                   type: 'collaborator_added',
+                                   taskId: currentTaskId,
+                                   taskTitle: task.title || 'Task',
+                                   boardId: boardId!,
+                                   recipientId: addedId,
+                                   metadata: { adderName: currentUser?.name || 'Ktoś' },
+                              });
+                         }
+                    }
+
+                    // Send notifications to removed collaborators
+                    for (const removedId of removedIds) {
+                         if (removedId !== currentUser?.id) {
+                              triggerEmailNotification({
+                                   type: 'collaborator_removed',
+                                   taskId: currentTaskId,
+                                   taskTitle: task.title || 'Task',
+                                   boardId: boardId!,
+                                   recipientId: removedId,
+                                   metadata: { removerName: currentUser?.name || 'Ktoś' },
+                              });
+                         }
+                    }
+
+                    await fetchTaskData();
+                    toast.success('Współpracownicy zaktualizowani');
+               } catch (error) {
+                    console.error('❌ Failed to update collaborators:', error);
+                    toast.error('Nie udało się zaktualizować współpracowników');
+               }
+          }
+     };
+
      const handleColumnChange = async (newColId: string) => {
           setLocalColumnId(newColId);
           await updateTask({ column_id: newColId });
@@ -398,6 +460,14 @@ const SingleTaskView = ({
                                         <PrioritySelector selectedPriority={task?.priority || null} onChange={(id) => updateTask({ priority: id })} />
                                    </div>
 
+                                   <CollaboratorsSelector
+                                        selectedCollaborators={selectedCollaborators}
+                                        availableUsers={teamMembers}
+                                        onCollaboratorsChange={handleCollaboratorsChange}
+                                        assigneeId={selectedAssigneeId}
+                                        label="Współpracownicy"
+                                   />
+
                                    <div className="hidden md:block">
                                         <ColumnSelector columns={columns} value={localColumnId} onChange={handleColumnChange} />
                                    </div>
@@ -537,6 +607,22 @@ const SingleTaskView = ({
                                              <div className="text-slate-400">Brak przypisania</div>
                                         )}
                                    </div>
+
+                                   {selectedCollaborators.length > 0 && (
+                                        <div className="mb-6">
+                                             <h3 className="text-sm text-slate-300 uppercase mb-2">Współpracownicy ({selectedCollaborators.length})</h3>
+                                             <div className="space-y-2">
+                                                  {selectedCollaborators.map((collaborator) => (
+                                                       <div key={collaborator.id} className="flex items-center bg-slate-700 p-2 rounded-lg">
+                                                            <Avatar src={getAvatarUrl(collaborator) || ''} alt={collaborator.name} size={24} className="mr-2 border border-white/20" />
+                                                            <div className="flex flex-col min-w-0">
+                                                                 <span className="text-white text-sm font-medium truncate">{collaborator.name}</span>
+                                                            </div>
+                                                       </div>
+                                                  ))}
+                                             </div>
+                                        </div>
+                                   )}
 
                                    <div className="mb-6">
                                         <h3 className="text-sm text-slate-300 uppercase mb-2">Autor zadania</h3>

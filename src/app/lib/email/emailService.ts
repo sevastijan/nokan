@@ -6,6 +6,8 @@ import {
      taskPriorityChangedTemplate,
      taskCommentedTemplate,
      taskDueDateChangedTemplate,
+     collaboratorAddedTemplate,
+     collaboratorRemovedTemplate,
 } from './templates';
 import type { EmailNotificationPayload } from '@/app/types/emailTypes';
 
@@ -32,6 +34,10 @@ function getEmailSubject(type: EmailNotificationPayload['type'], taskTitle: stri
                return `Nowy komentarz: ${taskTitle}`;
           case 'due_date_changed':
                return `Zmiana terminu: ${taskTitle}`;
+          case 'collaborator_added':
+               return `Dodano Cię jako współpracownika: ${taskTitle}`;
+          case 'collaborator_removed':
+               return `Usunięto Cię ze współpracowników: ${taskTitle}`;
           default:
                return `Powiadomienie: ${taskTitle}`;
      }
@@ -87,6 +93,22 @@ function getEmailHtml(payload: EmailNotificationPayload): string {
                     payload.taskTitle,
                     payload.metadata?.newDueDate || 'Nieznany',
                     taskUrl
+               );
+
+          case 'collaborator_added':
+               return collaboratorAddedTemplate(
+                    payload.taskTitle,
+                    boardName,
+                    taskUrl,
+                    payload.metadata?.adderName
+               );
+
+          case 'collaborator_removed':
+               return collaboratorRemovedTemplate(
+                    payload.taskTitle,
+                    boardName,
+                    taskUrl,
+                    payload.metadata?.removerName
                );
 
           default:

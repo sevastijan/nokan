@@ -27,6 +27,8 @@ interface EmailRequestBody {
           newPriority?: string;
           assignerName?: string;
           unassignerName?: string;
+          adderName?: string;
+          removerName?: string;
      };
 }
 
@@ -37,6 +39,8 @@ const preferenceKeyMap: Record<EmailNotificationType, string> = {
      priority_changed: 'email_priority_changed',
      new_comment: 'email_new_comment',
      due_date_changed: 'email_due_date_changed',
+     collaborator_added: 'email_collaborator_added',
+     collaborator_removed: 'email_collaborator_removed',
 };
 
 export async function POST(request: NextRequest) {

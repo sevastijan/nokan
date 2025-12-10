@@ -117,6 +117,15 @@ export interface Comment {
      };
 }
 
+export interface TaskCollaborator {
+     id: string;
+     task_id: string;
+     user_id: string;
+     user: User;
+     added_by?: string;
+     created_at?: string;
+}
+
 export interface Task {
      sort_order: number;
      id: string;
@@ -133,6 +142,7 @@ export interface Task {
      updated_at?: string;
      images?: string[];
      assignee?: User | null;
+     collaborators?: User[];
      start_date?: string;
      end_date?: string;
      due_date?: string;
@@ -153,6 +163,7 @@ export interface TaskDetail {
      priority_info?: Priority | null;
      user_id?: string | null;
      assignee?: User | null;
+     collaborators?: User[];
      created_by?: string | null;
      creator?: User | null;
      attachments?: Attachment[];
