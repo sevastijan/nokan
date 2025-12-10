@@ -4,8 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 import { sendEmailNotification } from '@/app/lib/email/emailService';
 import type { EmailNotificationType } from '@/app/types/emailTypes';
 
-export const dynamic = 'force-dynamic';
-
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 interface EmailRequestBody {

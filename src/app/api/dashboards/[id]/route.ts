@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { getServerSession } from 'next-auth/next';
 import { createClient } from '@supabase/supabase-js';
-
-export const dynamic = 'force-dynamic';
+import { authOptions } from '../../auth/[...nextauth]/route';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -11,9 +10,9 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env
  */
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
      try {
-          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+          const session = await getServerSession(authOptions);
 
-          if (!token?.email) {
+          if (!session?.user?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -25,7 +24,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
           const boardId = params.id;
 
-          const { data, error } = await supabase.from('boards').update({ title: title.trim() }).eq('id', boardId).eq('owner', token.email).select().single();
+          const { data, error } = await supabase.from('boards').update({ title: title.trim() }).eq('id', boardId).eq('owner', session.user.email).select().single();
 
           if (error) {
                return NextResponse.json({ error: 'Failed to update board' }, { status: 500 });
@@ -42,9 +41,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
  */
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
      try {
-          const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+          const session = await getServerSession(authOptions);
 
-          if (!token?.email) {
+          if (!session?.user?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -58,7 +57,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
           }
 
           // Delete the board itself
-          const { error: boardError } = await supabase.from('boards').delete().eq('id', boardId).eq('owner', token.email);
+          const { error: boardError } = await supabase.from('boards').delete().eq('id', boardId).eq('owner', session.user.email);
 
           if (boardError) {
                return NextResponse.json({ error: 'Failed to delete board' }, { status: 500 });
