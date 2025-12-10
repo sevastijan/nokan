@@ -3,12 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { NextRequest } from 'next/server';
 
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SERVICE_ROLE_KEY!, {
-     auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-     },
-});
+function getSupabaseAdmin() {
+     return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SERVICE_ROLE_KEY!, {
+          auth: {
+               autoRefreshToken: false,
+               persistSession: false,
+          },
+     });
+}
 
 export async function POST(request: NextRequest) {
      try {
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
           const fileName = `${Date.now()}-${file.name}`;
           const filePath = `task-attachments/${taskId}/${fileName}`;
 
-          const { error: uploadError } = await supabaseAdmin.storage.from('attachments').upload(filePath, file, {
+          const { error: uploadError } = await getSupabaseAdmin().storage.from('attachments').upload(filePath, file, {
                contentType: file.type,
                upsert: false,
           });
@@ -48,15 +50,15 @@ export async function POST(request: NextRequest) {
                return Response.json({ error: uploadError.message }, { status: 500 });
           }
 
-          const { data: userData } = await supabaseAdmin.from('users').select('id').eq('google_id', session.user.id).single();
+          const { data: userData } = await getSupabaseAdmin().from('users').select('id').eq('google_id', session.user.id).single();
 
           if (!userData) {
-               await supabaseAdmin.storage.from('attachments').remove([filePath]);
+               await getSupabaseAdmin().storage.from('attachments').remove([filePath]);
                
                return Response.json({ error: 'User not found in database' }, { status: 404 });
           }
 
-          const { data: attachment, error: dbError } = await supabaseAdmin
+          const { data: attachment, error: dbError } = await getSupabaseAdmin()
                .from('task_attachments')
                .insert({
                     task_id: taskId,
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
 
           if (dbError) {
                console.error('DB insert error:', dbError);
-               await supabaseAdmin.storage.from('attachments').remove([filePath]);
+               await getSupabaseAdmin().storage.from('attachments').remove([filePath]);
                return Response.json({ error: dbError.message }, { status: 500 });
           }
 
@@ -106,13 +108,13 @@ export async function DELETE(request: NextRequest) {
                return Response.json({ error: 'Attachment ID and file path are required' }, { status: 400 });
           }
 
-          const { error: storageError } = await supabaseAdmin.storage.from('attachments').remove([filePath]);
+          const { error: storageError } = await getSupabaseAdmin().storage.from('attachments').remove([filePath]);
 
           if (storageError) {
                console.error('Storage delete error:', storageError);
           }
 
-          const { error: dbError } = await supabaseAdmin.from('task_attachments').delete().eq('id', attachmentId);
+          const { error: dbError } = await getSupabaseAdmin().from('task_attachments').delete().eq('id', attachmentId);
 
           if (dbError) {
                console.error('DB delete error:', dbError);
@@ -150,14 +152,14 @@ export async function GET(request: NextRequest) {
                return Response.json({ error: 'File path is required' }, { status: 400 });
           }
 
-          const { data, error } = await supabaseAdmin.storage.from('attachments').download(filePath);
+          const { data, error } = await getSupabaseAdmin().storage.from('attachments').download(filePath);
 
           if (error || !data) {
                console.error('Storage download error:', error);
                return Response.json({ error: error?.message || 'File not found' }, { status: 404 });
           }
 
-          const { data: attachmentInfo } = await supabaseAdmin.from('task_attachments').select('file_name, mime_type').eq('file_path', filePath).single();
+          const { data: attachmentInfo } = await getSupabaseAdmin().from('task_attachments').select('file_name, mime_type').eq('file_path', filePath).single();
 
           const fileName = attachmentInfo?.file_name || 'download';
           const mimeType = attachmentInfo?.mime_type || 'application/octet-stream';
