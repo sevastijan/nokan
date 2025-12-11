@@ -220,6 +220,11 @@ const SingleTaskView = ({
           }
      };
 
+     const handlePriorityChange = (priorityId: string | null) => {
+          console.log('Priority change:', priorityId);
+          updateTask({ priority: priorityId });
+     };
+
      const handleColumnChange = async (newColId: string) => {
           setLocalColumnId(newColId);
           await updateTask({ column_id: newColId });
@@ -430,7 +435,7 @@ const SingleTaskView = ({
 
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <UserSelector selectedUsers={selectedAssignees} availableUsers={teamMembers} onUsersChange={handleAssigneesChange} label="Przypisani" />
-                                        <PrioritySelector selectedPriority={task?.priority || null} onChange={(id) => updateTask({ priority: id })} />
+                                        <PrioritySelector selectedPriority={task?.priority ?? null} onChange={handlePriorityChange} />
                                    </div>
 
                                    <div className="hidden md:block">
@@ -547,7 +552,7 @@ const SingleTaskView = ({
                                    )}
                               </div>
 
-                              <aside className="w-full md:w-72 bg-slate-800/70 border-t md:border-t-0 md:border in border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0 hidden md:block">
+                              <aside className="w-full md:w-72 bg-slate-800/70 border-t md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0 hidden md:block">
                                    <div className="mb-6">
                                         <h3 className="text-sm text-slate-300 uppercase mb-2">Przypisani {selectedAssignees.length > 0 && `(${selectedAssignees.length})`}</h3>
                                         {selectedAssignees.length > 0 ? (

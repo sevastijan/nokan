@@ -234,15 +234,15 @@ export type UpdatableTask = {
      status_id?: string | null;
 };
 
-export function pickUpdatable(task: TaskDetail): UpdatableTask {
-     const result: UpdatableTask = {};
+export function pickUpdatable(task: TaskDetail): Partial<TaskDetail> {
+     const result: Partial<TaskDetail> = {};
 
      if (task.column_id !== undefined) {
-          result.column_id = task.column_id ?? undefined;
+          result.column_id = task.column_id;
      }
 
      if (task.title !== undefined) {
-          result.title = task.title ?? undefined;
+          result.title = task.title;
      }
 
      if (task.order !== undefined) {
@@ -250,23 +250,23 @@ export function pickUpdatable(task: TaskDetail): UpdatableTask {
      }
 
      if (task.description !== undefined) {
-          result.description = task.description ?? undefined;
+          result.description = task.description;
      }
 
      if (task.priority !== undefined) {
-          result.priority = task.priority ?? undefined;
+          result.priority = task.priority;
      }
 
      if (task.user_id !== undefined) {
-          result.user_id = task.user_id ?? undefined;
+          result.user_id = task.user_id;
      }
 
      if (task.start_date !== undefined) {
-          result.start_date = task.start_date ?? undefined;
+          result.start_date = task.start_date;
      }
 
      if (task.end_date !== undefined) {
-          result.end_date = task.end_date ?? undefined;
+          result.end_date = task.end_date;
      }
 
      if (task.completed !== undefined) {
@@ -274,7 +274,7 @@ export function pickUpdatable(task: TaskDetail): UpdatableTask {
      }
 
      if (task.status_id !== undefined) {
-          result.status_id = task.status_id ?? undefined;
+          result.status_id = task.status_id;
      }
 
      return result;
