@@ -1,9 +1,8 @@
-// src/app/components/SingleTaskView/CommentList.tsx
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaReply, FaTrash } from 'react-icons/fa';
 import { formatDate } from '@/app/utils/helpers';
-import MarkdownContent from './MarkdownContent';
+import MarkdownContent from '@/app/components/MarkdownContent/MarkdownContent'; 
 import Avatar from '../Avatar/Avatar';
 import CommentForm from './CommentForm';
 import { Comment, CommentListProps, TaskDetail, User } from '@/app/types/globalTypes';
@@ -35,9 +34,11 @@ const CommentItem = ({ comment, depth = 0, currentUser, task, onDeleteComment, o
                               <span className="font-medium text-gray-200">{comment.author.name}</span>
                               <span className="text-gray-400">{formatDate(comment.created_at)}</span>
                          </div>
+
                          <div className="text-gray-300 text-sm mb-3">
                               <MarkdownContent content={comment.content} onImageClick={onImagePreview} />
                          </div>
+
                          <div className="flex items-center gap-4 text-xs">
                               <button onClick={() => setReplying(true)} className="text-blue-400 hover:text-blue-300 flex items-center gap-1">
                                    <FaReply className="w-3 h-3" /> Odpowiedz
@@ -101,13 +102,11 @@ const CommentList = ({
           const map = new Map<string, ExtendedComment>();
           const roots: ExtendedComment[] = [];
 
-          // Najpierw dodaj wszystkie komentarze do mapy z pustymi replies
           comments.forEach((c) => {
                const comment: ExtendedComment = { ...c, replies: [] };
                map.set(c.id, comment);
           });
 
-          // Potem buduj drzewo
           comments.forEach((c) => {
                if (c.parent_id && map.has(c.parent_id)) {
                     map.get(c.parent_id)!.replies!.push(map.get(c.id)!);
@@ -116,7 +115,6 @@ const CommentList = ({
                }
           });
 
-          // Sortuj odpowiedzi i korzenie
           const sortNode = (node: ExtendedComment) => {
                if (node.replies) {
                     node.replies.sort((a, b) => a.created_at.localeCompare(b.created_at));

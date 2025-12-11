@@ -43,9 +43,13 @@ const CommentForm = ({
           if (!textareaRef.current) return;
           const textarea = textareaRef.current;
           const cursor = textarea.selectionStart;
+
+          const mentionText = `@{${user.name}}`;
+
           const textBefore = newComment.substring(0, cursor - mentionQuery.length - 1);
           const textAfter = newComment.substring(cursor);
-          setNewComment(`${textBefore}@${user.name} ${textAfter}`);
+          setNewComment(`${textBefore}${mentionText} ${textAfter}`);
+
           setShowSuggestions(false);
           setMentionQuery('');
           setTimeout(() => textarea.focus(), 0);
@@ -85,7 +89,6 @@ const CommentForm = ({
                          const { error: uploadErr } = await getSupabase().storage.from('attachments').upload(path, file);
                          if (uploadErr) throw uploadErr;
 
-                         // Poprawione: data jest zawsze obiektem z signedUrl
                          const { data } = await getSupabase()
                               .storage.from('attachments')
                               .createSignedUrl(path, 60 * 60 * 24 * 365);
@@ -125,11 +128,13 @@ const CommentForm = ({
           setShowSuggestions(false);
      };
 
+     // POPRAWIONE: tylko jeden argument
      const handleSubmit = (e: React.FormEvent) => {
           e.preventDefault();
           if (!newComment.trim()) return;
-          // Poprawione: onAddComment przyjmuje tylko jeden argument (content)
-          onAddComment(newComment.trim());
+
+          onAddComment(newComment.trim()); // <-- tylko content
+
           setNewComment('');
           onCancelReply?.();
      };
@@ -137,7 +142,7 @@ const CommentForm = ({
      return (
           <div className="border border-gray-600 rounded-lg p-4 mb-4">
                <div className="flex items-start gap-3">
-                    <Avatar src={currentUser.image} alt={currentUser.name} />
+                    <Avatar src={currentUser.image} alt={currentUser.name} size={32} />
                     <div className="flex-1 relative">
                          {replyingTo && (
                               <div className="text-xs text-blue-400 mb-2 flex items-center justify-between">
@@ -155,16 +160,19 @@ const CommentForm = ({
                                    onKeyDown={handleKeyDown}
                                    onPaste={handlePaste}
                                    placeholder={replyingTo ? 'Napisz odpowiedź...' : 'Dodaj komentarz... (@ aby oznaczyć)'}
-                                   className="w-full min-h-[80px] p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                                   className="w-full min-h-[80px] p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                    disabled={uploading}
                               />
                               {showSuggestions && filteredSuggestions.length > 0 && (
-                                   <div className="absolute z-10 bg-gray-800 border border-gray-600 rounded mt-1 max-h-48 overflow-y-auto shadow-lg">
+                                   <div className="absolute z-10 bg-gray-800 border border-gray-600 rounded mt-1 max-h-48 overflow-y-auto shadow-lg w-full">
                                         {filteredSuggestions.map((user, i) => (
                                              <div
                                                   key={user.id}
                                                   className={`px-3 py-2 hover:bg-gray-700 cursor-pointer flex items-center gap-2 ${i === suggestionIndex ? 'bg-gray-700' : ''}`}
-                                                  onMouseDown={() => insertMention(user)}
+                                                  onMouseDown={(e) => {
+                                                       e.preventDefault();
+                                                       insertMention(user);
+                                                  }}
                                              >
                                                   <Avatar src={user.image} alt={user.name} size={20} />
                                                   <span>{user.name}</span>
@@ -172,8 +180,8 @@ const CommentForm = ({
                                         ))}
                                    </div>
                               )}
-                              {uploading && <div className="text-sm text-blue-400">Wysyłanie obrazu...</div>}
-                              <div className="flex justify-between items-center mt-2">
+                              {uploading && <div className="text-sm text-blue-400 mt-2">Wysyłanie obrazu...</div>}
+                              <div className="flex justify-between items-center mt-3">
                                    <span className="text-xs text-gray-400">Wklejaj obrazy • @ aby oznaczyć</span>
                                    <Button type="submit" variant="primary" disabled={!newComment.trim() || uploading}>
                                         {replyingTo ? 'Odpowiedz' : 'Skomentuj'}
