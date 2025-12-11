@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
      useGetTaskByIdQuery,
      useUpdateTaskMutation,
@@ -45,14 +45,12 @@ export const useTaskManagement = ({
      const [error, setError] = useState<string | null>(null);
      const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
      const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
-     const [addNotification] = useAddNotificationMutation();
 
      const prevUserId = useRef<string | null | undefined>(null);
      const prevColumnId = useRef<string | null | undefined>(null);
      const prevDueDate = useRef<string | null | undefined>(null);
      const prevPriority = useRef<string | null | undefined>(null);
 
-     // Get board data for email notifications
      const { data: boardData } = useGetBoardQuery(boardId, { skip: !boardId });
 
      const { data: fetchedTask, error: fetchError, isLoading, refetch: refetchTask } = useGetTaskByIdQuery({ taskId: currentTaskId! }, { skip: !currentTaskId });
@@ -62,16 +60,17 @@ export const useTaskManagement = ({
      const [uploadAttachmentMutation] = useUploadAttachmentMutation();
      const [removeTaskMutation] = useRemoveTaskMutation();
 
-     const { data: teamMembers = [] } = useGetTeamMembersByBoardIdQuery(boardId, {
-          skip: !boardId,
-     });
+     const { data: teamMembers = [] } = useGetTeamMembersByBoardIdQuery(boardId, { skip: !boardId });
 
-     // Cache priorities for email notifications
      const { data: priorities = [] } = useGetPrioritiesQuery();
-
      const [statuses, setStatuses] = useState<Array<{ id: string; label: string; color: string }>>(propStatuses || []);
 
-     // Fetch statuses from API
+     const [addNotification] = useAddNotificationMutation();
+
+     const normalPriorityId = useMemo(() => {
+          return priorities.find((p) => p.label.toLowerCase() === 'normal')?.id || null;
+     }, [priorities]);
+
      useEffect(() => {
           if (propStatuses && propStatuses.length > 0) {
                setStatuses(propStatuses);
@@ -88,21 +87,20 @@ export const useTaskManagement = ({
                          setStatuses(data);
                     }
                } catch (error) {
-                    console.error('❌ Error fetching statuses:', error);
+                    console.error('Error fetching statuses:', error);
                }
           };
 
           fetchStatuses();
      }, [boardId, propStatuses]);
 
-     // Load existing task
      useEffect(() => {
           if (isLoading) return;
 
           if (fetchedTask && statuses.length > 0) {
                const taskWithStatuses = {
                     ...fetchedTask,
-                    statuses: statuses,
+                    statuses,
                     status_id: fetchedTask.status_id || statuses[0]?.id || null,
                };
 
@@ -150,7 +148,7 @@ export const useTaskManagement = ({
                     description: '',
                     column_id: columnId || '',
                     board_id: boardId,
-                    priority: null,
+                    priority: normalPriorityId, // DOMYŚLNY "NORMAL" OD RAZU
                     user_id: currentUser?.id || null,
                     order: 0,
                     completed: false,
@@ -173,7 +171,8 @@ export const useTaskManagement = ({
                     attachments: [],
                     comments: [],
                     imagePreview: null,
-                    statuses: statuses,
+                    statuses,
+                    hasUnsavedChanges: false,
                };
 
                setTask(initial);
@@ -183,7 +182,7 @@ export const useTaskManagement = ({
                setPendingAttachments([]);
                prevUserId.current = null;
           }
-     }, [isNewTask, boardId, currentUser, initialStartDate, columnId, statuses, task]);
+     }, [isNewTask, boardId, currentUser, initialStartDate, columnId, statuses, task, normalPriorityId]);
 
      useEffect(() => {
           if (isNewTask && columnId) {
@@ -221,7 +220,7 @@ export const useTaskManagement = ({
                          });
                          return result;
                     } catch (error) {
-                         console.error('Upload error:', error); // ✅ DODANO więcej logów
+                         console.error('Upload error:', error);
                          setError('Failed to upload attachment');
                          return null;
                     }
@@ -230,7 +229,7 @@ export const useTaskManagement = ({
                     return null;
                }
           },
-          [currentTaskId, uploadAttachmentMutation], // ❌ USUNIĘTO: currentUser?.id
+          [currentTaskId, uploadAttachmentMutation],
      );
 
      const saveExistingTask = useCallback(async (): Promise<boolean> => {
@@ -249,7 +248,6 @@ export const useTaskManagement = ({
 
                const boardName = boardData?.title;
 
-               // Send notifications for assignment change
                if (result.user_id && result.user_id !== prevAssigned) {
                     await addNotification({
                          user_id: result.user_id,
@@ -259,7 +257,6 @@ export const useTaskManagement = ({
                          message: `You've been assigned to "${result.title}"`,
                     });
 
-                    // Send email notification
                     triggerEmailNotification({
                          type: 'task_assigned',
                          taskId: result.id,
@@ -271,7 +268,6 @@ export const useTaskManagement = ({
                     });
                }
 
-               // Send email notification to previously assigned user when unassigned
                if (prevAssigned && prevAssigned !== result.user_id && prevAssigned !== currentUser?.id) {
                     triggerEmailNotification({
                          type: 'task_unassigned',
@@ -284,7 +280,6 @@ export const useTaskManagement = ({
                     });
                }
 
-               // Send email for status/column change
                if (result.column_id && result.column_id !== prevColumn) {
                     const oldColumnName = boardData?.columns?.find((c) => c.id === prevColumn)?.title || 'Unknown';
                     const newColumnName = boardData?.columns?.find((c) => c.id === result.column_id)?.title || 'Unknown';
@@ -302,7 +297,6 @@ export const useTaskManagement = ({
                     );
                }
 
-               // Send email for due date change
                if (result.due_date !== prevDue) {
                     notifyTaskStakeholders(
                          {
@@ -317,9 +311,7 @@ export const useTaskManagement = ({
                     );
                }
 
-               // Notify creator about assignment changes (if creator is different from current user and assignees)
                if (result.user_id !== prevAssigned && task.created_by && task.created_by !== currentUser?.id) {
-                    // Don't send if creator is the new assignee or the previous assignee (they get their own notifications)
                     if (task.created_by !== result.user_id && task.created_by !== prevAssigned) {
                          const assigneeName = teamMembers.find((m) => m.id === result.user_id)?.name;
                          const assignerName = currentUser?.name || 'Ktoś';
@@ -338,7 +330,6 @@ export const useTaskManagement = ({
                     }
                }
 
-               // Send email for priority change (using cached priorities)
                if (result.priority !== prevPriorityVal) {
                     const oldPriorityLabel = priorities.find((p) => p.id === prevPriorityVal)?.label || 'Brak';
                     const newPriorityLabel = priorities.find((p) => p.id === result.priority)?.label || 'Brak';
@@ -364,7 +355,7 @@ export const useTaskManagement = ({
                onTaskUpdate?.(result);
                return true;
           } catch (err) {
-               console.error('❌ Failed to update task:', err);
+               console.error('Failed to update task:', err);
                setError('Failed to update task');
                return false;
           }
@@ -377,7 +368,7 @@ export const useTaskManagement = ({
                title: task.title,
                description: task.description,
                board_id: boardId,
-               priority: task.priority ?? null,
+               priority: task.priority ?? normalPriorityId,
                user_id: task.user_id ?? null,
                created_by: currentUser?.id ?? null,
                start_date: task.start_date ?? null,
@@ -409,7 +400,6 @@ export const useTaskManagement = ({
                          message: `You've been assigned to "${result.title}"`,
                     });
 
-                    // Send email notification for new task assignment
                     triggerEmailNotification({
                          type: 'task_assigned',
                          taskId: result.id,
@@ -424,18 +414,18 @@ export const useTaskManagement = ({
                onTaskAdded?.({
                     ...task,
                     id: result.id,
-                    column_id: columnId,
-                    board_id: boardId,
+                    column_id: result.column_id,
+                    board_id: result.board_id,
                     created_at: result.created_at ?? undefined,
                     updated_at: result.updated_at ?? undefined,
                });
                return true;
           } catch (err) {
-               console.error('❌ Failed to create task:', err);
+               console.error('Failed to create task:', err);
                setError('Failed to create task');
                return false;
           }
-     }, [task, columnId, boardId, addTaskMutation, onTaskAdded, addNotification, boardData, currentUser]);
+     }, [task, columnId, boardId, addTaskMutation, onTaskAdded, addNotification, boardData, currentUser, normalPriorityId]);
 
      const deleteTask = useCallback(async () => {
           if (!currentTaskId || !task) return;
@@ -462,13 +452,13 @@ export const useTaskManagement = ({
                     if (data && statuses.length > 0) {
                          setTask({
                               ...data,
-                              statuses: statuses,
+                              statuses,
                               status_id: data.status_id || statuses[0]?.id || null,
                          });
                          setHasUnsavedChanges(false);
                     }
                } catch (err) {
-                    console.error('❌ Failed to refetch task:', err);
+                    console.error('Failed to refetch task:', err);
                }
           }
      }, [currentTaskId, refetchTask, statuses]);
@@ -487,7 +477,6 @@ export const useTaskManagement = ({
           fetchTaskData,
           uploadAttachment,
           teamMembers,
-          fetchedTask,
           updateTaskMutation,
           currentTaskId,
           uploadAttachmentMutation,
