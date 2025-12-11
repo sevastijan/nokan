@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent, MouseEvent } from 'react';
 import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus } from 'react-icons/fi';
 import Avatar from './Avatar/Avatar';
-import { Task as TaskType, User } from '@/app/types/globalTypes';
+import { Task as TaskType } from '@/app/types/globalTypes';
 import { getPriorityStyleConfig, truncateText } from '@/app/utils/helpers';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 
@@ -25,22 +25,32 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
 
      const priorityConfig = useMemo(() => {
           if (!task.priority) return null;
-          const found = priorities.find((p) => p.id === task.priority);
+
+          const customPriority = priorities.find((p) => p.id === task.priority);
+          if (customPriority) {
+               return {
+                    label: customPriority.label,
+                    dotColor: customPriority.color,
+                    cfg: {
+                         bgColor: 'bg-slate-700',
+                         textColor: 'text-white',
+                    },
+               };
+          }
+
           const cfg = getPriorityStyleConfig(task.priority);
-          return {
-               label: found?.label || task.priority,
-               dotColor: found?.color || cfg.dotColor,
-               cfg,
-          };
+          if (cfg) {
+               return {
+                    label: task.priority.charAt(0).toUpperCase() + task.priority.slice(1),
+                    dotColor: cfg.dotColor,
+                    cfg,
+               };
+          }
+
+          return null;
      }, [task.priority, priorities]);
 
-     // Use collaborators if available, fallback to single assignee for backwards compatibility
-     const collaborators = (task.collaborators as User[]) || [];
-     const assignees = collaborators.length > 0
-          ? collaborators
-          : task.assignee
-               ? [task.assignee]
-               : [];
+     const assignees = task.collaborators || [];
      const hasAssignees = assignees.length > 0;
 
      const openMenu = useCallback(() => {
@@ -51,8 +61,6 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
      const closeMenu = useCallback(() => {
           setMenuOpen(false);
           setFocusedIndex(0);
-          // Don't focus trigger - it causes scroll jump
-          // triggerRef.current?.focus();
      }, []);
 
      const menuItems = useMemo(
@@ -195,12 +203,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                                         <div className="flex items-center -space-x-2">
                                              {assignees.slice(0, 3).map((assignee, idx) => (
                                                   <div key={assignee.id} style={{ zIndex: 3 - idx }}>
-                                                       <Avatar
-                                                            src={assignee.image || ''}
-                                                            alt={assignee.name}
-                                                            size={28}
-                                                            className="border-2 border-slate-800 ring-1 ring-white/10"
-                                                       />
+                                                       <Avatar src={assignee.image || ''} alt={assignee.name} size={28} className="border-2 border-slate-800 ring-1 ring-white/10" />
                                                   </div>
                                              ))}
                                              {assignees.length > 3 && (
