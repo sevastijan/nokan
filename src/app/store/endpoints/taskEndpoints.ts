@@ -43,16 +43,6 @@ interface RawUser {
      created_at?: string;
 }
 
-interface RawComment {
-     id: string;
-     task_id: string;
-     user_id: string;
-     content: string;
-     created_at: string;
-     updated_at?: string;
-     author?: unknown;
-}
-
 interface RawAttachment {
      id: string;
      task_id: string;
@@ -178,27 +168,40 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          .from('tasks')
                          .select(
                               `
-             *,
-             attachments:task_attachments!task_attachments_task_id_fkey(*),
-             comments:task_comments!task_comments_task_id_fkey(
-               *,
-               author:users!task_comments_user_id_fkey(id,name,email,image)
-             ),
-             creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at),
-             priority_data:priorities!tasks_priority_fkey(id,label,color),
-             collaborators:task_collaborators(
-               id,
-               user_id,
-               user:users!task_collaborators_user_id_fkey(id,name,email,image)
-             )
-            `,
+                         *,
+                         attachments:task_attachments!task_attachments_task_id_fkey(*),
+                         comments:task_comments!task_comments_task_id_fkey(
+                              id,
+                              task_id,
+                              user_id,
+                              content,
+                              created_at,
+                              updated_at,
+                              parent_id,
+                              author:users!task_comments_user_id_fkey(
+                                   id,
+                                   name,
+                                   email,
+                                   image
+                              )
+                         ),
+                         creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at),
+                         priority_data:priorities!tasks_priority_fkey(id,label,color),
+                         collaborators:task_collaborators(
+                              id,
+                              user_id,
+                              user:users!task_collaborators_user_id_fkey(id,name,email,image)
+                         )
+                    `,
                          )
                          .eq('id', taskId)
                          .single();
+
                     if (te || !taskData) throw te || new Error('Task not found');
 
                     const rawTask = taskData as RawTask;
 
+                    // === Creator ===
                     let creator: User | null = null;
                     if (Array.isArray(rawTask.creator) && rawTask.creator.length > 0) {
                          const u = rawTask.creator[0] as RawUser;
@@ -222,11 +225,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          };
                     }
 
-                    let priority_info: {
-                         id: string;
-                         label: string;
-                         color: string;
-                    } | null = null;
+                    // === Priority ===
+                    let priority_info: { id: string; label: string; color: string } | null = null;
                     if (Array.isArray(rawTask.priority_data) && rawTask.priority_data.length > 0) {
                          const p = rawTask.priority_data[0] as RawPriority;
                          priority_info = { id: p.id, label: p.label, color: p.color };
@@ -235,6 +235,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          priority_info = { id: p.id, label: p.label, color: p.color };
                     }
 
+                    // === Attachments ===
                     let attachments: Attachment[] = [];
                     if (Array.isArray(rawTask.attachments)) {
                          attachments = (rawTask.attachments as RawAttachment[]).map((a) => ({
@@ -249,28 +250,43 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          }));
                     }
 
+                    // === Comments (z parent_id – bez any!) ===
                     let comments: TaskDetail['comments'] = [];
                     if (Array.isArray(rawTask.comments)) {
-                         comments = (rawTask.comments as RawComment[]).map((c) => {
+                         comments = (
+                              rawTask.comments as Array<{
+                                   id: string;
+                                   task_id: string;
+                                   user_id: string;
+                                   content: string;
+                                   created_at: string;
+                                   updated_at?: string;
+                                   parent_id?: string | null;
+                                   author?: RawUser | RawUser[] | null;
+                              }>
+                         ).map((c) => {
                               let authorObj: RawUser | null = null;
+
                               if (Array.isArray(c.author) && c.author.length > 0) {
                                    authorObj = c.author[0] as RawUser;
-                              } else if (c.author) {
+                              } else if (c.author && !Array.isArray(c.author)) {
                                    authorObj = c.author as RawUser;
                               }
+
                               const author = authorObj
                                    ? {
                                           id: authorObj.id,
                                           name: authorObj.name,
                                           email: authorObj.email,
-                                          image: authorObj.image,
+                                          image: authorObj.image || undefined,
                                      }
                                    : {
                                           id: '',
-                                          name: '',
+                                          name: 'Nieznany użytkownik',
                                           email: '',
                                           image: undefined,
                                      };
+
                               return {
                                    id: c.id,
                                    task_id: c.task_id,
@@ -278,11 +294,13 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                    content: c.content,
                                    created_at: c.created_at,
                                    updated_at: c.updated_at,
+                                   parent_id: c.parent_id || null,
                                    author,
                               };
                          });
                     }
 
+                    // === Collaborators ===
                     let collaborators: User[] = [];
                     if (Array.isArray(rawTask.collaborators)) {
                          collaborators = (rawTask.collaborators as RawCollaborator[])

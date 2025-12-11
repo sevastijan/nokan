@@ -546,7 +546,8 @@ const SingleTaskView = ({
                                                   currentUser={currentUser}
                                                   task={task}
                                                   onRefreshComments={fetchTaskData}
-                                                  onImagePreview={(url) => updateTask({ imagePreview: url })}
+                                                  onImagePreview={(url) => setPreviewImageUrl(url)}
+                                                  teamMembers={teamMembers}
                                              />
                                         </div>
                                    )}
