@@ -20,7 +20,6 @@ interface RawTask {
      end_date?: string;
      due_date?: string;
      status_id?: string;
-     assignee?: unknown;
      creator?: unknown;
      attachments?: unknown[];
      comments?: unknown[];
@@ -101,7 +100,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          start_date: data.start_date,
                          end_date: data.end_date,
                          due_date: data.due_date,
-                         status_id: data.status_id, // ZMIANA
+                         status_id: data.status_id,
                     };
                     return { data: mapped };
                } catch (err) {
@@ -161,7 +160,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          start_date: newTask.start_date,
                          end_date: newTask.end_date,
                          due_date: newTask.due_date,
-                         status_id: newTask.status_id, // ZMIANA
+                         status_id: newTask.status_id,
                     };
                     return { data: mapped };
                } catch (err) {
@@ -185,7 +184,6 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                *,
                author:users!task_comments_user_id_fkey(id,name,email,image)
              ),
-             assignee:users!tasks_user_id_fkey(id,name,email,image,role,created_at),
              creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at),
              priority_data:priorities!tasks_priority_fkey(id,label,color),
              collaborators:task_collaborators(
@@ -200,28 +198,6 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     if (te || !taskData) throw te || new Error('Task not found');
 
                     const rawTask = taskData as RawTask;
-                    let assignee: User | null = null;
-                    if (Array.isArray(rawTask.assignee) && rawTask.assignee.length > 0) {
-                         const u = rawTask.assignee[0] as RawUser;
-                         assignee = {
-                              id: u.id,
-                              name: u.name,
-                              email: u.email,
-                              image: u.image,
-                              role: u.role as 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | undefined,
-                              created_at: u.created_at,
-                         };
-                    } else if (rawTask.assignee) {
-                         const u = rawTask.assignee as RawUser;
-                         assignee = {
-                              id: u.id,
-                              name: u.name,
-                              email: u.email,
-                              image: u.image,
-                              role: u.role as 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | undefined,
-                              created_at: u.created_at,
-                         };
-                    }
 
                     let creator: User | null = null;
                     if (Array.isArray(rawTask.creator) && rawTask.creator.length > 0) {
@@ -337,7 +313,6 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          created_at: rawTask.created_at ?? null,
                          updated_at: rawTask.updated_at ?? null,
                          images: rawTask.images ? JSON.parse(rawTask.images) : null,
-                         assignee,
                          collaborators,
                          start_date: rawTask.start_date ?? null,
                          end_date: rawTask.end_date ?? null,
@@ -421,7 +396,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               start_date: t.start_date,
                               end_date: t.end_date,
                               due_date: t.due_date,
-                              status_id: t.status_id, 
+                              status_id: t.status_id,
                          };
                     });
 
@@ -527,7 +502,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          start_date: updated.start_date,
                          end_date: updated.end_date,
                          due_date: updated.due_date,
-                         status_id: updated.status_id, // ZMIANA
+                         status_id: updated.status_id,
                     };
                     return { data: mapped };
                } catch (err) {

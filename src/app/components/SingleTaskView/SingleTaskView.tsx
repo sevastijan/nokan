@@ -95,14 +95,7 @@ const SingleTaskView = ({
           if (task) {
                setTempTitle(task.title || '');
                setTempDescription(task.description || '');
-               // Use collaborators if available, fallback to single assignee for backwards compatibility
-               const collabs = task.collaborators || [];
-               const initialAssignees = collabs.length > 0
-                    ? collabs
-                    : task.assignee
-                         ? [task.assignee]
-                         : [];
-               setSelectedAssignees(initialAssignees);
+               setSelectedAssignees(task.collaborators || []);
                setLocalColumnId(task.column_id || columnId);
                setStartDate(task.start_date || '');
                setEndDate(task.end_date || '');
@@ -140,14 +133,12 @@ const SingleTaskView = ({
           return () => document.removeEventListener('keydown', onKeyDown);
      }, [onClose]);
 
-     // Focus title input without scrolling background
      useEffect(() => {
           if (isNewTask && titleInputRef.current) {
                titleInputRef.current.focus({ preventScroll: true });
           }
      }, [isNewTask]);
 
-     // Lock body scroll when modal is open
      useEffect(() => {
           const originalOverflow = document.body.style.overflow;
           document.body.style.overflow = 'hidden';
@@ -190,7 +181,8 @@ const SingleTaskView = ({
                          boardId: boardId!,
                     }).unwrap();
 
-                    // Send notifications to newly added assignees
+                    await fetchTaskData();
+
                     const addedIds = userIds.filter((id) => !prevAssigneeIds.includes(id));
                     const removedIds = prevAssigneeIds.filter((id) => !userIds.includes(id));
 
@@ -207,7 +199,6 @@ const SingleTaskView = ({
                          }
                     }
 
-                    // Send notifications to removed assignees
                     for (const removedId of removedIds) {
                          if (removedId !== currentUser?.id) {
                               triggerEmailNotification({
@@ -221,7 +212,6 @@ const SingleTaskView = ({
                          }
                     }
 
-                    await fetchTaskData();
                     toast.success('Przypisani zaktualizowani');
                } catch (error) {
                     console.error('❌ Failed to update assignees:', error);
@@ -247,12 +237,10 @@ const SingleTaskView = ({
                     }).unwrap();
                     await fetchTaskData();
 
-                    // Send notifications for status change
                     if (oldStatusId !== newStatusId) {
                          const oldStatusLabel = task.statuses?.find((s) => s.id === oldStatusId)?.label || 'Nieznany';
                          const newStatusLabel = task.statuses?.find((s) => s.id === newStatusId)?.label || 'Nieznany';
 
-                         // Send to assignee (if different from current user)
                          if (task.user_id && task.user_id !== currentUser?.id && boardId) {
                               fetch('/api/notifications/email', {
                                    method: 'POST',
@@ -268,7 +256,6 @@ const SingleTaskView = ({
                               }).catch((e) => console.error('Email notification failed:', e));
                          }
 
-                         // Send to creator (if different from assignee and current user)
                          if (task.created_by && task.created_by !== currentUser?.id && task.created_by !== task.user_id && boardId) {
                               fetch('/api/notifications/email', {
                                    method: 'POST',
@@ -290,6 +277,7 @@ const SingleTaskView = ({
                }
           }
      };
+
      const handleDateChange = (type: 'start' | 'end', value: string) => {
           if (type === 'start') {
                setStartDate(value);
@@ -342,25 +330,19 @@ const SingleTaskView = ({
 
           if (success) {
                if (isNewTask && localFilePreviews.length > 0 && currentTaskId) {
-                    console.log('🔍 Uploading attachments for new task:', currentTaskId);
-
                     for (const { file, previewUrl } of localFilePreviews) {
                          try {
-                              console.log('📤 Uploading file:', file.name);
-
-                              const result = await uploadAttachmentMutation({
+                              await uploadAttachmentMutation({
                                    file,
                                    taskId: currentTaskId,
                               }).unwrap();
 
-                              console.log('✅ Upload successful:', result);
                               if (previewUrl) URL.revokeObjectURL(previewUrl);
                          } catch (error) {
                               console.error('❌ Upload failed:', error);
                               toast.error(`Upload failed: ${file.name}`);
                          }
                     }
-
                     setLocalFilePreviews([]);
                     await fetchTaskData();
                }
@@ -370,6 +352,7 @@ const SingleTaskView = ({
      };
 
      const handleCopyLink = () => task?.id && copyTaskUrlToClipboard(task.id);
+
      const handleDelete = async () => {
           try {
                await deleteTask();
@@ -398,8 +381,6 @@ const SingleTaskView = ({
                </div>
           );
      if (!isNewTask && !task) return null;
-
-     const currentStatus = task?.statuses?.find((s) => s.id === task.status_id);
 
      return (
           <AnimatePresence initial={false}>
@@ -448,31 +429,25 @@ const SingleTaskView = ({
                                    </div>
 
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <UserSelector
-                                             selectedUsers={selectedAssignees}
-                                             availableUsers={teamMembers}
-                                             onUsersChange={handleAssigneesChange}
-                                             label="Przypisani"
-                                        />
+                                        <UserSelector selectedUsers={selectedAssignees} availableUsers={teamMembers} onUsersChange={handleAssigneesChange} label="Przypisani" />
                                         <PrioritySelector selectedPriority={task?.priority || null} onChange={(id) => updateTask({ priority: id })} />
                                    </div>
 
                                    <div className="hidden md:block">
                                         <ColumnSelector columns={columns} value={localColumnId} onChange={handleColumnChange} />
                                    </div>
+
                                    {task?.statuses && task.statuses.length > 0 && (
                                         <div className="mt-6">
                                              <StatusSelector
                                                   statuses={task?.statuses || []}
                                                   selectedStatusId={task?.status_id || null}
                                                   onChange={handleStatusChange}
-                                                  onStatusesChange={(newStatuses) => {
-                                                       updateTask({ statuses: newStatuses });
-                                                  }}
+                                                  onStatusesChange={(newStatuses) => updateTask({ statuses: newStatuses })}
                                                   boardId={boardId}
                                                   disabled={false}
                                                   label="Status"
-                                             />{' '}
+                                             />
                                         </div>
                                    )}
 
@@ -572,21 +547,9 @@ const SingleTaskView = ({
                                    )}
                               </div>
 
-                              <aside className="w-full md:w-72 bg-slate-800/70 border-t md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0 hidden md:block">
-                                   {currentStatus && (
-                                        <div className="mb-6">
-                                             <h3 className="text-sm text-slate-300 uppercase mb-2">Status</h3>
-                                             <div className="flex items-center gap-3 p-3 bg-slate-700 rounded-lg">
-                                                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: currentStatus.color || '#94a3b8' }} />
-                                                  <span className="font-medium text-lg">{currentStatus.label}</span>
-                                             </div>
-                                        </div>
-                                   )}
-
+                              <aside className="w-full md:w-72 bg-slate-800/70 border-t md:border-t-0 md:border in border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0 hidden md:block">
                                    <div className="mb-6">
-                                        <h3 className="text-sm text-slate-300 uppercase mb-2">
-                                             Przypisani {selectedAssignees.length > 0 && `(${selectedAssignees.length})`}
-                                        </h3>
+                                        <h3 className="text-sm text-slate-300 uppercase mb-2">Przypisani {selectedAssignees.length > 0 && `(${selectedAssignees.length})`}</h3>
                                         {selectedAssignees.length > 0 ? (
                                              <div className="space-y-2">
                                                   {selectedAssignees.map((assignee) => (
