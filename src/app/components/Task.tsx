@@ -25,13 +25,29 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
 
      const priorityConfig = useMemo(() => {
           if (!task.priority) return null;
-          const found = priorities.find((p) => p.id === task.priority);
+
+          const customPriority = priorities.find((p) => p.id === task.priority);
+          if (customPriority) {
+               return {
+                    label: customPriority.label,
+                    dotColor: customPriority.color,
+                    cfg: {
+                         bgColor: 'bg-slate-700',
+                         textColor: 'text-white',
+                    },
+               };
+          }
+
           const cfg = getPriorityStyleConfig(task.priority);
-          return {
-               label: found?.label || task.priority,
-               dotColor: found?.color || cfg.dotColor,
-               cfg,
-          };
+          if (cfg) {
+               return {
+                    label: task.priority.charAt(0).toUpperCase() + task.priority.slice(1),
+                    dotColor: cfg.dotColor,
+                    cfg,
+               };
+          }
+
+          return null;
      }, [task.priority, priorities]);
 
      const assignees = task.collaborators || [];
