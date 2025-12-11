@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { CommentFormProps } from '@/app/types/globalTypes';
-import { getSupabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
 import Avatar from '../Avatar/Avatar';
 import Button from '../Button/Button';
@@ -78,30 +77,39 @@ const CommentForm = ({
                     event.preventDefault();
                     const file = item.getAsFile();
                     if (!file) continue;
-                    if (file.size > 5 * 1024 * 1024) {
-                         toast.error('Obraz za duży (max 5MB)');
+                    if (file.size > 10 * 1024 * 1024) {
+                         toast.error('Obraz za duży (max 10MB)');
                          return;
                     }
                     setUploading(true);
                     try {
-                         const fileName = `pasted-${Date.now()}.png`;
-                         const path = `task-attachments/${taskId}/${fileName}`;
-                         const { error: uploadErr } = await getSupabase().storage.from('attachments').upload(path, file);
-                         if (uploadErr) throw uploadErr;
+                         const formData = new FormData();
+                         formData.append('file', file);
+                         formData.append('taskId', taskId);
 
-                         const { data } = await getSupabase()
-                              .storage.from('attachments')
-                              .createSignedUrl(path, 60 * 60 * 24 * 365);
-                         if (!data?.signedUrl) throw new Error('Nie udało się uzyskać URL obrazu');
+                         const response = await fetch('/api/upload-comment-image', {
+                              method: 'POST',
+                              body: formData,
+                         });
 
-                         const markdown = `![${fileName}](${data.signedUrl})`;
+                         if (!response.ok) {
+                              const err = await response.json();
+                              throw new Error(err.error || 'Upload failed');
+                         }
+
+                         const { image } = await response.json();
+
+                         if (!image?.signedUrl) throw new Error('Nie udało się uzyskać URL obrazu');
+
+                         const markdown = `![${image.file_name}](${image.signedUrl})`;
                          const textarea = event.target as HTMLTextAreaElement;
                          const start = textarea.selectionStart;
                          setNewComment(newComment.substring(0, start) + markdown + newComment.substring(start));
+
                          toast.success('Obraz wklejony');
                     } catch (error) {
                          console.error('Błąd wklejania obrazu:', error);
-                         toast.error('Błąd wklejania obrazu');
+                         toast.error('Nie udało się wkleić obrazu');
                     } finally {
                          setUploading(false);
                     }
@@ -128,12 +136,11 @@ const CommentForm = ({
           setShowSuggestions(false);
      };
 
-     // POPRAWIONE: tylko jeden argument
      const handleSubmit = (e: React.FormEvent) => {
           e.preventDefault();
           if (!newComment.trim()) return;
 
-          onAddComment(newComment.trim()); // <-- tylko content
+          onAddComment(newComment.trim());
 
           setNewComment('');
           onCancelReply?.();
