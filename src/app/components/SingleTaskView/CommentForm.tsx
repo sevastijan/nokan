@@ -1,152 +1,204 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { FaPaperclip } from "react-icons/fa";
-import { CommentFormProps } from "@/app/types/globalTypes";
-import { getSupabase } from "../../lib/supabase";
-import { toast } from "react-toastify";
-import Avatar from "../Avatar/Avatar";
-import Button from "../Button/Button";
+import { useState, useRef, useEffect } from 'react';
+import { FaTimes } from 'react-icons/fa';
+import { CommentFormProps } from '@/app/types/globalTypes';
+import { toast } from 'react-toastify';
+import Avatar from '../Avatar/Avatar';
+import Button from '../Button/Button';
 
-/**
- * CommentForm component allows users to add text comments
- * and paste images directly into the textarea, which are then uploaded to Supabase.
- */
+interface MentionUser {
+     id: string;
+     name: string;
+     image?: string | null;
+}
+
 const CommentForm = ({
-  currentUser,
-  taskId,
-  onAddComment,
-  onRefreshTask,
-}: CommentFormProps) => {
-  const [newComment, setNewComment] = useState("");
-  const [uploading, setUploading] = useState(false);
+     currentUser,
+     taskId,
+     onAddComment,
+     replyingTo,
+     onCancelReply,
+     teamMembers = [],
+}: CommentFormProps & {
+     replyingTo?: { id: string; authorName: string };
+     onCancelReply?: () => void;
+     teamMembers: MentionUser[];
+}) => {
+     const [newComment, setNewComment] = useState('');
+     const [uploading, setUploading] = useState(false);
+     const [showSuggestions, setShowSuggestions] = useState(false);
+     const [suggestionIndex, setSuggestionIndex] = useState(0);
+     const [mentionQuery, setMentionQuery] = useState('');
+     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  /**
-   * Handles form submission to add a new comment.
-   */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
+     const filteredSuggestions = teamMembers.filter((u) => u.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6);
 
-    await onAddComment(newComment);
-    setNewComment("");
-  };
-
-  /**
-   * Handles pasted images in the textarea by uploading them to Supabase
-   * and inserting a markdown image reference at the cursor position.
-   */
-  const handlePaste = async (
-    event: React.ClipboardEvent<HTMLTextAreaElement>
-  ) => {
-    const items = event.clipboardData.items;
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-
-      if (item.type.indexOf("image") !== -1) {
-        event.preventDefault();
-        const file = item.getAsFile();
-        if (!file) continue;
-
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error("Image too large. Maximum size is 5MB.");
-          return;
-        }
-
-        setUploading(true);
-        try {
-          const fileName = `pasted-image-${Date.now()}.png`;
-          const filePath = `task-attachments/${taskId}/${fileName}`;
-
-          const { error: uploadError } = await getSupabase().storage
-            .from("attachments")
-            .upload(filePath, file);
-
-          if (uploadError) throw uploadError;
-
-          const { data: signedUrlData, error: signedUrlError } =
-            await getSupabase().storage
-              .from("attachments")
-              .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
-
-          if (signedUrlError) throw signedUrlError;
-
-          // Insert markdown image syntax at cursor position
-          const textarea = event.target as HTMLTextAreaElement;
-          const cursorPosition = textarea.selectionStart;
-          const textBefore = newComment.substring(0, cursorPosition);
-          const textAfter = newComment.substring(cursorPosition);
-
-          const imageMarkdown = `![${fileName}](${signedUrlData.signedUrl})`;
-          setNewComment(textBefore + imageMarkdown + textAfter);
-
-          if (onRefreshTask) {
-            await onRefreshTask();
+     useEffect(() => {
+          if (showSuggestions && filteredSuggestions.length > 0) {
+               setSuggestionIndex(0);
           }
+     }, [showSuggestions, filteredSuggestions]);
 
-          toast.success("Image uploaded successfully");
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          toast.error("Error uploading image");
-        } finally {
-          setUploading(false);
-        }
-      }
-    }
-  };
+     const insertMention = (user: MentionUser) => {
+          if (!textareaRef.current) return;
+          const textarea = textareaRef.current;
+          const cursor = textarea.selectionStart;
 
-  return (
-    <div className="border border-gray-600 rounded-lg p-4 mb-6">
-      <div className="flex items-start gap-3">
-        {currentUser && (
-          <motion.div className="w-8 h-8 rounded-full flex-shrink-0">
-            <Avatar
-              src={currentUser.image || undefined}
-              alt={currentUser.name}
-            />
-          </motion.div>
-        )}
-        <div className="flex-1">
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              onPaste={handlePaste}
-              placeholder="Add a comment..."
-              className="w-full min-h-[80px] p-3 border border-gray-600 rounded-lg resize-vertical bg-gray-700 text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={uploading}
-            />
-            {uploading && (
-              <div className="text-sm text-blue-400">Uploading image...</div>
-            )}
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-gray-400">
-                Tip: Paste images directly into the comment
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  icon={<FaPaperclip />}
-                  className="text-gray-400 hover:text-gray-200 p-2"
-                />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  disabled={!newComment.trim() || uploading}
-                  loading={uploading}
-                >
-                  Comment
-                </Button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
+          const mentionText = `@{${user.name}}`;
+
+          const textBefore = newComment.substring(0, cursor - mentionQuery.length - 1);
+          const textAfter = newComment.substring(cursor);
+          setNewComment(`${textBefore}${mentionText} ${textAfter}`);
+
+          setShowSuggestions(false);
+          setMentionQuery('');
+          setTimeout(() => textarea.focus(), 0);
+     };
+
+     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+          if (!showSuggestions) return;
+          if (e.key === 'ArrowDown') {
+               e.preventDefault();
+               setSuggestionIndex((i) => (i + 1) % filteredSuggestions.length);
+          } else if (e.key === 'ArrowUp') {
+               e.preventDefault();
+               setSuggestionIndex((i) => (i - 1 + filteredSuggestions.length) % filteredSuggestions.length);
+          } else if (e.key === 'Enter' || e.key === 'Tab') {
+               e.preventDefault();
+               insertMention(filteredSuggestions[suggestionIndex]);
+          } else if (e.key === 'Escape') {
+               setShowSuggestions(false);
+          }
+     };
+
+     const handlePaste = async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+          const items = event.clipboardData.items;
+          for (const item of items) {
+               if (item.type.includes('image')) {
+                    event.preventDefault();
+                    const file = item.getAsFile();
+                    if (!file) continue;
+                    if (file.size > 10 * 1024 * 1024) {
+                         toast.error('Obraz za duży (max 10MB)');
+                         return;
+                    }
+                    setUploading(true);
+                    try {
+                         const formData = new FormData();
+                         formData.append('file', file);
+                         formData.append('taskId', taskId);
+
+                         const response = await fetch('/api/upload-comment-image', {
+                              method: 'POST',
+                              body: formData,
+                         });
+
+                         if (!response.ok) {
+                              const err = await response.json();
+                              throw new Error(err.error || 'Upload failed');
+                         }
+
+                         const { image } = await response.json();
+
+                         if (!image?.signedUrl) throw new Error('Nie udało się uzyskać URL obrazu');
+
+                         const markdown = `![${image.file_name}](${image.signedUrl})`;
+                         const textarea = event.target as HTMLTextAreaElement;
+                         const start = textarea.selectionStart;
+                         setNewComment(newComment.substring(0, start) + markdown + newComment.substring(start));
+
+                         toast.success('Obraz wklejony');
+                    } catch (error) {
+                         console.error('Błąd wklejania obrazu:', error);
+                         toast.error('Nie udało się wkleić obrazu');
+                    } finally {
+                         setUploading(false);
+                    }
+               }
+          }
+     };
+
+     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+          const value = e.target.value;
+          setNewComment(value);
+
+          const cursor = e.target.selectionStart;
+          const textBefore = value.substring(0, cursor);
+          const lastAt = textBefore.lastIndexOf('@');
+
+          if (lastAt >= 0 && (lastAt === 0 || /\s/.test(textBefore[lastAt - 1]))) {
+               const query = textBefore.substring(lastAt + 1);
+               if (query && !/\s/.test(query)) {
+                    setMentionQuery(query);
+                    setShowSuggestions(true);
+                    return;
+               }
+          }
+          setShowSuggestions(false);
+     };
+
+     const handleSubmit = (e: React.FormEvent) => {
+          e.preventDefault();
+          if (!newComment.trim()) return;
+
+          onAddComment(newComment.trim());
+
+          setNewComment('');
+          onCancelReply?.();
+     };
+
+     return (
+          <div className="border border-gray-600 rounded-lg p-4 mb-4">
+               <div className="flex items-start gap-3">
+                    <Avatar src={currentUser.image} alt={currentUser.name} size={32} />
+                    <div className="flex-1 relative">
+                         {replyingTo && (
+                              <div className="text-xs text-blue-400 mb-2 flex items-center justify-between">
+                                   <span>Odpowiedź dla {replyingTo.authorName}</span>
+                                   <button onClick={onCancelReply} className="text-gray-400 hover:text-gray-200">
+                                        <FaTimes />
+                                   </button>
+                              </div>
+                         )}
+                         <form onSubmit={handleSubmit}>
+                              <textarea
+                                   ref={textareaRef}
+                                   value={newComment}
+                                   onChange={handleChange}
+                                   onKeyDown={handleKeyDown}
+                                   onPaste={handlePaste}
+                                   placeholder={replyingTo ? 'Napisz odpowiedź...' : 'Dodaj komentarz... (@ aby oznaczyć)'}
+                                   className="w-full min-h-[80px] p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   disabled={uploading}
+                              />
+                              {showSuggestions && filteredSuggestions.length > 0 && (
+                                   <div className="absolute z-10 bg-gray-800 border border-gray-600 rounded mt-1 max-h-48 overflow-y-auto shadow-lg w-full">
+                                        {filteredSuggestions.map((user, i) => (
+                                             <div
+                                                  key={user.id}
+                                                  className={`px-3 py-2 hover:bg-gray-700 cursor-pointer flex items-center gap-2 ${i === suggestionIndex ? 'bg-gray-700' : ''}`}
+                                                  onMouseDown={(e) => {
+                                                       e.preventDefault();
+                                                       insertMention(user);
+                                                  }}
+                                             >
+                                                  <Avatar src={user.image} alt={user.name} size={20} />
+                                                  <span>{user.name}</span>
+                                             </div>
+                                        ))}
+                                   </div>
+                              )}
+                              {uploading && <div className="text-sm text-blue-400 mt-2">Wysyłanie obrazu...</div>}
+                              <div className="flex justify-between items-center mt-3">
+                                   <span className="text-xs text-gray-400">Wklejaj obrazy • @ aby oznaczyć</span>
+                                   <Button type="submit" variant="primary" disabled={!newComment.trim() || uploading}>
+                                        {replyingTo ? 'Odpowiedz' : 'Skomentuj'}
+                                   </Button>
+                              </div>
+                         </form>
+                    </div>
+               </div>
+          </div>
+     );
 };
 
 export default CommentForm;

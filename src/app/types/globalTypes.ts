@@ -118,12 +118,15 @@ export interface Comment {
      content: string;
      created_at: string;
      updated_at?: string;
+     parent_id?: string | null;
+     mentions?: { user_id: string; name: string }[];
      author: {
           id: string;
           name: string;
           email: string;
-          image?: string;
+          image?: string | null;
      };
+     replies?: Comment[];
 }
 
 export interface TaskCollaborator {
@@ -447,6 +450,7 @@ export interface CommentsSectionProps {
      task: TaskDetail | null;
      onRefreshComments: () => Promise<void>;
      onImagePreview: (url: string) => void;
+     teamMembers: User[];
 }
 
 export interface CommentFormProps {

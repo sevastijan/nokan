@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 let supabaseInstance: SupabaseClient | null = null;
 
@@ -17,6 +17,6 @@ export function getSupabase(): SupabaseClient {
 // For backward compatibility - lazy getter
 export const supabase = new Proxy({} as SupabaseClient, {
      get(_, prop) {
-          return (getSupabase() as Record<string | symbol, unknown>)[prop];
+          return (getSupabase() as unknown as Record<string | symbol, unknown>)[prop];
      },
 });
