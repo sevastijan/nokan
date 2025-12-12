@@ -16,6 +16,12 @@ interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      currentUserId?: string;
 }
 
+// Helper function to get display values
+const getDisplayData = (user: { name?: string | null; image?: string | null; custom_name?: string | null; custom_image?: string | null; email?: string }) => ({
+     name: user.custom_name || user.name || user.email || 'User',
+     image: user.custom_image || user.image,
+});
+
 const BoardHeader = ({
      boardTitle,
      onTitleChange,
@@ -265,22 +271,25 @@ const BoardHeader = ({
                                                        <p className="text-slate-500 text-sm mb-6">Brak członków</p>
                                                   ) : (
                                                        <ul className="space-y-2 mb-6">
-                                                            {boardMembers.map((user) => (
-                                                                 <li key={user.id} className="flex items-center justify-between bg-slate-700/50 px-3 py-2 rounded-lg">
-                                                                      <div className="flex items-center gap-3">
-                                                                           <Avatar src={user.image || ''} alt={user.name} size={28} />
-                                                                           <div>
-                                                                                <div className="text-white text-sm font-medium">{user.name}</div>
-                                                                                <div className="text-slate-400 text-xs">{user.email}</div>
+                                                            {boardMembers.map((user) => {
+                                                                 const userDisplay = getDisplayData(user);
+                                                                 return (
+                                                                      <li key={user.id} className="flex items-center justify-between bg-slate-700/50 px-3 py-2 rounded-lg">
+                                                                           <div className="flex items-center gap-3">
+                                                                                <Avatar src={userDisplay.image || ''} alt={userDisplay.name} size={28} />
+                                                                                <div>
+                                                                                     <div className="text-white text-sm font-medium">{userDisplay.name}</div>
+                                                                                     <div className="text-slate-400 text-xs">{user.email}</div>
+                                                                                </div>
                                                                            </div>
-                                                                      </div>
-                                                                      {user.id !== currentUserId && (
-                                                                           <button onClick={() => handleRemoveUser(user.id)} className="text-red-400 hover:text-red-300 transition">
-                                                                                <FiX className="w-5 h-5" />
-                                                                           </button>
-                                                                      )}
-                                                                 </li>
-                                                            ))}
+                                                                           {user.id !== currentUserId && (
+                                                                                <button onClick={() => handleRemoveUser(user.id)} className="text-red-400 hover:text-red-300 transition">
+                                                                                     <FiX className="w-5 h-5" />
+                                                                                </button>
+                                                                           )}
+                                                                      </li>
+                                                                 );
+                                                            })}
                                                        </ul>
                                                   )}
 

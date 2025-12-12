@@ -94,31 +94,56 @@ export function truncateText(text: string, maxWords: number = 12): string {
 }
 
 /**
- * Generates avatar URL from a user's initials or image.
- * If user.image is a full URL, returns it directly.
- * If user.image is a non-empty string (assumed Supabase storage path under bucket "avatars"), attempts to get public URL.
- * Otherwise falls back to generating via ui-avatars.com based on initials.
+ * Returns display name with priority: custom_name > name > 'User'
  */
-export function getAvatarUrl(user: User | null): string | null {
+export function getDisplayName(user: { name?: string | null; custom_name?: string | null } | null): string {
+     if (!user) return 'User';
+     return user.custom_name || user.name || 'User';
+}
+
+/**
+ * Generates avatar URL from a user's custom_image or image.
+ * Priority: custom_image > image > initials-based fallback
+ */
+export function getAvatarUrl(user: { image?: string | null; custom_image?: string | null; name?: string | null; custom_name?: string | null } | null): string | null {
      if (!user) return null;
-     // If image is a full URL, return as is.
-     if (user.image && (user.image.startsWith('http://') || user.image.startsWith('https://'))) {
-          return user.image;
+
+     if (user.custom_image) {
+          // If custom_image is a full URL, return as is
+          if (user.custom_image.startsWith('http://') || user.custom_image.startsWith('https://')) {
+               return user.custom_image;
+          }
+          // If custom_image is a Supabase bucket path
+          try {
+               const { data } = getSupabase().storage.from('avatars').getPublicUrl(user.custom_image);
+               if (data && data.publicUrl) {
+                    return data.publicUrl;
+               }
+          } catch (e) {
+               console.error('Error obtaining custom_image URL:', e);
+          }
      }
-     // If image is a non-empty string but not URL, treat as Supabase bucket path.
+
      if (user.image) {
+          // If image is a full URL, return as is
+          if (user.image.startsWith('http://') || user.image.startsWith('https://')) {
+               return user.image;
+          }
+          // If image is a Supabase bucket path
           try {
                const { data } = getSupabase().storage.from('avatars').getPublicUrl(user.image);
                if (data && data.publicUrl) {
                     return data.publicUrl;
                }
           } catch (e) {
-               console.error('Error obtaining public avatar URL:', e);
+               console.error('Error obtaining image URL:', e);
           }
      }
-     // Fallback: generate via initials
-     if (user.name) {
-          const initials = user.name
+
+     // ✅ PRIORITY 3: Fallback to initials-based avatar
+     const displayName = user.custom_name || user.name;
+     if (displayName) {
+          const initials = displayName
                .split(' ')
                .map((n) => n[0] || '')
                .join('')
@@ -126,6 +151,7 @@ export function getAvatarUrl(user: User | null): string | null {
                .slice(0, 2);
           return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=374151&color=ffffff&size=128`;
      }
+
      return null;
 }
 

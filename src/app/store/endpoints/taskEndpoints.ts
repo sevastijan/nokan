@@ -41,6 +41,8 @@ interface RawUser {
      image?: string;
      role?: string;
      created_at?: string;
+     custom_name?: string;
+     custom_image?: string;
 }
 
 interface RawAttachment {
@@ -168,31 +170,33 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          .from('tasks')
                          .select(
                               `
-                         *,
-                         attachments:task_attachments!task_attachments_task_id_fkey(*),
-                         comments:task_comments!task_comments_task_id_fkey(
+                    *,
+                    attachments:task_attachments!task_attachments_task_id_fkey(*),
+                    comments:task_comments!task_comments_task_id_fkey(
+                         id,
+                         task_id,
+                         user_id,
+                         content,
+                         created_at,
+                         updated_at,
+                         parent_id,
+                         author:users!task_comments_user_id_fkey(
                               id,
-                              task_id,
-                              user_id,
-                              content,
-                              created_at,
-                              updated_at,
-                              parent_id,
-                              author:users!task_comments_user_id_fkey(
-                                   id,
-                                   name,
-                                   email,
-                                   image
-                              )
-                         ),
-                         creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at),
-                         priority_data:priorities!tasks_priority_fkey(id,label,color),
-                         collaborators:task_collaborators(
-                              id,
-                              user_id,
-                              user:users!task_collaborators_user_id_fkey(id,name,email,image)
+                              name,
+                              email,
+                              image,
+                              custom_name,
+                              custom_image
                          )
-                    `,
+                    ),
+                    creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at,custom_name,custom_image),
+                    priority_data:priorities!tasks_priority_fkey(id,label,color),
+                    collaborators:task_collaborators(
+                         id,
+                         user_id,
+                         user:users!task_collaborators_user_id_fkey(id,name,email,image,custom_name,custom_image)
+                    )
+               `,
                          )
                          .eq('id', taskId)
                          .single();
@@ -210,6 +214,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               name: u.name,
                               email: u.email,
                               image: u.image,
+                              custom_name: u.custom_name,
+                              custom_image: u.custom_image,
                               role: u.role as 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | undefined,
                               created_at: u.created_at,
                          };
@@ -220,6 +226,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               name: u.name,
                               email: u.email,
                               image: u.image,
+                              custom_name: u.custom_name,
+                              custom_image: u.custom_image,
                               role: u.role as 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | undefined,
                               created_at: u.created_at,
                          };
@@ -279,6 +287,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                           name: authorObj.name,
                                           email: authorObj.email,
                                           image: authorObj.image || undefined,
+                                          custom_name: authorObj.custom_name,
+                                          custom_image: authorObj.custom_image,
                                      }
                                    : {
                                           id: '',
@@ -312,6 +322,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                         name: u?.name || '',
                                         email: u?.email || '',
                                         image: u?.image,
+                                        custom_name: u?.custom_name,
+                                        custom_image: u?.custom_image,
                                    };
                               });
                     }
@@ -379,7 +391,9 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                 id,
                 name,
                 email,
-                image
+                image,
+                custom_name,
+                custom_image
               )
             `,
                          )
@@ -394,6 +408,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                      name: (t as unknown as { users: RawUser }).users.name,
                                      email: (t as unknown as { users: RawUser }).users.email,
                                      image: (t as unknown as { users: RawUser }).users.image,
+                                     custom_name: (t as unknown as { users: RawUser }).users.custom_name,
+                                     custom_image: (t as unknown as { users: RawUser }).users.custom_image,
                                 }
                               : undefined;
 

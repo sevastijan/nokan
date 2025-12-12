@@ -17,6 +17,8 @@ interface TaskProps {
 }
 
 const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] }: TaskProps) => {
+     console.log('🔍 Task collaborators:', task.collaborators);
+     console.log('🔍 First collaborator:', task.collaborators?.[0]);
      const [menuOpen, setMenuOpen] = useState(false);
      const [focusedIndex, setFocusedIndex] = useState(0);
 

@@ -309,7 +309,7 @@ export const getTasksWithDates = async (boardId: string): Promise<ApiTask[]> => 
       user_id,
       status,
       images,
-      assignee:user_id(id, name, email, image),
+      assignee:user_id(id, name, email, image, custom_name, custom_image),
       priority:priority(id, label, color)
     `,
           )
@@ -365,7 +365,7 @@ export const getTaskById = async (taskId: string): Promise<ApiTask | null> => {
       status,
       images,
       priority_data:priority(id, label, color),
-      assignee:user_id(id, name, email, image), 
+      assignee:user_id(id, name, email, image, custom_name, custom_image),
       attachments,
       comments(*)
     `,

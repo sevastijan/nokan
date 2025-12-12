@@ -7,9 +7,17 @@ import Button from '../Button/Button';
 
 interface MentionUser {
      id: string;
-     name: string;
+     name?: string | null;
      image?: string | null;
+     custom_name?: string | null;
+     custom_image?: string | null;
 }
+
+// Helper function to get display values
+const getDisplayData = (user: MentionUser) => ({
+     name: user.custom_name || user.name || 'User',
+     image: user.custom_image || user.image,
+});
 
 const CommentForm = ({
      currentUser,
@@ -30,7 +38,15 @@ const CommentForm = ({
      const [mentionQuery, setMentionQuery] = useState('');
      const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-     const filteredSuggestions = teamMembers.filter((u) => u.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6);
+     // Get current user display data
+     const currentUserDisplay = getDisplayData(currentUser);
+
+     const filteredSuggestions = teamMembers
+          .filter((u) => {
+               const displayName = getDisplayData(u).name;
+               return displayName.toLowerCase().includes(mentionQuery.toLowerCase());
+          })
+          .slice(0, 6);
 
      useEffect(() => {
           if (showSuggestions && filteredSuggestions.length > 0) {
@@ -43,7 +59,8 @@ const CommentForm = ({
           const textarea = textareaRef.current;
           const cursor = textarea.selectionStart;
 
-          const mentionText = `@{${user.name}}`;
+          const displayName = getDisplayData(user).name;
+          const mentionText = `@{${displayName}}`;
 
           const textBefore = newComment.substring(0, cursor - mentionQuery.length - 1);
           const textAfter = newComment.substring(cursor);
@@ -149,7 +166,7 @@ const CommentForm = ({
      return (
           <div className="border border-gray-600 rounded-lg p-4 mb-4">
                <div className="flex items-start gap-3">
-                    <Avatar src={currentUser.image} alt={currentUser.name} size={32} />
+                    <Avatar src={currentUserDisplay.image} alt={currentUserDisplay.name} size={32} />
                     <div className="flex-1 relative">
                          {replyingTo && (
                               <div className="text-xs text-blue-400 mb-2 flex items-center justify-between">
@@ -172,19 +189,22 @@ const CommentForm = ({
                               />
                               {showSuggestions && filteredSuggestions.length > 0 && (
                                    <div className="absolute z-10 bg-gray-800 border border-gray-600 rounded mt-1 max-h-48 overflow-y-auto shadow-lg w-full">
-                                        {filteredSuggestions.map((user, i) => (
-                                             <div
-                                                  key={user.id}
-                                                  className={`px-3 py-2 hover:bg-gray-700 cursor-pointer flex items-center gap-2 ${i === suggestionIndex ? 'bg-gray-700' : ''}`}
-                                                  onMouseDown={(e) => {
-                                                       e.preventDefault();
-                                                       insertMention(user);
-                                                  }}
-                                             >
-                                                  <Avatar src={user.image} alt={user.name} size={20} />
-                                                  <span>{user.name}</span>
-                                             </div>
-                                        ))}
+                                        {filteredSuggestions.map((user, i) => {
+                                             const userDisplay = getDisplayData(user);
+                                             return (
+                                                  <div
+                                                       key={user.id}
+                                                       className={`px-3 py-2 hover:bg-gray-700 cursor-pointer flex items-center gap-2 ${i === suggestionIndex ? 'bg-gray-700' : ''}`}
+                                                       onMouseDown={(e) => {
+                                                            e.preventDefault();
+                                                            insertMention(user);
+                                                       }}
+                                                  >
+                                                       <Avatar src={userDisplay.image} alt={userDisplay.name} size={20} />
+                                                       <span>{userDisplay.name}</span>
+                                                  </div>
+                                             );
+                                        })}
                                    </div>
                               )}
                               {uploading && <div className="text-sm text-blue-400 mt-2">Wysyłanie obrazu...</div>}
