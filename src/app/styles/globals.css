@@ -1,25 +1,26 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
+html,
+body {
+     margin: 0;
+     padding: 0;
+     height: 100%;
 }
 
-/* Drag & drop optymalizacje */
+/* Drag & drop optimizations */
 [data-rbd-drag-handle-draggable-id] {
-  touch-action: none !important;
+     touch-action: none !important;
 }
 .dragging-active {
-  overflow: hidden !important;
+     overflow: hidden !important;
 }
-[data-rbd-drag-handle-draggable-id][style*="transform"] {
-  z-index: 9999 !important;
+[data-rbd-drag-handle-draggable-id][style*='transform'] {
+     z-index: 9999 !important;
 }
 
 /* Glass card helper */
 .glass-card {
-  @apply bg-slate-800
+     @apply bg-slate-800
          border border-slate-700
          rounded-lg
          shadow-sm hover:shadow-md
@@ -28,57 +29,109 @@ html, body {
 
 /* Custom Toast Styles */
 .Toastify__toast-container {
-    z-index: 9999 !important;
-  }
-  
-  /* Toast styling */
-  .Toastify__toast {
-    background: #1e293b !important;
-    border-radius: 0.5rem !important;
-    color: #e2e8f0 !important;
-    border: 1px solid #334155;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-size: 1rem;
-    min-height: 56px;
-    padding: 16px 20px !important;
-    display: flex;
-    align-items: center;
-  }
+     z-index: 9999 !important;
+}
 
-  /* Success - left border */
-  .Toastify__toast--success {
-    border-left: 5px solid #4ade80 !important;
-  }
+/* Toast styling - minimalistic */
+.Toastify__toast {
+     background: #1e293b !important;
+     border-radius: 0.5rem !important;
+     color: #e2e8f0 !important;
+     border: 0.0625rem solid #334155;
+     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
+     font-size: 1rem;
+     min-height: 3.5rem;
+     padding: 1rem 1.25rem !important;
+     display: flex;
+     align-items: center;
+}
 
-  /* Error - left border */
-  .Toastify__toast--error {
-    border-left: 5px solid #f87171 !important;
-  }
+/* Success - left border */
+.Toastify__toast--success {
+     border-left: 0.3125rem solid #4ade80 !important;
+}
 
-  /* Info - left border */
-  .Toastify__toast--info {
-    border-left: 5px solid #7dd3fc !important;
-  }
+/* Error - left border */
+.Toastify__toast--error {
+     border-left: 0.3125rem solid #f87171 !important;
+}
 
-  /* Warning - left border */
-  .Toastify__toast--warning {
-    border-left: 5px solid #fbbf24 !important;
-  }
-  
-  .Toastify__close-button {
-    color: #cbd5e1 !important;
-    opacity: 0.7 !important;
-    transition: opacity 0.2s;
-  }
-  .Toastify__close-button:hover {
-    opacity: 1 !important;
-  }
+/* Info - left border */
+.Toastify__toast--info {
+     border-left: 0.3125rem solid #7dd3fc !important;
+}
 
-  /* Progress bar style */
-  .Toastify__progress-bar {
-    background: #64748b !important;
-    height: 3px !important;
-    border-radius: 2px !important;
-    bottom: 0 !important;
-  }
-  
+/* Warning - left border */
+.Toastify__toast--warning {
+     border-left: 0.3125rem solid #fbbf24 !important;
+}
+
+/* Close button */
+.Toastify__close-button {
+     color: #cbd5e1 !important;
+     opacity: 0.7 !important;
+     transition: opacity 0.2s;
+}
+.Toastify__close-button:hover {
+     opacity: 1 !important;
+}
+
+/* Progress bar style */
+.Toastify__progress-bar {
+     background: #64748b !important;
+     height: 0.1875rem !important;
+     border-radius: 0.125rem !important;
+     bottom: 0 !important;
+}
+
+/* Firefox scrollbar */
+* {
+     scrollbar-width: thin;
+     scrollbar-color: #4a5568 #1e293b;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+     width: 0.75rem;
+     height: 0.75rem;
+}
+
+*::-webkit-scrollbar-track {
+     background: #1e293b;
+     border-radius: 0.625rem;
+}
+
+*::-webkit-scrollbar-thumb {
+     background: #4a5568;
+     border-radius: 0.625rem;
+     border: 0.125rem solid #1e293b;
+     transition: background 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+     background: #5a6678;
+}
+
+*::-webkit-scrollbar-thumb:active {
+     background: #6b7688;
+}
+
+/* Thin scrollbar variant */
+.thin-scrollbar::-webkit-scrollbar {
+     width: 0.5rem;
+     height: 0.5rem;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+     border: 0.0625rem solid #1e293b;
+}
+
+/* Accent scrollbar variant */
+.accent-scrollbar::-webkit-scrollbar-thumb {
+     background: linear-gradient(180deg, #4a5568 0%, #3b4252 100%);
+     border: 0.125rem solid #1e293b;
+}
+
+.accent-scrollbar::-webkit-scrollbar-thumb:hover {
+     background: linear-gradient(180deg, #5a6678 0%, #4b5262 100%);
+}
