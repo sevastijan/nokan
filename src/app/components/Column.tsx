@@ -116,9 +116,7 @@ const Column = ({
                                    overflowAnchor: 'none',
                               }}
                          >
-                              {localTasks.length === 0 && !snapshot.isDraggingOver && (
-                                   <div className="flex items-center justify-center h-32 text-slate-400/50 text-sm">Brak zadań</div>
-                              )}
+                              {localTasks.length === 0 && !snapshot.isDraggingOver && <div className="flex items-center justify-center h-32 text-slate-400/50 text-sm">Brak zadań</div>}
 
                               {localTasks.map((task, idx) => (
                                    <Draggable key={task.id} draggableId={task.id} index={idx}>

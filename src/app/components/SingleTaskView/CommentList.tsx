@@ -2,36 +2,63 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaReply, FaTrash } from 'react-icons/fa';
 import { formatDate } from '@/app/utils/helpers';
-import MarkdownContent from '@/app/components/MarkdownContent/MarkdownContent'; 
+import MarkdownContent from '@/app/components/MarkdownContent/MarkdownContent';
 import Avatar from '../Avatar/Avatar';
 import CommentForm from './CommentForm';
 import { Comment, CommentListProps, TaskDetail, User } from '@/app/types/globalTypes';
 
-interface ExtendedComment extends Comment {
+interface ExtendedAuthor {
+     id: string;
+     name: string | null | undefined;
+     email: string;
+     image?: string | null;
+     custom_name?: string | null;
+     custom_image?: string | null;
+}
+
+interface ExtendedComment extends Omit<Comment, 'author' | 'replies'> {
+     author: ExtendedAuthor;
      replies?: ExtendedComment[];
 }
+
+interface ExtendedUser extends User {
+     custom_name?: string | null;
+     custom_image?: string | null;
+}
+
+const getDisplayData = (user: { name: string | null | undefined; image?: string | null; custom_name?: string | null; custom_image?: string | null }) => ({
+     name: user.custom_name || user.name || 'User',
+     image: user.custom_image || user.image,
+});
 
 interface CommentItemProps {
      comment: ExtendedComment;
      depth?: number;
-     currentUser: User;
+     currentUser: ExtendedUser;
      task: TaskDetail;
      onDeleteComment: (id: string) => Promise<void>;
      onImagePreview: (url: string) => void;
      onAddComment: (content: string, parentId?: string) => Promise<void>;
-     teamMembers: User[];
+     teamMembers: ExtendedUser[];
 }
 
 const CommentItem = ({ comment, depth = 0, currentUser, task, onDeleteComment, onImagePreview, onAddComment, teamMembers }: CommentItemProps) => {
      const [replying, setReplying] = useState(false);
 
+     const authorDisplay = getDisplayData({
+          name: comment.author.name,
+          image: comment.author.image,
+          custom_name: comment.author.custom_name,
+          custom_image: comment.author.custom_image,
+     });
+
      return (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`${depth > 0 ? 'ml-10 border-l-2 border-gray-600 pl-4' : 'bg-gray-700/50 rounded-lg p-4 mb-4'}`}>
                <div className="flex items-start gap-3">
-                    <Avatar src={comment.author.image || undefined} alt={comment.author.name} size={32} />
+                    <Avatar src={authorDisplay.image || undefined} alt={authorDisplay.name} size={32} />
                     <div className="flex-1">
                          <div className="flex items-center gap-2 text-xs mb-1">
-                              <span className="font-medium text-gray-200">{comment.author.name}</span>
+                              <span className="font-medium text-gray-200">{authorDisplay.name}</span>
                               <span className="text-gray-400">{formatDate(comment.created_at)}</span>
                          </div>
 
@@ -56,7 +83,7 @@ const CommentItem = ({ comment, depth = 0, currentUser, task, onDeleteComment, o
                                         currentUser={currentUser}
                                         taskId={task.id!}
                                         onAddComment={(content) => onAddComment(content, comment.id)}
-                                        replyingTo={{ id: comment.id, authorName: comment.author.name }}
+                                        replyingTo={{ id: comment.id, authorName: authorDisplay.name }}
                                         onCancelReply={() => setReplying(false)}
                                         teamMembers={teamMembers}
                                    />
@@ -95,7 +122,7 @@ const CommentList = ({
      teamMembers,
      onAddComment,
 }: CommentListProps & {
-     teamMembers: User[];
+     teamMembers: ExtendedUser[];
      onAddComment: (content: string, parentId?: string) => Promise<void>;
 }) => {
      const buildTree = (comments: Comment[]): ExtendedComment[] => {
@@ -103,7 +130,19 @@ const CommentList = ({
           const roots: ExtendedComment[] = [];
 
           comments.forEach((c) => {
-               const comment: ExtendedComment = { ...c, replies: [] };
+               const authorWithCustoms = c.author as ExtendedAuthor;
+               const comment: ExtendedComment = {
+                    ...c,
+                    replies: [],
+                    author: {
+                         id: c.author.id,
+                         name: c.author.name,
+                         email: c.author.email,
+                         image: c.author.image,
+                         custom_name: authorWithCustoms.custom_name,
+                         custom_image: authorWithCustoms.custom_image,
+                    },
+               };
                map.set(c.id, comment);
           });
 
@@ -139,7 +178,7 @@ const CommentList = ({
                     <CommentItem
                          key={comment.id}
                          comment={comment}
-                         currentUser={currentUser}
+                         currentUser={currentUser as ExtendedUser}
                          task={task}
                          onDeleteComment={onDeleteComment}
                          onImagePreview={onImagePreview}

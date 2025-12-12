@@ -7,11 +7,21 @@ import { UserRole } from '../apiSlice';
 const VALID_ROLES: UserRole[] = ['OWNER', 'PROJECT_MANAGER', 'MEMBER', 'CLIENT'];
 const DEFAULT_ROLE: UserRole = 'MEMBER';
 
+/**
+ * Type guard to validate if a value is a valid UserRole
+ * @param role - The role to validate
+ * @returns True if the role is valid
+ */
 const isValidUserRole = (role: unknown): role is UserRole => {
      return typeof role === 'string' && VALID_ROLES.includes(role as UserRole);
 };
 
 export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
+     /**
+      * Gets or creates the current user from the session
+      * @param session - Next-auth session object
+      * @returns User object with all fields including custom_name and custom_image
+      */
      getCurrentUser: builder.query<User, Session>({
           async queryFn(session) {
                try {
@@ -26,6 +36,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          };
                     }
 
+                    // Try to fetch existing user
                     const { data: existingUser, error: fetchError } = await getSupabase().from('users').select('*').eq('email', email).maybeSingle();
 
                     if (fetchError) {
@@ -36,6 +47,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          return { data: existingUser as User };
                     }
 
+                    // Create new user if doesn't exist
                     const { data: createdUser, error: createError } = await getSupabase()
                          .from('users')
                          .insert({
@@ -69,10 +81,15 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           },
           providesTags: (_result, _error, session) => {
                const email = session?.user?.email;
-               return email ? [{ type: 'UserRole', id: email }] : [];
+               return email ? [{ type: 'UserRole', id: email }, 'CurrentUser'] : ['CurrentUser'];
           },
      }),
 
+     /**
+      * Gets the role of a user by their email
+      * @param email - User's email address
+      * @returns UserRole enum value
+      */
      getUserRole: builder.query<UserRole, string>({
           async queryFn(email) {
                try {
@@ -115,10 +132,14 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           },
      }),
 
+     /**
+      * Gets all users in the system
+      * @returns Array of User objects
+      */
      getAllUsers: builder.query<User[], void>({
           async queryFn() {
                try {
-                    const { data, error } = await getSupabase().from('users').select('id, name, email, image');
+                    const { data, error } = await getSupabase().from('users').select('id, name, email, image, custom_name, custom_image');
 
                     if (error) throw error;
 
@@ -127,6 +148,8 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          name: u.name,
                          email: u.email,
                          image: u.image || undefined,
+                         custom_name: u.custom_name || undefined,
+                         custom_image: u.custom_image || undefined,
                     }));
 
                     return { data: users };
@@ -139,6 +162,11 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           providesTags: (result) => (result ? [...result.map((user) => ({ type: 'User' as const, id: user.id })), { type: 'User' as const, id: 'LIST' }] : [{ type: 'User' as const, id: 'LIST' }]),
      }),
 
+     /**
+      * Updates a user's role
+      * @param userId - The user's ID
+      * @param role - The new role to assign
+      */
      setUserRole: builder.mutation<void, { userId: string; role: UserRole }>({
           async queryFn({ userId, role }) {
                if (!isValidUserRole(role)) {
@@ -147,6 +175,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
 
                try {
                     const { error } = await getSupabase().from('users').update({ role }).eq('id', userId);
+
                     if (error) throw error;
                     return { data: undefined };
                } catch (error) {
@@ -156,5 +185,67 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                }
           },
           invalidatesTags: [{ type: 'User' as const, id: 'LIST' }],
+     }),
+
+     /**
+      * Updates user's custom name and/or custom avatar
+      * Custom values take priority over OAuth values in the UI
+      * @param userId - The user's ID
+      * @param updates - Object containing custom_name and/or custom_image
+      * @returns Updated User object
+      */
+     updateUser: builder.mutation<User, { userId: string; updates: { custom_name?: string | null; custom_image?: string | null } }>({
+          async queryFn({ userId, updates }) {
+               try {
+                    // Validate that at least one field is being updated
+                    if (updates.custom_name === undefined && updates.custom_image === undefined) {
+                         return {
+                              error: {
+                                   status: 'VALIDATION_ERROR',
+                                   error: 'At least one field must be provided for update',
+                              },
+                         };
+                    }
+
+                    // Prepare the update object with only non-undefined fields
+                    const updateData: { custom_name?: string | null; custom_image?: string | null } = {};
+
+                    if (updates.custom_name !== undefined) {
+                         const trimmed = updates.custom_name?.trim();
+                         updateData.custom_name = trimmed || null;
+                    }
+
+                    if (updates.custom_image !== undefined) {
+                         updateData.custom_image = updates.custom_image || null;
+                    }
+
+                    const { data, error } = await getSupabase().from('users').update(updateData).eq('id', userId).select('*').single();
+
+                    if (error) {
+                         throw new Error(`Failed to update user: ${error.message}`);
+                    }
+
+                    if (!data) {
+                         throw new Error('Update returned no data');
+                    }
+
+                    return { data: data as User };
+               } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    console.error('[updateUser] Error:', errorMessage);
+
+                    return {
+                         error: {
+                              status: 'UPDATE_ERROR',
+                              error: errorMessage,
+                         },
+                    };
+               }
+          },
+          invalidatesTags: (result, error, { userId }) => [
+               { type: 'User', id: userId },
+               { type: 'User', id: 'LIST' },
+               'CurrentUser', // Invalidate getCurrentUser to refresh the cache
+          ],
      }),
 });

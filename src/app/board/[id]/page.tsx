@@ -340,7 +340,10 @@ export default function Page() {
      board.columns.forEach((col) => {
           (col.tasks || []).forEach((task) => {
                if (task.assignee?.id && !assigneesList.find((a) => a.id === task.assignee!.id)) {
-                    assigneesList.push({ id: task.assignee!.id, name: task.assignee!.name });
+                    assigneesList.push({
+                         id: task.assignee!.id,
+                         name: task.assignee!.name || task.assignee!.email || 'User',
+                    });
                }
           });
      });

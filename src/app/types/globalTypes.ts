@@ -12,17 +12,18 @@ export interface Status {
 }
 
 // === Core Types ===
+export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | 'CLIENT';
 
 export interface User {
      id: string;
-     name: string;
      email: string;
-     image?: string;
-     role?: 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | 'CLIENT';
+     name?: string | null;
+     custom_name?: string | null;
+     image?: string | null;
+     custom_image?: string | null;
+     role?: UserRole;
      created_at?: string;
 }
-
-export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | 'CLIENT';
 
 export interface Priority {
      id: string;

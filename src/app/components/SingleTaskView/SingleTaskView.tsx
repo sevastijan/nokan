@@ -628,7 +628,7 @@ const SingleTaskView = ({
                                              <div className="space-y-2">
                                                   {selectedAssignees.map((assignee) => (
                                                        <div key={assignee.id} className="flex items-center bg-slate-700 p-2 rounded-lg">
-                                                            <Avatar src={getAvatarUrl(assignee) || ''} alt={assignee.name} size={28} className="mr-2 border border-white/20" />
+                                                            <Avatar src={getAvatarUrl(assignee) || ''} alt={assignee.name || 'User'} size={28} className="mr-2 border border-white/20" />{' '}
                                                             <div className="flex flex-col min-w-0">
                                                                  <span className="text-white text-sm font-medium truncate">{assignee.name}</span>
                                                                  <span className="text-slate-400 text-xs truncate">{assignee.email}</span>
@@ -645,7 +645,7 @@ const SingleTaskView = ({
                                         <h3 className="text-sm text-slate-300 uppercase mb-2">Autor zadania</h3>
                                         {task?.creator ? (
                                              <div className="flex items-center bg-slate-700 p-3 rounded-lg">
-                                                  <Avatar src={getAvatarUrl(task.creator) || ''} alt={task.creator.name} size={32} className="mr-3 border-2 border-white/20" />
+                                                  <Avatar src={getAvatarUrl(task.creator) || ''} alt={task.creator.name || 'User'} size={32} className="mr-3 border-2 border-white/20" />
                                                   <div className="flex flex-col min-w-0">
                                                        <span className="text-white font-medium truncate">{task.creator.name}</span>
                                                        <span className="text-slate-400 text-sm truncate">{task.creator.email}</span>

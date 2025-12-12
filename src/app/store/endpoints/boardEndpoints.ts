@@ -133,11 +133,11 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
           *,
           tasks:tasks(
             *,
-            assignee:users!tasks_user_id_fkey(id, name, email, image),
+            assignee:users!tasks_user_id_fkey(id, name, email, image, custom_name, custom_image),
             collaborators:task_collaborators(
               id,
               user_id,
-              user:users!task_collaborators_user_id_fkey(id, name, email, image)
+              user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
             )
           )
         `,
@@ -151,13 +151,17 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          const rawTasks: RawTask[] = Array.isArray(c.tasks) ? (c.tasks as RawTask[]) : [];
                          rawTasks.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
                          const mappedTasks: Task[] = rawTasks.map((t) => {
-                              const rawAssignee = Array.isArray(t.assignee) ? (t.assignee[0] as RawAssignee) : (t.assignee as RawAssignee);
+                              const rawAssignee = Array.isArray(t.assignee)
+                                   ? (t.assignee[0] as RawAssignee & { custom_name?: string; custom_image?: string })
+                                   : (t.assignee as RawAssignee & { custom_name?: string; custom_image?: string });
                               const assigneeObj: User | undefined = rawAssignee
                                    ? {
                                           id: rawAssignee.id,
                                           name: rawAssignee.name,
                                           email: rawAssignee.email,
                                           image: rawAssignee.image,
+                                          custom_name: rawAssignee.custom_name,
+                                          custom_image: rawAssignee.custom_image,
                                      }
                                    : undefined;
 
@@ -171,6 +175,8 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                              name: u?.name || '',
                                              email: u?.email || '',
                                              image: u?.image,
+                                             custom_name: (u as { custom_name?: string })?.custom_name,
+                                             custom_image: (u as { custom_image?: string })?.custom_image,
                                         };
                                    });
 
@@ -501,7 +507,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     const { data: membersRaw, error: membersError } = await getSupabase()
                          .from('team_members')
-                         .select('user:users!team_members_user_id_fkey(id, name, email, image)')
+                         .select('user:users!team_members_user_id_fkey(id, name, email, image, custom_name, custom_image)')
                          .eq('team_id', team.id);
 
                     if (membersError) throw membersError;
@@ -515,6 +521,8 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                               name: userData.name,
                               email: userData.email,
                               image: userData.image || undefined,
+                              custom_name: userData.custom_name || undefined,
+                              custom_image: userData.custom_image || undefined,
                               role: undefined,
                               created_at: undefined,
                          } as User;

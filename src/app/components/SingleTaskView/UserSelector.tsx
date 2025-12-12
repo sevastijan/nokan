@@ -63,6 +63,11 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
 
      const isSelected = (userId: string) => selectedUsers.some((u) => u.id === userId);
 
+     // Helper functions to get display values
+     const getDisplayName = (user: { name?: string | null; custom_name?: string | null }) => user.custom_name || user.name || 'Unknown User';
+
+     const getDisplayAvatar = (user: { image?: string | null; custom_image?: string | null }) => user.custom_image || user.image || '';
+
      return (
           <div className="relative w-full" ref={selectRef}>
                <span className="block text-sm font-medium text-slate-300 mb-2">{label}</span>
@@ -93,8 +98,8 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                               ) : (
                                    selectedUsers.map((user) => (
                                         <span key={user.id} className="inline-flex items-center gap-1.5 bg-slate-600/50 px-2 py-1 rounded-lg text-sm">
-                                             <Avatar src={user.image || ''} alt={user.name} size={18} />
-                                             <span className="text-white truncate max-w-[100px]">{user.name}</span>
+                                             <Avatar src={getDisplayAvatar(user)} alt={getDisplayName(user)} size={18} />
+                                             <span className="text-white truncate max-w-[100px]">{getDisplayName(user)}</span>
                                              <button type="button" onClick={(e) => handleRemoveUser(user.id, e)} className="text-slate-400 hover:text-red-400 transition-colors">
                                                   <FiX className="w-3.5 h-3.5" />
                                              </button>
@@ -140,9 +145,9 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                                                   >
                                                        {selected && <FiCheck className="w-3.5 h-3.5 text-white" />}
                                                   </div>
-                                                  <Avatar src={user.image || ''} alt={user.name} size={24} />
+                                                  <Avatar src={getDisplayAvatar(user)} alt={getDisplayName(user)} size={24} />
                                                   <div className="flex flex-col truncate min-w-0">
-                                                       <span className="truncate">{user.name}</span>
+                                                       <span className="truncate">{getDisplayName(user)}</span>
                                                        <span className="text-slate-400 text-xs truncate">{user.email}</span>
                                                   </div>
                                              </li>
