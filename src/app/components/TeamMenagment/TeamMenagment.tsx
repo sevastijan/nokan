@@ -1,16 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FiArrowLeft, FiPlus, FiUsers } from 'react-icons/fi';
-import { supabase } from '../../lib/supabase';
 import DOMPurify from 'dompurify';
 import TeamList from './TeamList';
 import TeamFormModal from './TeamFormModal';
-import { User, Team } from '@/app/types/globalTypes';
+import { Team } from '@/app/types/globalTypes';
 
-import { useGetCurrentUserQuery, useGetMyBoardsQuery, useGetMyTeamsQuery, useAddTeamMutation, useUpdateTeamMutation, useDeleteTeamMutation, useUpdateTeamBoardsMutation } from '@/app/store/apiSlice';
+import {
+     useGetCurrentUserQuery,
+     useGetMyBoardsQuery,
+     useGetMyTeamsQuery,
+     useAddTeamMutation,
+     useUpdateTeamMutation,
+     useDeleteTeamMutation,
+     useUpdateTeamBoardsMutation,
+     useGetAllUsersQuery,
+} from '@/app/store/apiSlice';
 
 const TeamManagement = () => {
      const { data: session, status } = useSession();
@@ -33,18 +41,8 @@ const TeamManagement = () => {
      const [deleteTeam] = useDeleteTeamMutation();
      const [updateTeamBoards] = useUpdateTeamBoardsMutation();
 
-     // list of all users
-     const [availableUsers, setAvailableUsers] = useState<User[]>([]);
-     useEffect(() => {
-          if (status === 'authenticated' && currentUser) {
-               supabase
-                    .from('users')
-                    .select('id, name, email, image')
-                    .then(({ data, error }) => {
-                         if (!error && data) setAvailableUsers(data);
-                    });
-          }
-     }, [status, currentUser]);
+     // Fetch all users using RTK Query (includes custom_name and custom_image)
+     const { data: availableUsers = [] } = useGetAllUsersQuery();
 
      // modal state
      const [isModalOpen, setIsModalOpen] = useState(false);
