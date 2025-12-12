@@ -17,11 +17,11 @@ import { Column as ColumnType, User, Priority, AssigneeOption } from '@/app/type
 import BoardHeader from '@/app/components/Board/BoardHeader';
 
 export default function Page() {
-     const { id } = useParams();
+     const params = useParams();
      const router = useRouter();
      const { data: session, status } = useSession();
 
-     const boardId = Array.isArray(id) ? id[0] : id;
+     const boardId = Array.isArray(params.id) ? params.id[0] : params.id;
 
      const {
           board,
@@ -130,7 +130,6 @@ export default function Page() {
                     y: columnsContainerRef.current.scrollTop,
                };
           }
-          // Save each column's vertical scroll position
           columnScrollRefs.current.forEach((el, colId) => {
                if (el) {
                     savedColumnScrollPositions.current.set(colId, el.scrollTop);
@@ -146,7 +145,6 @@ export default function Page() {
           }
      }, []);
 
-     // Restore scroll immediately and also after delays to catch late DOM changes
      useLayoutEffect(() => {
           const restoreScroll = () => {
                if (savedScrollPosition.current && columnsContainerRef.current) {
@@ -163,15 +161,10 @@ export default function Page() {
                }
           };
 
-          // Restore immediately
           restoreScroll();
 
-          // Restore multiple times to catch framer-motion animations
-          const timeouts = [0, 50, 100, 200].map((delay) =>
-               setTimeout(restoreScroll, delay)
-          );
+          const timeouts = [0, 50, 100, 200].map((delay) => setTimeout(restoreScroll, delay));
 
-          // Clear saved positions after all restores
           const clearTimeout2 = setTimeout(() => {
                savedScrollPosition.current = null;
                savedColumnScrollPositions.current.clear();
@@ -196,9 +189,7 @@ export default function Page() {
                     setLocalColumns(cols);
 
                     try {
-                         const updates = await Promise.all(
-                              cols.map((c, i) => getSupabase().from('columns').update({ order: i }).eq('id', c.id))
-                         );
+                         const updates = await Promise.all(cols.map((c, i) => getSupabase().from('columns').update({ order: i }).eq('id', c.id)));
                          const hasError = updates.some((u) => u.error);
                          if (hasError) {
                               console.error('Error updating column order:', updates.find((u) => u.error)?.error);
@@ -220,39 +211,29 @@ export default function Page() {
                     const [movedTask] = srcTasks.splice(source.index, 1);
                     if (!movedTask) return;
 
-                    console.log('[DnD] Moving task:', movedTask.id, movedTask.title);
-                    console.log('[DnD] From:', srcCol.id, 'index', source.index, '-> To:', dstCol.id, 'index', destination.index);
-
                     const isSameColumn = srcCol.id === dstCol.id;
                     const dstTasks = isSameColumn ? srcTasks : Array.from(dstCol.tasks || []);
                     dstTasks.splice(destination.index, 0, movedTask);
 
-                    // Update local state
                     if (isSameColumn) {
                          const updatedTasks = dstTasks.map((t, i) => ({ ...t, order: i, sort_order: i }));
                          const srcColIndex = cols.findIndex((c) => c.id === srcCol.id);
                          cols[srcColIndex] = { ...cols[srcColIndex], tasks: updatedTasks };
                          setLocalColumns([...cols]);
 
-                         // Update DB - only destination tasks (same column)
                          try {
-                              console.log('[DnD] Saving to DB:', updatedTasks.map(t => ({ id: t.id, sort_order: t.order })));
-                              const updates = await Promise.all(
-                                   updatedTasks.map((t) =>
-                                        getSupabase().from('tasks').update({ sort_order: t.order }).eq('id', t.id)
-                                   )
-                              );
+                              const updates = await Promise.all(updatedTasks.map((t) => getSupabase().from('tasks').update({ sort_order: t.order }).eq('id', t.id)));
                               const errors = updates.filter((u) => u.error);
                               if (errors.length > 0) {
-                                   console.error('[DnD] DB errors:', errors.map(e => e.error));
-                              } else {
-                                   console.log('[DnD] DB update successful');
+                                   console.error(
+                                        '[DnD] DB errors:',
+                                        errors.map((e) => e.error),
+                                   );
                               }
                          } catch (err) {
                               console.error('[DnD] Exception:', err);
                          }
                     } else {
-                         // Different columns - update both
                          const updatedSrc = srcTasks.map((t, i) => ({ ...t, order: i, sort_order: i }));
                          const updatedDst = dstTasks.map((t, i) => ({
                               ...t,
@@ -268,31 +249,23 @@ export default function Page() {
                          setLocalColumns([...cols]);
 
                          try {
-                              console.log('[DnD] Saving src to DB:', updatedSrc.map(t => ({ id: t.id, sort_order: t.order })));
-                              console.log('[DnD] Saving dst to DB:', updatedDst.map(t => ({ id: t.id, sort_order: t.order, column_id: t.column_id })));
                               const updates = await Promise.all([
-                                   ...updatedSrc.map((t) =>
-                                        getSupabase().from('tasks').update({ sort_order: t.order }).eq('id', t.id)
-                                   ),
-                                   ...updatedDst.map((t) =>
-                                        getSupabase().from('tasks').update({ sort_order: t.order, column_id: t.column_id }).eq('id', t.id)
-                                   ),
+                                   ...updatedSrc.map((t) => getSupabase().from('tasks').update({ sort_order: t.order }).eq('id', t.id)),
+                                   ...updatedDst.map((t) => getSupabase().from('tasks').update({ sort_order: t.order, column_id: t.column_id }).eq('id', t.id)),
                               ]);
                               const errors = updates.filter((u) => u.error);
                               if (errors.length > 0) {
-                                   console.error('[DnD] DB errors:', errors.map(e => e.error));
-                              } else {
-                                   console.log('[DnD] DB update successful');
+                                   console.error(
+                                        '[DnD] DB errors:',
+                                        errors.map((e) => e.error),
+                                   );
                               }
                          } catch (err) {
                               console.error('[DnD] Exception:', err);
                          }
                     }
 
-                    // Wait a bit for DB to settle, then refetch
-                    console.log('[DnD] Refetching board data...');
                     await fetchBoardData();
-                    console.log('[DnD] Done');
                }
           },
           [localColumns, fetchBoardData],
@@ -363,8 +336,6 @@ export default function Page() {
           setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: c.tasks.filter((t) => t.id !== taskId) } : c)));
      };
 
-     const totalTasks = board.columns.reduce((sum, col) => sum + (col.tasks?.length || 0), 0);
-
      const assigneesList: AssigneeOption[] = [];
      board.columns.forEach((col) => {
           (col.tasks || []).forEach((task) => {
@@ -410,7 +381,6 @@ export default function Page() {
                     onAddColumn={openAddColumn}
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
-                    totalTasks={totalTasks}
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
                     priorities={priorities.map((p) => ({ id: p.id, label: p.label, color: p.color }))}
@@ -419,6 +389,8 @@ export default function Page() {
                     assignees={assigneesList}
                     filterAssignee={filterAssignee}
                     onFilterAssigneeChange={setFilterAssignee}
+                    boardId={boardId}
+                    currentUserId={currentUser?.id}
                />
 
                {viewMode === 'columns' ? (
@@ -428,7 +400,7 @@ export default function Page() {
                                    <div
                                         ref={(el) => {
                                              provider.innerRef(el);
-                                             (columnsContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                                             columnsContainerRef.current = el;
                                         }}
                                         {...provider.droppableProps}
                                         className="flex-1 flex overflow-x-auto gap-4 p-4 md:p-6 scrollbar-thin scrollbar-thumb-slate-700"
@@ -437,12 +409,7 @@ export default function Page() {
                                         {filteredColumns.map((col, idx) => (
                                              <Draggable key={col.id} draggableId={col.id} index={idx}>
                                                   {(prov) => (
-                                                       <div
-                                                            ref={prov.innerRef}
-                                                            {...prov.draggableProps}
-                                                            style={prov.draggableProps.style}
-                                                            className="flex-shrink-0 w-[88vw] sm:w-80 lg:w-96"
-                                                       >
+                                                       <div ref={prov.innerRef} {...prov.draggableProps} style={prov.draggableProps.style} className="flex-shrink-0 w-[88vw] sm:w-80 lg:w-96">
                                                             <Column
                                                                  column={col}
                                                                  colIndex={idx}

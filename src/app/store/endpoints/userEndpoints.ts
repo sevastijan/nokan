@@ -33,7 +33,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     }
 
                     if (existingUser) {
-                         return { data: existingUser };
+                         return { data: existingUser as User };
                     }
 
                     const { data: createdUser, error: createError } = await getSupabase()
@@ -54,7 +54,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          throw new Error('User creation returned no data');
                     }
 
-                    return { data: createdUser };
+                    return { data: createdUser as User };
                } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
                     console.error('[getCurrentUser] Error:', errorMessage);
@@ -118,16 +118,25 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getAllUsers: builder.query<User[], void>({
           async queryFn() {
                try {
-                    const { data, error } = await getSupabase().from('users').select('*');
+                    const { data, error } = await getSupabase().from('users').select('id, name, email, image');
+
                     if (error) throw error;
-                    return { data: data || [] };
+
+                    const users: User[] = (data || []).map((u) => ({
+                         id: u.id,
+                         name: u.name,
+                         email: u.email,
+                         image: u.image || undefined,
+                    }));
+
+                    return { data: users };
                } catch (error) {
                     const message = error instanceof Error ? error.message : 'Unknown error';
                     console.error('[getAllUsers] Error:', message);
                     return { error: { status: 'FETCH_ERROR', error: message } };
                }
           },
-          providesTags: (result) => (result ? [...result.map((user) => ({ type: 'User', id: user.id } as const)), { type: 'User', id: 'LIST' }] : [{ type: 'User', id: 'LIST' }]),
+          providesTags: (result) => (result ? [...result.map((user) => ({ type: 'User' as const, id: user.id })), { type: 'User' as const, id: 'LIST' }] : [{ type: 'User' as const, id: 'LIST' }]),
      }),
 
      setUserRole: builder.mutation<void, { userId: string; role: UserRole }>({
@@ -146,6 +155,6 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     return { error: { status: 'UPDATE_ERROR', error: message } };
                }
           },
-          invalidatesTags: [{ type: 'User', id: 'LIST' }],
+          invalidatesTags: [{ type: 'User' as const, id: 'LIST' }],
      }),
 });

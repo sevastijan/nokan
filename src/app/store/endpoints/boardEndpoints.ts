@@ -446,6 +446,126 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
           providesTags: (_result, _error, teamId) => [{ type: 'Team', id: teamId }],
      }),
 
+     addMemberToBoard: builder.mutation<{ success: boolean }, { boardId: string; userId: string }>({
+          async queryFn({ boardId, userId }) {
+               try {
+                    const { data: existingTeam, error: findError } = await getSupabase().from('teams').select('id').eq('board_id', boardId).maybeSingle();
+
+                    if (findError && findError.code !== 'PGRST116') {
+                         throw findError;
+                    }
+
+                    let teamId: string;
+
+                    if (existingTeam) {
+                         teamId = existingTeam.id;
+                    } else {
+                         const { data: newTeam, error: createError } = await getSupabase().from('teams').insert({ board_id: boardId }).select('id').single();
+
+                         if (createError || !newTeam) {
+                              throw createError || new Error('Failed to create team');
+                         }
+                         teamId = newTeam.id;
+                    }
+
+                    const { error: insertError } = await getSupabase().from('team_members').insert({ team_id: teamId, user_id: userId });
+
+                    if (insertError) {
+                         if (insertError.code === '23505') {
+                              return { data: { success: true } };
+                         }
+                         throw insertError;
+                    }
+
+                    return { data: { success: true } };
+               } catch (err) {
+                    const error = err as { message?: string };
+                    console.error('[addMemberToBoard] error:', error);
+                    return {
+                         error: {
+                              status: 'CUSTOM_ERROR',
+                              error: error.message || 'Failed to add member to board',
+                         },
+                    };
+               }
+          },
+          invalidatesTags: (_result, _error, { boardId }) => [{ type: 'Board', id: boardId }],
+     }),
+     getBoardMembers: builder.query<User[], string>({
+          async queryFn(boardId) {
+               try {
+                    const { data: team, error: teamError } = await getSupabase().from('teams').select('id').eq('board_id', boardId).maybeSingle();
+
+                    if (teamError) throw teamError;
+                    if (!team) return { data: [] };
+
+                    const { data: membersRaw, error: membersError } = await getSupabase()
+                         .from('team_members')
+                         .select('user:users!team_members_user_id_fkey(id, name, email, image)')
+                         .eq('team_id', team.id);
+
+                    if (membersError) throw membersError;
+                    if (!membersRaw || membersRaw.length === 0) return { data: [] };
+
+                    const users: User[] = membersRaw.map((row) => {
+                         const userData = Array.isArray(row.user) ? row.user[0] : row.user;
+
+                         return {
+                              id: userData.id,
+                              name: userData.name,
+                              email: userData.email,
+                              image: userData.image || undefined,
+                              role: undefined,
+                              created_at: undefined,
+                         } as User;
+                    });
+
+                    return { data: users };
+               } catch (err) {
+                    console.error('[getBoardMembers] error:', err);
+                    return { data: [] };
+               }
+          },
+          providesTags: (result) =>
+               result ? [...result.map((u) => ({ type: 'BoardMember' as const, id: u.id })), { type: 'BoardMember' as const, id: 'LIST' }] : [{ type: 'BoardMember' as const, id: 'LIST' }],
+     }),
+
+     removeMemberFromBoard: builder.mutation<{ success: boolean }, { boardId: string; userId: string }>({
+          async queryFn({ boardId, userId }) {
+               try {
+                    const { data: team, error: teamError } = await getSupabase().from('teams').select('id').eq('board_id', boardId).single();
+
+                    if (teamError && teamError.code !== 'PGRST116') {
+                         throw teamError;
+                    }
+
+                    if (!team) {
+                         return { data: { success: true } };
+                    }
+
+                    const { error: deleteError } = await getSupabase().from('team_members').delete().eq('team_id', team.id).eq('user_id', userId);
+
+                    if (deleteError) throw deleteError;
+
+                    return { data: { success: true } };
+               } catch (err) {
+                    const error = err as { message?: string };
+                    console.error('[removeMemberFromBoard] error:', error);
+
+                    return {
+                         error: {
+                              status: 'CUSTOM_ERROR',
+                              error: error.message || 'Nie udało się usunąć użytkownika z boarda',
+                         },
+                    };
+               }
+          },
+          invalidatesTags: (_result, _error, { boardId }) => [
+               { type: 'Board', id: boardId },
+               { type: 'BoardMember', id: 'LIST' },
+          ],
+     }),
+
      getAllBoards: builder.query<BoardWithCounts[], void>({
           async queryFn() {
                try {
