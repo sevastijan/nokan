@@ -100,13 +100,13 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
 
      return (
           <div className="relative">
-               {label && <label className="block text-sm font-medium text-slate-300 mb-2">{label}</label>}
+               {label && <span className="block text-sm font-medium text-slate-300 mb-2">{label}</span>}
 
                <button
                     type="button"
                     onClick={() => !disabled && setIsOpen(!isOpen)}
                     disabled={disabled}
-                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white transition-all ${
+                    className={`w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white transition-all ${
                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500'
                     }`}
                >

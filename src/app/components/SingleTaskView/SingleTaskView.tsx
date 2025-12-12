@@ -61,6 +61,7 @@ const SingleTaskView = ({
           currentTaskId,
           uploadAttachmentMutation,
           uploadAttachment,
+          autoSaveTask,
      } = useTaskManagement({
           taskId,
           mode,
@@ -77,6 +78,7 @@ const SingleTaskView = ({
      const overlayRef = useRef<HTMLDivElement>(null);
      const modalRef = useRef<HTMLDivElement>(null);
      const titleInputRef = useRef<HTMLInputElement>(null);
+     const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
      const [updateCollaboratorsMutation] = useUpdateTaskCollaboratorsMutation();
 
@@ -88,6 +90,9 @@ const SingleTaskView = ({
      const [startDate, setStartDate] = useState<string>('');
      const [endDate, setEndDate] = useState<string>('');
      const [localColumnId, setLocalColumnId] = useState<string | undefined>(columnId);
+
+     const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
+     const [isAutoSaving] = useState(false);
 
      const appliedInitialDate = useRef(false);
 
@@ -127,11 +132,11 @@ const SingleTaskView = ({
 
      useEffect(() => {
           const onKeyDown = (e: KeyboardEvent) => {
-               if (e.key === 'Escape') onClose();
+               if (e.key === 'Escape') requestClose();
           };
           document.addEventListener('keydown', onKeyDown);
           return () => document.removeEventListener('keydown', onKeyDown);
-     }, [onClose]);
+     }, []);
 
      useEffect(() => {
           if (isNewTask && titleInputRef.current) {
@@ -147,7 +152,70 @@ const SingleTaskView = ({
           };
      }, []);
 
-     useOutsideClick([modalRef], onClose);
+     const requestClose = () => {
+          if (autosaveTimerRef.current) {
+               clearTimeout(autosaveTimerRef.current);
+               autosaveTimerRef.current = null;
+          }
+
+          if (hasUnsavedChanges && !isNewTask) {
+               setShowUnsavedConfirm(true);
+          } else {
+               onClose();
+          }
+     };
+
+     const confirmExit = () => {
+          if (autosaveTimerRef.current) {
+               clearTimeout(autosaveTimerRef.current);
+               autosaveTimerRef.current = null;
+          }
+          setShowUnsavedConfirm(false);
+          onClose();
+     };
+
+     const saveAndExit = async () => {
+          setShowUnsavedConfirm(false);
+          const success = await saveExistingTask();
+          if (success) {
+               toast.success('Zapisano i zamknięto');
+               onClose();
+          }
+     };
+
+     useEffect(() => {
+          if (isNewTask || !hasUnsavedChanges) {
+               if (autosaveTimerRef.current) {
+                    clearTimeout(autosaveTimerRef.current);
+                    autosaveTimerRef.current = null;
+               }
+               return;
+          }
+
+          if (autosaveTimerRef.current) {
+               clearTimeout(autosaveTimerRef.current);
+          }
+
+          autosaveTimerRef.current = setTimeout(async () => {
+               try {
+                    await autoSaveTask();
+                    toast.success('Zapisano automatycznie', { autoClose: 1500 });
+               } catch (err) {
+                    console.error('Autosave failed:', err);
+               } finally {
+                    autosaveTimerRef.current = null;
+               }
+          }, 3500);
+
+          return () => {
+               if (autosaveTimerRef.current) {
+                    clearTimeout(autosaveTimerRef.current);
+                    autosaveTimerRef.current = null;
+               }
+          };
+     }, [hasUnsavedChanges, isNewTask, autoSaveTask]);
+
+     useOutsideClick([modalRef], requestClose);
 
      const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
           const value = e.target.value;
@@ -214,14 +282,13 @@ const SingleTaskView = ({
 
                     toast.success('Przypisani zaktualizowani');
                } catch (error) {
-                    console.error('❌ Failed to update assignees:', error);
+                    console.error('Failed to update assignees:', error);
                     toast.error('Nie udało się zaktualizować przypisanych');
                }
           }
      };
 
      const handlePriorityChange = (priorityId: string | null) => {
-          console.log('Priority change:', priorityId);
           updateTask({ priority: priorityId });
      };
 
@@ -277,7 +344,7 @@ const SingleTaskView = ({
                          }
                     }
                } catch (error) {
-                    console.error('❌ Failed to save status:', error);
+                    console.error('Failed to save status:', error);
                     toast.error('Nie udało się zapisać statusu');
                }
           }
@@ -344,7 +411,7 @@ const SingleTaskView = ({
 
                               if (previewUrl) URL.revokeObjectURL(previewUrl);
                          } catch (error) {
-                              console.error('❌ Upload failed:', error);
+                              console.error('Upload failed:', error);
                               toast.error(`Upload failed: ${file.name}`);
                          }
                     }
@@ -392,7 +459,7 @@ const SingleTaskView = ({
                <motion.div
                     ref={overlayRef}
                     className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4"
-                    onClick={(e) => e.target === overlayRef.current && onClose()}
+                    onClick={(e) => e.target === overlayRef.current && requestClose()}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -420,10 +487,11 @@ const SingleTaskView = ({
                                         onChange={handleTitleChange}
                                         onKeyDown={handleTitleKeyDown}
                                    />
+                                   {hasUnsavedChanges && !saving && <span className="text-xs text-amber-400 ml-2">Masz niezapisane zmiany</span>}
                               </div>
                               <div className="flex items-center gap-2">
                                    {!isNewTask && task?.id && <Button variant="ghost" size="sm" icon={<FaLink />} onClick={handleCopyLink} className="text-slate-300 hover:text-white" />}
-                                   <Button variant="ghost" size="sm" icon={<FaTimes />} onClick={onClose} className="text-slate-300 hover:text-white" />
+                                   <Button variant="ghost" size="sm" icon={<FaTimes />} onClick={requestClose} className="text-slate-300 hover:text-white" />
                               </div>
                          </div>
 
@@ -457,7 +525,7 @@ const SingleTaskView = ({
                                    )}
 
                                    <div>
-                                        <label className="text-sm text-slate-300">Opis</label>
+                                        <span className="block text-sm font-medium text-slate-300 mb-2">Opis</span>
                                         <textarea
                                              className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
                                              value={tempDescription}
@@ -469,9 +537,9 @@ const SingleTaskView = ({
 
                                    <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
                                         <div className="flex-1">
-                                             <label className="text-sm flex items-center gap-1 text-slate-300">
+                                             <span className="text-sm flex items-center gap-1 text-slate-300">
                                                   <FaClock className="w-4 h-4" /> Data rozpoczęcia
-                                             </label>
+                                             </span>
                                              <input
                                                   type="date"
                                                   className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -620,9 +688,9 @@ const SingleTaskView = ({
                          <ActionFooter
                               isNewTask={isNewTask}
                               hasUnsavedChanges={hasUnsavedChanges}
-                              isSaving={saving}
+                              isSaving={saving || isAutoSaving}
                               onSave={handleSave}
-                              onClose={onClose}
+                              onClose={requestClose}
                               onDelete={isNewTask ? undefined : handleDelete}
                               task={task ?? undefined}
                               tempTitle={tempTitle}
@@ -630,6 +698,33 @@ const SingleTaskView = ({
                     </motion.div>
 
                     {previewImageUrl && <ImagePreviewModal imageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />}
+
+                    {showUnsavedConfirm && (
+                         <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="fixed inset-0 bg-black/60 flex items-center justify-center z-60"
+                              onClick={() => setShowUnsavedConfirm(false)}
+                         >
+                              <motion.div
+                                   initial={{ scale: 0.9 }}
+                                   animate={{ scale: 1 }}
+                                   className="bg-slate-700 rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl border border-slate-500"
+                                   onClick={(e) => e.stopPropagation()}
+                              >
+                                   <h3 className="text-xl font-semibold text-white mb-3">Niezapisane zmiany</h3>
+                                   <p className="text-slate-300 mb-6">Masz niezapisane zmiany w zadaniu. Czy chcesz je zapisać przed zamknięciem?</p>
+                                   <div className="flex justify-end gap-3">
+                                        <Button variant="ghost" onClick={confirmExit} className="text-slate-300 hover:text-white">
+                                             Wyjdź bez zapisu
+                                        </Button>
+                                        <Button variant="primary" onClick={saveAndExit} disabled={saving || isAutoSaving}>
+                                             {saving || isAutoSaving ? 'Zapisywanie...' : 'Zapisz i wyjdź'}
+                                        </Button>
+                                   </div>
+                              </motion.div>
+                         </motion.div>
+                    )}
                </motion.div>
           </AnimatePresence>
      );
