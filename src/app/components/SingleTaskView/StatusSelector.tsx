@@ -1,4 +1,3 @@
-// components/StatusSelector.tsx
 import { useState, useRef } from 'react';
 import { FaChevronDown, FaPlus, FaTrash } from 'react-icons/fa';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
@@ -140,7 +139,6 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                              <span className="truncate font-medium">{status.label}</span>
                                         </div>
 
-                                        {/* Kosz przy KAŻDYM statusie */}
                                         <button onClick={(e) => handleDeleteStatus(status.id, e)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity">
                                              <FaTrash className="w-3.5 h-3.5" />
                                         </button>
