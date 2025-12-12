@@ -232,7 +232,6 @@ export interface BoardHeaderProps {
      onAddColumn: () => void;
      viewMode: 'columns' | 'list';
      onViewModeChange: (mode: 'columns' | 'list') => void;
-     totalTasks: number;
      searchTerm: string;
      onSearchChange: (term: string) => void;
      priorities: PriorityOption[];
