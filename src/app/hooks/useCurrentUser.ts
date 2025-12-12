@@ -6,24 +6,6 @@ import { fetchOrCreateUserFromSession } from '@/app/lib/api';
 import { User } from '@/app/types/globalTypes';
 import { Session } from 'next-auth';
 
-/**
- * Hook to get the current user row from Supabase based on NextAuth session.
- *
- * Internally:
- * 1. Calls useSession() to get NextAuth session/status.
- * 2. When status === "authenticated", calls fetchOrCreateUserFromSession(session)
- *    which should check Supabase users table and create a new row if missing.
- * 3. Stores the result in local state `currentUser: User | null`.
- * 4. Exposes loading state, error, session/status, and a refetchUser() to manually re-fetch.
- *
- * Returns:
- *  - currentUser: User | null
- *  - loading: boolean
- *  - error: Error | null
- *  - session: Session | null
- *  - authStatus: "loading" | "authenticated" | "unauthenticated"
- *  - refetchUser: () => void
- */
 export function useCurrentUser() {
      const { data: session, status: authStatus } = useSession();
      const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -36,12 +18,7 @@ export function useCurrentUser() {
           try {
                const userRow = await fetchOrCreateUserFromSession(sess);
                if (userRow) {
-                    setCurrentUser({
-                         id: userRow.id,
-                         name: userRow.name || userRow.email,
-                         email: userRow.email,
-                         image: userRow.image || undefined,
-                    });
+                    setCurrentUser(userRow as User);
                } else {
                     setCurrentUser(null);
                }

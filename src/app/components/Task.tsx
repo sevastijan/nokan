@@ -202,8 +202,17 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                                    {hasAssignees ? (
                                         <div className="flex items-center -space-x-2">
                                              {assignees.slice(0, 3).map((assignee, idx) => (
-                                                  <div key={assignee.id} style={{ zIndex: 3 - idx }}>
-                                                       <Avatar src={assignee.image || ''} alt={assignee.name} size={28} className="border-2 border-slate-800 ring-1 ring-white/10" />
+                                                  <div
+                                                       key={assignee.id}
+                                                       style={{ zIndex: 3 - idx }}
+                                                       title={assignee.custom_name || assignee.name || assignee.email || 'User'} // tooltip z imieniem
+                                                  >
+                                                       <Avatar
+                                                            src={assignee.custom_image || assignee.image || ''}
+                                                            alt={assignee.custom_name || assignee.name || 'User'}
+                                                            size={28}
+                                                            className="border-2 border-slate-800 ring-1 ring-white/10"
+                                                       />
                                                   </div>
                                              ))}
                                              {assignees.length > 3 && (
