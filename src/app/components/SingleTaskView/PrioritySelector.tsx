@@ -137,7 +137,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
      if (loading) {
           return (
                <div className="relative">
-                    <label className="block text-sm text-slate-300 mb-1">Priority</label>
+                    <span className="block text-sm font-medium text-slate-300 mb-2">Priority</span>
                     <div className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-slate-400">Loading priorities...</div>
                </div>
           );
@@ -145,13 +145,13 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
 
      return (
           <div className="relative w-full">
-               <label className="block text-sm text-slate-300 mb-1">Priority</label>
+               <span className="block text-sm font-medium text-slate-300 mb-2">Priority</span>
 
                <button
                     type="button"
                     onClick={toggle}
                     className={`
-          w-full flex items-center justify-between px-3 py-2 
+          w-full flex items-center justify-between px-4 py-2 min-h-[46px] 
           bg-slate-700 border rounded-lg text-slate-200 
           transition-colors duration-150
           ${isOpen ? 'border-purple-500 ring-1 ring-purple-500' : 'border-slate-600 hover:border-slate-500'}

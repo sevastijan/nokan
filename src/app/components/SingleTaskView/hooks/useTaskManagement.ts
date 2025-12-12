@@ -463,6 +463,36 @@ export const useTaskManagement = ({
           }
      }, [currentTaskId, refetchTask, statuses]);
 
+     const autoSaveTask = useCallback(async (): Promise<boolean> => {
+          if (!currentTaskId || !task) return false;
+          const payload: Partial<TaskDetail> = pickUpdatable(task);
+
+          try {
+               const result = await updateTaskMutation({
+                    taskId: currentTaskId,
+                    data: payload,
+               }).unwrap();
+
+               // Aktualizujemy tylko lokalne refs (bez notyfikacji emailowych i in-app – to tylko autosave)
+               prevUserId.current = result.user_id;
+               prevColumnId.current = result.column_id;
+               prevDueDate.current = result.due_date;
+               prevPriority.current = result.priority;
+
+               // Czyścimy flagę niezapisanych zmian
+               setHasUnsavedChanges(false);
+
+               // Opcjonalnie: odświeżamy pełne zadanie z relacjami (żeby mieć aktualne attachments, comments itp.)
+               await fetchTaskData();
+
+               // NIE wywołujemy onTaskUpdate – modal zostaje otwarty!
+               return true;
+          } catch (err) {
+               console.error('Autosave failed:', err);
+               return false;
+          }
+     }, [currentTaskId, task, updateTaskMutation, fetchTaskData]);
+
      return {
           task,
           loading: isLoading,
@@ -480,5 +510,6 @@ export const useTaskManagement = ({
           updateTaskMutation,
           currentTaskId,
           uploadAttachmentMutation,
+          autoSaveTask,
      };
 };

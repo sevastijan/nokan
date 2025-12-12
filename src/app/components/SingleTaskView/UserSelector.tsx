@@ -49,7 +49,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
 
                onUsersChange(newIds);
           },
-          [selectedUsers, onUsersChange]
+          [selectedUsers, onUsersChange],
      );
 
      const handleRemoveUser = useCallback(
@@ -58,19 +58,19 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                const newIds = selectedUsers.filter((u) => u.id !== userId).map((u) => u.id);
                onUsersChange(newIds);
           },
-          [selectedUsers, onUsersChange]
+          [selectedUsers, onUsersChange],
      );
 
      const isSelected = (userId: string) => selectedUsers.some((u) => u.id === userId);
 
      return (
           <div className="relative w-full" ref={selectRef}>
-               <label className="block text-sm text-slate-300 mb-1">{label}</label>
+               <span className="block text-sm font-medium text-slate-300 mb-2">{label}</span>
 
                <div
                     role="button"
                     tabIndex={0}
-                    className={`relative w-full bg-slate-700/50 border border-slate-600 rounded-xl shadow-sm px-4 py-2 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 min-h-[42px] ${
+                    className={`relative w-full bg-slate-700 border border-slate-600 rounded-xl shadow-sm px-4 py-2 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 ${
                          isOpen ? 'ring-2 ring-purple-500 border-transparent' : 'hover:border-slate-500'
                     }`}
                     aria-haspopup="listbox"
@@ -92,28 +92,17 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                                    </span>
                               ) : (
                                    selectedUsers.map((user) => (
-                                        <span
-                                             key={user.id}
-                                             className="inline-flex items-center gap-1.5 bg-slate-600/50 px-2 py-1 rounded-lg text-sm"
-                                        >
+                                        <span key={user.id} className="inline-flex items-center gap-1.5 bg-slate-600/50 px-2 py-1 rounded-lg text-sm">
                                              <Avatar src={user.image || ''} alt={user.name} size={18} />
                                              <span className="text-white truncate max-w-[100px]">{user.name}</span>
-                                             <button
-                                                  type="button"
-                                                  onClick={(e) => handleRemoveUser(user.id, e)}
-                                                  className="text-slate-400 hover:text-red-400 transition-colors"
-                                             >
+                                             <button type="button" onClick={(e) => handleRemoveUser(user.id, e)} className="text-slate-400 hover:text-red-400 transition-colors">
                                                   <FiX className="w-3.5 h-3.5" />
                                              </button>
                                         </span>
                                    ))
                               )}
                          </div>
-                         <motion.div
-                              animate={{ rotate: isOpen ? 180 : 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="ml-2 shrink-0"
-                         >
+                         <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="ml-2 shrink-0">
                               <FiChevronDown className="w-5 h-5 text-slate-400" />
                          </motion.div>
                     </div>
@@ -130,9 +119,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                               role="listbox"
                          >
                               {availableUsers.length === 0 ? (
-                                   <li className="px-4 py-3 text-slate-500 text-sm text-center">
-                                        Brak dostępnych użytkowników
-                                   </li>
+                                   <li className="px-4 py-3 text-slate-500 text-sm text-center">Brak dostępnych użytkowników</li>
                               ) : (
                                    availableUsers.map((user) => {
                                         const selected = isSelected(user.id);
@@ -140,9 +127,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                                              <li
                                                   key={user.id}
                                                   className={`px-4 py-2 cursor-pointer flex items-center gap-3 transition-colors duration-150 ${
-                                                       selected
-                                                            ? 'bg-purple-600/20 text-white'
-                                                            : 'text-slate-300 hover:bg-slate-700'
+                                                       selected ? 'bg-purple-600/20 text-white' : 'text-slate-300 hover:bg-slate-700'
                                                   }`}
                                                   onClick={() => handleToggleUser(user.id)}
                                                   role="option"
@@ -150,9 +135,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                                              >
                                                   <div
                                                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                                                            selected
-                                                                 ? 'bg-purple-600 border-purple-600'
-                                                                 : 'border-slate-500 bg-transparent'
+                                                            selected ? 'bg-purple-600 border-purple-600' : 'border-slate-500 bg-transparent'
                                                        }`}
                                                   >
                                                        {selected && <FiCheck className="w-3.5 h-3.5 text-white" />}
