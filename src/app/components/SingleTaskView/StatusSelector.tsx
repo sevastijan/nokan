@@ -129,7 +129,10 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                    <button
                                         key={status.id}
                                         type="button"
-                                        onClick={() => onChange(status.id)}
+                                        onClick={() => {
+                                             onChange(status.id);
+                                             setIsOpen(false);
+                                        }}
                                         className={`group w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${
                                              selectedStatusId === status.id ? 'bg-purple-600/20 text-white' : 'hover:bg-slate-600'
                                         }`}
@@ -139,9 +142,13 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                              <span className="truncate font-medium">{status.label}</span>
                                         </div>
 
-                                        <button onClick={(e) => handleDeleteStatus(status.id, e)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity">
+                                        <div
+                                             role="button"
+                                             onClick={(e) => handleDeleteStatus(status.id, e)}
+                                             className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-1"
+                                        >
                                              <FaTrash className="w-3.5 h-3.5" />
-                                        </button>
+                                        </div>
                                    </button>
                               ))}
 
