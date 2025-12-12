@@ -3,8 +3,9 @@
 import { useState, Fragment } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Dialog, Transition, TransitionChild, DialogPanel, Menu } from '@headlessui/react';
+import { Dialog, Transition, TransitionChild, DialogPanel, Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
      FaHome,
      FaTachometerAlt,
@@ -90,10 +91,18 @@ const Navbar = () => {
      const handleMarkAllAsRead = async () => {
           const unreadNotifications = notifications.filter((n) => !n.read);
           for (const n of unreadNotifications) {
-               if (n.id) {
-                    await markNotificationRead({ id: String(n.id) });
-               }
+               if (n.id) await markNotificationRead({ id: String(n.id) });
           }
+          refetchNotifications();
+     };
+
+     const handleMarkAsRead = async (id: string | number) => {
+          await markNotificationRead({ id: String(id) });
+          refetchNotifications();
+     };
+
+     const handleDelete = async (id: string | number) => {
+          await deleteNotification({ id: String(id) });
           refetchNotifications();
      };
 
@@ -102,7 +111,6 @@ const Navbar = () => {
           { href: '/calendar', label: 'Calendar', icon: <FaCalendarAlt /> },
           { href: '/submissions', label: 'Submissions', icon: <FaFileAlt /> },
           { href: '/settings', label: 'Settings', icon: <FaCog /> },
-
           ...(hasManagementAccess()
                ? [
                       { href: '/users', label: 'Users', icon: <FaUserCog /> },
@@ -119,7 +127,7 @@ const Navbar = () => {
                               router.push('/');
                               setSidebarOpen(false);
                          }}
-                         className="flex items-center gap-2 text-xl font-bold cursor-pointer text-slate-200"
+                         className="flex items-center gap-2 text-xl font-bold cursor-pointer text-slate-200 hover:text-white transition-colors"
                     >
                          <div className="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center">
                               <FaHome className="w-4 h-4 text-slate-300" />
@@ -140,14 +148,14 @@ const Navbar = () => {
 
                          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-slate-700/30">
                               <Menu as="div" className="relative">
-                                   <Menu.Button className="relative p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
+                                   <MenuButton className="relative p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all cursor-pointer">
                                         <FaBell className="w-4 h-4" />
                                         {unreadCount > 0 && (
                                              <span className="absolute -top-1 -right-1 bg-rose-500/90 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-lg">
                                                   {unreadCount}
                                              </span>
                                         )}
-                                   </Menu.Button>
+                                   </MenuButton>
 
                                    <Transition
                                         as={Fragment}
@@ -158,37 +166,43 @@ const Navbar = () => {
                                         leaveFrom="opacity-100 scale-100"
                                         leaveTo="opacity-0 scale-95"
                                    >
-                                        <Menu.Items className="absolute left-0 z-30 mt-3 w-96 max-w-xs bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden">
+                                        <MenuItems className="absolute left-0 z-30 mt-3 w-96 max-w-xs bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden">
                                              <div className="flex items-center justify-between p-3 border-b border-slate-700">
                                                   <span className="font-semibold text-white text-base">Notifications</span>
                                                   <div className="flex items-center gap-2">
                                                        {unreadCount > 0 && (
                                                             <button
-                                                                 className="text-xs text-green-400 hover:text-green-300 hover:underline flex items-center gap-1"
                                                                  onClick={handleMarkAllAsRead}
-                                                                 tabIndex={-1}
+                                                                 className="text-xs text-green-400 hover:text-green-300 hover:underline flex items-center gap-1 cursor-pointer"
                                                                  title="Mark all as read"
                                                             >
                                                                  <FaCheckDouble className="w-3 h-3" />
                                                                  Mark all
                                                             </button>
                                                        )}
-                                                       <button className="text-xs text-blue-400 hover:text-blue-300 hover:underline" onClick={() => setShowRead(!showRead)} tabIndex={-1}>
+                                                       <button onClick={() => setShowRead(!showRead)} className="text-xs text-blue-400 hover:text-blue-300 hover:underline cursor-pointer">
                                                             {showRead ? 'Hide read' : 'Show all'}
                                                        </button>
                                                   </div>
                                              </div>
+
                                              <div className="max-h-96 overflow-y-auto">
                                                   {filteredNotifications.length === 0 && (
                                                        <div className="px-4 py-5 text-slate-400 text-center text-sm">{showRead ? 'No notifications' : 'No unread notifications'}</div>
                                                   )}
-                                                  {filteredNotifications.map((n: Notification) => (
-                                                       <Menu.Item key={String(n.id)}>
-                                                            {({ active }) => (
-                                                                 <div
-                                                                      className={`group px-4 py-3 ${n.read ? 'opacity-70' : 'bg-slate-800/60'} ${
-                                                                           active ? 'bg-slate-800/80' : ''
-                                                                      } text-white flex flex-col gap-1 cursor-pointer transition-all`}
+
+                                                  <AnimatePresence mode="popLayout">
+                                                       {filteredNotifications.map((n: Notification) => (
+                                                            <MenuItem key={String(n.id)} as="div">
+                                                                 <motion.div
+                                                                      layout
+                                                                      initial={{ opacity: 0, x: -20 }}
+                                                                      animate={{ opacity: 1, x: 0 }}
+                                                                      exit={{ opacity: 0, x: -50, transition: { duration: 0.2 } }}
+                                                                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                                                      className={`group px-4 py-3 ${
+                                                                           n.read ? 'opacity-70' : 'bg-slate-800/60'
+                                                                      } data-[focus]:bg-slate-800/80 text-white flex flex-col gap-1 cursor-pointer transition-all`}
                                                                       onClick={() => {
                                                                            if (n.board_id && n.task_id) {
                                                                                 router.push(`/board/${n.board_id}?task=${n.task_id}`);
@@ -207,42 +221,45 @@ const Navbar = () => {
                                                                       </div>
                                                                       <span className="text-xs text-slate-400 break-words">{n.message}</span>
                                                                       <span className="text-[10px] text-slate-500 mt-0.5">{n.created_at ? new Date(n.created_at).toLocaleString() : ''}</span>
+
                                                                       <div className="flex items-center gap-2 mt-2">
                                                                            {!n.read && (
-                                                                                <button
+                                                                                <motion.button
+                                                                                     whileTap={{ scale: 0.9 }}
                                                                                      title="Mark as read"
-                                                                                     onClick={async (e) => {
+                                                                                     onClick={(e) => {
                                                                                           e.stopPropagation();
-                                                                                          if (n.id) await markNotificationRead({ id: String(n.id) });
+                                                                                          if (n.id) handleMarkAsRead(n.id);
                                                                                      }}
-                                                                                     className="text-green-400 hover:bg-green-700/20 rounded p-1.5 transition-colors"
+                                                                                     className="text-green-400 hover:bg-green-700/20 rounded p-1.5 transition-colors cursor-pointer"
                                                                                 >
-                                                                                     <FaCheck />
-                                                                                </button>
+                                                                                     <FaCheck className="w-4 h-4" />
+                                                                                </motion.button>
                                                                            )}
-                                                                           <button
+                                                                           <motion.button
+                                                                                whileTap={{ scale: 0.9 }}
                                                                                 title="Delete"
-                                                                                onClick={async (e) => {
+                                                                                onClick={(e) => {
                                                                                      e.stopPropagation();
-                                                                                     if (n.id) await deleteNotification({ id: String(n.id) });
+                                                                                     if (n.id) handleDelete(n.id);
                                                                                 }}
-                                                                                className="text-red-400 hover:bg-red-700/20 rounded p-1.5 transition-colors"
+                                                                                className="text-red-400 hover:bg-red-700/20 rounded p-1.5 transition-colors cursor-pointer"
                                                                            >
-                                                                                <FaTrash />
-                                                                           </button>
+                                                                                <FaTrash className="w-4 h-4" />
+                                                                           </motion.button>
                                                                       </div>
-                                                                 </div>
-                                                            )}
-                                                       </Menu.Item>
-                                                  ))}
+                                                                 </motion.div>
+                                                            </MenuItem>
+                                                       ))}
+                                                  </AnimatePresence>
                                              </div>
-                                        </Menu.Items>
+                                        </MenuItems>
                                    </Transition>
                               </Menu>
 
                               <button
                                    onClick={() => router.push('/profile')}
-                                   className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                                   className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all cursor-pointer"
                               >
                                    View Profile
                               </button>
@@ -256,7 +273,7 @@ const Navbar = () => {
                          {nav.map(({ href, label, icon }) => (
                               <Link key={href} href={href} onClick={() => setSidebarOpen(false)}>
                                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group cursor-pointer">
-                                        {icon}
+                                        <span className="text-lg">{icon}</span>
                                         <span className="font-medium text-sm truncate">{label}</span>
                                         <FaChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                                    </div>
@@ -279,7 +296,7 @@ const Navbar = () => {
           <>
                <button
                     onClick={() => setSidebarOpen(true)}
-                    className="fixed right-4 top-3 z-50 md:hidden bg-slate-800/80 border border-slate-700/50 rounded-xl p-3 shadow-lg hover:bg-slate-700/80 transition-all text-slate-300 hover:text-white"
+                    className="fixed right-4 top-3 z-50 md:hidden bg-slate-800/80 border border-slate-700/50 rounded-xl p-3 shadow-lg hover:bg-slate-700/80 transition-all text-slate-300 hover:text-white cursor-pointer"
                     aria-label="Open sidebar"
                >
                     <FaBars className="w-5 h-5" />
@@ -302,6 +319,7 @@ const Navbar = () => {
                          >
                               <div className="fixed inset-0 bg-black bg-opacity-40 transition-opacity" />
                          </TransitionChild>
+
                          <TransitionChild
                               as={Fragment}
                               enter="transform transition ease-in-out duration-300"
@@ -314,7 +332,7 @@ const Navbar = () => {
                               <DialogPanel className="fixed inset-0 w-full h-full bg-slate-900/95 border-r border-slate-700/50 shadow-2xl focus:outline-none rounded-none p-0">
                                    <button
                                         onClick={() => setSidebarOpen(false)}
-                                        className="absolute right-4 top-4 z-50 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
+                                        className="absolute right-4 top-4 z-50 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition cursor-pointer"
                                    >
                                         Close
                                    </button>
