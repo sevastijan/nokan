@@ -170,40 +170,51 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          .from('tasks')
                          .select(
                               `
-                    *,
-                    attachments:task_attachments!task_attachments_task_id_fkey(*),
-                    comments:task_comments!task_comments_task_id_fkey(
+               *,
+               is_recurring,
+               recurrence_type,
+               recurrence_interval,
+               recurrence_column_id,
+               next_occurrence_date,
+               attachments:task_attachments!task_attachments_task_id_fkey(*),
+               comments:task_comments!task_comments_task_id_fkey(
+                    id,
+                    task_id,
+                    user_id,
+                    content,
+                    created_at,
+                    updated_at,
+                    parent_id,
+                    author:users!task_comments_user_id_fkey(
                          id,
-                         task_id,
-                         user_id,
-                         content,
-                         created_at,
-                         updated_at,
-                         parent_id,
-                         author:users!task_comments_user_id_fkey(
-                              id,
-                              name,
-                              email,
-                              image,
-                              custom_name,
-                              custom_image
-                         )
-                    ),
-                    creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at,custom_name,custom_image),
-                    priority_data:priorities!tasks_priority_fkey(id,label,color),
-                    collaborators:task_collaborators(
-                         id,
-                         user_id,
-                         user:users!task_collaborators_user_id_fkey(id,name,email,image,custom_name,custom_image)
+                         name,
+                         email,
+                         image,
+                         custom_name,
+                         custom_image
                     )
-               `,
+               ),
+               creator:users!tasks_created_by_fkey(id,name,email,image,role,created_at,custom_name,custom_image),
+               priority_data:priorities!tasks_priority_fkey(id,label,color),
+               collaborators:task_collaborators(
+                    id,
+                    user_id,
+                    user:users!task_collaborators_user_id_fkey(id,name,email,image,custom_name,custom_image)
+               )
+          `,
                          )
                          .eq('id', taskId)
                          .single();
 
                     if (te || !taskData) throw te || new Error('Task not found');
 
-                    const rawTask = taskData as RawTask;
+                    const rawTask = taskData as RawTask & {
+                         is_recurring?: boolean;
+                         recurrence_type?: string | null;
+                         recurrence_interval?: number | null;
+                         recurrence_column_id?: string | null;
+                         next_occurrence_date?: string | null;
+                    };
 
                     // === Creator ===
                     let creator: User | null = null;
@@ -258,7 +269,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          }));
                     }
 
-                    // === Comments (z parent_id – bez any!) ===
+                    // === Comments ===
                     let comments: TaskDetail['comments'] = [];
                     if (Array.isArray(rawTask.comments)) {
                          comments = (
@@ -353,6 +364,17 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          comments,
                          imagePreview: null,
                          hasUnsavedChanges: false,
+                         is_recurring: rawTask.is_recurring ?? false,
+                         recurrence_type: (() => {
+                              const type = rawTask.recurrence_type;
+                              if (type === 'daily' || type === 'weekly' || type === 'monthly' || type === 'yearly' || type === null) {
+                                   return type;
+                              }
+                              return null;
+                         })(),
+                         recurrence_interval: rawTask.recurrence_interval ?? null,
+                         recurrence_column_id: rawTask.recurrence_column_id ?? null,
+                         next_occurrence_date: rawTask.next_occurrence_date ?? null,
                     };
 
                     return { data: result };
@@ -506,12 +528,47 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           async queryFn({ taskId, data }) {
                try {
                     const dbPayload: Record<string, unknown> = { ...data };
+
                     if ('order' in dbPayload && dbPayload.order !== undefined) {
                          dbPayload.sort_order = dbPayload.order;
                          delete dbPayload.order;
                     }
 
-                    const { data: updated, error } = await getSupabase().from('tasks').update(dbPayload).eq('id', taskId).select('*').single();
+                    if ('is_recurring' in data) dbPayload.is_recurring = data.is_recurring;
+                    if ('recurrence_type' in data) dbPayload.recurrence_type = data.recurrence_type;
+                    if ('recurrence_interval' in data) dbPayload.recurrence_interval = data.recurrence_interval;
+                    if ('recurrence_column_id' in data) dbPayload.recurrence_column_id = data.recurrence_column_id;
+                    if ('next_occurrence_date' in data) dbPayload.next_occurrence_date = data.next_occurrence_date;
+
+                    const { data: updated, error } = await getSupabase()
+                         .from('tasks')
+                         .update(dbPayload)
+                         .eq('id', taskId)
+                         .select(
+                              `
+                              id,
+                              title,
+                              description,
+                              column_id,
+                              board_id,
+                              priority,
+                              user_id,
+                              sort_order,
+                              completed,
+                              created_at,
+                              updated_at,
+                              start_date,
+                              end_date,
+                              due_date,
+                              status_id,
+                              is_recurring,
+                              recurrence_type,
+                              recurrence_interval,
+                              recurrence_column_id,
+                              next_occurrence_date
+                         `,
+                         )
+                         .single();
 
                     if (error || !updated) {
                          console.error('❌ updateTask mutation failed:', error);
@@ -521,23 +578,28 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     const mapped: Task = {
                          id: updated.id,
                          title: updated.title,
-                         description: updated.description,
+                         description: updated.description ?? '',
                          column_id: updated.column_id,
                          board_id: updated.board_id,
-                         priority: updated.priority,
-                         user_id: updated.user_id,
+                         priority: updated.priority ?? '',
+                         user_id: updated.user_id ?? null,
                          order: updated.sort_order ?? 0,
                          sort_order: updated.sort_order ?? 0,
                          completed: updated.completed,
                          created_at: updated.created_at,
                          updated_at: updated.updated_at,
-                         images: updated.images,
                          assignee: undefined,
-                         start_date: updated.start_date,
-                         end_date: updated.end_date,
-                         due_date: updated.due_date,
-                         status_id: updated.status_id,
+                         start_date: updated.start_date ?? null,
+                         end_date: updated.end_date ?? null,
+                         due_date: updated.due_date ?? null,
+                         status_id: updated.status_id ?? null,
+                         is_recurring: updated.is_recurring ?? false,
+                         recurrence_type: updated.recurrence_type ?? null,
+                         recurrence_interval: updated.recurrence_interval ?? null,
+                         recurrence_column_id: updated.recurrence_column_id ?? null,
+                         next_occurrence_date: updated.next_occurrence_date ?? null,
                     };
+
                     return { data: mapped };
                } catch (err) {
                     const error = err as Error;
@@ -547,12 +609,19 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           },
           invalidatesTags: (_result, _error, { taskId, data }) => {
                const tags: Array<{ type: string; id: string }> = [{ type: 'Task', id: taskId }];
+
                if (data.column_id) {
                     tags.push({ type: 'Column', id: data.column_id });
                }
-               if (data.start_date || data.end_date) {
+
+               if (data.start_date || data.end_date || data.due_date) {
                     tags.push({ type: 'TasksWithDates', id: taskId });
                }
+
+               if (data.recurrence_column_id) {
+                    tags.push({ type: 'Column', id: data.recurrence_column_id });
+               }
+
                return tags;
           },
      }),
