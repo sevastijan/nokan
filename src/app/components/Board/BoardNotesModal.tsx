@@ -75,7 +75,7 @@ export default function BoardNotesModal({ isOpen, onClose, boardId }: BoardNotes
                <div ref={modalRef} className="w-full max-w-5xl h-[85vh] bg-slate-800 rounded-xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800">
-                         <h2 className="text-xl font-bold text-slate-100">Notatki do boarda</h2>
+                         <h2 className="text-xl font-bold text-slate-100">Board Notes</h2>
                          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg transition text-slate-400 hover:text-slate-200" aria-label="Close notes">
                               <FiX className="w-6 h-6" />
                          </button>

@@ -629,7 +629,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
           providesTags: (result) => (result ? [{ type: 'Board', id: 'LIST' }, ...result.map(({ id }) => ({ type: 'Board' as const, id }))] : [{ type: 'Board', id: 'LIST' }]),
      }),
-     // Dodaj te endpointy do pliku z boardEndpoints
 
      getBoardNotes: builder.query<{ id: string; board_id: string; content: { html: string }; created_at: string; updated_at: string } | null, string>({
           async queryFn(boardId) {
@@ -651,7 +650,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      saveBoardNotes: builder.mutation<{ success: boolean }, { boardId: string; content: { html: string } }>({
           async queryFn({ boardId, content }) {
                try {
-                    // Najpierw sprawdź czy istnieją notatki
                     const { data: existing } = await getSupabase().from('board_notes').select('id').eq('board_id', boardId).maybeSingle();
 
                     if (existing) {
