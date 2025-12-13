@@ -17,6 +17,8 @@ interface RawUser {
      image?: string;
      role?: string;
      created_at?: string;
+     custom_name?: string;
+     custom_image?: string;
 }
 
 export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
@@ -224,7 +226,6 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           },
           providesTags: (result) => (result ? [{ type: 'TeamsList', id: 'LIST' }, ...result.map((t) => ({ type: 'Team' as const, id: t.id }))] : [{ type: 'TeamsList', id: 'LIST' }]),
      }),
-
      getTeamMembersByBoardId: builder.query<User[], string>({
           async queryFn(boardId) {
                try {
@@ -239,7 +240,7 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
 
                     const { data: rawData, error: mErr } = await getSupabase()
                          .from('team_members')
-                         .select('user:users!team_members_user_id_fkey(id,name,email,image,role,created_at)')
+                         .select('user:users!team_members_user_id_fkey(id,name,email,image,custom_name,custom_image,role,created_at)')
                          .in('team_id', teamIds);
                     if (mErr) throw mErr;
 
@@ -255,6 +256,8 @@ export const teamEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                    name: u.name,
                                    email: u.email,
                                    image: u.image,
+                                   custom_name: u.custom_name,
+                                   custom_image: u.custom_image,
                                    role: u.role as 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | undefined,
                                    created_at: u.created_at,
                               });
