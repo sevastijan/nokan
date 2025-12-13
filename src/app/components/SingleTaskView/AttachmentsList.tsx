@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { FaPlus, FaDownload, FaTrash, FaEye, FaPaperclip } from 'react-icons/fa';
 import { Attachment, AttachmentsListProps } from '@/app/types/globalTypes';
 import { formatFileSize, getFileIcon } from './utils';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import Button from '../Button/Button';
 
 interface ExtendedAttachmentsListProps extends AttachmentsListProps {

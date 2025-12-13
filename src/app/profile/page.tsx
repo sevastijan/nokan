@@ -6,7 +6,7 @@ import Avatar from '../components/Avatar/Avatar';
 import { useGetUserRoleQuery, useGetMyBoardsQuery, useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation, useUpdateUserMutation } from '@/app/store/apiSlice';
 import Link from 'next/link';
 import { FaTachometerAlt, FaChevronRight, FaBell, FaEnvelope, FaEdit, FaCamera, FaSave, FaTimes } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { useDisplayUser } from '../hooks/useDisplayUser';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 

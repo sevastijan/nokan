@@ -1,35 +1,26 @@
-// src/app/layout.tsx
-import "./styles/globals.css";
-import { Providers } from "./providers";
-import ClientLayout from "./ClientLayout";
-import "react-toastify/dist/ReactToastify.css";
+import './styles/globals.css';
+import { Providers } from './providers';
+import ClientLayout from './ClientLayout';
+import { Toaster } from '@/components/ui/sonner';
 
-// Force dynamic rendering for all pages - no static generation during build
+// Force dynamic rendering...
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: "Nokan Taskboard",
-  description: "Taskboard application",
+     title: 'Nokan Taskboard',
+     description: 'Taskboard application',
 };
 
-/**
- * RootLayout is a Server Component.
- * It wraps everything with Providers, then delegates rendering to ClientLayout,
- * which handles session-based rendering of Navbar and content margin.
- */
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body className="bg-slate-900 text-slate-100">
-        <Providers>
-          {/* ClientLayout is a client-only component that uses useSession */}
-          <ClientLayout>{children}</ClientLayout>
-        </Providers>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+     return (
+          <html lang="en">
+               <body className="bg-slate-900 text-slate-100">
+                    <Providers>
+                         <ClientLayout>{children}</ClientLayout>
+                    </Providers>
+
+                    <Toaster position="top-right" duration={2500} />
+               </body>
+          </html>
+     );
 }

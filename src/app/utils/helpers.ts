@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/store/hooks';
 import { setAvatar, removeAvatar } from '@/app/store/slices/avatarSlice';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { getSupabase } from '@/app/lib/supabase';
 import { User, TaskDetail } from '@/app/types/globalTypes';
 
