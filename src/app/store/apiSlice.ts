@@ -49,6 +49,7 @@ export const apiSlice = createApi({
           'TaskCollaborators',
           'BoardMember',
           'CurrentUser',
+          'BoardNotes',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -130,4 +131,6 @@ export const {
      useGetBoardMembersQuery,
      useRemoveMemberFromBoardMutation,
      useUpdateUserMutation,
+     useGetBoardNotesQuery,
+     useSaveBoardNotesMutation,
 } = apiSlice;

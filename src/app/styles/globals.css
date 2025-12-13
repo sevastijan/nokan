@@ -32,6 +32,10 @@ body {
      z-index: 9999 !important;
 }
 
+button {
+     cursor: pointer;
+}
+
 /* Toast styling - minimalistic */
 .Toastify__toast {
      background: #1e293b !important;

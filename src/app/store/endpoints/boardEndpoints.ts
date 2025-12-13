@@ -629,4 +629,57 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
           providesTags: (result) => (result ? [{ type: 'Board', id: 'LIST' }, ...result.map(({ id }) => ({ type: 'Board' as const, id }))] : [{ type: 'Board', id: 'LIST' }]),
      }),
+
+     getBoardNotes: builder.query<{ id: string; board_id: string; content: { html: string }; created_at: string; updated_at: string } | null, string>({
+          async queryFn(boardId) {
+               try {
+                    const { data, error } = await getSupabase().from('board_notes').select('*').eq('board_id', boardId).maybeSingle();
+
+                    if (error && error.code !== 'PGRST116') throw error;
+
+                    return { data: data || null };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[getBoardNotes] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          providesTags: (_result, _error, boardId) => [{ type: 'BoardNotes', id: boardId }],
+     }),
+
+     saveBoardNotes: builder.mutation<{ success: boolean }, { boardId: string; content: { html: string } }>({
+          async queryFn({ boardId, content }) {
+               try {
+                    const { data: existing } = await getSupabase().from('board_notes').select('id').eq('board_id', boardId).maybeSingle();
+
+                    if (existing) {
+                         // Update
+                         const { error } = await getSupabase()
+                              .from('board_notes')
+                              .update({
+                                   content,
+                                   updated_at: new Date().toISOString(),
+                              })
+                              .eq('board_id', boardId);
+
+                         if (error) throw error;
+                    } else {
+                         // Insert
+                         const { error } = await getSupabase().from('board_notes').insert({
+                              board_id: boardId,
+                              content,
+                         });
+
+                         if (error) throw error;
+                    }
+
+                    return { data: { success: true } };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[saveBoardNotes] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          invalidatesTags: (_result, _error, { boardId }) => [{ type: 'BoardNotes', id: boardId }],
+     }),
 });
