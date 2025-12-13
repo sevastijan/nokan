@@ -266,17 +266,13 @@ const ProfilePage = () => {
                     leaveTo="opacity-0"
                >
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                         {/* Left Column - User Info */}
                          <div className="lg:col-span-1 space-y-6">
-                              {/* Profile Card */}
                               <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-slate-700/50 rounded-2xl shadow-xl overflow-hidden">
-                                   {/* Decorative background gradient */}
                                    <div className="h-16 sm:h-20 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 relative overflow-hidden">
                                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900"></div>
                                    </div>
 
                                    <div className="px-4 sm:px-6 pb-6 -mt-10 sm:-mt-12 flex flex-col items-center text-center">
-                                        {/* Avatar with upload */}
                                         <div className="relative group mb-3">
                                              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-300"></div>
                                              <div className="relative">
@@ -284,7 +280,7 @@ const ProfilePage = () => {
                                                   <button
                                                        onClick={() => fileInputRef.current?.click()}
                                                        disabled={isUploadingAvatar}
-                                                       className="absolute inset-0 bg-black/70 cursor-pointer rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed backdrop-blur-sm"
+                                                       className="absolute inset-0 bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed backdrop-blur-sm"
                                                   >
                                                        {isUploadingAvatar ? (
                                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -314,7 +310,7 @@ const ProfilePage = () => {
                                                        />
                                                        <button
                                                             onClick={handleNameSave}
-                                                            className="p-2 bg-gradient-to-r from-blue-600 to-blue-700 cursor-pointer hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                                                            className="p-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg"
                                                        >
                                                             <FaSave className="w-3.5 h-3.5 text-white" />
                                                        </button>
@@ -323,7 +319,7 @@ const ProfilePage = () => {
                                                                  setIsEditingName(false);
                                                                  setEditedName(getDisplayName());
                                                             }}
-                                                            className="p-2 bg-slate-700 hover:bg-slate-600 cursor-pointer rounded-lg transition-all transform hover:scale-105 active:scale-95"
+                                                            className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-all transform hover:scale-105 active:scale-95"
                                                        >
                                                             <FaTimes className="w-3.5 h-3.5 text-white" />
                                                        </button>
@@ -332,8 +328,8 @@ const ProfilePage = () => {
                                                   <div className="group/name cursor-pointer" onClick={() => setIsEditingName(true)}>
                                                        <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-800/50 transition-all">
                                                             <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent truncate">{getDisplayName()}</h2>
-                                                            <div className="p-1 rounded-md bg-slate-800/0 group-hover/name:bg-slate-800 transition-all opacity-0 group-hover/name:opacity-100">
-                                                                 <FaEdit className="w-3 h-3 text-slate-400 group-hover/name:text-blue-400" />
+                                                            <div className="p-1 rounded-md bg-slate-800/50 group-hover/name:bg-slate-800 transition-all">
+                                                                 <FaEdit className="w-3 h-3 text-slate-400 group-hover/name:text-blue-400 transition-colors" />
                                                             </div>
                                                        </div>
                                                   </div>
