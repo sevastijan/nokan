@@ -269,43 +269,53 @@ const ProfilePage = () => {
                          {/* Left Column - User Info */}
                          <div className="lg:col-span-1 space-y-6">
                               {/* Profile Card */}
-                              <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-xl p-6">
-                                   <div className="flex flex-col items-center text-center gap-4">
+                              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-slate-700/50 rounded-2xl shadow-xl overflow-hidden">
+                                   {/* Decorative background gradient */}
+                                   <div className="h-16 sm:h-20 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900"></div>
+                                   </div>
+
+                                   <div className="px-4 sm:px-6 pb-6 -mt-10 sm:-mt-12 flex flex-col items-center text-center">
                                         {/* Avatar with upload */}
-                                        <div className="relative group">
-                                             <Avatar
-                                                  src={getDisplayAvatar()}
-                                                  alt="Avatar"
-                                                  size={80}
-                                                  className="ring-2 ring-blue-400/40"
-                                                  key={getDisplayAvatar()} // wymusza reload przy zmianie URL
-                                             />
-                                             <button
-                                                  onClick={() => fileInputRef.current?.click()}
-                                                  disabled={isUploadingAvatar}
-                                                  className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:cursor-not-allowed"
-                                             >
-                                                  {isUploadingAvatar ? (
-                                                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                  ) : (
-                                                       <FaCamera className="w-5 h-5 text-white" />
-                                                  )}
-                                             </button>
+                                        <div className="relative group mb-3">
+                                             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-300"></div>
+                                             <div className="relative">
+                                                  <Avatar src={getDisplayAvatar()} alt="Avatar" size={80} className="ring-4 ring-slate-900" key={getDisplayAvatar()} />
+                                                  <button
+                                                       onClick={() => fileInputRef.current?.click()}
+                                                       disabled={isUploadingAvatar}
+                                                       className="absolute inset-0 bg-black/70 cursor-pointer rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed backdrop-blur-sm"
+                                                  >
+                                                       {isUploadingAvatar ? (
+                                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                       ) : (
+                                                            <div className="flex flex-col items-center gap-0.5">
+                                                                 <FaCamera className="w-5 h-5 text-white drop-shadow-lg" />
+                                                                 <span className="text-[10px] text-white font-medium">Zmień</span>
+                                                            </div>
+                                                       )}
+                                                  </button>
+                                             </div>
                                              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                                         </div>
 
-                                        <div className="w-full">
+                                        <div className="w-full space-y-2">
                                              {/* Name edit */}
                                              {isEditingName ? (
-                                                  <div className="flex items-center gap-2 mb-2">
+                                                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                                        <input
                                                             type="text"
                                                             value={editedName}
                                                             onChange={(e) => setEditedName(e.target.value)}
-                                                            className="flex-1 px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
+                                                            className="flex-1 px-3 py-1.5 bg-slate-800/80 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                            placeholder="Twoja nazwa..."
                                                             autoFocus
                                                        />
-                                                       <button onClick={handleNameSave} className="p-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg transition">
+                                                       <button
+                                                            onClick={handleNameSave}
+                                                            className="p-2 bg-gradient-to-r from-blue-600 to-blue-700 cursor-pointer hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                                                       >
                                                             <FaSave className="w-3.5 h-3.5 text-white" />
                                                        </button>
                                                        <button
@@ -313,22 +323,28 @@ const ProfilePage = () => {
                                                                  setIsEditingName(false);
                                                                  setEditedName(getDisplayName());
                                                             }}
-                                                            className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+                                                            className="p-2 bg-slate-700 hover:bg-slate-600 cursor-pointer rounded-lg transition-all transform hover:scale-105 active:scale-95"
                                                        >
                                                             <FaTimes className="w-3.5 h-3.5 text-white" />
                                                        </button>
                                                   </div>
                                              ) : (
-                                                  <div className="flex items-center justify-center gap-2 mb-2">
-                                                       <div className="text-xl font-bold text-white truncate">{getDisplayName()}</div>
-                                                       <button onClick={() => setIsEditingName(true)} className="p-1.5 hover:bg-slate-800 rounded-lg transition">
-                                                            <FaEdit className="w-3.5 h-3.5 text-slate-400 hover:text-white" />
-                                                       </button>
+                                                  <div className="group/name cursor-pointer" onClick={() => setIsEditingName(true)}>
+                                                       <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-800/50 transition-all">
+                                                            <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent truncate">{getDisplayName()}</h2>
+                                                            <div className="p-1 rounded-md bg-slate-800/0 group-hover/name:bg-slate-800 transition-all opacity-0 group-hover/name:opacity-100">
+                                                                 <FaEdit className="w-3 h-3 text-slate-400 group-hover/name:text-blue-400" />
+                                                            </div>
+                                                       </div>
                                                   </div>
                                              )}
 
-                                             <div className="text-slate-400 text-sm truncate">{session?.user?.email}</div>
-                                             <div className="mt-3 flex justify-center">{getRoleBadge()}</div>
+                                             <div className="flex items-center justify-center gap-2 text-slate-400 text-xs sm:text-sm">
+                                                  <FaEnvelope className="w-3 h-3" />
+                                                  <span className="truncate">{session?.user?.email}</span>
+                                             </div>
+
+                                             <div className="flex justify-center pt-1">{getRoleBadge()}</div>
                                         </div>
                                    </div>
                               </div>
