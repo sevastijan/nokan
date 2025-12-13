@@ -161,6 +161,11 @@ export interface Task {
      status?: string;
      status_id?: string | null;
      statuses?: Status[];
+     is_recurring?: boolean;
+     recurrence_type?: 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+     recurrence_interval?: number | null;
+     recurrence_column_id?: string | null;
+     next_occurrence_date?: string | null;
 }
 
 export interface TaskDetail {
@@ -191,6 +196,11 @@ export interface TaskDetail {
      hasUnsavedChanges?: boolean;
      completed?: boolean;
      statuses?: Status[];
+     is_recurring?: boolean;
+     recurrence_type?: 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+     recurrence_interval?: number | null;
+     recurrence_column_id?: string | null;
+     next_occurrence_date?: string | null;
 }
 
 export interface Column {

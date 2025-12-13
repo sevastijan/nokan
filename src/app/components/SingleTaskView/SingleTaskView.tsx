@@ -3,7 +3,7 @@
 import { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { FaCalendarAlt, FaClock, FaLink, FaTimes } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaLink, FaTimes, FaRedo } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
 import UserSelector from './UserSelector';
@@ -18,10 +18,12 @@ import Button from '../Button/Button';
 import Avatar from '../Avatar/Avatar';
 import ColumnSelector from '@/app/components/ColumnSelector';
 import ActionFooter from './ActionFooter';
+import RecurringTaskModal from './RecurringTaskModal';
 
 import { calculateDuration, copyTaskUrlToClipboard, formatDate, formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { SingleTaskViewProps } from '@/app/types/globalTypes';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
+import { Column } from '@/app/types/globalTypes';
 
 const getDisplayData = (user: { name?: string | null; image?: string | null; custom_name?: string | null; custom_image?: string | null; email?: string }) => ({
      name: user.custom_name || user.name || user.email || 'User',
@@ -46,7 +48,7 @@ const SingleTaskView = ({
      initialStartDate,
      columns,
      statuses: propStatuses,
-}: SingleTaskViewProps & { columns: { id: string; title: string }[] }) => {
+}: SingleTaskViewProps & { columns: Column[] }) => {
      const { currentUser, loading: userLoading } = useCurrentUser();
 
      const {
@@ -98,6 +100,7 @@ const SingleTaskView = ({
 
      const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
      const [isAutoSaving] = useState(false);
+     const [showRecurringModal, setShowRecurringModal] = useState(false);
 
      const appliedInitialDate = useRef(false);
 
@@ -187,9 +190,8 @@ const SingleTaskView = ({
                onClose();
           }
      };
-
      useEffect(() => {
-          if (isNewTask || !hasUnsavedChanges) {
+          if (isNewTask || !hasUnsavedChanges || showRecurringModal) {
                if (autosaveTimerRef.current) {
                     clearTimeout(autosaveTimerRef.current);
                     autosaveTimerRef.current = null;
@@ -218,7 +220,7 @@ const SingleTaskView = ({
                     autosaveTimerRef.current = null;
                }
           };
-     }, [hasUnsavedChanges, isNewTask, autoSaveTask]);
+     }, [hasUnsavedChanges, isNewTask, autoSaveTask, showRecurringModal]);
 
      useOutsideClick([modalRef], requestClose);
 
@@ -693,6 +695,33 @@ const SingleTaskView = ({
                                         <div className="text-sm truncate">{columns.find((c) => c.id === localColumnId)?.title || '—'}</div>
                                    </div>
 
+                                   {/* Zadanie cykliczne – przeniesione na sam dół aside */}
+                                   {!isNewTask && (
+                                        <div className="mb-6 border-t border-slate-600 pt-6">
+                                             <button
+                                                  onClick={() => setShowRecurringModal(true)}
+                                                  className="w-full flex items-center justify-center gap-4 px-4 py-4 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-left"
+                                             >
+                                                  <FaRedo className={`w-6 h-6 flex-shrink-0 ${task?.is_recurring ? 'text-purple-400' : 'text-slate-400'}`} />
+                                                  <div>
+                                                       <span className="font-medium block text-white">{task?.is_recurring ? 'Zadanie cykliczne (włączone)' : 'Zadanie cykliczne'}</span>
+                                                       {task?.is_recurring && (
+                                                            <span className="text-xs text-purple-300 block mt-1">
+                                                                 co {task.recurrence_interval}{' '}
+                                                                 {task.recurrence_type === 'daily'
+                                                                      ? 'dzień'
+                                                                      : task.recurrence_type === 'weekly'
+                                                                      ? 'tydzień'
+                                                                      : task.recurrence_type === 'monthly'
+                                                                      ? 'miesięcy'
+                                                                      : 'lat'}
+                                                            </span>
+                                                       )}
+                                                  </div>
+                                             </button>
+                                        </div>
+                                   )}
+
                                    {task?.start_date && task?.end_date && (
                                         <div className="mb-6">
                                              <h4 className="text-sm font-semibold text-slate-300 mt-4 mb-2">Czas trwania</h4>
@@ -716,6 +745,22 @@ const SingleTaskView = ({
                               onDelete={isNewTask ? undefined : handleDelete}
                               task={task ?? undefined}
                               tempTitle={tempTitle}
+                         />
+
+                         {/* Modal cykliczności – pozostaje na końcu komponentu */}
+                         <RecurringTaskModal
+                              isOpen={showRecurringModal}
+                              onClose={() => setShowRecurringModal(false)}
+                              isRecurring={task?.is_recurring || false}
+                              onToggleRecurring={(value) => updateTask({ is_recurring: value })}
+                              recurrenceInterval={task?.recurrence_interval ?? 1}
+                              onChangeInterval={(value) => updateTask({ recurrence_interval: value })}
+                              recurrenceType={task?.recurrence_type || 'weekly'}
+                              onChangeType={(value) => updateTask({ recurrence_type: value })}
+                              recurrenceColumnId={task?.recurrence_column_id}
+                              currentColumnId={task?.column_id ?? undefined}
+                              onChangeColumn={(colId) => updateTask({ recurrence_column_id: colId })}
+                              columns={columns}
                          />
                     </motion.div>
 

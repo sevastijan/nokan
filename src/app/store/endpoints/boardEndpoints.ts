@@ -62,6 +62,30 @@ interface RawAssignee {
      image?: string;
 }
 
+type SupabaseError = {
+     message?: string;
+     details?: string;
+     hint?: string;
+     code?: string;
+};
+
+const getErrorMessage = (err: unknown): string => {
+     if (!err) return 'Nieznany błąd';
+
+     if (typeof err === 'string') return err;
+
+     if (err && typeof err === 'object') {
+          const e = err as SupabaseError;
+          if (e.message && typeof e.message === 'string') return e.message;
+          if (e.details && typeof e.details === 'string') return e.details;
+          if (e.hint && typeof e.hint === 'string') return e.hint;
+          if (e.code && typeof e.code === 'string') return `Kod błędu: ${e.code}`;
+          return JSON.stringify(err);
+     }
+
+     return 'Nieznany błąd';
+};
+
 export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
      addBoard: builder.mutation<Board, { title: string; user_id: string }>({
           async queryFn({ title, user_id }) {
@@ -81,9 +105,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                     };
                     return { data: newBoard };
                } catch (err) {
-                    const error = err as Error;
-                    console.error('[apiSlice.addBoard] error:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.addBoard] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           invalidatesTags: () => [{ type: 'Board', id: 'LIST' }],
@@ -91,6 +115,10 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
      getBoard: builder.query<Board, string>({
           async queryFn(boardId) {
+               if (!boardId || boardId.trim() === '') {
+                    return { error: { status: 'CUSTOM_ERROR', error: 'Brak ID boarda w zapytaniu' } };
+               }
+
                try {
                     const { data: bRaw, error: be } = await getSupabase()
                          .from('boards')
@@ -103,14 +131,16 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          )
                          .eq('id', boardId)
                          .single();
-                    if (be || !bRaw) throw be || new Error('Board not found');
+
+                    if (be) throw be;
+                    if (!bRaw) throw new Error('Board nie został znaleziony');
 
                     const rawBoard = bRaw as RawBoard & { statuses?: { id: string; label: string; color: string }[] };
 
                     let ownerObj: { name: string; email: string } | null = null;
                     if (Array.isArray(rawBoard.owner) && rawBoard.owner.length > 0) {
                          ownerObj = rawBoard.owner[0] as { name: string; email: string };
-                    } else if (rawBoard.owner) {
+                    } else if (rawBoard.owner && typeof rawBoard.owner === 'object' && 'name' in rawBoard.owner) {
                          ownerObj = rawBoard.owner as { name: string; email: string };
                     }
 
@@ -130,17 +160,17 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          .from('columns')
                          .select(
                               `
-          *,
-          tasks:tasks(
-            *,
-            assignee:users!tasks_user_id_fkey(id, name, email, image, custom_name, custom_image),
-            collaborators:task_collaborators(
-              id,
-              user_id,
-              user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
-            )
-          )
-        `,
+       *,
+       tasks:tasks!tasks_column_id_fkey(
+         *,
+         assignee:users!tasks_user_id_fkey(id, name, email, image, custom_name, custom_image),
+         collaborators:task_collaborators(
+           id,
+           user_id,
+           user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
+         )
+       )
+     `,
                          )
                          .eq('board_id', boardId)
                          .order('order', { ascending: true });
@@ -153,7 +183,8 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          const mappedTasks: Task[] = rawTasks.map((t) => {
                               const rawAssignee = Array.isArray(t.assignee)
                                    ? (t.assignee[0] as RawAssignee & { custom_name?: string; custom_image?: string })
-                                   : (t.assignee as RawAssignee & { custom_name?: string; custom_image?: string });
+                                   : (t.assignee as (RawAssignee & { custom_name?: string; custom_image?: string }) | null);
+
                               const assigneeObj: User | undefined = rawAssignee
                                    ? {
                                           id: rawAssignee.id,
@@ -165,18 +196,20 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                      }
                                    : undefined;
 
-                              // Process collaborators
                               const collaborators: User[] = (t.collaborators || [])
-                                   .filter((c) => c.user)
+                                   .filter(
+                                        (c): c is { id: string; user_id: string; user: { id: string; name: string; email: string; image?: string; custom_name?: string; custom_image?: string } } =>
+                                             !!c.user && typeof c.user === 'object' && !Array.isArray(c.user) && 'id' in c.user,
+                                   )
                                    .map((c) => {
-                                        const u = Array.isArray(c.user) ? c.user[0] : c.user;
+                                        const u = c.user;
                                         return {
-                                             id: u?.id || c.user_id,
-                                             name: u?.name || '',
-                                             email: u?.email || '',
-                                             image: u?.image,
-                                             custom_name: (u as { custom_name?: string })?.custom_name,
-                                             custom_image: (u as { custom_image?: string })?.custom_image,
+                                             id: u.id,
+                                             name: u.name || '',
+                                             email: u.email || '',
+                                             image: u.image,
+                                             custom_name: 'custom_name' in u ? u.custom_name : undefined,
+                                             custom_image: 'custom_image' in u ? u.custom_image : undefined,
                                         };
                                    });
 
@@ -202,6 +235,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                    status_id: t.status_id || null,
                               };
                          });
+
                          const col: Column = {
                               id: c.id,
                               boardId: c.board_id,
@@ -214,10 +248,10 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     return { data: boardBase };
                } catch (err) {
-                    const error = err as Error;
-                    console.error('[apiSlice.getBoard] error:', error);
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.getBoard] error:', errorMessage, err);
                     return {
-                         error: { status: 'CUSTOM_ERROR', error: error.message },
+                         error: { status: 'CUSTOM_ERROR', error: errorMessage },
                     };
                }
           },
@@ -250,7 +284,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          let ownerObj: { name: string; email: string } | null = null;
                          if (Array.isArray(b.owner) && b.owner.length > 0) {
                               ownerObj = b.owner[0] as { name: string; email: string };
-                         } else if (b.owner) {
+                         } else if (b.owner && typeof b.owner === 'object' && 'name' in b.owner) {
                               ownerObj = b.owner as { name: string; email: string };
                          }
                          return {
@@ -289,7 +323,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                    let ownerObj: { name: string; email: string } | null = null;
                                    if (Array.isArray(b.owner) && b.owner.length > 0) {
                                         ownerObj = b.owner[0] as { name: string; email: string };
-                                   } else if (b.owner) {
+                                   } else if (b.owner && typeof b.owner === 'object' && 'name' in b.owner) {
                                         ownerObj = b.owner as { name: string; email: string };
                                    }
                                    return {
@@ -335,9 +369,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     return { data: boardsWithCounts };
                } catch (err) {
-                    const error = err as Error;
-                    console.error('[apiSlice.getMyBoards] error:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.getMyBoards] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           providesTags: (result) => (result ? result.map((b) => ({ type: 'Board' as const, id: b.id })) : []),
@@ -350,9 +384,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                     if (error) throw error;
                     return { data: { id: boardId } };
                } catch (err) {
-                    const error = err as Error;
-                    console.error('[apiSlice.removeBoard] error:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.removeBoard] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           invalidatesTags: (_result, _error, { boardId }) => [
@@ -368,9 +402,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                     if (error) throw error;
                     return { data: { id: boardId, title } };
                } catch (err) {
-                    const error = err as Error;
-                    console.error('[apiSlice.updateBoardTitle] error:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.updateBoardTitle] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           invalidatesTags: (_result, _error, { boardId }) => [{ type: 'Board', id: boardId }],
@@ -380,50 +414,38 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
           async queryFn(userId) {
                try {
                     const { data: ownBoardsData, error: ownErr } = await getSupabase().from('boards').select('id,title,user_id,created_at').eq('user_id', userId);
-                    if (ownErr) {
-                         console.error('getUserBoards – owned boards error:', ownErr.message);
-                    }
+                    if (ownErr) throw ownErr;
                     const own = ownBoardsData || [];
 
                     const { data: tm, error: tmErr } = await getSupabase().from('team_members').select('team_id').eq('user_id', userId);
-                    if (tmErr) {
-                         console.error('getUserBoards – team_members error:', tmErr.message);
-                    }
+                    if (tmErr) throw tmErr;
                     const teamIds = tm?.map((r) => r.team_id) || [];
 
                     let teamBoardIds: string[] = [];
                     if (teamIds.length > 0) {
                          const { data: tb, error: tbErr } = await getSupabase().from('team_boards').select('board_id').in('team_id', teamIds);
-                         if (tbErr) {
-                              console.error('getUserBoards – team_boards error:', tbErr.message);
-                         } else {
-                              teamBoardIds = tb?.map((r) => r.board_id) || [];
-                         }
+                         if (tbErr) throw tbErr;
+                         teamBoardIds = tb?.map((r) => r.board_id) || [];
                     }
 
                     let teamBoards: { id: string; title: string; user_id: string; created_at?: string }[] = [];
                     if (teamBoardIds.length > 0) {
                          const { data: tBoardsData, error: tBoardsErr } = await getSupabase().from('boards').select('id,title,user_id,created_at').in('id', teamBoardIds);
-                         if (tBoardsErr) {
-                              console.error('getUserBoards – fetch boards by IDs error:', tBoardsErr.message);
-                         } else {
-                              teamBoards = tBoardsData || [];
-                         }
+                         if (tBoardsErr) throw tBoardsErr;
+                         teamBoards = tBoardsData || [];
                     }
 
                     const map = new Map<string, Board>();
-                    own.forEach((b: { id: string; title: string; user_id: string; created_at?: string }) =>
-                         map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, columns: [], statuses: [], updated_at: undefined } as Board),
-                    );
-                    teamBoards.forEach((b: { id: string; title: string; user_id: string; created_at?: string }) => {
+                    own.forEach((b) => map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, columns: [], statuses: [], updated_at: undefined } as Board));
+                    teamBoards.forEach((b) => {
                          if (!map.has(b.id)) map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, statuses: [], columns: [], updated_at: undefined } as Board);
                     });
                     const result: Board[] = Array.from(map.values());
                     return { data: result };
                } catch (err) {
-                    const error = err as Error;
-                    console.error('getUserBoards – unexpected error:', error);
-                    return { error: { status: 500, data: error.message } };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.getUserBoards] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           providesTags: (result) => (result ? [...result.map(({ id }) => ({ type: 'Boards' as const, id })), { type: 'Boards', id: 'LIST' }] : [{ type: 'Boards', id: 'LIST' }]),
@@ -445,8 +467,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     return { data: (boards ?? []) as Board[] };
                } catch (err) {
-                    const error = err as Error;
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.getBoardsByTeamId] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           providesTags: (_result, _error, teamId) => [{ type: 'Team', id: teamId }],
@@ -457,9 +480,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                try {
                     const { data: existingTeam, error: findError } = await getSupabase().from('teams').select('id').eq('board_id', boardId).maybeSingle();
 
-                    if (findError && findError.code !== 'PGRST116') {
-                         throw findError;
-                    }
+                    if (findError && findError.code !== 'PGRST116') throw findError;
 
                     let teamId: string;
 
@@ -468,35 +489,27 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                     } else {
                          const { data: newTeam, error: createError } = await getSupabase().from('teams').insert({ board_id: boardId }).select('id').single();
 
-                         if (createError || !newTeam) {
-                              throw createError || new Error('Failed to create team');
-                         }
+                         if (createError || !newTeam) throw createError || new Error('Failed to create team');
                          teamId = newTeam.id;
                     }
 
                     const { error: insertError } = await getSupabase().from('team_members').insert({ team_id: teamId, user_id: userId });
 
                     if (insertError) {
-                         if (insertError.code === '23505') {
-                              return { data: { success: true } };
-                         }
+                         if ('code' in insertError && insertError.code === '23505') return { data: { success: true } };
                          throw insertError;
                     }
 
                     return { data: { success: true } };
                } catch (err) {
-                    const error = err as { message?: string };
-                    console.error('[addMemberToBoard] error:', error);
-                    return {
-                         error: {
-                              status: 'CUSTOM_ERROR',
-                              error: error.message || 'Failed to add member to board',
-                         },
-                    };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.addMemberToBoard] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           invalidatesTags: (_result, _error, { boardId }) => [{ type: 'Board', id: boardId }],
      }),
+
      getBoardMembers: builder.query<User[], string>({
           async queryFn(boardId) {
                try {
@@ -530,8 +543,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     return { data: users };
                } catch (err) {
-                    console.error('[getBoardMembers] error:', err);
-                    return { data: [] };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.getBoardMembers] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           providesTags: (result) =>
@@ -543,13 +557,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                try {
                     const { data: team, error: teamError } = await getSupabase().from('teams').select('id').eq('board_id', boardId).single();
 
-                    if (teamError && teamError.code !== 'PGRST116') {
-                         throw teamError;
-                    }
+                    if (teamError && teamError.code !== 'PGRST116') throw teamError;
 
-                    if (!team) {
-                         return { data: { success: true } };
-                    }
+                    if (!team) return { data: { success: true } };
 
                     const { error: deleteError } = await getSupabase().from('team_members').delete().eq('team_id', team.id).eq('user_id', userId);
 
@@ -557,15 +567,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     return { data: { success: true } };
                } catch (err) {
-                    const error = err as { message?: string };
-                    console.error('[removeMemberFromBoard] error:', error);
-
-                    return {
-                         error: {
-                              status: 'CUSTOM_ERROR',
-                              error: error.message || 'Nie udało się usunąć użytkownika z boarda',
-                         },
-                    };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.removeMemberFromBoard] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           invalidatesTags: (_result, _error, { boardId }) => [
@@ -593,7 +597,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                               let memberCount = 0;
                               if (teamIds.length > 0) {
                                    const { count } = await getSupabase().from('team_members').select('*', { count: 'exact', head: true }).in('team_id', teamIds);
-
                                    memberCount = count ?? 0;
                               }
 
@@ -617,16 +620,11 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     return { data: boardsWithCounts };
                } catch (err) {
-                    console.error('[getAllBoards] error:', err);
-                    return {
-                         error: {
-                              status: 'CUSTOM_ERROR',
-                              error: (err as Error)?.message || 'Failed to fetch boards',
-                         },
-                    };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.getAllBoards] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
-
           providesTags: (result) => (result ? [{ type: 'Board', id: 'LIST' }, ...result.map(({ id }) => ({ type: 'Board' as const, id }))] : [{ type: 'Board', id: 'LIST' }]),
      }),
 
@@ -639,9 +637,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     return { data: data || null };
                } catch (err) {
-                    const error = err as Error;
-                    console.error('[getBoardNotes] error:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.getBoardNotes] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           providesTags: (_result, _error, boardId) => [{ type: 'BoardNotes', id: boardId }],
@@ -653,7 +651,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                     const { data: existing } = await getSupabase().from('board_notes').select('id').eq('board_id', boardId).maybeSingle();
 
                     if (existing) {
-                         // Update
                          const { error } = await getSupabase()
                               .from('board_notes')
                               .update({
@@ -664,7 +661,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                          if (error) throw error;
                     } else {
-                         // Insert
                          const { error } = await getSupabase().from('board_notes').insert({
                               board_id: boardId,
                               content,
@@ -675,9 +671,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                     return { data: { success: true } };
                } catch (err) {
-                    const error = err as Error;
-                    console.error('[saveBoardNotes] error:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.saveBoardNotes] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
                }
           },
           invalidatesTags: (_result, _error, { boardId }) => [{ type: 'BoardNotes', id: boardId }],
