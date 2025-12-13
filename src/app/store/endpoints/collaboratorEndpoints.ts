@@ -7,6 +7,8 @@ interface RawUserData {
      name: string;
      email: string;
      image?: string;
+     custom_name?: string;
+     custom_image?: string;
 }
 
 interface RawCollaborator {
@@ -23,13 +25,15 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
                try {
                     const { data, error } = await supabase
                          .from('task_collaborators')
-                         .select(`
+                         .select(
+                              `
                               id,
                               task_id,
                               user_id,
                               created_at,
-                              user:users!task_collaborators_user_id_fkey(id, name, email, image)
-                         `)
+                              user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
+                         `,
+                         )
                          .eq('task_id', taskId);
 
                     if (error) throw error;
@@ -41,6 +45,8 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
                               name: userData?.name || '',
                               email: userData?.email || '',
                               image: userData?.image,
+                              custom_name: userData?.custom_name,
+                              custom_image: userData?.custom_image,
                          };
                     });
 
@@ -54,18 +60,13 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
           providesTags: (_result, _error, taskId) => [{ type: 'TaskCollaborators' as const, id: taskId }],
      }),
 
-     addTaskCollaborator: builder.mutation<
-          { taskId: string; userId: string },
-          { taskId: string; userId: string }
-     >({
+     addTaskCollaborator: builder.mutation<{ taskId: string; userId: string }, { taskId: string; userId: string }>({
           async queryFn({ taskId, userId }) {
                try {
-                    const { error } = await supabase
-                         .from('task_collaborators')
-                         .insert({
-                              task_id: taskId,
-                              user_id: userId,
-                         });
+                    const { error } = await supabase.from('task_collaborators').insert({
+                         task_id: taskId,
+                         user_id: userId,
+                    });
 
                     if (error) {
                          // Ignore duplicate error (user already a collaborator)
@@ -88,17 +89,10 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
           ],
      }),
 
-     removeTaskCollaborator: builder.mutation<
-          { taskId: string; userId: string },
-          { taskId: string; userId: string }
-     >({
+     removeTaskCollaborator: builder.mutation<{ taskId: string; userId: string }, { taskId: string; userId: string }>({
           async queryFn({ taskId, userId }) {
                try {
-                    const { error } = await supabase
-                         .from('task_collaborators')
-                         .delete()
-                         .eq('task_id', taskId)
-                         .eq('user_id', userId);
+                    const { error } = await supabase.from('task_collaborators').delete().eq('task_id', taskId).eq('user_id', userId);
 
                     if (error) throw error;
 
@@ -115,17 +109,11 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
           ],
      }),
 
-     updateTaskCollaborators: builder.mutation<
-          { taskId: string; collaboratorIds: string[]; boardId?: string },
-          { taskId: string; collaboratorIds: string[]; boardId?: string }
-     >({
+     updateTaskCollaborators: builder.mutation<{ taskId: string; collaboratorIds: string[]; boardId?: string }, { taskId: string; collaboratorIds: string[]; boardId?: string }>({
           async queryFn({ taskId, collaboratorIds }) {
                try {
                     // Get current collaborators
-                    const { data: currentCollabs, error: fetchError } = await supabase
-                         .from('task_collaborators')
-                         .select('user_id')
-                         .eq('task_id', taskId);
+                    const { data: currentCollabs, error: fetchError } = await supabase.from('task_collaborators').select('user_id').eq('task_id', taskId);
 
                     if (fetchError) throw fetchError;
 
@@ -135,11 +123,7 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
 
                     // Remove old collaborators
                     if (toRemove.length > 0) {
-                         const { error: deleteError } = await supabase
-                              .from('task_collaborators')
-                              .delete()
-                              .eq('task_id', taskId)
-                              .in('user_id', toRemove);
+                         const { error: deleteError } = await supabase.from('task_collaborators').delete().eq('task_id', taskId).in('user_id', toRemove);
 
                          if (deleteError) throw deleteError;
                     }
@@ -151,9 +135,7 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
                               user_id: userId,
                          }));
 
-                         const { error: insertError } = await supabase
-                              .from('task_collaborators')
-                              .insert(insertData);
+                         const { error: insertError } = await supabase.from('task_collaborators').insert(insertData);
 
                          if (insertError) throw insertError;
                     }

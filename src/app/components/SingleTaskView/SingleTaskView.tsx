@@ -19,9 +19,14 @@ import Avatar from '../Avatar/Avatar';
 import ColumnSelector from '@/app/components/ColumnSelector';
 import ActionFooter from './ActionFooter';
 
-import { calculateDuration, copyTaskUrlToClipboard, formatDate, formatFileSize, getAvatarUrl, getFileIcon } from '@/app/utils/helpers';
+import { calculateDuration, copyTaskUrlToClipboard, formatDate, formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { SingleTaskViewProps } from '@/app/types/globalTypes';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
+
+const getDisplayData = (user: { name?: string | null; image?: string | null; custom_name?: string | null; custom_image?: string | null; email?: string }) => ({
+     name: user.custom_name || user.name || user.email || 'User',
+     image: user.custom_image || user.image || '',
+});
 
 interface LocalFilePreview {
      id: string;
@@ -626,15 +631,18 @@ const SingleTaskView = ({
                                         <h3 className="text-sm text-slate-300 uppercase mb-2">Przypisani {selectedAssignees.length > 0 && `(${selectedAssignees.length})`}</h3>
                                         {selectedAssignees.length > 0 ? (
                                              <div className="space-y-2">
-                                                  {selectedAssignees.map((assignee) => (
-                                                       <div key={assignee.id} className="flex items-center bg-slate-700 p-2 rounded-lg">
-                                                            <Avatar src={getAvatarUrl(assignee) || ''} alt={assignee.name || 'User'} size={28} className="mr-2 border border-white/20" />{' '}
-                                                            <div className="flex flex-col min-w-0">
-                                                                 <span className="text-white text-sm font-medium truncate">{assignee.name}</span>
-                                                                 <span className="text-slate-400 text-xs truncate">{assignee.email}</span>
+                                                  {selectedAssignees.map((assignee) => {
+                                                       const displayData = getDisplayData(assignee);
+                                                       return (
+                                                            <div key={assignee.id} className="flex items-center bg-slate-700 p-2 rounded-lg">
+                                                                 <Avatar src={displayData.image || ''} alt={displayData.name} size={28} className="mr-2 border border-white/20" />
+                                                                 <div className="flex flex-col min-w-0">
+                                                                      <span className="text-white text-sm font-medium truncate">{displayData.name}</span>
+                                                                      <span className="text-slate-400 text-xs truncate">{assignee.email}</span>
+                                                                 </div>
                                                             </div>
-                                                       </div>
-                                                  ))}
+                                                       );
+                                                  })}
                                              </div>
                                         ) : (
                                              <div className="text-slate-400">Brak przypisania</div>
@@ -645,11 +653,18 @@ const SingleTaskView = ({
                                         <h3 className="text-sm text-slate-300 uppercase mb-2">Autor zadania</h3>
                                         {task?.creator ? (
                                              <div className="flex items-center bg-slate-700 p-3 rounded-lg">
-                                                  <Avatar src={getAvatarUrl(task.creator) || ''} alt={task.creator.name || 'User'} size={32} className="mr-3 border-2 border-white/20" />
-                                                  <div className="flex flex-col min-w-0">
-                                                       <span className="text-white font-medium truncate">{task.creator.name}</span>
-                                                       <span className="text-slate-400 text-sm truncate">{task.creator.email}</span>
-                                                  </div>
+                                                  {(() => {
+                                                       const creatorDisplay = getDisplayData(task.creator);
+                                                       return (
+                                                            <>
+                                                                 <Avatar src={creatorDisplay.image || ''} alt={creatorDisplay.name} size={32} className="mr-3 border-2 border-white/20" />
+                                                                 <div className="flex flex-col min-w-0">
+                                                                      <span className="text-white font-medium truncate">{creatorDisplay.name}</span>
+                                                                      <span className="text-slate-400 text-sm truncate">{task.creator.email}</span>
+                                                                 </div>
+                                                            </>
+                                                       );
+                                                  })()}
                                              </div>
                                         ) : (
                                              <div className="text-slate-400">Nieznany</div>
