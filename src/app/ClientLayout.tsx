@@ -24,10 +24,7 @@ const ClientLayout = ({ children }: ClientLayoutProps) => {
 
      return (
           <>
-               {/* Only show Navbar if logged in */}
                {loggedIn && <Navbar />}
-
-               {/* Conditionally apply left margin when Navbar/sidebar is present */}
                <main className={`main-content min-h-screen ${loggedIn ? 'md:ml-64' : ''}`}>{children}</main>
           </>
      );
