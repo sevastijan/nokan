@@ -2,7 +2,7 @@
 
 import { useState, useRef, ChangeEvent, KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiArrowLeft, FiSearch, FiFilter, FiGrid, FiList, FiPlus, FiUserPlus, FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiSearch, FiFilter, FiGrid, FiList, FiPlus, FiUserPlus, FiX, FiFileText } from 'react-icons/fi';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { BoardHeaderProps } from '@/app/types/globalTypes';
 import UserSelector from '@/app/components/SingleTaskView/UserSelector';
@@ -14,6 +14,7 @@ import { useHasManagementAccess } from '@/app/hooks/useHasManagementAccess';
 interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      boardId: string;
      currentUserId?: string;
+     onOpenNotes: () => void;
 }
 
 // Helper function to get display values
@@ -39,6 +40,7 @@ const BoardHeader = ({
      onFilterAssigneeChange,
      boardId,
      currentUserId,
+     onOpenNotes,
 }: ExtendedBoardHeaderProps) => {
      const router = useRouter();
 
@@ -249,6 +251,11 @@ const BoardHeader = ({
                                    <span className="hidden sm:inline">List</span>
                               </button>
                          </div>
+
+                         <button onClick={onOpenNotes} className="flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm font-medium rounded-lg transition">
+                              <FiFileText className="w-5 h-5 mr-1" />
+                              <span className="hidden sm:inline">Notes</span>
+                         </button>
 
                          {hasManagementAccess && (
                               <div className="relative" ref={membersRef}>

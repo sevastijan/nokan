@@ -15,6 +15,7 @@ import { extractTaskIdFromUrl } from '@/app/utils/helpers';
 import { getPriorities } from '@/app/lib/api';
 import { Column as ColumnType, User, Priority, AssigneeOption } from '@/app/types/globalTypes';
 import BoardHeader from '@/app/components/Board/BoardHeader';
+import BoardNotesModal from '@/app/components/Board/BoardNotesModal';
 
 export default function Page() {
      const params = useParams();
@@ -50,12 +51,16 @@ export default function Page() {
      const [searchTerm, setSearchTerm] = useState('');
      const [filterPriority, setFilterPriority] = useState<string | null>(null);
      const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
+     const [notesOpen, setNotesOpen] = useState(false);
 
      const prevBoardIdRef = useRef<string | null>(null);
      const columnsContainerRef = useRef<HTMLDivElement>(null);
      const savedScrollPosition = useRef<{ x: number; y: number } | null>(null);
      const columnScrollRefs = useRef<Map<string, HTMLDivElement>>(new Map());
      const savedColumnScrollPositions = useRef<Map<string, number>>(new Map());
+
+     const handleOpenNotes = () => setNotesOpen(true);
+     const handleCloseNotes = () => setNotesOpen(false);
 
      useEffect(() => {
           if (!board) return;
@@ -394,6 +399,7 @@ export default function Page() {
                     onFilterAssigneeChange={setFilterAssignee}
                     boardId={boardId}
                     currentUserId={currentUser?.id}
+                    onOpenNotes={handleOpenNotes}
                />
 
                {viewMode === 'columns' ? (
@@ -467,6 +473,7 @@ export default function Page() {
                          statuses={statuses}
                     />
                )}
+               <BoardNotesModal isOpen={notesOpen} onClose={handleCloseNotes} boardId={boardId} />
           </div>
      );
 }
