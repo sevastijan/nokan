@@ -280,7 +280,7 @@ const ProfilePage = () => {
                                                   <button
                                                        onClick={() => fileInputRef.current?.click()}
                                                        disabled={isUploadingAvatar}
-                                                       className="absolute inset-0 bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed backdrop-blur-sm"
+                                                       className="absolute inset-0 bg-black/70 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed backdrop-blur-sm"
                                                   >
                                                        {isUploadingAvatar ? (
                                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
