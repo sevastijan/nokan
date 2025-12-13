@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useGetClientSubmissionsQuery, useGetAllSubmissionsQuery, useUpdateSubmissionMutation, useDeleteSubmissionMutation } from '@/app/store/apiSlice';
-import { getSupabase } from '@/app/lib/supabase';
+import { supabase } from '@/app/lib/supabase';
 import Loader from '@/app/components/Loader';
 import { ClientSubmission as ImportedClientSubmission } from '@/app/types/globalTypes';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -147,12 +147,7 @@ export default function SubmissionsPage() {
                <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 relative z-10">
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }} className="flex items-center justify-between mb-12">
                          <div>
-                              <motion.h1
-                                   initial={{ opacity: 0, x: -20 }}
-                                   animate={{ opacity: 1, x: 0 }}
-                                   transition={{ duration: 0.6, delay: 0.1 }}
-                                   className="text-5xl font-bold text-white mb-2"
-                              >
+                              <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="text-5xl font-bold text-white mb-2">
                                    {isAdmin ? 'Wszystkie zgłoszenia' : 'Moje zgłoszenia'}
                               </motion.h1>
                               <motion.p initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="text-slate-400">
