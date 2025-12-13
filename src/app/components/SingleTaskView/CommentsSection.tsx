@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabase';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import CommentForm from './CommentForm';
 import CommentList from './CommentList';
 import { CommentsSectionProps } from '@/app/types/globalTypes';

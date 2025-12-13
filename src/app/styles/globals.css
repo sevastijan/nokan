@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 @plugin 'tailwindcss-animate';
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -32,65 +32,8 @@ body {
          transition duration-150;
 }
 
-/* Custom Toast Styles */
-.Toastify__toast-container {
-     z-index: 9999 !important;
-}
-
 button {
      cursor: pointer !important;
-}
-
-/* Toast styling - minimalistic */
-.Toastify__toast {
-     background: #1e293b !important;
-     border-radius: 0.5rem !important;
-     color: #e2e8f0 !important;
-     border: 0.0625rem solid #334155;
-     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
-     font-size: 1rem;
-     min-height: 3.5rem;
-     padding: 1rem 1.25rem !important;
-     display: flex;
-     align-items: center;
-}
-
-/* Success - left border */
-.Toastify__toast--success {
-     border-left: 0.3125rem solid #4ade80 !important;
-}
-
-/* Error - left border */
-.Toastify__toast--error {
-     border-left: 0.3125rem solid #f87171 !important;
-}
-
-/* Info - left border */
-.Toastify__toast--info {
-     border-left: 0.3125rem solid #7dd3fc !important;
-}
-
-/* Warning - left border */
-.Toastify__toast--warning {
-     border-left: 0.3125rem solid #fbbf24 !important;
-}
-
-/* Close button */
-.Toastify__close-button {
-     color: #cbd5e1 !important;
-     opacity: 0.7 !important;
-     transition: opacity 0.2s;
-}
-.Toastify__close-button:hover {
-     opacity: 1 !important;
-}
-
-/* Progress bar style */
-.Toastify__progress-bar {
-     background: #64748b !important;
-     height: 0.1875rem !important;
-     border-radius: 0.125rem !important;
-     bottom: 0 !important;
 }
 
 /* Firefox scrollbar */
@@ -256,10 +199,10 @@ button {
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+     * {
+          @apply border-border outline-ring/50;
      }
-  body {
-    @apply bg-background text-foreground;
+     body {
+          @apply bg-background text-foreground;
      }
 }

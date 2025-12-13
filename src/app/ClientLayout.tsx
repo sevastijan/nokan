@@ -3,7 +3,6 @@
 import { ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import Navbar from './components/Navbar';
-import { ToastContainer } from 'react-toastify';
 
 /**
  * ClientLayout wraps pages on the client side.
@@ -30,9 +29,6 @@ const ClientLayout = ({ children }: ClientLayoutProps) => {
 
                {/* Conditionally apply left margin when Navbar/sidebar is present */}
                <main className={`main-content min-h-screen ${loggedIn ? 'md:ml-64' : ''}`}>{children}</main>
-
-               {/* ToastContainer always present */}
-               <ToastContainer position="top-right" autoClose={2500} className="nokan-toastify" />
           </>
      );
 };

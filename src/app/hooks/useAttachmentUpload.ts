@@ -1,4 +1,4 @@
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 export function useAttachmentUpload(uploadAttachment: (file: File) => Promise<unknown | null>) {
      const uploadFiles = async (files: File[]) => {

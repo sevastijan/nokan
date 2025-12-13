@@ -2,7 +2,7 @@
 
 import { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { FaCalendarAlt, FaClock, FaLink, FaTimes, FaRedo } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
@@ -206,7 +206,7 @@ const SingleTaskView = ({
           autosaveTimerRef.current = setTimeout(async () => {
                try {
                     await autoSaveTask();
-                    toast.success('Zapisano automatycznie', { autoClose: 1500 });
+                    toast.success('Zapisano automatycznie');
                } catch (err) {
                     console.error('Autosave failed:', err);
                } finally {

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { FiX } from 'react-icons/fi';
 import BoardNotesEditor from './BoardNotesEditor';
 import { useGetBoardNotesQuery, useSaveBoardNotesMutation } from '@/app/store/apiSlice';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 interface BoardNotesModalProps {
      isOpen: boolean;

@@ -8,8 +8,8 @@ import { BoardHeaderProps } from '@/app/types/globalTypes';
 import UserSelector from '@/app/components/SingleTaskView/UserSelector';
 import Avatar from '../Avatar/Avatar';
 import { useGetAllUsersQuery, useGetBoardMembersQuery, useAddMemberToBoardMutation, useRemoveMemberFromBoardMutation } from '@/app/store/apiSlice';
-import { toast } from 'react-toastify';
 import { useHasManagementAccess } from '@/app/hooks/useHasManagementAccess';
+import { toast } from 'sonner';
 
 interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      boardId: string;

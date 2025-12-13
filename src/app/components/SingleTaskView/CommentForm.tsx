@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { CommentFormProps } from '@/app/types/globalTypes';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import Avatar from '../Avatar/Avatar';
 import Button from '../Button/Button';
 

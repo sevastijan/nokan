@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { FaChevronDown, FaPlus, FaTrash } from 'react-icons/fa';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 interface Status {
      id: string;
