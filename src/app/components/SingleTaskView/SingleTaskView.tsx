@@ -19,6 +19,7 @@ import ColumnSelector from '@/app/components/ColumnSelector';
 import ActionFooter from './ActionFooter';
 import RecurringTaskModal from './RecurringTaskModal';
 import TaskMetadataSidebar from './TaskMetadataSidebar';
+import TaskDescription from './TaskDescription';
 
 import { calculateDuration, copyTaskUrlToClipboard, formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { SingleTaskViewProps } from '@/app/types/globalTypes';
@@ -231,12 +232,6 @@ const SingleTaskView = ({
           if (e.key === 'Enter' && tempTitle.trim()) {
                (e.target as HTMLInputElement).blur();
           }
-     };
-
-     const handleDescriptionChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-          const value = e.target.value;
-          setTempDescription(value);
-          updateTask({ description: value });
      };
 
      const handleAssigneesChange = async (userIds: string[]) => {
@@ -533,16 +528,13 @@ const SingleTaskView = ({
                                         </div>
                                    )}
 
-                                   <div>
-                                        <span className="block text-sm font-medium text-slate-300 mb-2">Opis</span>
-                                        <textarea
-                                             className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                             value={tempDescription}
-                                             onChange={handleDescriptionChange}
-                                             placeholder="Opisz zadanie..."
-                                             rows={4}
-                                        />
-                                   </div>
+                                   <TaskDescription
+                                        value={tempDescription}
+                                        onChange={(value) => {
+                                             setTempDescription(value);
+                                             updateTask({ description: value });
+                                        }}
+                                   />
 
                                    <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
                                         <div className="flex-1">
