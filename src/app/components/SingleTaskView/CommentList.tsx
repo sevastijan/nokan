@@ -5,6 +5,7 @@ import { formatDate } from '@/app/utils/helpers';
 import MarkdownContent from '@/app/components/MarkdownContent/MarkdownContent';
 import Avatar from '../Avatar/Avatar';
 import CommentForm from './CommentForm';
+import Lightbox, { LightboxImage } from '@/app/components/Lightbox/Lightbox';
 import { Comment, CommentListProps, TaskDetail, User } from '@/app/types/globalTypes';
 
 interface ExtendedAuthor {
@@ -118,13 +119,49 @@ const CommentList = ({
      currentUser,
      task,
      onDeleteComment,
-     onImagePreview,
      teamMembers,
      onAddComment,
 }: CommentListProps & {
      teamMembers: ExtendedUser[];
      onAddComment: (content: string, parentId?: string) => Promise<void>;
 }) => {
+     const [lightboxOpen, setLightboxOpen] = useState(false);
+     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+     const extractImagesFromComments = (comments: Comment[]): LightboxImage[] => {
+          const images: LightboxImage[] = [];
+
+          const processComment = (comment: Comment) => {
+               const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+               let match;
+
+               while ((match = imageRegex.exec(comment.content)) !== null) {
+                    images.push({
+                         src: match[2], // URL obrazu
+                         alt: match[1] || 'Comment image',
+                         title: match[1] || `Image from ${getDisplayData(comment.author as never).name}'s comment`,
+                    });
+               }
+
+               if (comment.replies && comment.replies.length > 0) {
+                    comment.replies.forEach(processComment);
+               }
+          };
+
+          comments.forEach(processComment);
+          return images;
+     };
+
+     const allImages = extractImagesFromComments(comments);
+
+     const handleImagePreview = (imageUrl: string) => {
+          const imageIndex = allImages.findIndex((img) => img.src === imageUrl);
+          if (imageIndex !== -1) {
+               setCurrentImageIndex(imageIndex);
+               setLightboxOpen(true);
+          }
+     };
+
      const buildTree = (comments: Comment[]): ExtendedComment[] => {
           const map = new Map<string, ExtendedComment>();
           const roots: ExtendedComment[] = [];
@@ -173,20 +210,26 @@ const CommentList = ({
      }
 
      return (
-          <div className="space-y-6">
-               {tree.map((comment) => (
-                    <CommentItem
-                         key={comment.id}
-                         comment={comment}
-                         currentUser={currentUser as ExtendedUser}
-                         task={task}
-                         onDeleteComment={onDeleteComment}
-                         onImagePreview={onImagePreview}
-                         onAddComment={onAddComment}
-                         teamMembers={teamMembers}
-                    />
-               ))}
-          </div>
+          <>
+               <div className="space-y-6">
+                    {tree.map((comment) => (
+                         <CommentItem
+                              key={comment.id}
+                              comment={comment}
+                              currentUser={currentUser as ExtendedUser}
+                              task={task}
+                              onDeleteComment={onDeleteComment}
+                              onImagePreview={handleImagePreview}
+                              onAddComment={onAddComment}
+                              teamMembers={teamMembers}
+                         />
+                    ))}
+               </div>
+
+               {allImages.length > 0 && (
+                    <Lightbox images={allImages} currentIndex={currentImageIndex} isOpen={lightboxOpen} onClose={() => setLightboxOpen(false)} onNavigate={(index) => setCurrentImageIndex(index)} />
+               )}
+          </>
      );
 };
 
