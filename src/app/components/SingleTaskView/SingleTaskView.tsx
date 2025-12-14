@@ -10,7 +10,6 @@ import { useUpdateTaskCollaboratorsMutation } from '@/app/store/apiSlice';
 import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 import StatusSelector from './StatusSelector';
 import CommentsSection from './CommentsSection';
-import AttachmentsList from './AttachmentsList';
 import ImagePreviewModal from './ImagePreviewModal';
 import Button from '../Button/Button';
 import ActionFooter from './ActionFooter';
@@ -19,17 +18,12 @@ import TaskMetadataSidebar from './TaskMetadataSidebar';
 import TaskDescription from './TaskDescription';
 import TaskDatesSection from './TaskDatesSection';
 import TaskPropertiesGrid from './TaskPropertiesGrid';
+import TaskAttachmentsSection from './TaskAttachmentsSection';
 
-import { calculateDuration, copyTaskUrlToClipboard, formatFileSize, getFileIcon } from '@/app/utils/helpers';
+import { calculateDuration, copyTaskUrlToClipboard } from '@/app/utils/helpers';
 import { SingleTaskViewProps } from '@/app/types/globalTypes';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { Column } from '@/app/types/globalTypes';
-
-interface LocalFilePreview {
-     id: string;
-     file: File;
-     previewUrl: string;
-}
 
 const SingleTaskView = ({
      taskId,
@@ -81,11 +75,10 @@ const SingleTaskView = ({
      const modalRef = useRef<HTMLDivElement>(null);
      const titleInputRef = useRef<HTMLInputElement>(null);
      const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-     const fileInputRef = useRef<HTMLInputElement>(null);
 
      const [updateCollaboratorsMutation] = useUpdateTaskCollaboratorsMutation();
 
-     const [localFilePreviews, setLocalFilePreviews] = useState<LocalFilePreview[]>([]);
+     const [localFilePreviews, setLocalFilePreviews] = useState<Array<{ id: string; file: File; previewUrl: string }>>([]);
      const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
      const [tempTitle, setTempTitle] = useState('');
      const [tempDescription, setTempDescription] = useState('');
@@ -362,28 +355,6 @@ const SingleTaskView = ({
           }
      };
 
-     const handleFilesSelected = (e: ChangeEvent<HTMLInputElement>) => {
-          const files = e.target.files;
-          if (!files) return;
-
-          const previews: LocalFilePreview[] = [];
-          for (let i = 0; i < files.length; i++) {
-               const file = files[i];
-               const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
-               previews.push({ id: crypto.randomUUID(), file, previewUrl });
-          }
-          setLocalFilePreviews((prev) => [...prev, ...previews]);
-          if (fileInputRef.current) fileInputRef.current.value = '';
-     };
-
-     const removeLocalFile = (id: string) => {
-          setLocalFilePreviews((prev) => {
-               const removed = prev.find((f) => f.id === id);
-               if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
-               return prev.filter((f) => f.id !== id);
-          });
-     };
-
      const handleSave = async () => {
           if (!tempTitle.trim()) {
                toast.error('Tytuł jest wymagany');
@@ -394,10 +365,15 @@ const SingleTaskView = ({
                return;
           }
 
-          const success = isNewTask ? await saveNewTask() : await saveExistingTask();
+          let success = false;
 
-          if (success) {
-               if (isNewTask && localFilePreviews.length > 0 && currentTaskId) {
+          if (isNewTask) {
+               success = await saveNewTask();
+
+               if (success && localFilePreviews.length > 0 && currentTaskId) {
+                    toast.info('Przesyłanie załączników...');
+                    let uploadErrors = 0;
+
                     for (const { file, previewUrl } of localFilePreviews) {
                          try {
                               await uploadAttachmentMutation({
@@ -408,13 +384,29 @@ const SingleTaskView = ({
                               if (previewUrl) URL.revokeObjectURL(previewUrl);
                          } catch (error) {
                               console.error('Upload failed:', error);
-                              toast.error(`Upload failed: ${file.name}`);
+                              uploadErrors++;
                          }
                     }
+
                     setLocalFilePreviews([]);
                     await fetchTaskData();
+
+                    if (uploadErrors > 0) {
+                         toast.warning(`Zadanie utworzone, ale ${uploadErrors} załącznik(ów) nie zostało przesłanych`);
+                    } else {
+                         toast.success('Zadanie utworzone wraz z załącznikami');
+                    }
+               } else {
+                    toast.success('Zadanie utworzone');
                }
-               toast.success(isNewTask ? 'Zadanie utworzone' : 'Zadanie zaktualizowane');
+          } else {
+               success = await saveExistingTask();
+               if (success) {
+                    toast.success('Zadanie zaktualizowane');
+               }
+          }
+
+          if (success) {
                onClose();
           }
      };
@@ -547,38 +539,53 @@ const SingleTaskView = ({
                                         ) : null;
                                    })()}
 
-                                   <div className="mt-4">
-                                        <input type="file" multiple className="hidden" ref={fileInputRef} onChange={handleFilesSelected} />
-                                        {isNewTask && localFilePreviews.length > 0 && (
-                                             <ul className="mt-2 space-y-1">
-                                                  {localFilePreviews.map((lp) => (
-                                                       <li key={lp.id} className="flex items-center justify-between bg-slate-700 p-2 rounded">
-                                                            <div className="flex items-center gap-2">
-                                                                 <span>{getFileIcon(lp.file.type)}</span>
-                                                                 <span className="text-sm text-white">
-                                                                      {lp.file.name} ({formatFileSize(lp.file.size)})
-                                                                 </span>
-                                                            </div>
-                                                            <button type="button" className="text-red-400 hover:text-red-300 text-sm" onClick={() => removeLocalFile(lp.id)}>
-                                                                 Usuń
-                                                            </button>
-                                                       </li>
-                                                  ))}
-                                             </ul>
-                                        )}
-                                        {!isNewTask && task?.attachments && (
-                                             <div className="mt-4">
-                                                  <AttachmentsList
-                                                       attachments={task.attachments}
-                                                       currentUser={currentUser}
-                                                       taskId={task.id!}
-                                                       onTaskUpdate={fetchTaskData}
-                                                       onAttachmentsUpdate={fetchTaskData}
-                                                       onUploadAttachment={uploadAttachment}
-                                                  />
-                                             </div>
-                                        )}
-                                   </div>
+                                   <TaskAttachmentsSection
+                                        isNewTask={isNewTask}
+                                        taskId={task?.id}
+                                        attachments={task?.attachments || []}
+                                        localFilePreviews={localFilePreviews}
+                                        onAddFiles={(files) => {
+                                             // Walidacja rozmiaru plików przed dodaniem
+                                             const validFiles: File[] = [];
+                                             let hasInvalidFiles = false;
+
+                                             files.forEach((file) => {
+                                                  if (file.size > 10 * 1024 * 1024) {
+                                                       toast.error(`Plik ${file.name} jest za duży (max 10MB)`);
+                                                       hasInvalidFiles = true;
+                                                  } else {
+                                                       validFiles.push(file);
+                                                  }
+                                             });
+
+                                             if (validFiles.length > 0) {
+                                                  const previews = validFiles.map((file) => ({
+                                                       id: crypto.randomUUID(),
+                                                       file,
+                                                       previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
+                                                  }));
+                                                  setLocalFilePreviews((prev) => [...prev, ...previews]);
+
+                                                  if (!hasInvalidFiles) {
+                                                       toast.success(`Dodano ${validFiles.length} ${validFiles.length === 1 ? 'plik' : 'plików'}`);
+                                                  }
+                                             }
+                                        }}
+                                        onRemoveLocalFile={(id) => {
+                                             setLocalFilePreviews((prev) => {
+                                                  const removed = prev.find((f) => f.id === id);
+                                                  if (removed?.previewUrl) {
+                                                       URL.revokeObjectURL(removed.previewUrl);
+                                                  }
+                                                  return prev.filter((f) => f.id !== id);
+                                             });
+                                             toast.success('Plik usunięty');
+                                        }}
+                                        currentUser={currentUser}
+                                        onTaskUpdate={fetchTaskData}
+                                        onAttachmentsUpdate={fetchTaskData}
+                                        onUploadAttachment={uploadAttachment}
+                                   />
 
                                    {!isNewTask && task?.id && (
                                         <div className="mt-6">
