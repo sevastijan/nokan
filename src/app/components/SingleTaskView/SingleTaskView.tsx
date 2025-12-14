@@ -1,9 +1,9 @@
 'use client';
 
-import { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { FaCalendarAlt, FaClock, FaLink, FaTimes, FaRedo } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaLink, FaTimes } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
 import UserSelector from './UserSelector';
@@ -15,20 +15,15 @@ import CommentsSection from './CommentsSection';
 import AttachmentsList from './AttachmentsList';
 import ImagePreviewModal from './ImagePreviewModal';
 import Button from '../Button/Button';
-import Avatar from '../Avatar/Avatar';
 import ColumnSelector from '@/app/components/ColumnSelector';
 import ActionFooter from './ActionFooter';
 import RecurringTaskModal from './RecurringTaskModal';
+import TaskMetadataSidebar from './TaskMetadataSidebar';
 
-import { calculateDuration, copyTaskUrlToClipboard, formatDate, formatFileSize, getFileIcon } from '@/app/utils/helpers';
+import { calculateDuration, copyTaskUrlToClipboard, formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { SingleTaskViewProps } from '@/app/types/globalTypes';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { Column } from '@/app/types/globalTypes';
-
-const getDisplayData = (user: { name?: string | null; image?: string | null; custom_name?: string | null; custom_image?: string | null; email?: string }) => ({
-     name: user.custom_name || user.name || user.email || 'User',
-     image: user.custom_image || user.image || '',
-});
 
 interface LocalFilePreview {
      id: string;
@@ -86,6 +81,7 @@ const SingleTaskView = ({
      const modalRef = useRef<HTMLDivElement>(null);
      const titleInputRef = useRef<HTMLInputElement>(null);
      const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+     const fileInputRef = useRef<HTMLInputElement>(null);
 
      const [updateCollaboratorsMutation] = useUpdateTaskCollaboratorsMutation();
 
@@ -160,7 +156,7 @@ const SingleTaskView = ({
           };
      }, []);
 
-     const requestClose = () => {
+     const requestClose = useCallback(() => {
           if (autosaveTimerRef.current) {
                clearTimeout(autosaveTimerRef.current);
                autosaveTimerRef.current = null;
@@ -171,25 +167,26 @@ const SingleTaskView = ({
           } else {
                onClose();
           }
-     };
+     }, [hasUnsavedChanges, isNewTask, onClose]);
 
-     const confirmExit = () => {
+     const confirmExit = useCallback(() => {
           if (autosaveTimerRef.current) {
                clearTimeout(autosaveTimerRef.current);
                autosaveTimerRef.current = null;
           }
           setShowUnsavedConfirm(false);
           onClose();
-     };
+     }, [onClose]);
 
-     const saveAndExit = async () => {
+     const saveAndExit = useCallback(async () => {
           setShowUnsavedConfirm(false);
           const success = await saveExistingTask();
           if (success) {
                toast.success('Zapisano i zamknięto');
                onClose();
           }
-     };
+     }, [saveExistingTask, onClose]);
+
      useEffect(() => {
           if (isNewTask || !hasUnsavedChanges || showRecurringModal) {
                if (autosaveTimerRef.current) {
@@ -370,8 +367,6 @@ const SingleTaskView = ({
                updateTask({ end_date: value });
           }
      };
-
-     const fileInputRef = useRef<HTMLInputElement>(null);
 
      const handleFilesSelected = (e: ChangeEvent<HTMLInputElement>) => {
           const files = e.target.files;
@@ -635,105 +630,25 @@ const SingleTaskView = ({
                                    )}
                               </div>
 
-                              <aside className="w-full md:w-72 bg-slate-800/70 border-t md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0 hidden md:block">
-                                   <div className="mb-6">
-                                        <h3 className="text-sm text-slate-300 uppercase mb-2">Przypisani {selectedAssignees.length > 0 && `(${selectedAssignees.length})`}</h3>
-                                        {selectedAssignees.length > 0 ? (
-                                             <div className="space-y-2">
-                                                  {selectedAssignees.map((assignee) => {
-                                                       const displayData = getDisplayData(assignee);
-                                                       return (
-                                                            <div key={assignee.id} className="flex items-center bg-slate-700 p-2 rounded-lg">
-                                                                 <Avatar src={displayData.image || ''} alt={displayData.name} size={28} className="mr-2 border border-white/20" />
-                                                                 <div className="flex flex-col min-w-0">
-                                                                      <span className="text-white text-sm font-medium truncate">{displayData.name}</span>
-                                                                      <span className="text-slate-400 text-xs truncate">{assignee.email}</span>
-                                                                 </div>
-                                                            </div>
-                                                       );
-                                                  })}
-                                             </div>
-                                        ) : (
-                                             <div className="text-slate-400">Brak przypisania</div>
-                                        )}
-                                   </div>
-
-                                   <div className="mb-6">
-                                        <h3 className="text-sm text-slate-300 uppercase mb-2">Autor zadania</h3>
-                                        {task?.creator ? (
-                                             <div className="flex items-center bg-slate-700 p-3 rounded-lg">
-                                                  {(() => {
-                                                       const creatorDisplay = getDisplayData(task.creator);
-                                                       return (
-                                                            <>
-                                                                 <Avatar src={creatorDisplay.image || ''} alt={creatorDisplay.name} size={32} className="mr-3 border-2 border-white/20" />
-                                                                 <div className="flex flex-col min-w-0">
-                                                                      <span className="text-white font-medium truncate">{creatorDisplay.name}</span>
-                                                                      <span className="text-slate-400 text-sm truncate">{task.creator.email}</span>
-                                                                 </div>
-                                                            </>
-                                                       );
-                                                  })()}
-                                             </div>
-                                        ) : (
-                                             <div className="text-slate-400">Nieznany</div>
-                                        )}
-                                   </div>
-
-                                   <div className="mb-6">
-                                        <h3 className="text-sm text-slate-300 uppercase mb-2">Utworzono</h3>
-                                        <div>{task?.created_at ? formatDate(task.created_at) : '-'}</div>
-                                   </div>
-
-                                   <div className="mb-6">
-                                        <h3 className="text-sm text-slate-300 uppercase mb-2">Ostatnia aktualizacja</h3>
-                                        <div>{task?.updated_at ? formatDate(task.updated_at) : '-'}</div>
-                                   </div>
-
-                                   <div className="mb-6">
-                                        <h3 className="text-sm text-slate-300 uppercase mb-2">Kolumna</h3>
-                                        <div className="text-sm truncate">{columns.find((c) => c.id === localColumnId)?.title || '—'}</div>
-                                   </div>
-
-                                   {/* Zadanie cykliczne – przeniesione na sam dół aside */}
-                                   {!isNewTask && (
-                                        <div className="mb-6 border-t border-slate-600 pt-6">
-                                             <button
-                                                  onClick={() => setShowRecurringModal(true)}
-                                                  className="w-full flex items-center justify-center gap-4 px-4 py-4 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-left"
-                                             >
-                                                  <FaRedo className={`w-6 h-6 flex-shrink-0 ${task?.is_recurring ? 'text-purple-400' : 'text-slate-400'}`} />
-                                                  <div>
-                                                       <span className="font-medium block text-white">{task?.is_recurring ? 'Zadanie cykliczne (włączone)' : 'Zadanie cykliczne'}</span>
-                                                       {task?.is_recurring && (
-                                                            <span className="text-xs text-purple-300 block mt-1">
-                                                                 co {task.recurrence_interval}{' '}
-                                                                 {task.recurrence_type === 'daily'
-                                                                      ? 'dzień'
-                                                                      : task.recurrence_type === 'weekly'
-                                                                      ? 'tydzień'
-                                                                      : task.recurrence_type === 'monthly'
-                                                                      ? 'miesięcy'
-                                                                      : 'lat'}
-                                                            </span>
-                                                       )}
-                                                  </div>
-                                             </button>
-                                        </div>
-                                   )}
-
-                                   {task?.start_date && task?.end_date && (
-                                        <div className="mb-6">
-                                             <h4 className="text-sm font-semibold text-slate-300 mt-4 mb-2">Czas trwania</h4>
-                                             <p className="text-sm">
-                                                  {(() => {
-                                                       const dur = calculateDuration(task.start_date, task.end_date);
-                                                       return dur !== null ? `${dur} ${dur === 1 ? 'dzień' : 'dni'}` : '-';
-                                                  })()}
-                                             </p>
-                                        </div>
-                                   )}
-                              </aside>
+                              {!isNewTask && task && (
+                                   <TaskMetadataSidebar
+                                        task={{
+                                             creator: task.creator ?? null,
+                                             created_at: task.created_at ?? null,
+                                             updated_at: task.updated_at ?? null,
+                                             start_date: task.start_date ?? null,
+                                             end_date: task.end_date ?? null,
+                                             is_recurring: task.is_recurring ?? false,
+                                             recurrence_interval: task.recurrence_interval ?? null,
+                                             recurrence_type: task.recurrence_type ?? null,
+                                             collaborators: task.collaborators ?? null,
+                                        }}
+                                        columns={columns}
+                                        selectedAssignees={task.collaborators ?? []}
+                                        localColumnId={localColumnId}
+                                        onRecurringModalOpen={() => setShowRecurringModal(true)}
+                                   />
+                              )}
                          </div>
 
                          <ActionFooter
@@ -747,7 +662,6 @@ const SingleTaskView = ({
                               tempTitle={tempTitle}
                          />
 
-                         {/* Modal cykliczności – pozostaje na końcu komponentu */}
                          <RecurringTaskModal
                               isOpen={showRecurringModal}
                               onClose={() => setShowRecurringModal(false)}
