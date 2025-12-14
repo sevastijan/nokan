@@ -3,7 +3,7 @@
 import { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { FaCalendarAlt, FaClock, FaLink, FaTimes } from 'react-icons/fa';
+import { FaCalendarAlt, FaLink, FaTimes } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
 import UserSelector from './UserSelector';
@@ -20,6 +20,7 @@ import ActionFooter from './ActionFooter';
 import RecurringTaskModal from './RecurringTaskModal';
 import TaskMetadataSidebar from './TaskMetadataSidebar';
 import TaskDescription from './TaskDescription';
+import TaskDatesSection from './TaskDatesSection';
 
 import { calculateDuration, copyTaskUrlToClipboard, formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { SingleTaskViewProps } from '@/app/types/globalTypes';
@@ -536,31 +537,7 @@ const SingleTaskView = ({
                                         }}
                                    />
 
-                                   <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-                                        <div className="flex-1">
-                                             <span className="text-sm flex items-center gap-1 text-slate-300">
-                                                  <FaClock className="w-4 h-4" /> Data rozpoczęcia
-                                             </span>
-                                             <input
-                                                  type="date"
-                                                  className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                  value={startDate}
-                                                  onChange={(e) => handleDateChange('start', e.target.value)}
-                                             />
-                                        </div>
-                                        <div className="flex-1">
-                                             <label className="text-sm flex items-center gap-1 text-slate-300">
-                                                  <FaClock className="w-4 h-4" /> Termin
-                                             </label>
-                                             <input
-                                                  type="date"
-                                                  className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                  value={endDate}
-                                                  min={startDate || undefined}
-                                                  onChange={(e) => handleDateChange('end', e.target.value)}
-                                             />
-                                        </div>
-                                   </div>
+                                   <TaskDatesSection startDate={startDate} endDate={endDate} onDateChange={handleDateChange} />
 
                                    {(() => {
                                         const dur = calculateDuration(startDate, endDate);
