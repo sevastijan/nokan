@@ -6,8 +6,6 @@ import { toast } from 'sonner';
 import { FaCalendarAlt, FaLink, FaTimes } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
-import UserSelector from './UserSelector';
-import PrioritySelector from './PrioritySelector';
 import { useUpdateTaskCollaboratorsMutation } from '@/app/store/apiSlice';
 import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 import StatusSelector from './StatusSelector';
@@ -15,12 +13,12 @@ import CommentsSection from './CommentsSection';
 import AttachmentsList from './AttachmentsList';
 import ImagePreviewModal from './ImagePreviewModal';
 import Button from '../Button/Button';
-import ColumnSelector from '@/app/components/ColumnSelector';
 import ActionFooter from './ActionFooter';
 import RecurringTaskModal from './RecurringTaskModal';
 import TaskMetadataSidebar from './TaskMetadataSidebar';
 import TaskDescription from './TaskDescription';
 import TaskDatesSection from './TaskDatesSection';
+import TaskPropertiesGrid from './TaskPropertiesGrid';
 
 import { calculateDuration, copyTaskUrlToClipboard, formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { SingleTaskViewProps } from '@/app/types/globalTypes';
@@ -502,18 +500,16 @@ const SingleTaskView = ({
 
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                               <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
-                                   <div className="block md:hidden mb-4">
-                                        <ColumnSelector columns={columns} value={localColumnId} onChange={handleColumnChange} label="Kolumna" />
-                                   </div>
-
-                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <UserSelector selectedUsers={selectedAssignees} availableUsers={teamMembers} onUsersChange={handleAssigneesChange} label="Przypisani" />
-                                        <PrioritySelector selectedPriority={task?.priority ?? null} onChange={handlePriorityChange} />
-                                   </div>
-
-                                   <div className="hidden md:block">
-                                        <ColumnSelector columns={columns} value={localColumnId} onChange={handleColumnChange} />
-                                   </div>
+                                   <TaskPropertiesGrid
+                                        selectedAssignees={selectedAssignees}
+                                        availableUsers={teamMembers}
+                                        onAssigneesChange={handleAssigneesChange}
+                                        selectedPriority={task?.priority ?? null}
+                                        onPriorityChange={handlePriorityChange}
+                                        columns={columns}
+                                        localColumnId={localColumnId}
+                                        onColumnChange={handleColumnChange}
+                                   />
 
                                    {task?.statuses && task.statuses.length > 0 && (
                                         <div className="mt-6">
