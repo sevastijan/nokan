@@ -6,8 +6,6 @@ import { toast } from 'sonner';
 import { FaCalendarAlt } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
-import { useUpdateTaskCollaboratorsMutation } from '@/app/store/apiSlice';
-import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 import StatusSelector from './StatusSelector';
 import CommentsSection from './CommentsSection';
 import ImagePreviewModal from './ImagePreviewModal';
@@ -19,12 +17,13 @@ import TaskDescription from './TaskDescription';
 import TaskDatesSection from './TaskDatesSection';
 import TaskPropertiesGrid from './TaskPropertiesGrid';
 import TaskAttachmentsSection from './TaskAttachmentsSection';
+import TaskHeader from './TaskHeader';
+import { useTaskAssignees } from './hooks/useTaskAssignees';
 
 import { calculateDuration, copyTaskUrlToClipboard } from '@/app/utils/helpers';
-import { SingleTaskViewProps } from '@/app/types/globalTypes';
+import { SingleTaskViewProps, User } from '@/app/types/globalTypes';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { Column } from '@/app/types/globalTypes';
-import TaskHeader from './TaskHeader';
 
 const SingleTaskView = ({
      taskId,
@@ -77,13 +76,11 @@ const SingleTaskView = ({
      const titleInputRef = useRef<HTMLInputElement>(null);
      const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-     const [updateCollaboratorsMutation] = useUpdateTaskCollaboratorsMutation();
-
      const [localFilePreviews, setLocalFilePreviews] = useState<Array<{ id: string; file: File; previewUrl: string }>>([]);
      const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
      const [tempTitle, setTempTitle] = useState('');
      const [tempDescription, setTempDescription] = useState('');
-     const [selectedAssignees, setSelectedAssignees] = useState<typeof teamMembers>([]);
+     const [selectedAssignees, setSelectedAssignees] = useState<User[]>([]);
      const [startDate, setStartDate] = useState<string>('');
      const [endDate, setEndDate] = useState<string>('');
      const [localColumnId, setLocalColumnId] = useState<string | undefined>(columnId);
@@ -93,6 +90,20 @@ const SingleTaskView = ({
      const [showRecurringModal, setShowRecurringModal] = useState(false);
 
      const appliedInitialDate = useRef(false);
+
+     const { handleAssigneesChange } = useTaskAssignees({
+          isNewTask,
+          currentTaskId,
+          boardId: boardId!,
+          currentUserId: currentUser?.id,
+          currentUserName: currentUser?.name,
+          taskTitle: task?.title ?? undefined,
+          fetchTaskData,
+          updateTask,
+          teamMembers,
+          selectedAssignees,
+          setSelectedAssignees,
+     });
 
      useEffect(() => {
           if (task) {
@@ -214,59 +225,6 @@ const SingleTaskView = ({
      }, [hasUnsavedChanges, isNewTask, autoSaveTask, showRecurringModal]);
 
      useOutsideClick([modalRef], requestClose);
-
-     const handleAssigneesChange = async (userIds: string[]) => {
-          const prevAssigneeIds = selectedAssignees.map((a) => a.id);
-          const newAssignees = teamMembers.filter((u) => userIds.includes(u.id));
-          setSelectedAssignees(newAssignees);
-          updateTask({ collaborators: newAssignees });
-
-          if (!isNewTask && currentTaskId && task) {
-               try {
-                    await updateCollaboratorsMutation({
-                         taskId: currentTaskId,
-                         collaboratorIds: userIds,
-                         boardId: boardId!,
-                    }).unwrap();
-
-                    await fetchTaskData();
-
-                    const addedIds = userIds.filter((id) => !prevAssigneeIds.includes(id));
-                    const removedIds = prevAssigneeIds.filter((id) => !userIds.includes(id));
-
-                    for (const addedId of addedIds) {
-                         if (addedId !== currentUser?.id) {
-                              triggerEmailNotification({
-                                   type: 'collaborator_added',
-                                   taskId: currentTaskId,
-                                   taskTitle: task.title || 'Task',
-                                   boardId: boardId!,
-                                   recipientId: addedId,
-                                   metadata: { adderName: currentUser?.name || 'Ktoś' },
-                              });
-                         }
-                    }
-
-                    for (const removedId of removedIds) {
-                         if (removedId !== currentUser?.id) {
-                              triggerEmailNotification({
-                                   type: 'collaborator_removed',
-                                   taskId: currentTaskId,
-                                   taskTitle: task.title || 'Task',
-                                   boardId: boardId!,
-                                   recipientId: removedId,
-                                   metadata: { removerName: currentUser?.name || 'Ktoś' },
-                              });
-                         }
-                    }
-
-                    toast.success('Przypisani zaktualizowani');
-               } catch (error) {
-                    console.error('Failed to update assignees:', error);
-                    toast.error('Nie udało się zaktualizować przypisanych');
-               }
-          }
-     };
 
      const handlePriorityChange = (priorityId: string | null) => {
           updateTask({ priority: priorityId });
@@ -522,7 +480,6 @@ const SingleTaskView = ({
                                         attachments={task?.attachments || []}
                                         localFilePreviews={localFilePreviews}
                                         onAddFiles={(files) => {
-                                             // Walidacja rozmiaru plików przed dodaniem
                                              const validFiles: File[] = [];
                                              let hasInvalidFiles = false;
 
