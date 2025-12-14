@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { FaCalendarAlt } from 'react-icons/fa';
@@ -9,7 +9,6 @@ import { useTaskManagement } from './hooks/useTaskManagement';
 import StatusSelector from './StatusSelector';
 import CommentsSection from './CommentsSection';
 import ImagePreviewModal from './ImagePreviewModal';
-import Button from '../Button/Button';
 import ActionFooter from './ActionFooter';
 import RecurringTaskModal from './RecurringTaskModal';
 import TaskMetadataSidebar from './TaskMetadataSidebar';
@@ -20,11 +19,15 @@ import TaskAttachmentsSection from './TaskAttachmentsSection';
 import TaskHeader from './TaskHeader';
 import { useTaskAssignees } from './hooks/useTaskAssignees';
 import { useTaskStatus } from './hooks/useTaskStatus';
+import { useAutosave } from './hooks/useAutosave';
+import { useTaskForm } from './hooks/useTaskForm';
+import { useAttachmentUpload } from './hooks/useAttachmentUpload';
+import { LoadingState } from './LoadingState';
+import { UnsavedChangesModal } from './UnsavedChangesModal';
 
 import { calculateDuration } from '@/app/utils/helpers';
-import { SingleTaskViewProps, User } from '@/app/types/globalTypes';
+import { SingleTaskViewProps, Column } from '@/app/types/globalTypes';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
-import { Column } from '@/app/types/globalTypes';
 
 const SingleTaskView = ({
      taskId,
@@ -75,22 +78,20 @@ const SingleTaskView = ({
      const overlayRef = useRef<HTMLDivElement>(null);
      const modalRef = useRef<HTMLDivElement>(null);
      const titleInputRef = useRef<HTMLInputElement>(null);
-     const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+     const appliedInitialDate = useRef(false);
 
-     const [localFilePreviews, setLocalFilePreviews] = useState<Array<{ id: string; file: File; previewUrl: string }>>([]);
      const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-     const [tempTitle, setTempTitle] = useState('');
-     const [tempDescription, setTempDescription] = useState('');
-     const [selectedAssignees, setSelectedAssignees] = useState<User[]>([]);
-     const [startDate, setStartDate] = useState<string>('');
-     const [endDate, setEndDate] = useState<string>('');
-     const [localColumnId, setLocalColumnId] = useState<string | undefined>(columnId);
-
      const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
-     const [isAutoSaving] = useState(false);
      const [showRecurringModal, setShowRecurringModal] = useState(false);
 
-     const appliedInitialDate = useRef(false);
+     const { formData, updateField, syncWithTask } = useTaskForm({
+          initialColumnId: columnId,
+     });
+
+     const { localFilePreviews, addFiles, removeFile, uploadAllAttachments, cleanupPreviews } = useAttachmentUpload({
+          uploadAttachmentMutation,
+          onTaskUpdate: fetchTaskData,
+     });
 
      const { handleAssigneesChange } = useTaskAssignees({
           isNewTask,
@@ -102,8 +103,8 @@ const SingleTaskView = ({
           fetchTaskData,
           updateTask,
           teamMembers,
-          selectedAssignees,
-          setSelectedAssignees,
+          selectedAssignees: formData.selectedAssignees,
+          setSelectedAssignees: (assignees) => updateField('selectedAssignees', assignees),
      });
 
      const { handleStatusChange } = useTaskStatus({
@@ -117,39 +118,40 @@ const SingleTaskView = ({
           fetchTaskData,
      });
 
+     // Autosave hook
+     const { isAutoSaving } = useAutosave({
+          callback: autoSaveTask,
+          delay: 3500,
+          shouldSave: hasUnsavedChanges && !isNewTask && !showRecurringModal,
+     });
      useEffect(() => {
           if (task) {
-               setTempTitle(task.title || '');
-               setTempDescription(task.description || '');
-               setSelectedAssignees(task.collaborators || []);
-               setLocalColumnId(task.column_id || columnId);
-               setStartDate(task.start_date || '');
-               setEndDate(task.end_date || '');
+               syncWithTask(task, columnId);
           }
-     }, [task, columnId]);
+     }, [task, columnId, syncWithTask]);
 
      useEffect(() => {
           if (isNewTask && columnId) {
-               setLocalColumnId(columnId);
+               updateField('localColumnId', columnId);
                updateTask({ column_id: columnId });
           }
-     }, [isNewTask, columnId, updateTask]);
+     }, [isNewTask, columnId, updateTask, updateField]);
 
      useEffect(() => {
           if (isNewTask && initialStartDate && !appliedInitialDate.current) {
-               setStartDate(initialStartDate);
+               updateField('startDate', initialStartDate);
                updateTask({ start_date: initialStartDate });
                appliedInitialDate.current = true;
           }
-     }, [isNewTask, initialStartDate, updateTask]);
+     }, [isNewTask, initialStartDate, updateTask, updateField]);
 
      useEffect(() => {
-          if (isNewTask && !localColumnId && columns.length > 0) {
+          if (isNewTask && !formData.localColumnId && columns.length > 0) {
                const defaultCol = columns[0].id;
-               setLocalColumnId(defaultCol);
+               updateField('localColumnId', defaultCol);
                updateTask({ column_id: defaultCol });
           }
-     }, [isNewTask, localColumnId, columns, updateTask]);
+     }, [isNewTask, formData.localColumnId, columns, updateTask, updateField]);
 
      useEffect(() => {
           if (isNewTask && titleInputRef.current) {
@@ -165,12 +167,11 @@ const SingleTaskView = ({
           };
      }, []);
 
-     const requestClose = useCallback(() => {
-          if (autosaveTimerRef.current) {
-               clearTimeout(autosaveTimerRef.current);
-               autosaveTimerRef.current = null;
-          }
+     useEffect(() => {
+          return cleanupPreviews;
+     }, [cleanupPreviews]);
 
+     const requestClose = useCallback(() => {
           if (hasUnsavedChanges && !isNewTask) {
                setShowUnsavedConfirm(true);
           } else {
@@ -187,10 +188,6 @@ const SingleTaskView = ({
      }, [requestClose]);
 
      const confirmExit = useCallback(() => {
-          if (autosaveTimerRef.current) {
-               clearTimeout(autosaveTimerRef.current);
-               autosaveTimerRef.current = null;
-          }
           setShowUnsavedConfirm(false);
           onClose();
      }, [onClose]);
@@ -204,146 +201,88 @@ const SingleTaskView = ({
           }
      }, [saveExistingTask, onClose]);
 
-     useEffect(() => {
-          if (isNewTask || !hasUnsavedChanges || showRecurringModal) {
-               if (autosaveTimerRef.current) {
-                    clearTimeout(autosaveTimerRef.current);
-                    autosaveTimerRef.current = null;
-               }
-               return;
-          }
-
-          if (autosaveTimerRef.current) {
-               clearTimeout(autosaveTimerRef.current);
-          }
-
-          autosaveTimerRef.current = setTimeout(async () => {
-               try {
-                    await autoSaveTask();
-                    toast.success('Zapisano automatycznie');
-               } catch (err) {
-                    console.error('Autosave failed:', err);
-               } finally {
-                    autosaveTimerRef.current = null;
-               }
-          }, 3500);
-
-          return () => {
-               if (autosaveTimerRef.current) {
-                    clearTimeout(autosaveTimerRef.current);
-                    autosaveTimerRef.current = null;
-               }
-          };
-     }, [hasUnsavedChanges, isNewTask, autoSaveTask, showRecurringModal]);
-
      useOutsideClick([modalRef], requestClose);
 
-     const handlePriorityChange = (priorityId: string | null) => {
-          updateTask({ priority: priorityId });
-     };
+     const handlePriorityChange = useCallback(
+          (priorityId: string | null) => {
+               updateTask({ priority: priorityId });
+          },
+          [updateTask],
+     );
 
-     const handleColumnChange = async (newColId: string) => {
-          setLocalColumnId(newColId);
-          await updateTask({ column_id: newColId });
-     };
+     const handleColumnChange = useCallback(
+          async (newColId: string) => {
+               updateField('localColumnId', newColId);
+               await updateTask({ column_id: newColId });
+          },
+          [updateTask, updateField],
+     );
 
-     const handleDateChange = (type: 'start' | 'end', value: string) => {
-          if (type === 'start') {
-               setStartDate(value);
-               updateTask({ start_date: value });
-               if (endDate && value && endDate < value) {
-                    setEndDate('');
-                    updateTask({ end_date: null });
+     const handleDateChange = useCallback(
+          (type: 'start' | 'end', value: string) => {
+               if (type === 'start') {
+                    updateField('startDate', value);
+                    updateTask({ start_date: value });
+                    if (formData.endDate && value && formData.endDate < value) {
+                         updateField('endDate', '');
+                         updateTask({ end_date: null });
+                    }
+               } else {
+                    updateField('endDate', value);
+                    updateTask({ end_date: value });
                }
-          } else {
-               setEndDate(value);
-               updateTask({ end_date: value });
-          }
-     };
+          },
+          [updateTask, updateField, formData.endDate],
+     );
 
-     const handleSave = async () => {
-          if (!tempTitle.trim()) {
+     const handleSave = useCallback(async () => {
+          if (!formData.tempTitle.trim()) {
                toast.error('Tytuł jest wymagany');
                return;
           }
-          if (isNewTask && !localColumnId) {
+          if (isNewTask && !formData.localColumnId) {
                toast.error('Kolumna jest wymagana');
                return;
           }
 
-          let success = false;
+          const success = isNewTask ? await saveNewTask() : await saveExistingTask();
 
-          if (isNewTask) {
-               success = await saveNewTask();
+          if (!success) return;
 
-               if (success && localFilePreviews.length > 0 && currentTaskId) {
-                    toast.info('Przesyłanie załączników...');
-                    let uploadErrors = 0;
+          if (isNewTask && localFilePreviews.length > 0 && currentTaskId) {
+               const { errors } = await uploadAllAttachments(localFilePreviews, currentTaskId);
 
-                    for (const { file, previewUrl } of localFilePreviews) {
-                         try {
-                              await uploadAttachmentMutation({
-                                   file,
-                                   taskId: currentTaskId,
-                              }).unwrap();
-
-                              if (previewUrl) URL.revokeObjectURL(previewUrl);
-                         } catch (error) {
-                              console.error('Upload failed:', error);
-                              uploadErrors++;
-                         }
-                    }
-
-                    setLocalFilePreviews([]);
-                    await fetchTaskData();
-
-                    if (uploadErrors > 0) {
-                         toast.warning(`Zadanie utworzone, ale ${uploadErrors} załącznik(ów) nie zostało przesłanych`);
-                    } else {
-                         toast.success('Zadanie utworzone wraz z załącznikami');
-                    }
-               } else {
-                    toast.success('Zadanie utworzone');
-               }
+               toast.success(errors > 0 ? `Zadanie utworzone, ale ${errors} załącznik(ów) nie zostało przesłanych` : 'Zadanie utworzone wraz z załącznikami');
           } else {
-               success = await saveExistingTask();
-               if (success) {
-                    toast.success('Zadanie zaktualizowane');
-               }
+               toast.success(isNewTask ? 'Zadanie utworzone' : 'Zadanie zaktualizowane');
           }
 
-          if (success) {
-               onClose();
-          }
-     };
+          onClose();
+     }, [formData.tempTitle, formData.localColumnId, isNewTask, saveNewTask, saveExistingTask, localFilePreviews, currentTaskId, uploadAllAttachments, onClose]);
 
-     const handleDelete = async () => {
+     const handleDelete = useCallback(async () => {
           try {
                await deleteTask();
                onClose();
           } catch {
                toast.error('Nie udało się usunąć zadania');
           }
-     };
+     }, [deleteTask, onClose]);
 
-     if (loading)
-          return (
-               <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-                    <div className="p-4 bg-slate-800 rounded-lg border border-slate-600 text-white">Ładowanie zadania...</div>
-               </div>
-          );
-     if (error)
-          return (
-               <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-                    <div className="p-4 bg-slate-800 rounded-lg border border-slate-600 text-red-400">Błąd: {error}</div>
-               </div>
-          );
-     if (userLoading || !currentUser)
-          return (
-               <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-                    <div className="p-4 bg-slate-800 rounded-lg border border-slate-600 text-white">Ładowanie użytkownika...</div>
-               </div>
-          );
+     const handleCopyLink = useCallback(() => {
+          if (!task?.id) return;
+          const url = `${window.location.origin}/task/${task.id}`;
+          navigator.clipboard
+               .writeText(url)
+               .then(() => toast.success('Link do zadania skopiowany!'))
+               .catch(() => toast.error('Nie udało się skopiować linku'));
+     }, [task?.id]);
+
+     const duration = useMemo(() => calculateDuration(formData.startDate, formData.endDate), [formData.startDate, formData.endDate]);
+
+     if (loading) return <LoadingState message="Ładowanie zadania..." />;
+     if (error) return <LoadingState message={`Błąd: ${error}`} isError />;
+     if (userLoading || !currentUser) return <LoadingState message="Ładowanie użytkownika..." />;
      if (!isNewTask && !task) return null;
 
      return (
@@ -366,29 +305,18 @@ const SingleTaskView = ({
                          <TaskHeader
                               isNewTask={isNewTask}
                               taskId={task?.id}
-                              title={tempTitle}
+                              title={formData.tempTitle}
                               onTitleChange={(e) => {
                                    const value = e.target.value;
-                                   setTempTitle(value);
+                                   updateField('tempTitle', value);
                                    updateTask({ title: value });
                               }}
                               onTitleKeyDown={(e) => {
-                                   if (e.key === 'Enter' && tempTitle.trim()) {
+                                   if (e.key === 'Enter' && formData.tempTitle.trim()) {
                                         (e.target as HTMLInputElement).blur();
                                    }
                               }}
-                              onCopyLink={() => {
-                                   if (!task?.id) return;
-                                   const url = `${window.location.origin}/task/${task.id}`;
-                                   navigator.clipboard
-                                        .writeText(url)
-                                        .then(() => {
-                                             toast.success('Link do zadania skopiowany!');
-                                        })
-                                        .catch(() => {
-                                             toast.error('Nie udało się skopiować linku');
-                                        });
-                              }}
+                              onCopyLink={handleCopyLink}
                               hasUnsavedChanges={hasUnsavedChanges}
                               saving={saving}
                               onClose={requestClose}
@@ -398,13 +326,13 @@ const SingleTaskView = ({
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                               <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
                                    <TaskPropertiesGrid
-                                        selectedAssignees={selectedAssignees}
+                                        selectedAssignees={formData.selectedAssignees}
                                         availableUsers={teamMembers}
                                         onAssigneesChange={handleAssigneesChange}
                                         selectedPriority={task?.priority ?? null}
                                         onPriorityChange={handlePriorityChange}
                                         columns={columns}
-                                        localColumnId={localColumnId}
+                                        localColumnId={formData.localColumnId}
                                         onColumnChange={handleColumnChange}
                                    />
 
@@ -423,68 +351,31 @@ const SingleTaskView = ({
                                    )}
 
                                    <TaskDescription
-                                        value={tempDescription}
+                                        value={formData.tempDescription}
                                         onChange={(value) => {
-                                             setTempDescription(value);
+                                             updateField('tempDescription', value);
                                              updateTask({ description: value });
                                         }}
                                    />
 
-                                   <TaskDatesSection startDate={startDate} endDate={endDate} onDateChange={handleDateChange} />
+                                   <TaskDatesSection startDate={formData.startDate} endDate={formData.endDate} onDateChange={handleDateChange} />
 
-                                   {(() => {
-                                        const dur = calculateDuration(startDate, endDate);
-                                        return dur !== null ? (
-                                             <div className="p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200 flex items-center gap-2">
-                                                  <FaCalendarAlt className="text-white w-4 h-4" />
-                                                  <span className="font-medium">
-                                                       Czas trwania: {dur} {dur === 1 ? 'dzień' : 'dni'}
-                                                  </span>
-                                             </div>
-                                        ) : null;
-                                   })()}
+                                   {duration !== null && (
+                                        <div className="p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200 flex items-center gap-2">
+                                             <FaCalendarAlt className="text-white w-4 h-4" />
+                                             <span className="font-medium">
+                                                  Czas trwania: {duration} {duration === 1 ? 'dzień' : 'dni'}
+                                             </span>
+                                        </div>
+                                   )}
 
                                    <TaskAttachmentsSection
                                         isNewTask={isNewTask}
                                         taskId={task?.id}
                                         attachments={task?.attachments || []}
                                         localFilePreviews={localFilePreviews}
-                                        onAddFiles={(files) => {
-                                             const validFiles: File[] = [];
-                                             let hasInvalidFiles = false;
-
-                                             files.forEach((file) => {
-                                                  if (file.size > 10 * 1024 * 1024) {
-                                                       toast.error(`Plik ${file.name} jest za duży (max 10MB)`);
-                                                       hasInvalidFiles = true;
-                                                  } else {
-                                                       validFiles.push(file);
-                                                  }
-                                             });
-
-                                             if (validFiles.length > 0) {
-                                                  const previews = validFiles.map((file) => ({
-                                                       id: crypto.randomUUID(),
-                                                       file,
-                                                       previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
-                                                  }));
-                                                  setLocalFilePreviews((prev) => [...prev, ...previews]);
-
-                                                  if (!hasInvalidFiles) {
-                                                       toast.success(`Dodano ${validFiles.length} ${validFiles.length === 1 ? 'plik' : 'plików'}`);
-                                                  }
-                                             }
-                                        }}
-                                        onRemoveLocalFile={(id) => {
-                                             setLocalFilePreviews((prev) => {
-                                                  const removed = prev.find((f) => f.id === id);
-                                                  if (removed?.previewUrl) {
-                                                       URL.revokeObjectURL(removed.previewUrl);
-                                                  }
-                                                  return prev.filter((f) => f.id !== id);
-                                             });
-                                             toast.success('Plik usunięty');
-                                        }}
+                                        onAddFiles={addFiles}
+                                        onRemoveLocalFile={removeFile}
                                         currentUser={currentUser}
                                         onTaskUpdate={fetchTaskData}
                                         onAttachmentsUpdate={fetchTaskData}
@@ -521,7 +412,7 @@ const SingleTaskView = ({
                                         }}
                                         columns={columns}
                                         selectedAssignees={task.collaborators ?? []}
-                                        localColumnId={localColumnId}
+                                        localColumnId={formData.localColumnId}
                                         onRecurringModalOpen={() => setShowRecurringModal(true)}
                                    />
                               )}
@@ -535,7 +426,7 @@ const SingleTaskView = ({
                               onClose={requestClose}
                               onDelete={isNewTask ? undefined : handleDelete}
                               task={task ?? undefined}
-                              tempTitle={tempTitle}
+                              tempTitle={formData.tempTitle}
                          />
 
                          <RecurringTaskModal
@@ -556,32 +447,13 @@ const SingleTaskView = ({
 
                     {previewImageUrl && <ImagePreviewModal imageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />}
 
-                    {showUnsavedConfirm && (
-                         <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              className="fixed inset-0 bg-black/60 flex items-center justify-center z-60"
-                              onClick={() => setShowUnsavedConfirm(false)}
-                         >
-                              <motion.div
-                                   initial={{ scale: 0.9 }}
-                                   animate={{ scale: 1 }}
-                                   className="bg-slate-700 rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl border border-slate-500"
-                                   onClick={(e) => e.stopPropagation()}
-                              >
-                                   <h3 className="text-xl font-semibold text-white mb-3">Niezapisane zmiany</h3>
-                                   <p className="text-slate-300 mb-6">Masz niezapisane zmiany w zadaniu. Czy chcesz je zapisać przed zamknięciem?</p>
-                                   <div className="flex justify-end gap-3">
-                                        <Button variant="ghost" onClick={confirmExit} className="text-slate-300 hover:text-white">
-                                             Wyjdź bez zapisu
-                                        </Button>
-                                        <Button variant="primary" onClick={saveAndExit} disabled={saving || isAutoSaving}>
-                                             {saving || isAutoSaving ? 'Zapisywanie...' : 'Zapisz i wyjdź'}
-                                        </Button>
-                                   </div>
-                              </motion.div>
-                         </motion.div>
-                    )}
+                    <UnsavedChangesModal
+                         isOpen={showUnsavedConfirm}
+                         onClose={() => setShowUnsavedConfirm(false)}
+                         onConfirmExit={confirmExit}
+                         onSaveAndExit={saveAndExit}
+                         isSaving={saving || isAutoSaving}
+                    />
                </motion.div>
           </AnimatePresence>
      );
