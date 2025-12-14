@@ -19,8 +19,9 @@ import TaskPropertiesGrid from './TaskPropertiesGrid';
 import TaskAttachmentsSection from './TaskAttachmentsSection';
 import TaskHeader from './TaskHeader';
 import { useTaskAssignees } from './hooks/useTaskAssignees';
+import { useTaskStatus } from './hooks/useTaskStatus';
 
-import { calculateDuration, copyTaskUrlToClipboard } from '@/app/utils/helpers';
+import { calculateDuration } from '@/app/utils/helpers';
 import { SingleTaskViewProps, User } from '@/app/types/globalTypes';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { Column } from '@/app/types/globalTypes';
@@ -103,6 +104,17 @@ const SingleTaskView = ({
           teamMembers,
           selectedAssignees,
           setSelectedAssignees,
+     });
+
+     const { handleStatusChange } = useTaskStatus({
+          isNewTask,
+          currentTaskId,
+          task,
+          currentUserId: currentUser?.id,
+          boardId: boardId!,
+          updateTask,
+          updateTaskMutation,
+          fetchTaskData,
      });
 
      useEffect(() => {
@@ -235,59 +247,6 @@ const SingleTaskView = ({
           await updateTask({ column_id: newColId });
      };
 
-     const handleStatusChange = async (newStatusId: string) => {
-          const oldStatusId = task?.status_id;
-          updateTask({ status_id: newStatusId });
-
-          if (!isNewTask && currentTaskId && task) {
-               try {
-                    await updateTaskMutation({
-                         taskId: currentTaskId,
-                         data: { status_id: newStatusId },
-                    }).unwrap();
-                    await fetchTaskData();
-
-                    if (oldStatusId !== newStatusId) {
-                         const oldStatusLabel = task.statuses?.find((s) => s.id === oldStatusId)?.label || 'Nieznany';
-                         const newStatusLabel = task.statuses?.find((s) => s.id === newStatusId)?.label || 'Nieznany';
-
-                         if (task.user_id && task.user_id !== currentUser?.id && boardId) {
-                              fetch('/api/notifications/email', {
-                                   method: 'POST',
-                                   headers: { 'Content-Type': 'application/json' },
-                                   body: JSON.stringify({
-                                        type: 'status_changed',
-                                        taskId: currentTaskId,
-                                        taskTitle: task.title || 'Task',
-                                        boardId,
-                                        recipientId: task.user_id,
-                                        metadata: { oldStatus: oldStatusLabel, newStatus: newStatusLabel },
-                                   }),
-                              }).catch((e) => console.error('Email notification failed:', e));
-                         }
-
-                         if (task.created_by && task.created_by !== currentUser?.id && task.created_by !== task.user_id && boardId) {
-                              fetch('/api/notifications/email', {
-                                   method: 'POST',
-                                   headers: { 'Content-Type': 'application/json' },
-                                   body: JSON.stringify({
-                                        type: 'status_changed',
-                                        taskId: currentTaskId,
-                                        taskTitle: task.title || 'Task',
-                                        boardId,
-                                        recipientId: task.created_by,
-                                        metadata: { oldStatus: oldStatusLabel, newStatus: newStatusLabel },
-                                   }),
-                              }).catch((e) => console.error('Email notification failed:', e));
-                         }
-                    }
-               } catch (error) {
-                    console.error('Failed to save status:', error);
-                    toast.error('Nie udało się zapisać statusu');
-               }
-          }
-     };
-
      const handleDateChange = (type: 'start' | 'end', value: string) => {
           if (type === 'start') {
                setStartDate(value);
@@ -418,7 +377,18 @@ const SingleTaskView = ({
                                         (e.target as HTMLInputElement).blur();
                                    }
                               }}
-                              onCopyLink={() => task?.id && copyTaskUrlToClipboard(task.id)}
+                              onCopyLink={() => {
+                                   if (!task?.id) return;
+                                   const url = `${window.location.origin}/task/${task.id}`;
+                                   navigator.clipboard
+                                        .writeText(url)
+                                        .then(() => {
+                                             toast.success('Link do zadania skopiowany!');
+                                        })
+                                        .catch(() => {
+                                             toast.error('Nie udało się skopiować linku');
+                                        });
+                              }}
                               hasUnsavedChanges={hasUnsavedChanges}
                               saving={saving}
                               onClose={requestClose}
