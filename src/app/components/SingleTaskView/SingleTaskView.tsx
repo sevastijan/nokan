@@ -1,9 +1,9 @@
 'use client';
 
-import { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { FaCalendarAlt, FaLink, FaTimes } from 'react-icons/fa';
+import { FaCalendarAlt } from 'react-icons/fa';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
 import { useUpdateTaskCollaboratorsMutation } from '@/app/store/apiSlice';
@@ -24,6 +24,7 @@ import { calculateDuration, copyTaskUrlToClipboard } from '@/app/utils/helpers';
 import { SingleTaskViewProps } from '@/app/types/globalTypes';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { Column } from '@/app/types/globalTypes';
+import TaskHeader from './TaskHeader';
 
 const SingleTaskView = ({
      taskId,
@@ -128,14 +129,6 @@ const SingleTaskView = ({
      }, [isNewTask, localColumnId, columns, updateTask]);
 
      useEffect(() => {
-          const onKeyDown = (e: KeyboardEvent) => {
-               if (e.key === 'Escape') requestClose();
-          };
-          document.addEventListener('keydown', onKeyDown);
-          return () => document.removeEventListener('keydown', onKeyDown);
-     }, []);
-
-     useEffect(() => {
           if (isNewTask && titleInputRef.current) {
                titleInputRef.current.focus({ preventScroll: true });
           }
@@ -161,6 +154,14 @@ const SingleTaskView = ({
                onClose();
           }
      }, [hasUnsavedChanges, isNewTask, onClose]);
+
+     useEffect(() => {
+          const onKeyDown = (e: KeyboardEvent) => {
+               if (e.key === 'Escape') requestClose();
+          };
+          document.addEventListener('keydown', onKeyDown);
+          return () => document.removeEventListener('keydown', onKeyDown);
+     }, [requestClose]);
 
      const confirmExit = useCallback(() => {
           if (autosaveTimerRef.current) {
@@ -213,18 +214,6 @@ const SingleTaskView = ({
      }, [hasUnsavedChanges, isNewTask, autoSaveTask, showRecurringModal]);
 
      useOutsideClick([modalRef], requestClose);
-
-     const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
-          const value = e.target.value;
-          setTempTitle(value);
-          updateTask({ title: value });
-     };
-
-     const handleTitleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
-          if (e.key === 'Enter' && tempTitle.trim()) {
-               (e.target as HTMLInputElement).blur();
-          }
-     };
 
      const handleAssigneesChange = async (userIds: string[]) => {
           const prevAssigneeIds = selectedAssignees.map((a) => a.id);
@@ -411,8 +400,6 @@ const SingleTaskView = ({
           }
      };
 
-     const handleCopyLink = () => task?.id && copyTaskUrlToClipboard(task.id);
-
      const handleDelete = async () => {
           try {
                await deleteTask();
@@ -459,36 +446,26 @@ const SingleTaskView = ({
                          animate={{ scale: 1, opacity: 1 }}
                          exit={{ scale: 0.95, opacity: 0 }}
                     >
-                         <div className="flex justify-between items-start px-6 py-3 border-b border-slate-600">
-                              <div className="flex justify-between gap-1.5 min-w-0 flex-1 mr-4">
-                                   <div className="flex items-center gap-3 min-w-0">
-                                        {isNewTask ? (
-                                             <span className="bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded flex-shrink-0">Nowe</span>
-                                        ) : task?.id ? (
-                                             <span className="bg-slate-700 text-slate-300 text-xs font-mono px-2 py-1 rounded flex-shrink-0">#{task.id.slice(-6)}</span>
-                                        ) : null}
-                                        <input
-                                             ref={titleInputRef}
-                                             type="text"
-                                             className="bg-transparent text-lg font-semibold text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1 truncate min-w-0 flex-1"
-                                             placeholder="Tytuł zadania (wymagany)"
-                                             value={tempTitle}
-                                             onChange={handleTitleChange}
-                                             onKeyDown={handleTitleKeyDown}
-                                        />
-                                   </div>
-                                   {hasUnsavedChanges && !saving && (
-                                        <div className="flex items-center gap-1.5 pl-0 sm:pl-[4.5rem] animate-in fade-in slide-in-from-top-1 duration-200">
-                                             <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse flex-shrink-0"></span>
-                                             <span className="text-xs text-amber-400 font-medium">Masz niezapisane zmiany</span>
-                                        </div>
-                                   )}
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                   {!isNewTask && task?.id && <Button variant="ghost" size="sm" icon={<FaLink />} onClick={handleCopyLink} className="text-slate-300 hover:text-white" />}
-                                   <Button variant="ghost" size="sm" icon={<FaTimes />} onClick={requestClose} className="text-slate-300 hover:text-white" />
-                              </div>
-                         </div>
+                         <TaskHeader
+                              isNewTask={isNewTask}
+                              taskId={task?.id}
+                              title={tempTitle}
+                              onTitleChange={(e) => {
+                                   const value = e.target.value;
+                                   setTempTitle(value);
+                                   updateTask({ title: value });
+                              }}
+                              onTitleKeyDown={(e) => {
+                                   if (e.key === 'Enter' && tempTitle.trim()) {
+                                        (e.target as HTMLInputElement).blur();
+                                   }
+                              }}
+                              onCopyLink={() => task?.id && copyTaskUrlToClipboard(task.id)}
+                              hasUnsavedChanges={hasUnsavedChanges}
+                              saving={saving}
+                              onClose={requestClose}
+                              titleInputRef={titleInputRef}
+                         />
 
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                               <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">

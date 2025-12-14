@@ -1,172 +1,55 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { FaTimes, FaEdit, FaLink } from "react-icons/fa";
-import { TaskHeaderProps } from "@/app/types/globalTypes";
-import ConfirmDialog from "./ConfirmDialog";
-import { copyTaskUrlToClipboard } from "@/app/utils/helpers";
-import Button from "../Button/Button";
+import { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react';
+import { FaLink, FaTimes } from 'react-icons/fa';
+import Button from '../Button/Button';
 
-/**
- * TaskHeader component shows the task title with edit and close options.
- * Handles title editing with save, discard, and unsaved changes confirmation.
- */
-const TaskHeader = ({
-  task,
-  onClose,
-  onUpdateTask,
-  hasUnsavedChanges = false,
-  onUnsavedChangesAlert,
-}: TaskHeaderProps) => {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(task?.title || "");
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+interface TaskHeaderProps {
+     isNewTask: boolean;
+     taskId?: string;
+     title: string;
+     onTitleChange: (e: ChangeEvent<HTMLInputElement>) => void;
+     onTitleKeyDown: (e: ReactKeyboardEvent<HTMLInputElement>) => void;
+     hasUnsavedChanges: boolean;
+     saving: boolean;
+     onCopyLink: () => void;
+     onClose: () => void;
+     titleInputRef: RefObject<HTMLInputElement | null>;
+}
 
-  // Update editedTitle when task title changes
-  useEffect(() => {
-    setEditedTitle(task?.title || "");
-  }, [task?.title]);
-
-  /**
-   * Save edited title if changed and not empty
-   */
-  const handleTitleSave = async () => {
-    if (task && editedTitle !== task.title && editedTitle.trim()) {
-      await onUpdateTask({ title: editedTitle.trim() });
-    }
-    setIsEditingTitle(false);
-  };
-
-  /**
-   * Discard changes and reset title input
-   */
-  const handleDiscardChanges = () => {
-    setEditedTitle(task?.title || "");
-    setIsEditingTitle(false);
-  };
-
-  /**
-   * Show confirmation dialog before discarding changes or closing
-   * @param action function to call after confirming
-   */
-  const showConfirm = (action: () => void) => {
-    setConfirmAction(() => action);
-    setShowConfirmDialog(true);
-  };
-
-  /**
-   * Confirm action from dialog
-   */
-  const handleConfirm = () => {
-    if (confirmAction) {
-      confirmAction();
-    }
-    setShowConfirmDialog(false);
-    setConfirmAction(null);
-  };
-
-  /**
-   * Cancel confirmation dialog
-   */
-  const handleCancel = () => {
-    setShowConfirmDialog(false);
-    setConfirmAction(null);
-  };
-
-  /**
-   * Handle keyboard events for input: Enter saves, Escape cancels
-   */
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleTitleSave();
-    } else if (e.key === "Escape") {
-      setEditedTitle(task?.title || "");
-      setIsEditingTitle(false);
-    }
-  };
-
-  /**
-   * Handle close button click
-   * If editing with unsaved changes, confirm discard first
-   * Otherwise alert or close directly
-   */
-  const handleClose = () => {
-    if (isEditingTitle && editedTitle.trim() !== (task?.title || "")) {
-      showConfirm(() => {
-        handleDiscardChanges();
-        if (hasUnsavedChanges && onUnsavedChangesAlert) {
-          onUnsavedChangesAlert();
-        } else {
-          onClose();
-        }
-      });
-    } else if (hasUnsavedChanges && onUnsavedChangesAlert) {
-      onUnsavedChangesAlert();
-    } else {
-      onClose();
-    }
-  };
-
-  return (
-    <>
-      <div className="flex items-center justify-between p-6 border-b border-gray-600">
-        <div className="flex-1 mr-4">
-          {isEditingTitle ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                onKeyDown={handleKeyPress}
-                onBlur={handleTitleSave}
-                className="text-xl font-bold bg-gray-700 text-gray-200 px-2 py-1 rounded border border-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
-                autoFocus
-              />
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-200">
-                {task?.id ? `ID: [${task.id.slice(0, 8)}] - ` : ""}
-                {task?.title}
-              </h1>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsEditingTitle(true)}
-                icon={<FaEdit />}
-                className="p-2 text-gray-400 hover:text-gray-200"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => task?.id && copyTaskUrlToClipboard(task.id)}
-                icon={<FaLink />}
-                className="p-2 text-gray-400 hover:text-gray-200"
-              />
-            </div>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClose}
-          icon={<FaTimes />}
-          className="p-2 text-gray-400 hover:text-gray-200"
-        />
-      </div>
-      <ConfirmDialog
-        isOpen={showConfirmDialog}
-        title="Unsaved Changes"
-        message="You have unsaved changes in the title. Do you want to discard them?"
-        confirmText="Discard"
-        cancelText="Keep Editing"
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-        type="warning"
-      />
-    </>
-  );
+const TaskHeader = ({ isNewTask, taskId, title, onTitleChange, onTitleKeyDown, hasUnsavedChanges, saving, onCopyLink, onClose, titleInputRef }: TaskHeaderProps) => {
+     return (
+          <div className="flex justify-between items-start px-6 py-3 border-b border-slate-600">
+               <div className="flex justify-between gap-1.5 min-w-0 flex-1 mr-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                         {isNewTask ? (
+                              <span className="bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded flex-shrink-0">Nowe</span>
+                         ) : taskId ? (
+                              <span className="bg-slate-700 text-slate-300 text-xs font-mono px-2 py-1 rounded flex-shrink-0">#{taskId.slice(-6)}</span>
+                         ) : null}
+                         <input
+                              ref={titleInputRef}
+                              type="text"
+                              className="bg-transparent text-lg font-semibold text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1 truncate min-w-0 flex-1"
+                              placeholder="Tytuł zadania (wymagany)"
+                              value={title}
+                              onChange={onTitleChange}
+                              onKeyDown={onTitleKeyDown}
+                         />
+                    </div>
+                    {hasUnsavedChanges && !saving && (
+                         <div className="flex items-center gap-1.5 pl-0 sm:pl-[4.5rem] animate-in fade-in slide-in-from-top-1 duration-200">
+                              <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse flex-shrink-0"></span>
+                              <span className="text-xs text-amber-400 font-medium">Masz niezapisane zmiany</span>
+                         </div>
+                    )}
+               </div>
+               <div className="flex items-center gap-2 flex-shrink-0">
+                    {!isNewTask && taskId && <Button variant="ghost" size="sm" icon={<FaLink />} onClick={onCopyLink} className="text-slate-300 hover:text-white" />}
+                    <Button variant="ghost" size="sm" icon={<FaTimes />} onClick={onClose} className="text-slate-300 hover:text-white" />
+               </div>
+          </div>
+     );
 };
 
 export default TaskHeader;
