@@ -1,10 +1,11 @@
 'use client';
 
-import { ChangeEvent, useRef, useState } from 'react';
+import { ChangeEvent, useRef, useState, useMemo } from 'react';
 import AttachmentsList from './AttachmentsList';
 import { formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { Attachment } from '@/app/types/globalTypes';
 import { toast } from 'sonner';
+import Lightbox, { LightboxImage } from '@/app/components/Lightbox/Lightbox';
 
 interface LocalFilePreview {
      id: string;
@@ -44,6 +45,35 @@ const TaskAttachmentsSection = ({
 }: TaskAttachmentsSectionProps) => {
      const fileInputRef = useRef<HTMLInputElement>(null);
      const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+     const [lightboxOpen, setLightboxOpen] = useState(false);
+     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+     const allLightboxImages = useMemo(() => {
+          const images: LightboxImage[] = [];
+
+          localFilePreviews.forEach((lp) => {
+               if (lp.file.type.startsWith('image/')) {
+                    images.push({
+                         src: lp.previewUrl,
+                         alt: lp.file.name,
+                         title: lp.file.name,
+                    });
+               }
+          });
+
+          attachments.forEach((att) => {
+               if (att.mime_type.startsWith('image/')) {
+                    images.push({
+                         src: `/api/upload?filePath=${encodeURIComponent(att.file_path)}&action=preview`,
+                         alt: att.file_name,
+                         title: att.file_name,
+                         downloadUrl: `/api/upload?filePath=${encodeURIComponent(att.file_path)}&action=download`,
+                    });
+               }
+          });
+
+          return images;
+     }, [localFilePreviews, attachments]);
 
      const handleFilesChange = async (e: ChangeEvent<HTMLInputElement>) => {
           const files = e.target.files;
@@ -89,9 +119,25 @@ const TaskAttachmentsSection = ({
           }
      };
 
-     const handlePreviewClick = (previewUrl: string) => {
-          if (previewUrl) {
-               window.open(previewUrl, '_blank');
+     const handleLocalPreviewClick = (localPreview: LocalFilePreview) => {
+          if (localPreview.file.type.startsWith('image/')) {
+               const imageIndex = allLightboxImages.findIndex((img) => img.src === localPreview.previewUrl);
+               if (imageIndex !== -1) {
+                    setCurrentImageIndex(imageIndex);
+                    setLightboxOpen(true);
+               }
+          } else {
+               window.open(localPreview.previewUrl, '_blank');
+          }
+     };
+
+     const handleAttachmentPreview = (attachment: Attachment) => {
+          const attachmentUrl = `/api/upload?filePath=${encodeURIComponent(attachment.file_path)}&action=preview`;
+          const imageIndex = allLightboxImages.findIndex((img) => img.src === attachmentUrl);
+
+          if (imageIndex !== -1) {
+               setCurrentImageIndex(imageIndex);
+               setLightboxOpen(true);
           }
      };
 
@@ -140,7 +186,7 @@ const TaskAttachmentsSection = ({
                                         </div>
                                         <div className="flex items-center gap-2">
                                              {lp.previewUrl && lp.file.type.startsWith('image/') && (
-                                                  <button type="button" onClick={() => handlePreviewClick(lp.previewUrl)} className="text-blue-400 hover:text-blue-300 p-2" title="Podgląd">
+                                                  <button type="button" onClick={() => handleLocalPreviewClick(lp)} className="text-blue-400 hover:text-blue-300 p-2" title="Podgląd">
                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                             <path
@@ -178,6 +224,7 @@ const TaskAttachmentsSection = ({
                                         </div>
                                    </div>
                               ))}
+
                               {attachments.map((attachment) => (
                                    <div key={attachment.id} className="bg-slate-700/50 rounded-lg border border-slate-600">
                                         <AttachmentsList
@@ -187,6 +234,7 @@ const TaskAttachmentsSection = ({
                                              onTaskUpdate={onTaskUpdate}
                                              onAttachmentsUpdate={onAttachmentsUpdate}
                                              onUploadAttachment={onUploadAttachment}
+                                             onPreviewImage={handleAttachmentPreview}
                                         />
                                    </div>
                               ))}
@@ -201,6 +249,16 @@ const TaskAttachmentsSection = ({
                          </div>
                     )}
                </div>
+
+               {allLightboxImages.length > 0 && (
+                    <Lightbox
+                         images={allLightboxImages}
+                         currentIndex={currentImageIndex}
+                         isOpen={lightboxOpen}
+                         onClose={() => setLightboxOpen(false)}
+                         onNavigate={(index) => setCurrentImageIndex(index)}
+                    />
+               )}
           </div>
      );
 };

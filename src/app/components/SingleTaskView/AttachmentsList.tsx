@@ -1,5 +1,3 @@
-'use client';
-
 import { FaDownload, FaTrash, FaEye } from 'react-icons/fa';
 import { Attachment } from '@/app/types/globalTypes';
 import { formatFileSize, getFileIcon } from '@/app/utils/helpers';
@@ -10,6 +8,7 @@ interface AttachmentsListProps {
      taskId: string;
      onTaskUpdate?: () => Promise<void>;
      onAttachmentsUpdate?: () => Promise<void>;
+     onPreviewImage?: (attachment: Attachment) => void;
      currentUser: {
           id: string;
           name?: string | null;
@@ -18,7 +17,7 @@ interface AttachmentsListProps {
      onUploadAttachment?: (file: File) => Promise<Attachment | null>;
 }
 
-const AttachmentsList = ({ attachments, onTaskUpdate, onAttachmentsUpdate }: AttachmentsListProps) => {
+const AttachmentsList = ({ attachments, onTaskUpdate, onAttachmentsUpdate, onPreviewImage }: AttachmentsListProps) => {
      const handleDownload = async (attachment: Attachment) => {
           try {
                const response = await fetch(`/api/upload?filePath=${encodeURIComponent(attachment.file_path)}&action=download`);
@@ -72,15 +71,9 @@ const AttachmentsList = ({ attachments, onTaskUpdate, onAttachmentsUpdate }: Att
           }
      };
 
-     const handlePreview = async (attachment: Attachment) => {
+     const handlePreview = (attachment: Attachment) => {
           if (attachment.mime_type.startsWith('image/')) {
-               try {
-                    const url = `/api/upload?filePath=${encodeURIComponent(attachment.file_path)}&action=preview`;
-                    window.open(url, '_blank');
-               } catch (error) {
-                    console.error('Error creating preview:', error);
-                    toast.error('Błąd podczas tworzenia podglądu');
-               }
+               onPreviewImage?.(attachment);
           } else {
                handleDownload(attachment);
           }
@@ -98,7 +91,11 @@ const AttachmentsList = ({ attachments, onTaskUpdate, onAttachmentsUpdate }: Att
                               </div>
                          </div>
                          <div className="flex items-center gap-1">
-                              <button onClick={() => handlePreview(attachment)} className="p-2 text-slate-300 hover:text-white hover:bg-slate-600/50 rounded transition-colors" title="Podgląd">
+                              <button
+                                   onClick={() => handlePreview(attachment)}
+                                   className="p-2 text-slate-300 hover:text-white hover:bg-slate-600/50 rounded transition-colors"
+                                   title={attachment.mime_type.startsWith('image/') ? 'Podgląd' : 'Pobierz'}
+                              >
                                    <FaEye className="w-4 h-4" />
                               </button>
                               <button onClick={() => handleDownload(attachment)} className="p-2 text-slate-300 hover:text-white hover:bg-slate-600/50 rounded transition-colors" title="Pobierz">
