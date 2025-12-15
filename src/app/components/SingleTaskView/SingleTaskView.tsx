@@ -297,7 +297,7 @@ const SingleTaskView = ({
                >
                     <motion.div
                          ref={modalRef}
-                         className="bg-slate-800 rounded-xl w-full max-w-lg md:max-w-3xl lg:max-w-4xl h-screen max-h-screen flex flex-col shadow-xl border border-slate-600 overflow-hidden"
+                         className="bg-slate-800 rounded-xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl  flex flex-col shadow-xl border border-slate-600 overflow-hidden"
                          initial={{ scale: 0.95, opacity: 0 }}
                          animate={{ scale: 1, opacity: 1 }}
                          exit={{ scale: 0.95, opacity: 0 }}
