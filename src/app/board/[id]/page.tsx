@@ -14,6 +14,7 @@ import { extractTaskIdFromUrl } from '@/app/utils/helpers';
 import { getPriorities } from '@/app/lib/api';
 import { Column as ColumnType, User, Priority, AssigneeOption } from '@/app/types/globalTypes';
 import BoardHeader from '@/app/components/Board/BoardHeader';
+import TaskViewSkeleton from '@/app/components/SingleTaskView/TaskViewSkeleton';
 
 const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
      loading: () => (
@@ -25,12 +26,11 @@ const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
 
 const SingleTaskView = dynamic(() => import('@/app/components/SingleTaskView/SingleTaskView'), {
      loading: () => (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
-               <Loader text="Ładowanie zadania..." />
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+               <TaskViewSkeleton />
           </div>
      ),
 });
-
 const AddColumnPopup = dynamic(() => import('@/app/components/TaskColumn/AddColumnPopup'), {
      loading: () => <div className="text-slate-400">Ładowanie...</div>,
 });

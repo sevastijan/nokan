@@ -29,6 +29,7 @@ import { UnsavedChangesModal } from './UnsavedChangesModal';
 
 import { calculateDuration } from '@/app/utils/helpers';
 import { SingleTaskViewProps, Column } from '@/app/types/globalTypes';
+import TaskViewSkeleton from './TaskViewSkeleton';
 
 const SingleTaskView = ({
      taskId,
@@ -274,6 +275,14 @@ const SingleTaskView = ({
      const duration = useMemo(() => calculateDuration(formData.startDate, formData.endDate), [formData.startDate, formData.endDate]);
 
      const user = currentUser!;
+
+     if (!task && !isNewTask) {
+          return (
+               <motion.div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <TaskViewSkeleton />
+               </motion.div>
+          );
+     }
 
      return (
           <AnimatePresence initial={false}>
