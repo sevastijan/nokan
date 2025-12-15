@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { FaUser } from 'react-icons/fa';
 import { AvatarProps } from './types';
 
@@ -46,14 +47,14 @@ const Avatar = ({ src, alt = 'User avatar', size = 'md', className = '' }: Avata
      const validSrc = typeof src === 'string' && src.startsWith('http') ? src : undefined;
 
      return (
-          <div className={`${sizeClassName} ${className} flex items-center justify-center bg-slate-700 overflow-hidden`} style={style}>
+          <div className={`${sizeClassName} ${className} flex items-center justify-center bg-slate-700 overflow-hidden relative`} style={style}>
                {validSrc ? (
-                    <img
+                    <Image
                          src={validSrc}
                          alt={alt}
                          width={width}
                          height={height}
-                         className="rounded-full object-cover w-full h-full"
+                         className="rounded-full object-cover"
                          referrerPolicy="no-referrer"
                          onError={(e) => {
                               const target = e.currentTarget;

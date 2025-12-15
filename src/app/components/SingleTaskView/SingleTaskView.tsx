@@ -1,11 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { FaCalendarAlt } from 'react-icons/fa';
+
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
+import { useTaskAssignees } from './hooks/useTaskAssignees';
+import { useTaskStatus } from './hooks/useTaskStatus';
+import { useAutosave } from './hooks/useAutosave';
+import { useTaskForm } from './hooks/useTaskForm';
+import { useAttachmentUpload } from './hooks/useAttachmentUpload';
+import { useOutsideClick } from '@/app/hooks/useOutsideClick';
+
 import StatusSelector from './StatusSelector';
 import CommentsSection from './CommentsSection';
 import ImagePreviewModal from './ImagePreviewModal';
@@ -17,17 +25,10 @@ import TaskDatesSection from './TaskDatesSection';
 import TaskPropertiesGrid from './TaskPropertiesGrid';
 import TaskAttachmentsSection from './TaskAttachmentsSection';
 import TaskHeader from './TaskHeader';
-import { useTaskAssignees } from './hooks/useTaskAssignees';
-import { useTaskStatus } from './hooks/useTaskStatus';
-import { useAutosave } from './hooks/useAutosave';
-import { useTaskForm } from './hooks/useTaskForm';
-import { useAttachmentUpload } from './hooks/useAttachmentUpload';
-import { LoadingState } from './LoadingState';
 import { UnsavedChangesModal } from './UnsavedChangesModal';
 
 import { calculateDuration } from '@/app/utils/helpers';
 import { SingleTaskViewProps, Column } from '@/app/types/globalTypes';
-import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 
 const SingleTaskView = ({
      taskId,
@@ -42,13 +43,11 @@ const SingleTaskView = ({
      columns,
      statuses: propStatuses,
 }: SingleTaskViewProps & { columns: Column[] }) => {
-     const { currentUser, loading: userLoading } = useCurrentUser();
+     const { currentUser } = useCurrentUser();
 
      const {
           task,
-          loading,
           saving,
-          error,
           hasUnsavedChanges,
           isNewTask,
           updateTask,
@@ -118,16 +117,14 @@ const SingleTaskView = ({
           fetchTaskData,
      });
 
-     // Autosave hook
      const { isAutoSaving } = useAutosave({
           callback: autoSaveTask,
           delay: 3500,
           shouldSave: hasUnsavedChanges && !isNewTask && !showRecurringModal,
      });
+
      useEffect(() => {
-          if (task) {
-               syncWithTask(task, columnId);
-          }
+          if (task) syncWithTask(task, columnId);
      }, [task, columnId, syncWithTask]);
 
      useEffect(() => {
@@ -167,9 +164,7 @@ const SingleTaskView = ({
           };
      }, []);
 
-     useEffect(() => {
-          return cleanupPreviews;
-     }, [cleanupPreviews]);
+     useEffect(() => cleanupPreviews, [cleanupPreviews]);
 
      const requestClose = useCallback(() => {
           if (hasUnsavedChanges && !isNewTask) {
@@ -246,12 +241,10 @@ const SingleTaskView = ({
           }
 
           const success = isNewTask ? await saveNewTask() : await saveExistingTask();
-
           if (!success) return;
 
           if (isNewTask && localFilePreviews.length > 0 && currentTaskId) {
                const { errors } = await uploadAllAttachments(localFilePreviews, currentTaskId);
-
                toast.success(errors > 0 ? `Zadanie utworzone, ale ${errors} załącznik(ów) nie zostało przesłanych` : 'Zadanie utworzone wraz z załącznikami');
           } else {
                toast.success(isNewTask ? 'Zadanie utworzone' : 'Zadanie zaktualizowane');
@@ -280,10 +273,7 @@ const SingleTaskView = ({
 
      const duration = useMemo(() => calculateDuration(formData.startDate, formData.endDate), [formData.startDate, formData.endDate]);
 
-     if (loading) return <LoadingState message="Ładowanie zadania..." />;
-     if (error) return <LoadingState message={`Błąd: ${error}`} isError />;
-     if (userLoading || !currentUser) return <LoadingState message="Ładowanie użytkownika..." />;
-     if (!isNewTask && !task) return null;
+     const user = currentUser!;
 
      return (
           <AnimatePresence initial={false}>
@@ -297,7 +287,7 @@ const SingleTaskView = ({
                >
                     <motion.div
                          ref={modalRef}
-                         className="bg-slate-800 rounded-xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl  flex flex-col shadow-xl border border-slate-600 overflow-hidden"
+                         className="bg-slate-800 rounded-xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl max-h-screen flex flex-col shadow-xl border border-slate-600 overflow-hidden"
                          initial={{ scale: 0.95, opacity: 0 }}
                          animate={{ scale: 1, opacity: 1 }}
                          exit={{ scale: 0.95, opacity: 0 }}
@@ -339,8 +329,8 @@ const SingleTaskView = ({
                                    {task?.statuses && task.statuses.length > 0 && (
                                         <div className="mt-6">
                                              <StatusSelector
-                                                  statuses={task?.statuses || []}
-                                                  selectedStatusId={task?.status_id || null}
+                                                  statuses={task.statuses}
+                                                  selectedStatusId={task.status_id || null}
                                                   onChange={handleStatusChange}
                                                   onStatusesChange={(newStatuses) => updateTask({ statuses: newStatuses })}
                                                   boardId={boardId}
@@ -369,30 +359,34 @@ const SingleTaskView = ({
                                         </div>
                                    )}
 
-                                   <TaskAttachmentsSection
-                                        isNewTask={isNewTask}
-                                        taskId={task?.id}
-                                        attachments={task?.attachments || []}
-                                        localFilePreviews={localFilePreviews}
-                                        onAddFiles={addFiles}
-                                        onRemoveLocalFile={removeFile}
-                                        currentUser={currentUser}
-                                        onTaskUpdate={fetchTaskData}
-                                        onAttachmentsUpdate={fetchTaskData}
-                                        onUploadAttachment={uploadAttachment}
-                                   />
+                                   <Suspense fallback={<div className="text-slate-400 text-sm">Ładowanie załączników...</div>}>
+                                        <TaskAttachmentsSection
+                                             isNewTask={isNewTask}
+                                             taskId={task?.id}
+                                             attachments={task?.attachments || []}
+                                             localFilePreviews={localFilePreviews}
+                                             onAddFiles={addFiles}
+                                             onRemoveLocalFile={removeFile}
+                                             currentUser={user}
+                                             onTaskUpdate={fetchTaskData}
+                                             onAttachmentsUpdate={fetchTaskData}
+                                             onUploadAttachment={uploadAttachment}
+                                        />
+                                   </Suspense>
 
                                    {!isNewTask && task?.id && (
                                         <div className="mt-6">
-                                             <CommentsSection
-                                                  taskId={task.id}
-                                                  comments={task.comments || []}
-                                                  currentUser={currentUser}
-                                                  task={task}
-                                                  onRefreshComments={fetchTaskData}
-                                                  onImagePreview={(url) => setPreviewImageUrl(url)}
-                                                  teamMembers={teamMembers}
-                                             />
+                                             <Suspense fallback={<div className="animate-pulse text-slate-400">Ładowanie komentarzy...</div>}>
+                                                  <CommentsSection
+                                                       taskId={task.id}
+                                                       comments={task.comments || []}
+                                                       currentUser={user}
+                                                       task={task}
+                                                       onRefreshComments={fetchTaskData}
+                                                       onImagePreview={(url) => setPreviewImageUrl(url)}
+                                                       teamMembers={teamMembers}
+                                                  />
+                                             </Suspense>
                                         </div>
                                    )}
                               </div>

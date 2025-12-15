@@ -1,21 +1,44 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
+import dynamic from 'next/dynamic';
+
+import { useEffect, useState, useCallback, useRef, useLayoutEffect, Suspense } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { getSupabase } from '@/app/lib/supabase';
 import { useBoard } from '@/app/hooks/useBoard';
 import Column from '@/app/components/Column';
-import AddColumnPopup from '@/app/components/TaskColumn/AddColumnPopup';
-import SingleTaskView from '@/app/components/SingleTaskView/SingleTaskView';
-import ListView from '@/app/components/ListView/ListView';
 import Loader from '@/app/components/Loader';
 import { extractTaskIdFromUrl } from '@/app/utils/helpers';
 import { getPriorities } from '@/app/lib/api';
 import { Column as ColumnType, User, Priority, AssigneeOption } from '@/app/types/globalTypes';
 import BoardHeader from '@/app/components/Board/BoardHeader';
-import BoardNotesModal from '@/app/components/Board/BoardNotesModal';
+
+const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
+     loading: () => (
+          <div className="flex items-center justify-center h-96">
+               <Loader text="Ładowanie widoku listy..." />
+          </div>
+     ),
+});
+
+const SingleTaskView = dynamic(() => import('@/app/components/SingleTaskView/SingleTaskView'), {
+     loading: () => (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
+               <Loader text="Ładowanie zadania..." />
+          </div>
+     ),
+});
+
+const AddColumnPopup = dynamic(() => import('@/app/components/TaskColumn/AddColumnPopup'), {
+     loading: () => <div className="text-slate-400">Ładowanie...</div>,
+});
+
+const BoardNotesModal = dynamic(() => import('@/app/components/Board/BoardNotesModal'), {
+     loading: () => <div className="text-slate-400">Ładowanie notatek...</div>,
+     ssr: false,
+});
 
 export default function Page() {
      const params = useParams();
@@ -457,21 +480,28 @@ export default function Page() {
                     setNewColumnTitle={setNewColumnTitle}
                     isAddingColumn={isAddingColumn}
                />
-
                {(selectedTaskId || addTaskColumnId) && currentColumnId && (
-                    <SingleTaskView
-                         key={selectedTaskId ?? `add-${addTaskColumnId}`}
-                         taskId={selectedTaskId!}
-                         mode={selectedTaskId ? 'edit' : 'add'}
-                         columns={localColumns}
-                         boardId={boardId}
-                         columnId={currentColumnId}
-                         onClose={handleCloseTaskView}
-                         onTaskUpdate={handleCloseTaskView}
-                         onTaskAdded={handleCloseTaskView}
-                         currentUser={currentUser!}
-                         statuses={statuses}
-                    />
+                    <Suspense
+                         fallback={
+                              <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
+                                   <Loader text="Ładowanie zadania..." />
+                              </div>
+                         }
+                    >
+                         <SingleTaskView
+                              key={selectedTaskId ?? `add-${addTaskColumnId}`}
+                              taskId={selectedTaskId!}
+                              mode={selectedTaskId ? 'edit' : 'add'}
+                              columns={localColumns}
+                              boardId={boardId}
+                              columnId={currentColumnId}
+                              onClose={handleCloseTaskView}
+                              onTaskUpdate={handleCloseTaskView}
+                              onTaskAdded={handleCloseTaskView}
+                              currentUser={currentUser!}
+                              statuses={statuses}
+                         />
+                    </Suspense>
                )}
                <BoardNotesModal isOpen={notesOpen} onClose={handleCloseNotes} boardId={boardId} />
           </div>

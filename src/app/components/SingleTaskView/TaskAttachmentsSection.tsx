@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useRef, useState, useMemo } from 'react';
+import { ChangeEvent, useRef, useState, useMemo, Suspense } from 'react';
 import AttachmentsList from './AttachmentsList';
 import { formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { Attachment } from '@/app/types/globalTypes';
@@ -224,18 +224,29 @@ const TaskAttachmentsSection = ({
                                         </div>
                                    </div>
                               ))}
-
                               {attachments.map((attachment) => (
                                    <div key={attachment.id} className="bg-slate-700/50 rounded-lg border border-slate-600">
-                                        <AttachmentsList
-                                             attachments={[attachment]}
-                                             currentUser={currentUser}
-                                             taskId={taskId!}
-                                             onTaskUpdate={onTaskUpdate}
-                                             onAttachmentsUpdate={onAttachmentsUpdate}
-                                             onUploadAttachment={onUploadAttachment}
-                                             onPreviewImage={handleAttachmentPreview}
-                                        />
+                                        <Suspense
+                                             fallback={
+                                                  <div className="p-3 flex items-center gap-3">
+                                                       <div className="w-8 h-8 bg-slate-600 rounded animate-pulse" />
+                                                       <div className="flex-1">
+                                                            <div className="h-4 bg-slate-600 rounded w-3/4 animate-pulse" />
+                                                            <div className="h-3 bg-slate-700 rounded w-1/2 mt-2 animate-pulse" />
+                                                       </div>
+                                                  </div>
+                                             }
+                                        >
+                                             <AttachmentsList
+                                                  attachments={[attachment]}
+                                                  currentUser={currentUser}
+                                                  taskId={taskId!}
+                                                  onTaskUpdate={onTaskUpdate}
+                                                  onAttachmentsUpdate={onAttachmentsUpdate}
+                                                  onUploadAttachment={onUploadAttachment}
+                                                  onPreviewImage={handleAttachmentPreview}
+                                             />
+                                        </Suspense>
                                    </div>
                               ))}
                          </div>
