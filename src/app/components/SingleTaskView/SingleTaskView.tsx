@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { FaCalendarAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaLayerGroup } from 'react-icons/fa';
 
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
@@ -26,10 +26,13 @@ import TaskPropertiesGrid from './TaskPropertiesGrid';
 import TaskAttachmentsSection from './TaskAttachmentsSection';
 import TaskHeader from './TaskHeader';
 import { UnsavedChangesModal } from './UnsavedChangesModal';
+import TaskTypeSelector from './TaskTypeSelector';
+import SubtaskList from './SubtaskList';
 
 import { calculateDuration } from '@/app/utils/helpers';
-import { SingleTaskViewProps, Column } from '@/app/types/globalTypes';
+import { SingleTaskViewProps, Column, TaskType } from '@/app/types/globalTypes';
 import TaskViewSkeleton from './TaskViewSkeleton';
+import { useGetSubtasksQuery, useUpdateTaskTypeMutation } from '@/app/store/apiSlice';
 
 const SingleTaskView = ({
      taskId,
@@ -43,6 +46,7 @@ const SingleTaskView = ({
      initialStartDate,
      columns,
      statuses: propStatuses,
+     onOpenTask,
 }: SingleTaskViewProps & { columns: Column[] }) => {
      const { currentUser } = useCurrentUser();
 
@@ -83,6 +87,7 @@ const SingleTaskView = ({
      const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
      const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
      const [showRecurringModal, setShowRecurringModal] = useState(false);
+     const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
 
      const { formData, updateField, syncWithTask } = useTaskForm({
           initialColumnId: columnId,
@@ -274,6 +279,40 @@ const SingleTaskView = ({
 
      const duration = useMemo(() => calculateDuration(formData.startDate, formData.endDate), [formData.startDate, formData.endDate]);
 
+     // Task type management
+     const taskType: TaskType = task?.type || 'task';
+     const isStory = taskType === 'story';
+     const [updateTaskType] = useUpdateTaskTypeMutation();
+
+     // Fetch subtasks only if this is a story
+     const { data: subtasks = [], refetch: refetchSubtasks } = useGetSubtasksQuery(
+          { storyId: task?.id || '' },
+          { skip: !task?.id || !isStory }
+     );
+
+     const handleTypeChange = useCallback(async (newType: TaskType) => {
+          if (!task?.id) {
+               // For new tasks, just update locally
+               updateTask({ type: newType });
+               return;
+          }
+
+          try {
+               await updateTaskType({ taskId: task.id, type: newType }).unwrap();
+               fetchTaskData();
+               toast.success(newType === 'story' ? 'Zmieniono na Story' : 'Zmieniono na Task');
+          } catch (error) {
+               const err = error as Error;
+               toast.error(err.message || 'Nie udało się zmienić typu');
+          }
+     }, [task?.id, updateTaskType, fetchTaskData, updateTask]);
+
+     // Check if type can be changed (Story with subtasks cannot become Task)
+     const canChangeType = useMemo(() => {
+          if (!isStory) return true;
+          return subtasks.length === 0;
+     }, [isStory, subtasks.length]);
+
      const user = currentUser!;
 
      if (!task && !isNewTask) {
@@ -335,6 +374,22 @@ const SingleTaskView = ({
                                         onColumnChange={handleColumnChange}
                                    />
 
+                                   {/* Task Type Selector - only show if task is not a subtask */}
+                                   {!task?.parent_id && (
+                                        <div className="mt-4">
+                                             <TaskTypeSelector
+                                                  selectedType={taskType}
+                                                  onChange={handleTypeChange}
+                                                  disabled={!canChangeType}
+                                             />
+                                             {!canChangeType && (
+                                                  <p className="text-xs text-amber-400 mt-1">
+                                                       Usuń najpierw subtaski, aby zmienić typ na Task
+                                                  </p>
+                                             )}
+                                        </div>
+                                   )}
+
                                    {task?.statuses && task.statuses.length > 0 && (
                                         <div className="mt-6">
                                              <StatusSelector
@@ -356,6 +411,23 @@ const SingleTaskView = ({
                                              updateTask({ description: value });
                                         }}
                                    />
+
+                                   {/* Subtasks section - only for Story type */}
+                                   {isStory && task?.id && !isNewTask && (
+                                        <SubtaskList
+                                             storyId={task.id}
+                                             boardId={boardId!}
+                                             columnId={task.column_id || formData.localColumnId || ''}
+                                             subtasks={subtasks}
+                                             onSubtaskOpen={(subtaskId) => {
+                                                  setOpenedSubtaskId(subtaskId);
+                                             }}
+                                             onRefresh={() => {
+                                                  refetchSubtasks();
+                                                  fetchTaskData();
+                                             }}
+                                        />
+                                   )}
 
                                    <TaskDatesSection startDate={formData.startDate} endDate={formData.endDate} onDateChange={handleDateChange} />
 
@@ -412,11 +484,14 @@ const SingleTaskView = ({
                                              recurrence_interval: task.recurrence_interval ?? null,
                                              recurrence_type: task.recurrence_type ?? null,
                                              collaborators: task.collaborators ?? null,
+                                             type: task.type,
+                                             parent_id: task.parent_id,
                                         }}
                                         columns={columns}
                                         selectedAssignees={task.collaborators ?? []}
                                         localColumnId={formData.localColumnId}
                                         onRecurringModalOpen={() => setShowRecurringModal(true)}
+                                        onOpenTask={onOpenTask}
                                    />
                               )}
                          </div>
@@ -432,20 +507,23 @@ const SingleTaskView = ({
                               tempTitle={formData.tempTitle}
                          />
 
-                         <RecurringTaskModal
-                              isOpen={showRecurringModal}
-                              onClose={() => setShowRecurringModal(false)}
-                              isRecurring={task?.is_recurring || false}
-                              onToggleRecurring={(value) => updateTask({ is_recurring: value })}
-                              recurrenceInterval={task?.recurrence_interval ?? 1}
-                              onChangeInterval={(value) => updateTask({ recurrence_interval: value })}
-                              recurrenceType={task?.recurrence_type || 'weekly'}
-                              onChangeType={(value) => updateTask({ recurrence_type: value })}
-                              recurrenceColumnId={task?.recurrence_column_id}
-                              currentColumnId={task?.column_id ?? undefined}
-                              onChangeColumn={(colId) => updateTask({ recurrence_column_id: colId })}
-                              columns={columns}
-                         />
+                         {/* Recurring modal - only for Task type (not Story) */}
+                         {!isStory && (
+                              <RecurringTaskModal
+                                   isOpen={showRecurringModal}
+                                   onClose={() => setShowRecurringModal(false)}
+                                   isRecurring={task?.is_recurring || false}
+                                   onToggleRecurring={(value) => updateTask({ is_recurring: value })}
+                                   recurrenceInterval={task?.recurrence_interval ?? 1}
+                                   onChangeInterval={(value) => updateTask({ recurrence_interval: value })}
+                                   recurrenceType={task?.recurrence_type || 'weekly'}
+                                   onChangeType={(value) => updateTask({ recurrence_type: value })}
+                                   recurrenceColumnId={task?.recurrence_column_id}
+                                   currentColumnId={task?.column_id ?? undefined}
+                                   onChangeColumn={(colId) => updateTask({ recurrence_column_id: colId })}
+                                   columns={columns}
+                              />
+                         )}
                     </motion.div>
 
                     {previewImageUrl && <ImagePreviewModal imageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />}
@@ -457,6 +535,30 @@ const SingleTaskView = ({
                          onSaveAndExit={saveAndExit}
                          isSaving={saving || isAutoSaving}
                     />
+
+                    {/* Nested modal for subtask */}
+                    {openedSubtaskId && (
+                         <SingleTaskView
+                              taskId={openedSubtaskId}
+                              mode="edit"
+                              columnId={task?.column_id || formData.localColumnId || ''}
+                              boardId={boardId}
+                              onClose={() => {
+                                   setOpenedSubtaskId(null);
+                                   refetchSubtasks();
+                              }}
+                              onTaskUpdate={() => {
+                                   refetchSubtasks();
+                                   fetchTaskData();
+                              }}
+                              columns={columns}
+                              statuses={propStatuses}
+                              onOpenTask={() => {
+                                   // When viewing subtask from Story, clicking "Zobacz Story" just closes the subtask modal
+                                   setOpenedSubtaskId(null);
+                              }}
+                         />
+                    )}
                </motion.div>
           </AnimatePresence>
      );

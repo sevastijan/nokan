@@ -53,6 +53,8 @@ interface RawTask {
      status_id?: string;
      assignee?: unknown;
      collaborators?: RawCollaborator[];
+     type?: 'task' | 'story';
+     parent_id?: string | null;
 }
 
 interface RawAssignee {
@@ -233,6 +235,8 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                    end_date: t.end_date,
                                    due_date: t.due_date,
                                    status_id: t.status_id || null,
+                                   type: t.type ?? 'task',
+                                   parent_id: t.parent_id ?? null,
                               };
                          });
 

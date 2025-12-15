@@ -25,6 +25,9 @@ interface RawTask {
      comments?: unknown[];
      priority_data?: unknown;
      collaborators?: unknown[];
+     // Task type fields
+     type?: 'task' | 'story';
+     parent_id?: string | null;
 }
 
 interface RawCollaborator {
@@ -375,6 +378,9 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          recurrence_interval: rawTask.recurrence_interval ?? null,
                          recurrence_column_id: rawTask.recurrence_column_id ?? null,
                          next_occurrence_date: rawTask.next_occurrence_date ?? null,
+                         // Task type fields
+                         type: rawTask.type ?? 'task',
+                         parent_id: rawTask.parent_id ?? null,
                     };
 
                     return { data: result };
@@ -707,5 +713,267 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                }
           },
           providesTags: ['Priority'],
+     }),
+
+     // === Subtask Endpoints ===
+
+     getSubtasks: builder.query<Task[], { storyId: string }>({
+          async queryFn({ storyId }) {
+               try {
+                    const { data, error } = await getSupabase()
+                         .from('tasks')
+                         .select(`
+                              id, title, description, column_id, board_id, priority,
+                              user_id, sort_order, completed, created_at, updated_at,
+                              type, parent_id,
+                              collaborators:task_collaborators(
+                                   id, user_id,
+                                   user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
+                              )
+                         `)
+                         .eq('parent_id', storyId)
+                         .eq('type', 'task')
+                         .order('sort_order', { ascending: true });
+
+                    if (error) throw error;
+
+                    const subtasks: Task[] = (data || []).map((t) => {
+                         const collaborators: User[] = Array.isArray(t.collaborators)
+                              ? (t.collaborators as RawCollaborator[])
+                                   .filter((c) => c.user)
+                                   .map((c) => {
+                                        const u = Array.isArray(c.user) ? c.user[0] : c.user;
+                                        return {
+                                             id: u?.id || c.user_id,
+                                             name: u?.name || '',
+                                             email: u?.email || '',
+                                             image: u?.image,
+                                             custom_name: u?.custom_name,
+                                             custom_image: u?.custom_image,
+                                        };
+                                   })
+                              : [];
+
+                         return {
+                              id: t.id,
+                              title: t.title,
+                              description: t.description ?? '',
+                              column_id: t.column_id,
+                              board_id: t.board_id,
+                              priority: t.priority ?? '',
+                              user_id: t.user_id,
+                              order: t.sort_order ?? 0,
+                              sort_order: t.sort_order ?? 0,
+                              completed: t.completed,
+                              created_at: t.created_at,
+                              updated_at: t.updated_at,
+                              type: t.type as 'task' | 'story',
+                              parent_id: t.parent_id,
+                              collaborators,
+                         };
+                    });
+
+                    return { data: subtasks };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[getSubtasks] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          providesTags: (_result, _error, { storyId }) => [{ type: 'Task', id: `subtasks-${storyId}` }],
+     }),
+
+     addSubtask: builder.mutation<Task, { storyId: string; title: string; boardId: string; columnId: string }>({
+          async queryFn({ storyId, title, boardId, columnId }) {
+               try {
+                    // Get max sort_order for subtasks
+                    const { data: existingSubtasks } = await getSupabase()
+                         .from('tasks')
+                         .select('sort_order')
+                         .eq('parent_id', storyId)
+                         .order('sort_order', { ascending: false })
+                         .limit(1);
+
+                    const maxOrder = existingSubtasks?.[0]?.sort_order ?? -1;
+
+                    const payload = {
+                         title,
+                         description: '',
+                         board_id: boardId,
+                         column_id: columnId,
+                         parent_id: storyId,
+                         type: 'task' as const,
+                         completed: false,
+                         sort_order: maxOrder + 1,
+                    };
+
+                    const { data, error } = await getSupabase()
+                         .from('tasks')
+                         .insert(payload)
+                         .select('*')
+                         .single();
+
+                    if (error || !data) throw error || new Error('Failed to add subtask');
+
+                    const subtask: Task = {
+                         id: data.id,
+                         title: data.title,
+                         description: data.description ?? '',
+                         column_id: data.column_id,
+                         board_id: data.board_id,
+                         priority: data.priority ?? '',
+                         user_id: data.user_id,
+                         order: data.sort_order ?? 0,
+                         sort_order: data.sort_order ?? 0,
+                         completed: data.completed,
+                         created_at: data.created_at,
+                         updated_at: data.updated_at,
+                         type: data.type,
+                         parent_id: data.parent_id,
+                    };
+
+                    return { data: subtask };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[addSubtask] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          invalidatesTags: (_result, _error, { storyId }) => [
+               { type: 'Task', id: `subtasks-${storyId}` },
+               { type: 'Task', id: storyId },
+          ],
+     }),
+
+     updateSubtaskCompletion: builder.mutation<void, { subtaskId: string; completed: boolean; storyId: string }>({
+          async queryFn({ subtaskId, completed }) {
+               try {
+                    const { error } = await getSupabase()
+                         .from('tasks')
+                         .update({ completed })
+                         .eq('id', subtaskId);
+
+                    if (error) throw error;
+                    return { data: undefined };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[updateSubtaskCompletion] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          invalidatesTags: (_result, _error, { storyId, subtaskId }) => [
+               { type: 'Task', id: `subtasks-${storyId}` },
+               { type: 'Task', id: storyId },
+               { type: 'Task', id: subtaskId },
+          ],
+     }),
+
+     removeSubtask: builder.mutation<void, { subtaskId: string; storyId: string }>({
+          async queryFn({ subtaskId }) {
+               try {
+                    const { error } = await getSupabase()
+                         .from('tasks')
+                         .delete()
+                         .eq('id', subtaskId);
+
+                    if (error) throw error;
+                    return { data: undefined };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[removeSubtask] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          invalidatesTags: (_result, _error, { storyId }) => [
+               { type: 'Task', id: `subtasks-${storyId}` },
+               { type: 'Task', id: storyId },
+          ],
+     }),
+
+     reorderSubtasks: builder.mutation<void, { storyId: string; subtaskIds: string[] }>({
+          async queryFn({ subtaskIds }) {
+               try {
+                    // Update sort_order for each subtask
+                    const updates = subtaskIds.map((id, index) =>
+                         getSupabase()
+                              .from('tasks')
+                              .update({ sort_order: index })
+                              .eq('id', id)
+                    );
+
+                    await Promise.all(updates);
+                    return { data: undefined };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[reorderSubtasks] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          invalidatesTags: (_result, _error, { storyId }) => [
+               { type: 'Task', id: `subtasks-${storyId}` },
+          ],
+     }),
+
+     updateTaskType: builder.mutation<Task, { taskId: string; type: 'task' | 'story' }>({
+          async queryFn({ taskId, type }) {
+               try {
+                    // If converting to task, check if it has subtasks
+                    if (type === 'task') {
+                         const { data: subtasks } = await getSupabase()
+                              .from('tasks')
+                              .select('id')
+                              .eq('parent_id', taskId)
+                              .limit(1);
+
+                         if (subtasks && subtasks.length > 0) {
+                              throw new Error('Cannot convert Story to Task: has subtasks');
+                         }
+                    }
+
+                    // If converting to story, clear parent_id and disable recurring
+                    const updatePayload: Record<string, unknown> = { type };
+                    if (type === 'story') {
+                         updatePayload.parent_id = null;
+                         updatePayload.is_recurring = false;
+                         updatePayload.recurrence_type = null;
+                         updatePayload.recurrence_interval = null;
+                         updatePayload.recurrence_column_id = null;
+                         updatePayload.next_occurrence_date = null;
+                    }
+
+                    const { data, error } = await getSupabase()
+                         .from('tasks')
+                         .update(updatePayload)
+                         .eq('id', taskId)
+                         .select('*')
+                         .single();
+
+                    if (error || !data) throw error || new Error('Failed to update task type');
+
+                    const task: Task = {
+                         id: data.id,
+                         title: data.title,
+                         description: data.description ?? '',
+                         column_id: data.column_id,
+                         board_id: data.board_id,
+                         priority: data.priority ?? '',
+                         user_id: data.user_id,
+                         order: data.sort_order ?? 0,
+                         sort_order: data.sort_order ?? 0,
+                         completed: data.completed,
+                         created_at: data.created_at,
+                         updated_at: data.updated_at,
+                         type: data.type,
+                         parent_id: data.parent_id,
+                    };
+
+                    return { data: task };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[updateTaskType] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          invalidatesTags: (_result, _error, { taskId }) => [{ type: 'Task', id: taskId }],
      }),
 });

@@ -133,4 +133,11 @@ export const {
      useUpdateUserMutation,
      useGetBoardNotesQuery,
      useSaveBoardNotesMutation,
+     // Subtask hooks
+     useGetSubtasksQuery,
+     useAddSubtaskMutation,
+     useUpdateSubtaskCompletionMutation,
+     useRemoveSubtaskMutation,
+     useReorderSubtasksMutation,
+     useUpdateTaskTypeMutation,
 } = apiSlice;

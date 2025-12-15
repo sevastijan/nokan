@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent, MouseEvent } from 'react';
-import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus } from 'react-icons/fi';
+import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus, FiCheckSquare, FiCornerDownRight } from 'react-icons/fi';
+import { FaLayerGroup } from 'react-icons/fa';
 import Avatar from './Avatar/Avatar';
 import { Task as TaskType } from '@/app/types/globalTypes';
 import { getPriorityStyleConfig, truncateText } from '@/app/utils/helpers';
@@ -52,6 +53,8 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
 
      const assignees = task.collaborators || [];
      const hasAssignees = assignees.length > 0;
+     const isStory = task.type === 'story';
+     const isSubtask = Boolean(task.parent_id);
 
      const openMenu = useCallback(() => {
           setMenuOpen(true);
@@ -170,7 +173,16 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                     </div>
                ) : (
                     <div className="p-4 flex flex-col gap-2">
-                         <h4 className="font-semibold text-white text-base leading-tight truncate">{hasTitle ? task.title : <span className="text-white/40 italic">Untitled</span>}</h4>
+                         <h4 className="font-semibold text-white text-base leading-tight truncate flex items-center gap-2">
+                              {isSubtask ? (
+                                   <FiCornerDownRight className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                              ) : isStory ? (
+                                   <FaLayerGroup className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                              ) : (
+                                   <FiCheckSquare className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                              )}
+                              {hasTitle ? task.title : <span className="text-white/40 italic">Untitled</span>}
+                         </h4>
 
                          {hasDesc && <p className="text-white/70 text-sm line-clamp-2">{truncateText(task.description!, 80)}</p>}
 

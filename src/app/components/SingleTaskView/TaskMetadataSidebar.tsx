@@ -1,8 +1,9 @@
 'use client';
 
-import { FaRedo } from 'react-icons/fa';
+import { FaRedo, FaLayerGroup } from 'react-icons/fa';
+import { FiCheckSquare, FiCornerDownRight } from 'react-icons/fi';
 import Avatar from '../Avatar/Avatar';
-import { Column } from '@/app/types/globalTypes';
+import { Column, TaskType } from '@/app/types/globalTypes';
 import { calculateDuration, formatDate } from '@/app/utils/helpers';
 
 interface TaskMetadataSidebarProps {
@@ -30,11 +31,14 @@ interface TaskMetadataSidebarProps {
                custom_image?: string | null;
                email?: string | null;
           }> | null;
+          type?: TaskType;
+          parent_id?: string | null;
      };
      columns: Column[];
      selectedAssignees?: TaskMetadataSidebarProps['task']['collaborators'];
      localColumnId?: string;
      onRecurringModalOpen: () => void;
+     onOpenTask?: (taskId: string) => void;
 }
 
 const getDisplayData = (
@@ -56,8 +60,12 @@ const getDisplayData = (
      };
 };
 
-const TaskMetadataSidebar = ({ task, columns, selectedAssignees = [], localColumnId, onRecurringModalOpen }: TaskMetadataSidebarProps) => {
+const TaskMetadataSidebar = ({ task, columns, selectedAssignees = [], localColumnId, onRecurringModalOpen, onOpenTask }: TaskMetadataSidebarProps) => {
      const currentColumnTitle = columns.find((c) => c.id === localColumnId)?.title || '—';
+
+     const isSubtask = Boolean(task.parent_id);
+     const taskType = task.type || 'task';
+     const isStory = taskType === 'story';
 
      const duration = task.start_date && task.end_date ? calculateDuration(task.start_date, task.end_date) : null;
 
@@ -122,6 +130,37 @@ const TaskMetadataSidebar = ({ task, columns, selectedAssignees = [], localColum
                <div className="mb-6">
                     <h3 className="text-sm text-slate-300 uppercase mb-2">Kolumna</h3>
                     <div className="text-sm truncate">{currentColumnTitle}</div>
+               </div>
+
+               <div className="mb-6">
+                    <h3 className="text-sm text-slate-300 uppercase mb-2">Typ</h3>
+                    {isSubtask ? (
+                         <div className="space-y-2">
+                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-500/20 text-orange-300 rounded-lg text-sm font-medium">
+                                   <FiCornerDownRight className="w-4 h-4" />
+                                   Subtask
+                              </div>
+                              {task.parent_id && onOpenTask && (
+                                   <button
+                                        onClick={() => onOpenTask(task.parent_id!)}
+                                        className="w-full flex items-center gap-2 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg text-sm transition-colors"
+                                   >
+                                        <FaLayerGroup className="w-4 h-4" />
+                                        <span>Zobacz Story</span>
+                                   </button>
+                              )}
+                         </div>
+                    ) : isStory ? (
+                         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg text-sm font-medium">
+                              <FaLayerGroup className="w-4 h-4" />
+                              Story
+                         </div>
+                    ) : (
+                         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-lg text-sm font-medium">
+                              <FiCheckSquare className="w-4 h-4" />
+                              Task
+                         </div>
+                    )}
                </div>
 
                {duration !== null && (

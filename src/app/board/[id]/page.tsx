@@ -500,6 +500,7 @@ export default function Page() {
                               onTaskAdded={handleCloseTaskView}
                               currentUser={currentUser!}
                               statuses={statuses}
+                              onOpenTask={(taskId) => setSelectedTaskId(taskId)}
                          />
                     </Suspense>
                )}

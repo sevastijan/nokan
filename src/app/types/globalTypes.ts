@@ -3,6 +3,7 @@ import { ChangeEvent } from 'react';
 // === Core Types ===
 
 export type SingleTaskMode = 'edit' | 'add';
+export type TaskType = 'task' | 'story';
 
 // === Status Type ===
 export interface Status {
@@ -166,6 +167,9 @@ export interface Task {
      recurrence_interval?: number | null;
      recurrence_column_id?: string | null;
      next_occurrence_date?: string | null;
+     // Task type fields
+     type?: TaskType;
+     parent_id?: string | null;
 }
 
 export interface TaskDetail {
@@ -201,6 +205,12 @@ export interface TaskDetail {
      recurrence_interval?: number | null;
      recurrence_column_id?: string | null;
      next_occurrence_date?: string | null;
+     // Task type fields
+     type?: TaskType;
+     parent_id?: string | null;
+     subtasks?: Task[];
+     subtasks_count?: number;
+     completed_subtasks?: number;
 }
 
 export interface Column {
@@ -436,6 +446,7 @@ export interface SingleTaskViewProps {
      initialStartDate?: string;
      columns: Column[];
      statuses: Status[];
+     onOpenTask?: (taskId: string) => void;
 }
 
 export interface UserSelectorProps {
