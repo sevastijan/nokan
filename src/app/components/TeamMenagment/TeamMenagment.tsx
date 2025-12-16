@@ -9,29 +9,42 @@ import TeamList from './TeamList';
 import TeamFormModal from './TeamFormModal';
 import { Team } from '@/app/types/globalTypes';
 
-import { useGetMyBoardsQuery, useGetMyTeamsQuery, useAddTeamMutation, useUpdateTeamMutation, useDeleteTeamMutation, useUpdateTeamBoardsMutation, useGetAllUsersQuery } from '@/app/store/apiSlice';
+import {
+     useGetCurrentUserQuery,
+     useGetMyBoardsQuery,
+     useGetMyTeamsQuery,
+     useAddTeamMutation,
+     useUpdateTeamMutation,
+     useDeleteTeamMutation,
+     useUpdateTeamBoardsMutation,
+     useGetAllUsersQuery,
+} from '@/app/store/apiSlice';
 
 const TeamManagement = () => {
-     const { data: session } = useSession();
+     const { data: session, status } = useSession();
      const router = useRouter();
 
-     const userId = (session?.user as { id?: string } | undefined)?.id ?? '';
-
-     const { data: boards = [], isLoading: loadingBoards } = useGetMyBoardsQuery(userId, {
-          skip: !userId,
+     const { data: currentUser, isLoading: loadingUser } = useGetCurrentUserQuery(session!, {
+          skip: status !== 'authenticated' || !session,
      });
+     const ownerId = currentUser?.id ?? '';
 
-     const { data: teamsAll = [], isLoading: loadingTeams } = useGetMyTeamsQuery(userId, {
-          skip: !userId,
-     });
+     // fetch all boards
+     const { data: boards = [], isLoading: loadingBoards } = useGetMyBoardsQuery(ownerId, { skip: !ownerId });
 
+     // fetch all teams owned or joined
+     const { data: teamsAll = [], isLoading: loadingTeams } = useGetMyTeamsQuery(ownerId, { skip: !ownerId });
+
+     // RTK mutations
      const [addTeam, { isLoading: isAdding }] = useAddTeamMutation();
      const [updateTeam, { isLoading: isUpdating }] = useUpdateTeamMutation();
      const [deleteTeam] = useDeleteTeamMutation();
      const [updateTeamBoards] = useUpdateTeamBoardsMutation();
 
+     // Fetch all users using RTK Query (includes custom_name and custom_image)
      const { data: availableUsers = [] } = useGetAllUsersQuery();
 
+     // modal state
      const [isModalOpen, setIsModalOpen] = useState(false);
      const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
 
@@ -41,6 +54,7 @@ const TeamManagement = () => {
      const [editedTeamName, setEditedTeamName] = useState('');
      const [editedTeamMembers, setEditedTeamMembers] = useState<string[]>([]);
 
+     // multiple boards selection
      const [modalBoardIds, setModalBoardIds] = useState<string[]>([]);
 
      const handleBack = () => router.push('/dashboard');
@@ -76,7 +90,7 @@ const TeamManagement = () => {
           }
           const created = await addTeam({
                name: DOMPurify.sanitize(newTeamName),
-               owner_id: userId,
+               owner_id: ownerId,
                members: newTeamMembers,
           }).unwrap();
 
@@ -96,7 +110,7 @@ const TeamManagement = () => {
           await updateTeam({
                id: editingTeamId,
                name: DOMPurify.sanitize(editedTeamName),
-               owner_id: userId,
+               owner_id: ownerId,
                members: editedTeamMembers,
           }).unwrap();
 
@@ -116,10 +130,11 @@ const TeamManagement = () => {
           }
      };
 
-     const loadingOverall = loadingBoards || loadingTeams || isAdding || isUpdating;
+     const loadingOverall = loadingUser || loadingBoards || loadingTeams || isAdding || isUpdating;
 
      return (
           <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+               {/* Header */}
                <div className="bg-slate-800/30 backdrop-blur-sm border-b border-slate-700/50">
                     <div className="mx-auto px-4 py-4 flex items-center justify-between">
                          <button onClick={handleBack} className="flex items-center gap-2 text-slate-400 hover:text-white">
@@ -132,6 +147,7 @@ const TeamManagement = () => {
                     </div>
                </div>
 
+               {/* Stats */}
                <div className="mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-2xl text-white flex justify-between items-center">
                          <div>
@@ -156,11 +172,13 @@ const TeamManagement = () => {
                     </div>
                </div>
 
+               {/* Team List */}
                <div className="mx-auto px-4 py-6 bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700">
                     <TeamList teams={teamsAll} onEditTeam={openEdit} onDeleteTeam={handleDelete} availableUsers={availableUsers} />
                     {loadingOverall && <p className="text-white mt-4">Loading…</p>}
                </div>
 
+               {/* Modal */}
                <TeamFormModal
                     isOpen={isModalOpen}
                     onClose={closeModal}

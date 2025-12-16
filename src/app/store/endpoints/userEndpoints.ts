@@ -1,6 +1,6 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { getSupabase } from '@/app/lib/supabase';
-import { Session } from 'next-auth';
+// import { Session } from 'next-auth';
 import { User } from '@/app/types/globalTypes';
 import { UserRole } from '../apiSlice';
 
@@ -22,7 +22,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
       * @param session - Next-auth session object
       * @returns User object with all fields including custom_name and custom_image
       */
-     getCurrentUser: builder.query<User, Session>({
+     getCurrentUser: builder.query<User, { user?: { email?: string | null; name?: string | null; image?: string | null } }>({
           async queryFn(session) {
                try {
                     const email = session.user?.email?.trim();
