@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { FaCalendarAlt, FaLayerGroup } from 'react-icons/fa';
+import { FaCalendarAlt } from 'react-icons/fa';
 
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useTaskManagement } from './hooks/useTaskManagement';
@@ -285,29 +285,27 @@ const SingleTaskView = ({
      const [updateTaskType] = useUpdateTaskTypeMutation();
 
      // Fetch subtasks only if this is a story
-     const { data: subtasks = [], refetch: refetchSubtasks } = useGetSubtasksQuery(
-          { storyId: task?.id || '' },
-          { skip: !task?.id || !isStory }
+     const { data: subtasks = [], refetch: refetchSubtasks } = useGetSubtasksQuery({ storyId: task?.id || '' }, { skip: !task?.id || !isStory });
+
+     const handleTypeChange = useCallback(
+          async (newType: TaskType) => {
+               if (!task?.id) {
+                    updateTask({ type: newType });
+                    return;
+               }
+
+               try {
+                    await updateTaskType({ taskId: task.id, type: newType }).unwrap();
+                    fetchTaskData();
+                    toast.success(newType === 'story' ? 'Zmieniono na Story' : 'Zmieniono na Task');
+               } catch (error) {
+                    const err = error as Error;
+                    toast.error(err.message || 'Nie udało się zmienić typu');
+               }
+          },
+          [task?.id, updateTaskType, fetchTaskData, updateTask],
      );
 
-     const handleTypeChange = useCallback(async (newType: TaskType) => {
-          if (!task?.id) {
-               // For new tasks, just update locally
-               updateTask({ type: newType });
-               return;
-          }
-
-          try {
-               await updateTaskType({ taskId: task.id, type: newType }).unwrap();
-               fetchTaskData();
-               toast.success(newType === 'story' ? 'Zmieniono na Story' : 'Zmieniono na Task');
-          } catch (error) {
-               const err = error as Error;
-               toast.error(err.message || 'Nie udało się zmienić typu');
-          }
-     }, [task?.id, updateTaskType, fetchTaskData, updateTask]);
-
-     // Check if type can be changed (Story with subtasks cannot become Task)
      const canChangeType = useMemo(() => {
           if (!isStory) return true;
           return subtasks.length === 0;
@@ -377,16 +375,8 @@ const SingleTaskView = ({
                                    {/* Task Type Selector - only show if task is not a subtask */}
                                    {!task?.parent_id && (
                                         <div className="mt-4">
-                                             <TaskTypeSelector
-                                                  selectedType={taskType}
-                                                  onChange={handleTypeChange}
-                                                  disabled={!canChangeType}
-                                             />
-                                             {!canChangeType && (
-                                                  <p className="text-xs text-amber-400 mt-1">
-                                                       Usuń najpierw subtaski, aby zmienić typ na Task
-                                                  </p>
-                                             )}
+                                             <TaskTypeSelector selectedType={taskType} onChange={handleTypeChange} disabled={!canChangeType} />
+                                             {!canChangeType && <p className="text-xs text-amber-400 mt-1">Usuń najpierw subtaski, aby zmienić typ na Task</p>}
                                         </div>
                                    )}
 

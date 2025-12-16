@@ -25,7 +25,6 @@ interface RawTask {
      comments?: unknown[];
      priority_data?: unknown;
      collaborators?: unknown[];
-     // Task type fields
      type?: 'task' | 'story';
      parent_id?: string | null;
 }
@@ -34,7 +33,7 @@ interface RawCollaborator {
      id: string;
      task_id: string;
      user_id: string;
-     user?: RawUser;
+     user?: RawUser[] | RawUser;
 }
 
 interface RawUser {
@@ -324,7 +323,6 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          });
                     }
 
-                    // === Collaborators ===
                     let collaborators: User[] = [];
                     if (Array.isArray(rawTask.collaborators)) {
                          collaborators = (rawTask.collaborators as RawCollaborator[])
@@ -378,7 +376,6 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          recurrence_interval: rawTask.recurrence_interval ?? null,
                          recurrence_column_id: rawTask.recurrence_column_id ?? null,
                          next_occurrence_date: rawTask.next_occurrence_date ?? null,
-                         // Task type fields
                          type: rawTask.type ?? 'task',
                          parent_id: rawTask.parent_id ?? null,
                     };
@@ -664,6 +661,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                { type: 'TasksWithDates', id: taskId },
           ],
      }),
+
      uploadAttachment: builder.mutation<Attachment, { file: File; taskId: string }>({
           async queryFn({ file, taskId }) {
                try {
@@ -715,14 +713,13 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           providesTags: ['Priority'],
      }),
 
-     // === Subtask Endpoints ===
-
      getSubtasks: builder.query<Task[], { storyId: string }>({
           async queryFn({ storyId }) {
                try {
                     const { data, error } = await getSupabase()
                          .from('tasks')
-                         .select(`
+                         .select(
+                              `
                               id, title, description, column_id, board_id, priority,
                               user_id, sort_order, completed, created_at, updated_at,
                               type, parent_id,
@@ -730,7 +727,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                    id, user_id,
                                    user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
                               )
-                         `)
+                         `,
+                         )
                          .eq('parent_id', storyId)
                          .eq('type', 'task')
                          .order('sort_order', { ascending: true });
@@ -740,18 +738,18 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     const subtasks: Task[] = (data || []).map((t) => {
                          const collaborators: User[] = Array.isArray(t.collaborators)
                               ? (t.collaborators as RawCollaborator[])
-                                   .filter((c) => c.user)
-                                   .map((c) => {
-                                        const u = Array.isArray(c.user) ? c.user[0] : c.user;
-                                        return {
-                                             id: u?.id || c.user_id,
-                                             name: u?.name || '',
-                                             email: u?.email || '',
-                                             image: u?.image,
-                                             custom_name: u?.custom_name,
-                                             custom_image: u?.custom_image,
-                                        };
-                                   })
+                                     .filter((c) => c.user)
+                                     .map((c) => {
+                                          const u = Array.isArray(c.user) ? c.user[0] : c.user;
+                                          return {
+                                               id: u?.id || c.user_id,
+                                               name: u?.name || '',
+                                               email: u?.email || '',
+                                               image: u?.image,
+                                               custom_name: u?.custom_name,
+                                               custom_image: u?.custom_image,
+                                          };
+                                     })
                               : [];
 
                          return {
@@ -787,12 +785,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           async queryFn({ storyId, title, boardId, columnId }) {
                try {
                     // Get max sort_order for subtasks
-                    const { data: existingSubtasks } = await getSupabase()
-                         .from('tasks')
-                         .select('sort_order')
-                         .eq('parent_id', storyId)
-                         .order('sort_order', { ascending: false })
-                         .limit(1);
+                    const { data: existingSubtasks } = await getSupabase().from('tasks').select('sort_order').eq('parent_id', storyId).order('sort_order', { ascending: false }).limit(1);
 
                     const maxOrder = existingSubtasks?.[0]?.sort_order ?? -1;
 
@@ -807,11 +800,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          sort_order: maxOrder + 1,
                     };
 
-                    const { data, error } = await getSupabase()
-                         .from('tasks')
-                         .insert(payload)
-                         .select('*')
-                         .single();
+                    const { data, error } = await getSupabase().from('tasks').insert(payload).select('*').single();
 
                     if (error || !data) throw error || new Error('Failed to add subtask');
 
@@ -848,10 +837,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      updateSubtaskCompletion: builder.mutation<void, { subtaskId: string; completed: boolean; storyId: string }>({
           async queryFn({ subtaskId, completed }) {
                try {
-                    const { error } = await getSupabase()
-                         .from('tasks')
-                         .update({ completed })
-                         .eq('id', subtaskId);
+                    const { error } = await getSupabase().from('tasks').update({ completed }).eq('id', subtaskId);
 
                     if (error) throw error;
                     return { data: undefined };
@@ -871,10 +857,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      removeSubtask: builder.mutation<void, { subtaskId: string; storyId: string }>({
           async queryFn({ subtaskId }) {
                try {
-                    const { error } = await getSupabase()
-                         .from('tasks')
-                         .delete()
-                         .eq('id', subtaskId);
+                    const { error } = await getSupabase().from('tasks').delete().eq('id', subtaskId);
 
                     if (error) throw error;
                     return { data: undefined };
@@ -894,12 +877,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           async queryFn({ subtaskIds }) {
                try {
                     // Update sort_order for each subtask
-                    const updates = subtaskIds.map((id, index) =>
-                         getSupabase()
-                              .from('tasks')
-                              .update({ sort_order: index })
-                              .eq('id', id)
-                    );
+                    const updates = subtaskIds.map((id, index) => getSupabase().from('tasks').update({ sort_order: index }).eq('id', id));
 
                     await Promise.all(updates);
                     return { data: undefined };
@@ -909,9 +887,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     return { error: { status: 'CUSTOM_ERROR', error: error.message } };
                }
           },
-          invalidatesTags: (_result, _error, { storyId }) => [
-               { type: 'Task', id: `subtasks-${storyId}` },
-          ],
+          invalidatesTags: (_result, _error, { storyId }) => [{ type: 'Task', id: `subtasks-${storyId}` }],
      }),
 
      updateTaskType: builder.mutation<Task, { taskId: string; type: 'task' | 'story' }>({
@@ -919,11 +895,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                try {
                     // If converting to task, check if it has subtasks
                     if (type === 'task') {
-                         const { data: subtasks } = await getSupabase()
-                              .from('tasks')
-                              .select('id')
-                              .eq('parent_id', taskId)
-                              .limit(1);
+                         const { data: subtasks } = await getSupabase().from('tasks').select('id').eq('parent_id', taskId).limit(1);
 
                          if (subtasks && subtasks.length > 0) {
                               throw new Error('Cannot convert Story to Task: has subtasks');
@@ -941,12 +913,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          updatePayload.next_occurrence_date = null;
                     }
 
-                    const { data, error } = await getSupabase()
-                         .from('tasks')
-                         .update(updatePayload)
-                         .eq('id', taskId)
-                         .select('*')
-                         .single();
+                    const { data, error } = await getSupabase().from('tasks').update(updatePayload).eq('id', taskId).select('*').single();
 
                     if (error || !data) throw error || new Error('Failed to update task type');
 
