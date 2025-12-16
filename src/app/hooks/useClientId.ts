@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { getSupabase } from '@/app/lib/supabase';
+import { supabase } from '@/app/lib/api';
 
 export function useClientId() {
      const { data: session } = useSession();

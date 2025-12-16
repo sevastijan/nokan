@@ -3,4 +3,5 @@ export interface AvatarProps {
      alt?: string;
      size?: 'sm' | 'md' | 'lg' | 'xl' | number;
      className?: string;
+     priority?: boolean;
 }

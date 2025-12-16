@@ -2,29 +2,27 @@ import Image from 'next/image';
 import { FaUser } from 'react-icons/fa';
 import { AvatarProps } from './types';
 
-const Avatar = ({ src, alt = 'User avatar', size = 'md', className = '' }: AvatarProps) => {
+const Avatar = ({ src, alt = 'User avatar', size = 'md', className = '', priority = false }: AvatarProps) => {
      // Map size strings to pixel values
      const getSizeClasses = (size: 'sm' | 'md' | 'lg' | 'xl' | number) => {
           if (typeof size === 'number') {
                return {
-                    width: size,
-                    height: size,
                     className: `rounded-full`,
                     style: { width: `${size}px`, height: `${size}px` },
                };
           }
 
           const sizeMap = {
-               sm: { width: 32, height: 32, className: 'w-8 h-8 rounded-full' },
-               md: { width: 40, height: 40, className: 'w-10 h-10 rounded-full' },
-               lg: { width: 48, height: 48, className: 'w-12 h-12 rounded-full' },
-               xl: { width: 64, height: 64, className: 'w-16 h-16 rounded-full' },
+               sm: { className: 'w-8 h-8 rounded-full' },
+               md: { className: 'w-10 h-10 rounded-full' },
+               lg: { className: 'w-12 h-12 rounded-full' },
+               xl: { className: 'w-16 h-16 rounded-full' },
           };
 
           return { ...sizeMap[size], style: {} };
      };
 
-     const { width, height, className: sizeClassName, style } = getSizeClasses(size);
+     const { className: sizeClassName, style } = getSizeClasses(size);
 
      // Dynamically calculate icon size for numeric sizes
      const getIconSize = () => {
@@ -52,10 +50,11 @@ const Avatar = ({ src, alt = 'User avatar', size = 'md', className = '' }: Avata
                     <Image
                          src={validSrc}
                          alt={alt}
-                         width={width}
-                         height={height}
+                         fill
+                         sizes="64px"
                          className="rounded-full object-cover"
                          referrerPolicy="no-referrer"
+                         priority={priority}
                          onError={(e) => {
                               const target = e.currentTarget;
                               target.style.display = 'none';

@@ -137,7 +137,7 @@ const Navbar = () => {
                {session.user && (
                     <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 shadow-xl mt-5 mx-4">
                          <div className="flex items-center gap-4">
-                              <Avatar src={displayAvatar} alt="User avatar" size={52} className="ring-2 ring-slate-600/50 ring-offset-2 ring-offset-slate-800" />
+                              <Avatar src={displayAvatar} priority={true} alt="User avatar" size={52} className="ring-2 ring-slate-600/50 ring-offset-2 ring-offset-slate-800" />
                               <div className="flex-1 min-w-0">
                                    <h3 className="text-white font-bold text-lg truncate">{displayName}</h3>
                                    <div className="mt-2">{getRoleBadge()}</div>

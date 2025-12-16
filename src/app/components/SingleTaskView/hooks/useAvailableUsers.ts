@@ -1,86 +1,91 @@
-import { useState, useEffect } from "react";
-import { getSupabase } from "../../../lib/api";
-import { User } from "../types";
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/app/lib/api';
+
+import type { User } from '@/app/types/globalTypes';
 
 interface UseAvailableUsersResult {
-  availableUsers: User[];
-  fetchAvailableUsers: () => Promise<void>;
+     availableUsers: User[];
+     fetchAvailableUsers: () => Promise<void>;
 }
 
 export const useAvailableUsers = (boardId?: string): UseAvailableUsersResult => {
-  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+     const [availableUsers, setAvailableUsers] = useState<User[]>([]);
 
-  const fetchAvailableUsers = async () => {
-    try {
-      if (!boardId) {
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, name, email, image")
-          .order("name");
+     const fetchAvailableUsers = useCallback(async () => {
+          try {
+               if (!boardId) {
+                    const { data, error } = await supabase.from('users').select('id, name, email, image').order('name');
 
-        if (error) throw error;
-        setAvailableUsers(data || []);
-        return;
-      }
+                    if (error) throw error;
+                    setAvailableUsers((data as User[]) || []);
+                    return;
+               }
 
-      const { data: boardTeams, error: boardTeamsError } = await supabase
-        .from("board_access")
-        .select("team_id")
-        .eq("board_id", boardId);
+               const { data: boardTeams, error: boardTeamsError } = await supabase.from('board_access').select('team_id').eq('board_id', boardId);
 
-      if (boardTeamsError) {
-        console.error("Error fetching board teams:", boardTeamsError);
-        setAvailableUsers([]);
-        return;
-      }
+               if (boardTeamsError) {
+                    console.error('Error fetching board teams:', boardTeamsError);
+                    setAvailableUsers([]);
+                    return;
+               }
 
-      if (!boardTeams || boardTeams.length === 0) {
-        setAvailableUsers([]);
-        return;
-      }
+               if (!boardTeams || boardTeams.length === 0) {
+                    setAvailableUsers([]);
+                    return;
+               }
 
-      const teamIds = boardTeams.map((bt) => bt.team_id);
+               const teamIds = boardTeams.map((bt) => bt.team_id);
 
-      const { data: teamMembers, error: membersError } = await supabase
-        .from("team_members")
-        .select(
-          `
+               type TeamMemberResponse = {
+                    user_id: string;
+                    users: User;
+               };
+
+               const { data: teamMembers, error: membersError } = await supabase
+                    .from('team_members')
+                    .select(
+                         `
           user_id,
           users!inner(id, name, email, image)
-        `
-        )
-        .in("team_id", teamIds);
+        `,
+                    )
+                    .in('team_id', teamIds)
+                    .returns<TeamMemberResponse[]>();
 
-      if (membersError) {
-        console.error("Error fetching team members:", membersError);
-        setAvailableUsers([]);
-        return;
-      }
+               if (membersError) {
+                    console.error('Error fetching team members:', membersError);
+                    setAvailableUsers([]);
+                    return;
+               }
 
-      const uniqueUsers =
-        teamMembers?.reduce((acc: User[], member: any) => {
-          const user = member.users;
-          if (user && !acc.find((u: User) => u.id === user.id)) {
-            acc.push({
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              image: user.image,
-            } as User);
+               if (!teamMembers || teamMembers.length === 0) {
+                    setAvailableUsers([]);
+                    return;
+               }
+
+               const uniqueUsers: User[] = teamMembers.reduce((acc: User[], member: TeamMemberResponse) => {
+                    const user = member.users;
+                    if (user && !acc.some((u) => u.id === user.id)) {
+                         acc.push({
+                              id: user.id,
+                              name: user.name ?? null,
+                              email: user.email ?? null,
+                              image: user.image ?? null,
+                         });
+                    }
+                    return acc;
+               }, []);
+
+               setAvailableUsers(uniqueUsers);
+          } catch (error) {
+               console.error('Error fetching available users:', error);
+               setAvailableUsers([]);
           }
-          return acc;
-        }, []) || [];
+     }, [boardId]);
 
-      setAvailableUsers(uniqueUsers);
-    } catch (error) {
-      console.error("Error fetching available users:", error);
-      setAvailableUsers([]);
-    }
-  };
+     useEffect(() => {
+          fetchAvailableUsers();
+     }, [fetchAvailableUsers]);
 
-  useEffect(() => {
-    fetchAvailableUsers();
-  }, [boardId]);
-
-  return { availableUsers, fetchAvailableUsers };
+     return { availableUsers, fetchAvailableUsers };
 };
