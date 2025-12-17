@@ -31,9 +31,12 @@ const AuthButton = () => {
      }
 
      return (
-          <div className="space-y-4">
+          <div className="space-y-4 flex flex-col">
                {!session ? (
-                    <button onClick={handleSignIn} className="bg-slate-700 hover:bg-slate-600 text-slate-100 px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer border border-slate-600">
+                    <button
+                         onClick={handleSignIn}
+                         className="bg-slate-700 hover:bg-slate-600 text-slate-100 px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer border border-slate-600"
+                    >
                          Sign in with Google
                     </button>
                ) : (
