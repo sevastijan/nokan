@@ -40,6 +40,11 @@ const BoardNotesModal = dynamic(() => import('@/app/components/Board/BoardNotesM
      ssr: false,
 });
 
+const ApiTokensModal = dynamic(() => import('@/app/components/Board/ApiTokensModal'), {
+     loading: () => <div className="text-slate-400">Ładowanie...</div>,
+     ssr: false,
+});
+
 export default function Page() {
      const params = useParams();
      const router = useRouter();
@@ -75,6 +80,7 @@ export default function Page() {
      const [filterPriority, setFilterPriority] = useState<string | null>(null);
      const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
      const [notesOpen, setNotesOpen] = useState(false);
+     const [apiTokensOpen, setApiTokensOpen] = useState(false);
 
      const prevBoardIdRef = useRef<string | null>(null);
      const columnsContainerRef = useRef<HTMLDivElement>(null);
@@ -84,6 +90,8 @@ export default function Page() {
 
      const handleOpenNotes = () => setNotesOpen(true);
      const handleCloseNotes = () => setNotesOpen(false);
+     const handleOpenApiTokens = () => setApiTokensOpen(true);
+     const handleCloseApiTokens = () => setApiTokensOpen(false);
 
      useEffect(() => {
           if (!board) return;
@@ -423,6 +431,7 @@ export default function Page() {
                     boardId={boardId}
                     currentUserId={currentUser?.id}
                     onOpenNotes={handleOpenNotes}
+                    onOpenApiTokens={handleOpenApiTokens}
                />
 
                {viewMode === 'columns' ? (
@@ -505,6 +514,7 @@ export default function Page() {
                     </Suspense>
                )}
                <BoardNotesModal isOpen={notesOpen} onClose={handleCloseNotes} boardId={boardId} />
+               <ApiTokensModal isOpen={apiTokensOpen} onClose={handleCloseApiTokens} boardId={boardId} />
           </div>
      );
 }

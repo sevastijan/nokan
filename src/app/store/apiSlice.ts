@@ -15,6 +15,7 @@ import { submissionEndpoints } from './endpoints/submissionEndpoints';
 import { clientManagementEndpoints } from './endpoints/clientMenagmentEndpoints';
 import { preferencesEndpoints } from './endpoints/preferencesEndpoints';
 import { collaboratorEndpoints } from './endpoints/collaboratorEndpoints';
+import { apiTokenEndpoints } from './endpoints/apiTokenEndpoints';
 
 /**
  * UserRole type in your application.
@@ -50,6 +51,7 @@ export const apiSlice = createApi({
           'BoardMember',
           'CurrentUser',
           'BoardNotes',
+          'ApiToken',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -63,6 +65,7 @@ export const apiSlice = createApi({
           ...clientManagementEndpoints(builder),
           ...preferencesEndpoints(builder),
           ...collaboratorEndpoints(builder),
+          ...apiTokenEndpoints(builder),
      }),
 });
 
@@ -140,4 +143,9 @@ export const {
      useRemoveSubtaskMutation,
      useReorderSubtasksMutation,
      useUpdateTaskTypeMutation,
+     // API Token hooks
+     useGetApiTokensQuery,
+     useCreateApiTokenMutation,
+     useUpdateApiTokenMutation,
+     useRevokeApiTokenMutation,
 } = apiSlice;

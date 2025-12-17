@@ -2,7 +2,7 @@
 
 import { useState, useRef, ChangeEvent, KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiArrowLeft, FiSearch, FiFilter, FiGrid, FiList, FiPlus, FiUserPlus, FiX, FiFileText } from 'react-icons/fi';
+import { FiArrowLeft, FiSearch, FiFilter, FiGrid, FiList, FiPlus, FiUserPlus, FiX, FiFileText, FiCode } from 'react-icons/fi';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { BoardHeaderProps } from '@/app/types/globalTypes';
 import UserSelector from '@/app/components/SingleTaskView/UserSelector';
@@ -15,6 +15,7 @@ interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      boardId: string;
      currentUserId?: string;
      onOpenNotes: () => void;
+     onOpenApiTokens?: () => void;
 }
 
 // Helper function to get display values
@@ -41,6 +42,7 @@ const BoardHeader = ({
      boardId,
      currentUserId,
      onOpenNotes,
+     onOpenApiTokens,
 }: ExtendedBoardHeaderProps) => {
      const router = useRouter();
 
@@ -256,6 +258,13 @@ const BoardHeader = ({
                               <FiFileText className="w-5 h-5 mr-1" />
                               <span className="hidden sm:inline">Notes</span>
                          </button>
+
+                         {hasManagementAccess && onOpenApiTokens && (
+                              <button onClick={onOpenApiTokens} className="flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm font-medium rounded-lg transition">
+                                   <FiCode className="w-5 h-5 mr-1" />
+                                   <span className="hidden sm:inline">API</span>
+                              </button>
+                         )}
 
                          {hasManagementAccess && (
                               <div className="relative" ref={membersRef}>
