@@ -19,43 +19,46 @@ export async function GET(request: NextRequest) {
     const { context, headers } = auth;
     const supabase = getSupabaseAdmin();
 
-    // Fetch board with columns and statuses
-    const { data: board, error } = await supabase
+    // Fetch board
+    const { data: board, error: boardError } = await supabase
         .from('boards')
-        .select(`
-            id,
-            title,
-            created_at,
-            updated_at,
-            columns:columns!columns_board_id_fkey(id, title, order),
-            statuses:statuses!statuses_board_id_fkey(id, label, color)
-        `)
+        .select('id, title, created_at, updated_at')
         .eq('id', context.boardId)
         .single();
 
-    if (error || !board) {
+    if (boardError || !board) {
+        console.error('Board fetch error:', boardError, 'boardId:', context.boardId);
         return successResponse(
-            { error: 'Board not found' },
+            { error: 'Board not found', details: boardError?.message },
             headers,
             404
         );
     }
 
-    // Sort columns by order
-    const sortedColumns = (board.columns || []).sort(
-        (a: { order: number }, b: { order: number }) => a.order - b.order
-    );
+    // Fetch columns separately
+    const { data: columns } = await supabase
+        .from('columns')
+        .select('id, title, order')
+        .eq('board_id', context.boardId)
+        .order('order', { ascending: true });
+
+    // Fetch statuses separately
+    const { data: statuses } = await supabase
+        .from('statuses')
+        .select('id, label, color')
+        .eq('board_id', context.boardId);
+
 
     const response: PublicApiResponse<PublicBoardInfo> = {
         data: {
             id: board.id,
             title: board.title,
-            columns: sortedColumns.map((c: { id: string; title: string; order: number }) => ({
+            columns: (columns || []).map((c) => ({
                 id: c.id,
                 title: c.title,
                 order: c.order,
             })),
-            statuses: (board.statuses || []).map((s: { id: string; label: string; color: string }) => ({
+            statuses: (statuses || []).map((s) => ({
                 id: s.id,
                 label: s.label,
                 color: s.color,
