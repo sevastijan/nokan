@@ -158,6 +158,7 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
                          })),
                          created_at: newBoard.created_at,
                          updated_at: newBoard.updated_at,
+                         statuses: [],
                     };
 
                     return { data: resultBoard };

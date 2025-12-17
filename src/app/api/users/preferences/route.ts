@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { createClient } from '@supabase/supabase-js';
-import { authOptions } from '../../auth/[...nextauth]/route';
-
-function getSupabase() {
-     return createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-     );
-}
+import { getSupabase } from '@/app/lib/supabase';
+import { authOptions } from '@/app/lib/auth';
 
 const defaultPreferences = {
      email_task_assigned: true,
@@ -17,6 +10,10 @@ const defaultPreferences = {
      email_due_date_changed: true,
 };
 
+/**
+ * GET: Retrieve user's notification preferences.
+ * Returns existing preferences or creates and returns defaults for new users.
+ */
 export async function GET() {
      try {
           const session = await getServerSession(authOptions);
@@ -25,24 +22,21 @@ export async function GET() {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const { data, error } = await getSupabase()
-               .from('notification_preferences')
-               .select('*')
-               .eq('user_id', session.user.id)
-               .single();
+          const supabase = getSupabase();
+
+          const { data, error } = await supabase.from('notification_preferences').select('*').eq('user_id', session.user.id).single();
 
           if (error && error.code !== 'PGRST116') {
-               // PGRST116 = no rows found
                return NextResponse.json({ error: 'Database error' }, { status: 500 });
           }
 
-          // Return existing preferences or defaults
+          // If preferences exist, return them
           if (data) {
                return NextResponse.json(data);
           }
 
           // Create default preferences for new user
-          const { data: newPrefs, error: insertError } = await getSupabase()
+          const { data: newPrefs, error: insertError } = await supabase
                .from('notification_preferences')
                .insert({
                     user_id: session.user.id,
@@ -52,7 +46,7 @@ export async function GET() {
                .single();
 
           if (insertError) {
-               // Return defaults if insert fails (maybe table doesn't exist yet)
+               // Fallback: return defaults if insertion fails
                return NextResponse.json({
                     user_id: session.user.id,
                     ...defaultPreferences,
@@ -65,6 +59,10 @@ export async function GET() {
      }
 }
 
+/**
+ * PUT: Update user's notification preferences.
+ * Only allowed boolean fields are updated via upsert.
+ */
 export async function PUT(request: NextRequest) {
      try {
           const session = await getServerSession(authOptions);
@@ -74,14 +72,8 @@ export async function PUT(request: NextRequest) {
           }
 
           const body = await request.json();
-          const allowedFields = [
-               'email_task_assigned',
-               'email_status_changed',
-               'email_new_comment',
-               'email_due_date_changed',
-          ];
+          const allowedFields = ['email_task_assigned', 'email_status_changed', 'email_new_comment', 'email_due_date_changed'];
 
-          // Filter only allowed fields
           const updates: Record<string, boolean> = {};
           for (const field of allowedFields) {
                if (typeof body[field] === 'boolean') {
@@ -93,8 +85,9 @@ export async function PUT(request: NextRequest) {
                return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
           }
 
-          // Upsert preferences
-          const { data, error } = await getSupabase()
+          const supabase = getSupabase();
+
+          const { data, error } = await supabase
                .from('notification_preferences')
                .upsert(
                     {
@@ -102,7 +95,7 @@ export async function PUT(request: NextRequest) {
                          ...updates,
                          updated_at: new Date().toISOString(),
                     },
-                    { onConflict: 'user_id' }
+                    { onConflict: 'user_id' },
                )
                .select()
                .single();

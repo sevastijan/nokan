@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/app/lib/api';
 import { Comment } from '@/app/types/globalTypes';
+import { supabase } from '@/app/lib/supabase';
 
 interface UseTaskCommentsResult {
      comments: Comment[];

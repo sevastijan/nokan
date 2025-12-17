@@ -1,4 +1,4 @@
-import { Task, User } from "@/app/types/globalTypes";
+import { User } from "@/app/types/globalTypes";
 
 export interface AddTaskFormProps {
   columnId: string;

@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/app/lib/supabase';
 import { sendEmailNotification } from '@/app/lib/email/emailService';
 import type { EmailNotificationType } from '@/app/types/emailTypes';
-
-function getSupabase() {
-     return createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-     );
-}
 
 interface EmailRequestBody {
      type: EmailNotificationType;
@@ -33,6 +26,7 @@ interface EmailRequestBody {
      };
 }
 
+/** Mapping of notification types to their corresponding preference keys in the database */
 const preferenceKeyMap: Record<EmailNotificationType, string> = {
      task_assigned: 'email_task_assigned',
      task_unassigned: 'email_task_unassigned',
@@ -44,8 +38,13 @@ const preferenceKeyMap: Record<EmailNotificationType, string> = {
      collaborator_removed: 'email_collaborator_removed',
 };
 
+/**
+ * Handles POST requests to trigger email notifications.
+ * Respects user notification preferences and skips self-notifications.
+ */
 export async function POST(request: NextRequest) {
      try {
+          /** Verify authenticated user via JWT token */
           const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
           if (!token?.email) {
@@ -55,21 +54,23 @@ export async function POST(request: NextRequest) {
           const body: EmailRequestBody = await request.json();
           const { type, taskId, taskTitle, boardId, boardName, recipientId, metadata } = body;
 
+          /** Validate required fields */
           if (!type || !taskId || !taskTitle || !boardId || !recipientId) {
                return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
           }
 
-          // Get recipient's email and preferences
-          const { data: recipient, error: userError } = await getSupabase().from('users').select('id, email, name').eq('id', recipientId).single();
+          const supabase = getSupabase();
+
+          /** Fetch recipient user data */
+          const { data: recipient, error: userError } = await supabase.from('users').select('id, email, name').eq('id', recipientId).single();
 
           if (userError || !recipient) {
                return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
           }
 
-          // Check notification preferences
-          const { data: preferences } = await getSupabase().from('notification_preferences').select('*').eq('user_id', recipientId).single();
+          /** Fetch user's notification preferences (defaults to enabled if no record exists) */
+          const { data: preferences } = await supabase.from('notification_preferences').select('*').eq('user_id', recipientId).single();
 
-          // If no preferences exist, default to all enabled
           const preferenceKey = preferenceKeyMap[type];
           const isEnabled = preferences ? preferences[preferenceKey] !== false : true;
 
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
                });
           }
 
-          // Don't send email to yourself
+          /** Prevent self-notifications */
           if (recipient.email === token.email) {
                return NextResponse.json({
                     success: true,
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
                });
           }
 
-          // Send email
+          /** Send the email notification */
           const result = await sendEmailNotification({
                type,
                taskId,
