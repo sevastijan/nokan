@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase, supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * GET: Fetch all statuses for a specific board, ordered by their position.
+ */
 export async function GET(request: NextRequest) {
      try {
           const { searchParams } = new URL(request.url);
@@ -26,6 +29,9 @@ export async function GET(request: NextRequest) {
      }
 }
 
+/**
+ * POST: Create a new status for a board.
+ */
 export async function POST(request: NextRequest) {
      try {
           const body = await request.json();
@@ -35,7 +41,7 @@ export async function POST(request: NextRequest) {
                return NextResponse.json({ error: 'board_id and label are required' }, { status: 400 });
           }
 
-          const { data, error } = await supabase
+          const { data, error } = await getSupabase()
                .from('statuses')
                .insert({
                     board_id,
@@ -58,6 +64,9 @@ export async function POST(request: NextRequest) {
      }
 }
 
+/**
+ * PATCH: Update an existing status (label, color, or order_index).
+ */
 export async function PATCH(request: NextRequest) {
      try {
           const body = await request.json();
@@ -91,6 +100,9 @@ export async function PATCH(request: NextRequest) {
      }
 }
 
+/**
+ * DELETE: Remove a status by its ID.
+ */
 export async function DELETE(request: NextRequest) {
      try {
           const { searchParams } = new URL(request.url);

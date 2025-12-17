@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/app/lib/api';
+import { supabase } from '@/app/lib/supabase';
 
 import type { User } from '@/app/types/globalTypes';
 

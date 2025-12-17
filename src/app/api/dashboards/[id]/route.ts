@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { createClient } from '@supabase/supabase-js';
-import { authOptions } from '../../auth/[...nextauth]/route';
-
-function getSupabase() {
-     return createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-     );
-}
+import { getSupabase } from '@/app/lib/supabase';
+import { authOptions } from '@/app/lib/auth';
 
 /**
- * Update board by ID
+ * PUT: Update board title by ID.
  */
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
      try {
+          const { id: boardId } = await params;
+
           const session = await getServerSession(authOptions);
 
           if (!session?.user?.email) {
@@ -27,9 +22,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
                return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
           }
 
-          const boardId = params.id;
+          const supabase = getSupabase();
 
-          const { data, error } = await getSupabase().from('boards').update({ title: title.trim() }).eq('id', boardId).eq('owner', session.user.email).select().single();
+          const { data, error } = await supabase.from('boards').update({ title: title.trim() }).eq('id', boardId).eq('owner', session.user.email).select().single();
 
           if (error) {
                return NextResponse.json({ error: 'Failed to update board' }, { status: 500 });
@@ -42,27 +37,29 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 /**
- * Delete board by ID
+ * DELETE: Delete board by ID along with its related columns.
  */
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
      try {
+          const { id: boardId } = await params;
+
           const session = await getServerSession(authOptions);
 
           if (!session?.user?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const boardId = params.id;
+          const supabase = getSupabase();
 
           // Delete all columns related to this board
-          const { error: columnsError } = await getSupabase().from('columns').delete().eq('board_id', boardId);
+          const { error: columnsError } = await supabase.from('columns').delete().eq('board_id', boardId);
 
           if (columnsError) {
                return NextResponse.json({ error: 'Failed to delete board columns' }, { status: 500 });
           }
 
           // Delete the board itself
-          const { error: boardError } = await getSupabase().from('boards').delete().eq('id', boardId).eq('owner', session.user.email);
+          const { error: boardError } = await supabase.from('boards').delete().eq('id', boardId).eq('owner', session.user.email);
 
           if (boardError) {
                return NextResponse.json({ error: 'Failed to delete board' }, { status: 500 });

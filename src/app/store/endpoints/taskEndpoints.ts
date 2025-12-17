@@ -685,7 +685,6 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          throw new Error('No attachment returned from API');
                     }
 
-                    console.log('✅ File uploaded successfully:', attachment);
                     return { data: attachment };
                } catch (err) {
                     const error = err as Error;

@@ -1,30 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/app/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-function getSupabase() {
-     return createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-     );
-}
-
 /**
- * Get board data by ID
+ * GET: Fetch board data by ID
  */
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
      try {
+          const { id: boardId } = await params;
+
           const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
           if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const boardId = params.id;
+          const supabase = getSupabase();
 
-          const { data: dashboardData, error } = await getSupabase().from('dashboards').select('*').eq('id', boardId).eq('owner', token.email).single();
+          const { data: dashboardData, error } = await supabase.from('dashboards').select('*').eq('id', boardId).eq('owner', token.email).single();
 
           if (error) {
                if (error.code === 'PGRST116') {
@@ -46,30 +41,34 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           };
 
           return NextResponse.json(boardData);
-     } catch {
+     } catch (err) {
+          console.error('GET /api/boards/[id] error:', err);
           return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
      }
 }
 
 /**
- * Update board data by ID
+ * PUT: Update board title by ID
  */
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
      try {
+          const { id: boardId } = await params;
+
           const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
           if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const boardId = params.id;
           const { title } = await request.json();
 
           if (!title || !title.trim()) {
                return NextResponse.json({ error: 'Title is required' }, { status: 400 });
           }
 
-          const { data, error } = await getSupabase().from('dashboards').update({ title: title.trim() }).eq('id', boardId).eq('owner', token.email).select().single();
+          const supabase = getSupabase();
+
+          const { data, error } = await supabase.from('dashboards').update({ title: title.trim() }).eq('id', boardId).eq('owner', token.email).select().single();
 
           if (error) {
                if (error.code === 'PGRST116') {
@@ -79,32 +78,36 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           }
 
           return NextResponse.json(data);
-     } catch {
+     } catch (err) {
+          console.error('PUT /api/boards/[id] error:', err);
           return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
      }
 }
 
 /**
- * Delete board by ID
+ * DELETE: Delete board by ID
  */
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
      try {
+          const { id: boardId } = await params;
+
           const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
           if (!token?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const boardId = params.id;
+          const supabase = getSupabase();
 
-          const { error } = await getSupabase().from('dashboards').delete().eq('id', boardId).eq('owner', token.email);
+          const { error } = await supabase.from('dashboards').delete().eq('id', boardId).eq('owner', token.email);
 
           if (error) {
                return NextResponse.json({ error: 'Database error' }, { status: 500 });
           }
 
           return NextResponse.json({ message: 'Board deleted successfully' });
-     } catch {
+     } catch (err) {
+          console.error('DELETE /api/boards/[id] error:', err);
           return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
      }
 }

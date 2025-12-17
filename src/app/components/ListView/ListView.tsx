@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Column as ColumnType } from '@/app/types/globalTypes';
 
 interface ListViewProps {
+     onRemoveTask: (columnId: string, taskId: string) => Promise<void>;
      columns: ColumnType[];
      onOpenTaskDetail: (taskId: string) => void;
      priorities: Array<{ id: string; label: string; color: string }>;

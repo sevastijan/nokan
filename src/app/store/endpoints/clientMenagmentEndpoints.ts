@@ -57,7 +57,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                          return {
                               error: {
                                    status: 'NOT_FOUND',
-                                   error: 'Klient nie został znaleziony',
+                                   error: 'Client not found',
                               },
                          };
                     }
@@ -68,7 +68,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                          return {
                               error: {
                                    status: 'CONFLICT',
-                                   error: 'Klient jest już przypisany do tego projektu',
+                                   error: 'Client is already assigned to this board',
                               },
                          };
                     }
@@ -103,7 +103,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                     return {
                          error: {
                               status: 'CUSTOM_ERROR',
-                              error: 'Nie udało się przypisać klienta',
+                              error: 'Failed to assign client',
                          },
                     };
                }
@@ -156,7 +156,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                     return {
                          error: {
                               status: 'CUSTOM_ERROR',
-                              error: 'Nie udało się usunąć przypisania',
+                              error: 'Failed to remove client assignment',
                          },
                     };
                }
@@ -228,7 +228,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                          return {
                               error: {
                                    status: 'VALIDATION_ERROR',
-                                   error: 'Nie podano żadnych uprawnień do aktualizacji',
+                                   error: 'No permissions provided for update',
                               },
                          };
                     }
@@ -244,7 +244,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                     return {
                          error: {
                               status: 'CUSTOM_ERROR',
-                              error: 'Nie udało się zaktualizować uprawnień',
+                              error: 'Failed to update permissions',
                          },
                     };
                }
@@ -259,22 +259,23 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                          .from('submissions')
                          .select(
                               `
-                         *,
-                         tasks!inner(
-                              id,
-                              title,
-                              description,
-                              priority,
-                              status_id,
-                              created_at,
-                              updated_at,
-                              column_id,
-                              board_id,
-                              user_id,
-                              sort_order,
-                              completed
-                         )
-                    `,
+                              *,
+                              tasks!inner(
+                                   id,
+                                   title,
+                                   description,
+                                   priority,
+                                   status_id,
+                                   created_at,
+                                   updated_at,
+                                   column_id,
+                                   board_id,
+                                   user_id,
+                                   sort_order,
+                                   completed,
+                                   boards!inner(title)
+                              )
+                         `,
                          )
                          .eq('client_id', clientId)
                          .order('created_at', { ascending: false });
@@ -296,13 +297,14 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                     if (statusIds.length > 0) {
                          const { data: statusesData } = await getSupabase().from('statuses').select('id, label, color').in('id', statusIds);
 
-                         statusesData?.forEach((status: { id: string; label: string; color: string }) => {
+                         statusesData?.forEach((status) => {
                               statusesMap[status.id] = status;
                          });
                     }
 
                     const submissions: ClientSubmission[] = (submissionsData || []).map((item) => {
                          const task = Array.isArray(item.tasks) ? item.tasks[0] : item.tasks;
+                         const board = Array.isArray(task?.boards) ? task.boards[0] : task?.boards;
                          const status = task?.status_id ? statusesMap[task.status_id] : null;
 
                          return {
@@ -328,6 +330,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                               end_date: null,
                               due_date: null,
                               status_id: task?.status_id || null,
+                              board_title: board?.title || '',
 
                               status: status
                                    ? {
@@ -351,6 +354,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
           providesTags: (result) =>
                result ? [...result.map(({ submission_id }) => ({ type: 'Submission' as const, id: submission_id })), { type: 'Submission', id: 'LIST' }] : [{ type: 'Submission', id: 'LIST' }],
      }),
+
      getClientBoardsWithDetails: builder.query<BoardWithCounts[], string>({
           async queryFn(clientId) {
                try {
@@ -405,7 +409,7 @@ export const clientManagementEndpoints = (builder: EndpointBuilder<BaseQueryFn, 
                     return {
                          error: {
                               status: 'CUSTOM_ERROR',
-                              error: 'Nie udało się pobrać przypisanych projektów',
+                              error: 'Failed to fetch assigned boards',
                          },
                     };
                }

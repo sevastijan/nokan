@@ -1,25 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
 import { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { getSupabaseAdmin } from '@/app/lib/supabase';
+import { authOptions } from '@/app/lib/auth';
 
-function getSupabaseAdmin() {
-     return createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-          process.env.SERVICE_ROLE_KEY || 'placeholder-key',
-          {
-               auth: {
-                    autoRefreshToken: false,
-                    persistSession: false,
-               },
-          }
-     );
-}
-
+/**
+ * POST: Upload a file attachment for a specific task.
+ * Stores the file in Supabase Storage and saves metadata in the database.
+ */
 export async function POST(request: NextRequest) {
      try {
           const session = await getServerSession(authOptions);
-
 
           if (!session?.user?.id) {
                return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,7 +34,10 @@ export async function POST(request: NextRequest) {
           const fileName = `${Date.now()}-${file.name}`;
           const filePath = `task-attachments/${taskId}/${fileName}`;
 
-          const { error: uploadError } = await getSupabaseAdmin().storage.from('attachments').upload(filePath, file, {
+          const supabaseAdmin = getSupabaseAdmin();
+
+          // Upload file to storage
+          const { error: uploadError } = await supabaseAdmin.storage.from('attachments').upload(filePath, file, {
                contentType: file.type,
                upsert: false,
           });
@@ -54,15 +47,16 @@ export async function POST(request: NextRequest) {
                return Response.json({ error: uploadError.message }, { status: 500 });
           }
 
-          const { data: userData } = await getSupabaseAdmin().from('users').select('id').eq('google_id', session.user.id).single();
+          // Resolve internal user ID from google_id
+          const { data: userData } = await supabaseAdmin.from('users').select('id').eq('google_id', session.user.id).single();
 
           if (!userData) {
-               await getSupabaseAdmin().storage.from('attachments').remove([filePath]);
-               
+               await supabaseAdmin.storage.from('attachments').remove([filePath]);
                return Response.json({ error: 'User not found in database' }, { status: 404 });
           }
 
-          const { data: attachment, error: dbError } = await getSupabaseAdmin()
+          // Save attachment metadata
+          const { data: attachment, error: dbError } = await supabaseAdmin
                .from('task_attachments')
                .insert({
                     task_id: taskId,
@@ -77,7 +71,7 @@ export async function POST(request: NextRequest) {
 
           if (dbError) {
                console.error('DB insert error:', dbError);
-               await getSupabaseAdmin().storage.from('attachments').remove([filePath]);
+               await supabaseAdmin.storage.from('attachments').remove([filePath]);
                return Response.json({ error: dbError.message }, { status: 500 });
           }
 
@@ -88,15 +82,13 @@ export async function POST(request: NextRequest) {
           });
      } catch (error) {
           console.error('Upload error:', error);
-          return Response.json(
-               {
-                    error: error instanceof Error ? error.message : 'Internal server error',
-               },
-               { status: 500 },
-          );
+          return Response.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
      }
 }
 
+/**
+ * DELETE: Remove an attachment and its file from storage.
+ */
 export async function DELETE(request: NextRequest) {
      try {
           const session = await getServerSession(authOptions);
@@ -112,13 +104,17 @@ export async function DELETE(request: NextRequest) {
                return Response.json({ error: 'Attachment ID and file path are required' }, { status: 400 });
           }
 
-          const { error: storageError } = await getSupabaseAdmin().storage.from('attachments').remove([filePath]);
+          const supabaseAdmin = getSupabaseAdmin();
+
+          // Remove file from storage (ignore error if already gone)
+          const { error: storageError } = await supabaseAdmin.storage.from('attachments').remove([filePath]);
 
           if (storageError) {
                console.error('Storage delete error:', storageError);
           }
 
-          const { error: dbError } = await getSupabaseAdmin().from('task_attachments').delete().eq('id', attachmentId);
+          // Remove database record
+          const { error: dbError } = await supabaseAdmin.from('task_attachments').delete().eq('id', attachmentId);
 
           if (dbError) {
                console.error('DB delete error:', dbError);
@@ -131,15 +127,14 @@ export async function DELETE(request: NextRequest) {
           });
      } catch (error) {
           console.error('Delete error:', error);
-          return Response.json(
-               {
-                    error: error instanceof Error ? error.message : 'Internal server error',
-               },
-               { status: 500 },
-          );
+          return Response.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
      }
 }
 
+/**
+ * GET: Download a file attachment.
+ * Supports inline viewing or forced download via 'action' query param.
+ */
 export async function GET(request: NextRequest) {
      try {
           const session = await getServerSession(authOptions);
@@ -156,14 +151,18 @@ export async function GET(request: NextRequest) {
                return Response.json({ error: 'File path is required' }, { status: 400 });
           }
 
-          const { data, error } = await getSupabaseAdmin().storage.from('attachments').download(filePath);
+          const supabaseAdmin = getSupabaseAdmin();
+
+          // Download file from storage
+          const { data, error } = await supabaseAdmin.storage.from('attachments').download(filePath);
 
           if (error || !data) {
                console.error('Storage download error:', error);
                return Response.json({ error: error?.message || 'File not found' }, { status: 404 });
           }
 
-          const { data: attachmentInfo } = await getSupabaseAdmin().from('task_attachments').select('file_name, mime_type').eq('file_path', filePath).single();
+          // Fetch metadata for correct filename and MIME type
+          const { data: attachmentInfo } = await supabaseAdmin.from('task_attachments').select('file_name, mime_type').eq('file_path', filePath).single();
 
           const fileName = attachmentInfo?.file_name || 'download';
           const mimeType = attachmentInfo?.mime_type || 'application/octet-stream';
@@ -183,11 +182,6 @@ export async function GET(request: NextRequest) {
           });
      } catch (error) {
           console.error('Download error:', error);
-          return Response.json(
-               {
-                    error: error instanceof Error ? error.message : 'Internal server error',
-               },
-               { status: 500 },
-          );
+          return Response.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
      }
 }

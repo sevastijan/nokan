@@ -1,18 +1,20 @@
-import { createClient } from '@supabase/supabase-js';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { getSupabaseAdmin } from '@/app/lib/supabase';
+import { authOptions } from '@/app/lib/auth';
 
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SERVICE_ROLE_KEY!);
-
+/**
+ * POST: Upload or update user avatar.
+ * Replaces existing avatar if one exists (upsert: true).
+ */
 export async function POST(request: NextRequest) {
-     const session = await getServerSession(authOptions);
-
-     if (!session?.user?.email) {
-          return Response.json({ error: 'Unauthorized' }, { status: 401 });
-     }
-
      try {
+          const session = await getServerSession(authOptions);
+
+          if (!session?.user?.email) {
+               return Response.json({ error: 'Unauthorized' }, { status: 401 });
+          }
+
           const formData = await request.formData();
           const file = formData.get('file') as File;
 
@@ -24,18 +26,22 @@ export async function POST(request: NextRequest) {
                return Response.json({ error: 'File too large (max 5MB)' }, { status: 400 });
           }
 
+          const supabaseAdmin = getSupabaseAdmin();
+
+          // Resolve internal user ID from email
           const { data: user, error: userError } = await supabaseAdmin.from('users').select('id').eq('email', session.user.email).single();
 
           if (userError || !user) {
                return Response.json({ error: 'User not found' }, { status: 404 });
           }
 
-          const fileExt = file.name.split('.').pop() || 'jpg';
+          const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
           const filePath = `${user.id}/avatar.${fileExt}`;
 
+          // Upload (or replace) avatar in storage
           const { error: uploadError } = await supabaseAdmin.storage.from('avatars').upload(filePath, file, {
                upsert: true,
-               contentType: file.type,
+               contentType: file.type || `image/${fileExt}`,
           });
 
           if (uploadError) {
@@ -43,6 +49,7 @@ export async function POST(request: NextRequest) {
                return Response.json({ error: uploadError.message }, { status: 500 });
           }
 
+          // Generate public URL
           const { data: urlData } = supabaseAdmin.storage.from('avatars').getPublicUrl(filePath);
 
           return Response.json({
@@ -50,7 +57,7 @@ export async function POST(request: NextRequest) {
                publicUrl: urlData.publicUrl,
           });
      } catch (error) {
-          console.error('Upload route error:', error);
+          console.error('Avatar upload route error:', error);
           return Response.json({ error: 'Internal server error' }, { status: 500 });
      }
 }
