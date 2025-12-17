@@ -108,12 +108,23 @@ const styles = {
     } as React.CSSProperties,
 };
 
-const priorityColors: Record<string, { bg: string; text: string }> = {
-    low: { bg: '#dbeafe', text: '#1e40af' },
-    medium: { bg: '#fef3c7', text: '#92400e' },
-    high: { bg: '#fed7aa', text: '#c2410c' },
-    urgent: { bg: '#fecaca', text: '#dc2626' },
-};
+// Helper to get priority style from API priorities or use fallback
+function getPriorityStyle(
+    priorityId: string,
+    priorities: Array<{ id: string; label: string; color: string }>
+): { bg: string; text: string; label: string } {
+    const priority = priorities.find(p => p.id === priorityId);
+    if (priority) {
+        // Use the color from API with lighter background
+        return {
+            bg: priority.color + '20', // Add transparency for background
+            text: priority.color,
+            label: priority.label,
+        };
+    }
+    // Fallback for unknown priorities
+    return { bg: '#e5e7eb', text: '#374151', label: priorityId };
+}
 
 export function TicketList({ client, onTicketClick, className }: TicketListProps) {
     const [boardInfo, setBoardInfo] = useState<ApiTokenInfo | null>(null);
@@ -194,7 +205,7 @@ export function TicketList({ client, onTicketClick, className }: TicketListProps
             ) : (
                 <ul style={styles.list}>
                     {tickets.map((ticket) => {
-                        const priorityStyle = priorityColors[ticket.priority] || priorityColors.medium;
+                        const priorityStyle = getPriorityStyle(ticket.priority, boardInfo?.priorities || []);
                         return (
                             <li
                                 key={ticket.id}
@@ -216,7 +227,7 @@ export function TicketList({ client, onTicketClick, className }: TicketListProps
                                             color: priorityStyle.text,
                                         }}
                                     >
-                                        {ticket.priority}
+                                        {priorityStyle.label}
                                     </span>
                                     {ticket.column && (
                                         <span>{ticket.column.title}</span>

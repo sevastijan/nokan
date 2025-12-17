@@ -12,6 +12,7 @@ TypeScript SDK with React components for Nokan Taskboard Public API.
 - Ready-to-use React components (optional)
 - Built-in error handling with typed errors
 - Rate limiting support
+- Dynamic priorities, columns, and statuses from API
 - Works in Node.js and browser environments
 
 ## Installation
@@ -35,17 +36,18 @@ const info = await client.connect();
 console.log('Connected to board:', info.boardTitle);
 console.log('Permissions:', info.permissions);
 console.log('Available columns:', info.columns);
+console.log('Available priorities:', info.priorities);
+console.log('Available statuses:', info.statuses);
 
 // List tickets
 const { data: tickets, meta } = await client.listTickets({ page: 1, limit: 20 });
 console.log(`Found ${meta.pagination.total} tickets`);
 
-// Create a ticket
+// Create a ticket (column_id is optional - defaults to first column)
 const newTicket = await client.createTicket({
     title: 'Bug report',
-    column_id: info.columns[0].id,
     description: 'Something is not working correctly',
-    priority: 'high'
+    priority: 'High' // Use priority label from info.priorities
 });
 
 // Add a comment
@@ -78,6 +80,7 @@ Returns:
 - `permissions` - `{ read, write, delete }` booleans
 - `columns` - Array of `{ id, title, order }`
 - `statuses` - Array of `{ id, label, color }`
+- `priorities` - Array of `{ id, label, color }`
 
 #### `getBoard(): Promise<Board>`
 
@@ -104,9 +107,9 @@ Create a new ticket. Requires `write` permission.
 
 Input:
 - `title` - Required
-- `column_id` - Required
+- `column_id` - Optional (defaults to first column/Backlog)
 - `description` - Optional
-- `priority` - `'low' | 'medium' | 'high' | 'urgent'` (default: 'medium')
+- `priority` - Priority label (e.g. "High", "Medium") or ID from `connect().priorities`
 - `status_id` - Optional
 
 #### `updateTicket(ticketId, input): Promise<Ticket>`
@@ -191,7 +194,7 @@ The SDK includes ready-to-use React components. React is an optional peer depend
 
 ### TicketForm
 
-Form for creating new tickets.
+Form for creating new tickets. Priorities and columns are automatically loaded from the API.
 
 ```tsx
 import { NokanClient, TicketForm } from 'nokan-client';
@@ -204,14 +207,28 @@ function App() {
             client={client}
             onSuccess={(ticket) => console.log('Created:', ticket.id)}
             onError={(error) => console.error(error)}
+            hideColumn      // Optional: hide column selector (use default)
+            hidePriority    // Optional: hide priority selector
+            defaultPriority="High" // Optional: set default priority
         />
     );
 }
 ```
 
+Props:
+- `client` - NokanClient instance (required)
+- `onSuccess` - Callback when ticket is created
+- `onError` - Callback on error
+- `hideColumn` - Hide column selector (will use first column)
+- `hidePriority` - Hide priority selector
+- `defaultPriority` - Default priority label
+- `hideAttachment` - Hide attachment upload field
+- `showAttachment` - Show attachment upload field (default: visible)
+- `className` - CSS class for the form
+
 ### TicketList
 
-List of tickets with filtering and pagination.
+List of tickets with filtering and pagination. Priority colors are automatically loaded from the API.
 
 ```tsx
 import { NokanClient, TicketList } from 'nokan-client';
@@ -228,9 +245,14 @@ function App() {
 }
 ```
 
+Props:
+- `client` - NokanClient instance (required)
+- `onTicketClick` - Callback when ticket is clicked
+- `className` - CSS class for the container
+
 ### TicketView
 
-Ticket details with comments and attachments.
+Ticket details with comments and attachments. Priority colors are automatically loaded from the API.
 
 ```tsx
 import { NokanClient, TicketView } from 'nokan-client';
@@ -243,10 +265,18 @@ function App() {
             client={client}
             ticketId="ticket-uuid-here"
             onClose={() => console.log('Closed')}
+            onUpdate={(ticket) => console.log('Updated:', ticket)}
         />
     );
 }
 ```
+
+Props:
+- `client` - NokanClient instance (required)
+- `ticketId` - Ticket UUID (required)
+- `onClose` - Callback when close button is clicked
+- `onUpdate` - Callback when ticket is updated (comment/attachment added)
+- `className` - CSS class for the container
 
 ### Full Example
 
@@ -288,6 +318,27 @@ function TicketSystem() {
     );
 }
 ```
+
+## Changelog
+
+### 0.3.1
+- Added attachment upload support in `TicketForm`
+- New props for `TicketForm`: `showAttachment`, `hideAttachment`
+- Multiple file upload with preview and remove functionality
+
+### 0.3.0
+- Dynamic priorities from API (no more hardcoded values)
+- `column_id` is now optional in `createTicket()` - defaults to first column
+- New props for `TicketForm`: `hideColumn`, `hidePriority`, `defaultPriority`
+- Priority colors in `TicketList` and `TicketView` now use API colors
+- `connect()` returns `priorities` array
+
+### 0.2.0
+- Added React components: `TicketForm`, `TicketList`, `TicketView`
+- Package renamed to `nokan-client`
+
+### 0.1.0
+- Initial release with core API client
 
 ## License
 

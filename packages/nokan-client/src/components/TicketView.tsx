@@ -3,7 +3,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import type { NokanClient } from '../client';
-import type { TicketDetail, Comment, Attachment } from '../types';
+import type { TicketDetail, Comment, Attachment, ApiTokenInfo } from '../types';
 
 export interface TicketViewProps {
     client: NokanClient;
@@ -157,12 +157,21 @@ const styles = {
     } as React.CSSProperties,
 };
 
-const priorityColors: Record<string, { bg: string; text: string }> = {
-    low: { bg: '#dbeafe', text: '#1e40af' },
-    medium: { bg: '#fef3c7', text: '#92400e' },
-    high: { bg: '#fed7aa', text: '#c2410c' },
-    urgent: { bg: '#fecaca', text: '#dc2626' },
-};
+// Helper to get priority style from API priorities or use fallback
+function getPriorityStyle(
+    priorityId: string,
+    priorities: Array<{ id: string; label: string; color: string }>
+): { bg: string; text: string; label: string } {
+    const priority = priorities.find(p => p.id === priorityId);
+    if (priority) {
+        return {
+            bg: priority.color + '20',
+            text: priority.color,
+            label: priority.label,
+        };
+    }
+    return { bg: '#e5e7eb', text: '#374151', label: priorityId };
+}
 
 function formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleString();
@@ -176,6 +185,7 @@ function formatFileSize(bytes: number): string {
 
 export function TicketView({ client, ticketId, onClose, onUpdate, className }: TicketViewProps) {
     const [ticket, setTicket] = useState<TicketDetail | null>(null);
+    const [boardInfo, setBoardInfo] = useState<ApiTokenInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [newComment, setNewComment] = useState('');
@@ -186,6 +196,7 @@ export function TicketView({ client, ticketId, onClose, onUpdate, className }: T
     const loadTicket = useCallback(async () => {
         try {
             const info = await client.connect();
+            setBoardInfo(info);
             setPermissions(info.permissions);
             const data = await client.getTicket(ticketId);
             setTicket(data);
@@ -260,7 +271,7 @@ export function TicketView({ client, ticketId, onClose, onUpdate, className }: T
         return <div style={styles.error}>Ticket not found</div>;
     }
 
-    const priorityStyle = priorityColors[ticket.priority] || priorityColors.medium;
+    const priorityStyle = getPriorityStyle(ticket.priority, boardInfo?.priorities || []);
 
     return (
         <div style={styles.container} className={className}>
@@ -284,7 +295,7 @@ export function TicketView({ client, ticketId, onClose, onUpdate, className }: T
                             color: priorityStyle.text,
                         }}
                     >
-                        {ticket.priority}
+                        {priorityStyle.label}
                     </span>
                     {ticket.column && (
                         <span style={{ ...styles.badge, backgroundColor: '#e5e7eb', color: '#374151' }}>

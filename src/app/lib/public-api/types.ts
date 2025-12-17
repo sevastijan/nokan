@@ -85,6 +85,7 @@ export interface PublicBoardInfo {
     title: string;
     columns: Array<{ id: string; title: string; order: number }>;
     statuses: Array<{ id: string; label: string; color: string }>;
+    priorities: Array<{ id: string; label: string; color: string }>;
     permissions: ApiTokenPermissions;
     created_at: string;
     updated_at: string;
@@ -122,7 +123,7 @@ export interface PublicTicketDetail extends PublicTicket {
 
 export interface CreateTicketInput {
     title: string;
-    column_id: string;
+    column_id?: string; // Optional - defaults to first column (Backlog)
     description?: string;
     priority?: string;
     status_id?: string;

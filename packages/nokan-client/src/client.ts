@@ -95,6 +95,7 @@ export class NokanClient {
             permissions: response.data.permissions,
             columns: response.data.columns,
             statuses: response.data.statuses,
+            priorities: response.data.priorities || [],
         };
     }
 
@@ -155,7 +156,7 @@ export class NokanClient {
      * Create a new ticket
      * Requires: write permission
      *
-     * @param input - Ticket data
+     * @param input - Ticket data (column_id is optional, defaults to first column)
      */
     async createTicket(input: CreateTicketInput): Promise<Ticket> {
         this.ensureConnected();
@@ -163,9 +164,6 @@ export class NokanClient {
 
         if (!input.title?.trim()) {
             throw new ValidationError('Title is required', 'title');
-        }
-        if (!input.column_id) {
-            throw new ValidationError('Column ID is required', 'column_id');
         }
 
         const response = await this.request<ApiResponse<Ticket>>('POST', '/api/public/tickets', input);

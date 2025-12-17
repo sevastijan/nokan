@@ -135,7 +135,8 @@ var NokanClient = class {
       boardTitle: response.data.title,
       permissions: response.data.permissions,
       columns: response.data.columns,
-      statuses: response.data.statuses
+      statuses: response.data.statuses,
+      priorities: response.data.priorities || []
     };
   }
   /**
@@ -186,16 +187,13 @@ var NokanClient = class {
    * Create a new ticket
    * Requires: write permission
    *
-   * @param input - Ticket data
+   * @param input - Ticket data (column_id is optional, defaults to first column)
    */
   async createTicket(input) {
     this.ensureConnected();
     this.checkPermission("write");
     if (!input.title?.trim()) {
       throw new ValidationError("Title is required", "title");
-    }
-    if (!input.column_id) {
-      throw new ValidationError("Column ID is required", "column_id");
     }
     const response = await this.request("POST", "/api/public/tickets", input);
     return response.data;
@@ -481,9 +479,57 @@ var defaultStyles = {
     borderRadius: "6px",
     color: "#16a34a",
     fontSize: "14px"
+  },
+  fileInput: {
+    display: "none"
+  },
+  fileButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "8px 16px",
+    backgroundColor: "#f3f4f6",
+    color: "#374151",
+    border: "1px solid #d1d5db",
+    borderRadius: "6px",
+    fontSize: "14px",
+    cursor: "pointer"
+  },
+  fileList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    marginTop: "8px"
+  },
+  fileItem: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "8px 12px",
+    backgroundColor: "#f9fafb",
+    borderRadius: "6px",
+    fontSize: "14px"
+  },
+  removeButton: {
+    background: "none",
+    border: "none",
+    color: "#dc2626",
+    cursor: "pointer",
+    fontSize: "16px",
+    padding: "0 4px"
   }
 };
-function TicketForm({ client, onSuccess, onError, className }) {
+function TicketForm({
+  client,
+  onSuccess,
+  onError,
+  className,
+  hideColumn = false,
+  hidePriority = false,
+  defaultPriority,
+  showAttachment = false,
+  hideAttachment = false
+}) {
   const [boardInfo, setBoardInfo] = (0, import_react.useState)(null);
   const [loading, setLoading] = (0, import_react.useState)(true);
   const [submitting, setSubmitting] = (0, import_react.useState)(false);
@@ -492,7 +538,8 @@ function TicketForm({ client, onSuccess, onError, className }) {
   const [title, setTitle] = (0, import_react.useState)("");
   const [description, setDescription] = (0, import_react.useState)("");
   const [columnId, setColumnId] = (0, import_react.useState)("");
-  const [priority, setPriority] = (0, import_react.useState)("medium");
+  const [priority, setPriority] = (0, import_react.useState)("");
+  const [attachments, setAttachments] = (0, import_react.useState)([]);
   (0, import_react.useEffect)(() => {
     async function loadBoardInfo() {
       try {
@@ -501,6 +548,14 @@ function TicketForm({ client, onSuccess, onError, className }) {
         if (info.columns.length > 0) {
           setColumnId(info.columns[0].id);
         }
+        if (defaultPriority) {
+          setPriority(defaultPriority);
+        } else if (info.priorities.length > 0) {
+          const mediumPriority = info.priorities.find(
+            (p) => p.label.toLowerCase() === "medium" || p.label.toLowerCase() === "normal"
+          );
+          setPriority(mediumPriority?.label || info.priorities[0].label);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to connect");
       } finally {
@@ -508,7 +563,7 @@ function TicketForm({ client, onSuccess, onError, className }) {
       }
     }
     loadBoardInfo();
-  }, [client]);
+  }, [client, defaultPriority]);
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -517,15 +572,35 @@ function TicketForm({ client, onSuccess, onError, className }) {
     try {
       const input = {
         title: title.trim(),
-        column_id: columnId,
-        description: description.trim() || void 0,
-        priority
+        description: description.trim() || void 0
       };
+      if (!hideColumn && columnId) {
+        input.column_id = columnId;
+      }
+      if (!hidePriority && priority) {
+        input.priority = priority;
+      }
       const ticket = await client.createTicket(input);
-      setSuccess(`Ticket "${ticket.title}" created successfully!`);
+      if (attachments.length > 0) {
+        for (const file of attachments) {
+          try {
+            await client.addAttachment(ticket.id, file);
+          } catch (attachErr) {
+            console.error("Failed to upload attachment:", attachErr);
+          }
+        }
+      }
+      const attachmentInfo = attachments.length > 0 ? ` with ${attachments.length} attachment(s)` : "";
+      setSuccess(`Ticket "${ticket.title}" created successfully${attachmentInfo}!`);
       setTitle("");
       setDescription("");
-      setPriority("medium");
+      setAttachments([]);
+      if (boardInfo?.priorities.length) {
+        const mediumPriority = boardInfo.priorities.find(
+          (p) => p.label.toLowerCase() === "medium" || p.label.toLowerCase() === "normal"
+        );
+        setPriority(mediumPriority?.label || boardInfo.priorities[0].label);
+      }
       onSuccess?.(ticket);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Failed to create ticket";
@@ -534,6 +609,21 @@ function TicketForm({ client, onSuccess, onError, className }) {
     } finally {
       setSubmitting(false);
     }
+  };
+  const handleFileSelect = (e) => {
+    const files = e.target.files;
+    if (files) {
+      setAttachments((prev) => [...prev, ...Array.from(files)]);
+    }
+    e.target.value = "";
+  };
+  const removeAttachment = (index) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+  const formatFileSize2 = (bytes) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
   if (loading) {
     return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: "Loading..." });
@@ -573,35 +663,60 @@ function TicketForm({ client, onSuccess, onError, className }) {
         }
       )
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: defaultStyles.fieldGroup, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { style: defaultStyles.label, children: "Column *" }),
+    !hideColumn && boardInfo.columns.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: defaultStyles.fieldGroup, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { style: defaultStyles.label, children: "Column" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         "select",
         {
           value: columnId,
           onChange: (e) => setColumnId(e.target.value),
-          required: true,
           style: defaultStyles.select,
           children: boardInfo.columns.map((col) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: col.id, children: col.title }, col.id))
         }
       )
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: defaultStyles.fieldGroup, children: [
+    !hidePriority && boardInfo.priorities.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: defaultStyles.fieldGroup, children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { style: defaultStyles.label, children: "Priority" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         "select",
         {
           value: priority,
           onChange: (e) => setPriority(e.target.value),
           style: defaultStyles.select,
-          children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "low", children: "Low" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "medium", children: "Medium" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "high", children: "High" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "urgent", children: "Urgent" })
-          ]
+          children: boardInfo.priorities.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: p.label, children: p.label }, p.id))
         }
       )
+    ] }),
+    (showAttachment || !hideAttachment) && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: defaultStyles.fieldGroup, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { style: defaultStyles.label, children: "Attachments" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        "input",
+        {
+          type: "file",
+          id: "ticket-attachments",
+          multiple: true,
+          onChange: handleFileSelect,
+          style: defaultStyles.fileInput
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { htmlFor: "ticket-attachments", style: defaultStyles.fileButton, children: "+ Add Files" }),
+      attachments.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: defaultStyles.fileList, children: attachments.map((file, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: defaultStyles.fileItem, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
+          file.name,
+          " (",
+          formatFileSize2(file.size),
+          ")"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          "button",
+          {
+            type: "button",
+            onClick: () => removeAttachment(index),
+            style: defaultStyles.removeButton,
+            children: "\xD7"
+          }
+        )
+      ] }, index)) })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
       "button",
@@ -764,12 +879,17 @@ var styles = {
     color: "#6b7280"
   }
 };
-var priorityColors = {
-  low: { bg: "#dbeafe", text: "#1e40af" },
-  medium: { bg: "#fef3c7", text: "#92400e" },
-  high: { bg: "#fed7aa", text: "#c2410c" },
-  urgent: { bg: "#fecaca", text: "#dc2626" }
-};
+function getPriorityStyle(priorityId, priorities) {
+  const priority = priorities.find((p) => p.id === priorityId);
+  if (priority) {
+    return {
+      bg: priority.color + "20",
+      text: priority.color,
+      label: priority.label
+    };
+  }
+  return { bg: "#e5e7eb", text: "#374151", label: priorityId };
+}
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleString();
 }
@@ -780,6 +900,7 @@ function formatFileSize(bytes) {
 }
 function TicketView({ client, ticketId, onClose, onUpdate, className }) {
   const [ticket, setTicket] = (0, import_react2.useState)(null);
+  const [boardInfo, setBoardInfo] = (0, import_react2.useState)(null);
   const [loading, setLoading] = (0, import_react2.useState)(true);
   const [error, setError] = (0, import_react2.useState)(null);
   const [newComment, setNewComment] = (0, import_react2.useState)("");
@@ -789,6 +910,7 @@ function TicketView({ client, ticketId, onClose, onUpdate, className }) {
   const loadTicket = (0, import_react2.useCallback)(async () => {
     try {
       const info = await client.connect();
+      setBoardInfo(info);
       setPermissions(info.permissions);
       const data = await client.getTicket(ticketId);
       setTicket(data);
@@ -850,7 +972,7 @@ function TicketView({ client, ticketId, onClose, onUpdate, className }) {
   if (!ticket) {
     return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: styles.error, children: "Ticket not found" });
   }
-  const priorityStyle = priorityColors[ticket.priority] || priorityColors.medium;
+  const priorityStyle = getPriorityStyle(ticket.priority, boardInfo?.priorities || []);
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: styles.container, className, children: [
     /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: styles.header, children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { style: styles.title, children: ticket.title }),
@@ -867,7 +989,7 @@ function TicketView({ client, ticketId, onClose, onUpdate, className }) {
               backgroundColor: priorityStyle.bg,
               color: priorityStyle.text
             },
-            children: ticket.priority
+            children: priorityStyle.label
           }
         ),
         ticket.column && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { style: { ...styles.badge, backgroundColor: "#e5e7eb", color: "#374151" }, children: ticket.column.title }),
@@ -1061,12 +1183,18 @@ var styles2 = {
     fontSize: "14px"
   }
 };
-var priorityColors2 = {
-  low: { bg: "#dbeafe", text: "#1e40af" },
-  medium: { bg: "#fef3c7", text: "#92400e" },
-  high: { bg: "#fed7aa", text: "#c2410c" },
-  urgent: { bg: "#fecaca", text: "#dc2626" }
-};
+function getPriorityStyle2(priorityId, priorities) {
+  const priority = priorities.find((p) => p.id === priorityId);
+  if (priority) {
+    return {
+      bg: priority.color + "20",
+      // Add transparency for background
+      text: priority.color,
+      label: priority.label
+    };
+  }
+  return { bg: "#e5e7eb", text: "#374151", label: priorityId };
+}
 function TicketList({ client, onTicketClick, className }) {
   const [boardInfo, setBoardInfo] = (0, import_react3.useState)(null);
   const [tickets, setTickets] = (0, import_react3.useState)([]);
@@ -1131,7 +1259,7 @@ function TicketList({ client, onTicketClick, className }) {
     ] }),
     error && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: styles2.error, children: error }),
     tickets.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: styles2.empty, children: "No tickets found" }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("ul", { style: styles2.list, children: tickets.map((ticket) => {
-      const priorityStyle = priorityColors2[ticket.priority] || priorityColors2.medium;
+      const priorityStyle = getPriorityStyle2(ticket.priority, boardInfo?.priorities || []);
       return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
         "li",
         {
@@ -1154,7 +1282,7 @@ function TicketList({ client, onTicketClick, className }) {
                     backgroundColor: priorityStyle.bg,
                     color: priorityStyle.text
                   },
-                  children: ticket.priority
+                  children: priorityStyle.label
                 }
               ),
               ticket.column && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: ticket.column.title }),

@@ -48,6 +48,11 @@ export async function GET(request: NextRequest) {
         .select('id, label, color')
         .eq('board_id', context.boardId);
 
+    // Fetch priorities (global - not board-specific)
+    const { data: priorities } = await supabase
+        .from('priorities')
+        .select('id, label, color')
+        .order('created_at', { ascending: true });
 
     const response: PublicApiResponse<PublicBoardInfo> = {
         data: {
@@ -62,6 +67,11 @@ export async function GET(request: NextRequest) {
                 id: s.id,
                 label: s.label,
                 color: s.color,
+            })),
+            priorities: (priorities || []).map((p) => ({
+                id: p.id,
+                label: p.label,
+                color: p.color,
             })),
             permissions: context.permissions,
             created_at: board.created_at,
