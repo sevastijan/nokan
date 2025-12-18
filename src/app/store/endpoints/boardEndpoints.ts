@@ -384,8 +384,41 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
      removeBoard: builder.mutation<{ id: string }, { boardId: string }>({
           async queryFn({ boardId }) {
                try {
+                    const { data: teams, error: teamsError } = await getSupabase().from('teams').select('id').eq('board_id', boardId);
+
+                    if (teamsError) throw teamsError;
+
+                    if (teams && teams.length > 0) {
+                         const teamIds = teams.map((t) => t.id);
+                         const { error: membersError } = await getSupabase().from('team_members').delete().in('team_id', teamIds);
+
+                         if (membersError) throw membersError;
+
+                         const { error: deleteTeamsError } = await getSupabase().from('teams').delete().in('id', teamIds);
+
+                         if (deleteTeamsError) throw deleteTeamsError;
+                    }
+
+                    const { error: notesError } = await getSupabase().from('board_notes').delete().eq('board_id', boardId);
+
+                    if (notesError && notesError.code !== 'PGRST116') throw notesError;
+
+                    const { error: tasksError } = await getSupabase().from('tasks').delete().eq('board_id', boardId);
+
+                    if (tasksError) throw tasksError;
+
+                    const { error: columnsError } = await getSupabase().from('columns').delete().eq('board_id', boardId);
+
+                    if (columnsError) throw columnsError;
+
+                    const { error: statusesError } = await getSupabase().from('statuses').delete().eq('board_id', boardId);
+
+                    if (statusesError && statusesError.code !== 'PGRST116') throw statusesError;
+
                     const { error } = await getSupabase().from('boards').delete().eq('id', boardId);
+
                     if (error) throw error;
+
                     return { data: { id: boardId } };
                } catch (err) {
                     const errorMessage = getErrorMessage(err);
