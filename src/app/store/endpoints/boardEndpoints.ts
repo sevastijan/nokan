@@ -491,7 +491,18 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                     if (existingTeam) {
                          teamId = existingTeam.id;
                     } else {
-                         const { data: newTeam, error: createError } = await getSupabase().from('teams').insert({ board_id: boardId }).select('id').single();
+                         const { data: board, error: boardError } = await getSupabase().from('boards').select('title').eq('id', boardId).single();
+
+                         if (boardError) throw boardError;
+
+                         const { data: newTeam, error: createError } = await getSupabase()
+                              .from('teams')
+                              .insert({
+                                   board_id: boardId,
+                                   name: board?.title || 'Team',
+                              })
+                              .select('id')
+                              .single();
 
                          if (createError || !newTeam) throw createError || new Error('Failed to create team');
                          teamId = newTeam.id;
@@ -500,7 +511,9 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                     const { error: insertError } = await getSupabase().from('team_members').insert({ team_id: teamId, user_id: userId });
 
                     if (insertError) {
-                         if ('code' in insertError && insertError.code === '23505') return { data: { success: true } };
+                         if ('code' in insertError && insertError.code === '23505') {
+                              return { data: { success: true } };
+                         }
                          throw insertError;
                     }
 
