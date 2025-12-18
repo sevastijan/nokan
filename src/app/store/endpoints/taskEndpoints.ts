@@ -187,6 +187,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     created_at,
                     updated_at,
                     parent_id,
+                    source,
+                    author_email,
                     author:users!task_comments_user_id_fkey(
                          id,
                          name,
@@ -283,6 +285,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                    created_at: string;
                                    updated_at?: string;
                                    parent_id?: string | null;
+                                   source?: string;
+                                   author_email?: string;
                                    author?: RawUser | RawUser[] | null;
                               }>
                          ).map((c) => {
@@ -294,6 +298,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                    authorObj = c.author as RawUser;
                               }
 
+                              // For API comments, use author_email as the name
                               const author = authorObj
                                    ? {
                                           id: authorObj.id,
@@ -303,12 +308,19 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                           custom_name: authorObj.custom_name,
                                           custom_image: authorObj.custom_image,
                                      }
-                                   : {
-                                          id: '',
-                                          name: 'Nieznany użytkownik',
-                                          email: '',
-                                          image: undefined,
-                                     };
+                                   : c.source === 'api' && c.author_email
+                                     ? {
+                                            id: 'api',
+                                            name: c.author_email,
+                                            email: c.author_email,
+                                            image: undefined,
+                                       }
+                                     : {
+                                            id: '',
+                                            name: 'Nieznany użytkownik',
+                                            email: '',
+                                            image: undefined,
+                                       };
 
                               return {
                                    id: c.id,

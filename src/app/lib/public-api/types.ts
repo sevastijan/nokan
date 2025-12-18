@@ -140,11 +140,12 @@ export interface UpdateTicketInput {
 
 export interface CreateCommentInput {
     content: string;
+    author_email?: string; // Email of the comment author (for API comments)
 }
 
 export interface PublicComment {
     id: string;
     content: string;
     created_at: string;
-    author_name?: string;
+    author?: { name: string };
 }

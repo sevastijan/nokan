@@ -43,12 +43,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { data: comments, error } = await supabase
         .from('task_comments')
         .select(`
-            id, content, created_at,
+            id, content, created_at, source, author_email,
             users(name)
         `)
         .eq('task_id', ticketId)
         .is('parent_id', null) // Top-level comments only
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
 
     if (error) {
         console.error('Error fetching comments:', error);
@@ -59,12 +59,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: string;
         content: string;
         created_at: string;
+        source?: string;
+        author_email?: string;
         users: { name: string } | { name: string }[] | null;
     }
 
     const mappedComments: PublicComment[] = (comments || []).map((c: RawComment) => {
         let authorName: string | undefined;
-        if (c.users) {
+        // For API comments, use author_email
+        if (c.source === 'api' && c.author_email) {
+            authorName = c.author_email;
+        } else if (c.users) {
             if (Array.isArray(c.users)) {
                 authorName = c.users[0]?.name;
             } else {
@@ -75,7 +80,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             id: c.id,
             content: c.content,
             created_at: c.created_at,
-            author_name: authorName,
+            author: authorName ? { name: authorName } : undefined,
         };
     });
 
@@ -107,11 +112,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         return successResponse({ error: 'Invalid JSON body' }, headers, 400);
     }
 
-    const { content } = body;
+    const { content, author_email } = body;
 
     // Validation
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
         return successResponse({ error: 'content is required and must be non-empty string' }, headers, 400);
+    }
+
+    if (!author_email || typeof author_email !== 'string' || author_email.trim().length === 0) {
+        return successResponse({ error: 'author_email is required for API comments' }, headers, 400);
     }
 
     const supabase = getSupabaseAdmin();
@@ -128,21 +137,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         return successResponse({ error: 'Ticket not found' }, headers, 404);
     }
 
-    // Create comment
-    // Note: user_id will be null for API-created comments (we could store token_id instead)
+    // Create comment with source='api' and author_email
     const { data: comment, error } = await supabase
         .from('task_comments')
         .insert({
             task_id: ticketId,
             content: content.trim(),
-            user_id: null, // API comment - no user
+            user_id: null, // No user for API comments
+            source: 'api', // Mark as API comment
+            author_email: author_email.trim(), // Store author email
         })
-        .select('id, content, created_at')
+        .select('id, content, created_at, source, author_email')
         .single();
 
     if (error) {
         console.error('Error creating comment:', error);
-        return successResponse({ error: 'Failed to create comment' }, headers, 500);
+        return successResponse({
+            error: 'Failed to create comment',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        }, headers, 500);
     }
 
     const response: PublicApiResponse<PublicComment> = {
@@ -150,7 +163,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             id: comment.id,
             content: comment.content,
             created_at: comment.created_at,
-            author_name: 'API',
+            author: comment.author_email ? { name: comment.author_email } : undefined,
         },
     };
 

@@ -210,6 +210,9 @@ var NokanClient = class {
     if (!input.content?.trim()) {
       throw new ValidationError("Comment content is required", "content");
     }
+    if (!input.author_email?.trim()) {
+      throw new ValidationError("Author email is required for API comments", "author_email");
+    }
     const response = await this.request(
       "POST",
       `/api/public/tickets/${ticketId}/comments`,
@@ -861,7 +864,7 @@ function formatFileSize(bytes) {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
-function TicketView({ client, ticketId, onClose, onUpdate, className }) {
+function TicketView({ client, ticketId, onClose, onUpdate, className, authorEmail }) {
   const [ticket, setTicket] = useState2(null);
   const [boardInfo, setBoardInfo] = useState2(null);
   const [loading, setLoading] = useState2(true);
@@ -891,7 +894,7 @@ function TicketView({ client, ticketId, onClose, onUpdate, className }) {
     if (!newComment.trim()) return;
     setSubmittingComment(true);
     try {
-      const comment = await client.addComment(ticketId, { content: newComment.trim() });
+      const comment = await client.addComment(ticketId, { content: newComment.trim(), author_email: authorEmail });
       setTicket(
         (prev) => prev ? {
           ...prev,

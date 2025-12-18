@@ -11,6 +11,8 @@ export interface TicketViewProps {
     onClose?: () => void;
     onUpdate?: (ticket: TicketDetail) => void;
     className?: string;
+    /** Email to use as author for comments added via this component */
+    authorEmail: string;
 }
 
 const styles = {
@@ -183,7 +185,7 @@ function formatFileSize(bytes: number): string {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-export function TicketView({ client, ticketId, onClose, onUpdate, className }: TicketViewProps) {
+export function TicketView({ client, ticketId, onClose, onUpdate, className, authorEmail }: TicketViewProps) {
     const [ticket, setTicket] = useState<TicketDetail | null>(null);
     const [boardInfo, setBoardInfo] = useState<ApiTokenInfo | null>(null);
     const [loading, setLoading] = useState(true);
@@ -217,7 +219,7 @@ export function TicketView({ client, ticketId, onClose, onUpdate, className }: T
 
         setSubmittingComment(true);
         try {
-            const comment = await client.addComment(ticketId, { content: newComment.trim() });
+            const comment = await client.addComment(ticketId, { content: newComment.trim(), author_email: authorEmail });
             setTicket((prev) =>
                 prev
                     ? {

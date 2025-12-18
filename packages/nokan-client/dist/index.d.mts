@@ -223,6 +223,11 @@ interface CreateCommentInput {
      * Comment content (required)
      */
     content: string;
+    /**
+     * Author email (required for API comments)
+     * This email will be displayed as the comment author
+     */
+    author_email: string;
 }
 interface ListTicketsOptions {
     /**
@@ -511,8 +516,10 @@ interface TicketViewProps {
     onClose?: () => void;
     onUpdate?: (ticket: TicketDetail) => void;
     className?: string;
+    /** Email to use as author for comments added via this component */
+    authorEmail: string;
 }
-declare function TicketView({ client, ticketId, onClose, onUpdate, className }: TicketViewProps): react_jsx_runtime.JSX.Element;
+declare function TicketView({ client, ticketId, onClose, onUpdate, className, authorEmail }: TicketViewProps): react_jsx_runtime.JSX.Element;
 
 interface TicketListProps {
     client: NokanClient;

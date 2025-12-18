@@ -28,14 +28,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id: ticketId } = await params;
     const supabase = getSupabaseAdmin();
 
+    // Use foreign key hint to resolve ambiguity with columns table
     const { data: ticket, error } = await supabase
         .from('tasks')
         .select(`
             id, title, description, priority, column_id, status_id, completed, created_at, updated_at,
-            columns(id, title),
-            statuses(id, label, color),
+            columns!tasks_column_id_fkey(id, title),
             task_comments(
-                id, content, created_at,
+                id, content, created_at, source, author_email,
                 users(name)
             ),
             task_attachments(
@@ -50,10 +50,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         return successResponse({ error: 'Ticket not found' }, headers, 404);
     }
 
+    // Fetch status info if ticket has status_id
+    let statusData: { id: string; label: string; color: string } | null = null;
+    if (ticket.status_id) {
+        const { data: status } = await supabase
+            .from('statuses')
+            .select('id, label, color')
+            .eq('id', ticket.status_id)
+            .single();
+        statusData = status;
+    }
+
     interface RawComment {
         id: string;
         content: string;
         created_at: string;
+        source?: string;
+        author_email?: string;
         users: { name: string } | { name: string }[] | null;
     }
 
@@ -77,18 +90,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         return undefined;
     };
 
-    // Helper to extract status data
-    const getStatusData = (statuses: unknown): { id: string; label: string; color: string } | null => {
-        if (!statuses) return null;
-        if (Array.isArray(statuses) && statuses.length > 0) {
-            return { id: statuses[0].id, label: statuses[0].label, color: statuses[0].color };
-        }
-        if (typeof statuses === 'object' && 'id' in statuses) {
-            return statuses as { id: string; label: string; color: string };
-        }
-        return null;
-    };
-
     const response: PublicApiResponse<PublicTicketDetail> = {
         data: {
             id: ticket.id,
@@ -101,23 +102,28 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             created_at: ticket.created_at,
             updated_at: ticket.updated_at,
             column: getColumnData(ticket.columns),
-            status: getStatusData(ticket.statuses),
-            comments: (ticket.task_comments || []).map((c: RawComment) => {
-                let authorName: string | undefined;
-                if (c.users) {
-                    if (Array.isArray(c.users)) {
-                        authorName = c.users[0]?.name;
-                    } else {
-                        authorName = c.users.name;
+            status: statusData,
+            comments: (ticket.task_comments || [])
+                .sort((a: RawComment, b: RawComment) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map((c: RawComment) => {
+                    let authorName: string | undefined;
+                    // For API comments, use author_email
+                    if (c.source === 'api' && c.author_email) {
+                        authorName = c.author_email;
+                    } else if (c.users) {
+                        if (Array.isArray(c.users)) {
+                            authorName = c.users[0]?.name;
+                        } else {
+                            authorName = c.users.name;
+                        }
                     }
-                }
-                return {
-                    id: c.id,
-                    content: c.content,
-                    created_at: c.created_at,
-                    author: authorName ? { name: authorName } : undefined,
-                };
-            }),
+                    return {
+                        id: c.id,
+                        content: c.content,
+                        created_at: c.created_at,
+                        author: authorName ? { name: authorName } : undefined,
+                    };
+                }),
             attachments: (ticket.task_attachments || []).map((a: RawAttachment) => ({
                 id: a.id,
                 file_name: a.file_name,

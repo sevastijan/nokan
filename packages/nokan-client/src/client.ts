@@ -226,6 +226,9 @@ export class NokanClient {
         if (!input.content?.trim()) {
             throw new ValidationError('Comment content is required', 'content');
         }
+        if (!input.author_email?.trim()) {
+            throw new ValidationError('Author email is required for API comments', 'author_email');
+        }
 
         const response = await this.request<ApiResponse<Comment>>(
             'POST',

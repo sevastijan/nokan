@@ -23,6 +23,18 @@ export const useTaskComments = (taskId?: string): UseTaskCommentsResult => {
 
                const commentsWithAuthors = await Promise.all(
                     (commentsData || []).map(async (comment) => {
+                         // API comments have source='api' and author_email instead of user_id
+                         if (comment.source === 'api') {
+                              return {
+                                   ...comment,
+                                   author: {
+                                        id: 'api',
+                                        name: comment.author_email || 'API',
+                                        email: comment.author_email || null,
+                                        image: null,
+                                   },
+                              };
+                         }
                          if (comment.user_id) {
                               const { data: authorData } = await supabase.from('users').select('id, name, email, image').eq('id', comment.user_id).single();
 

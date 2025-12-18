@@ -203,6 +203,12 @@ export interface CreateCommentInput {
      * Comment content (required)
      */
     content: string;
+
+    /**
+     * Author email (required for API comments)
+     * This email will be displayed as the comment author
+     */
+    author_email: string;
 }
 
 export interface ListTicketsOptions {
