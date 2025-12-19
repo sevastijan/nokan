@@ -295,6 +295,13 @@ const SingleTaskView = ({
           [updateField, updateTask],
      );
 
+     const handleCompletionToggle = useCallback(
+          (completed: boolean) => {
+               updateTask({ completed });
+          },
+          [updateTask],
+     );
+
      useEffect(() => {
           if (task) syncWithTask(task, columnId);
      }, [task, columnId, syncWithTask]);
@@ -387,6 +394,8 @@ const SingleTaskView = ({
                               saving={saving}
                               onClose={requestClose}
                               titleInputRef={titleInputRef}
+                              completed={task?.completed || false}
+                              onCompletionToggle={handleCompletionToggle}
                          />
 
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
@@ -537,13 +546,15 @@ const SingleTaskView = ({
 
                     {previewImageUrl && <ImagePreviewModal imageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />}
 
-                    <UnsavedChangesModal
-                         isOpen={showUnsavedConfirm}
-                         onClose={() => setShowUnsavedConfirm(false)}
-                         onConfirmExit={confirmExit}
-                         onSaveAndExit={saveAndExit}
-                         isSaving={saving || isAutoSaving}
-                    />
+                    {showUnsavedConfirm && (
+                         <UnsavedChangesModal
+                              isOpen={showUnsavedConfirm}
+                              onClose={() => setShowUnsavedConfirm(false)}
+                              onConfirmExit={confirmExit}
+                              onSaveAndExit={saveAndExit}
+                              isSaving={saving || isAutoSaving}
+                         />
+                    )}
 
                     {descriptionImages.length > 0 && (
                          <Lightbox

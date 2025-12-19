@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback, useRef, useLayoutEffect, Suspense } f
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import { getSupabase } from '@/app/lib/supabase';
 import { useBoard } from '@/app/hooks/useBoard';
 import Column from '@/app/components/Column';
@@ -14,6 +15,7 @@ import { getPriorities } from '@/app/lib/api';
 import { Column as ColumnType, User, Priority, AssigneeOption } from '@/app/types/globalTypes';
 import BoardHeader from '@/app/components/Board/BoardHeader';
 import TaskViewSkeleton from '@/app/components/SingleTaskView/TaskViewSkeleton';
+import { useUpdateTaskMutation } from '@/app/store/apiSlice';
 
 const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
      loading: () => (
@@ -30,6 +32,7 @@ const SingleTaskView = dynamic(() => import('@/app/components/SingleTaskView/Sin
           </div>
      ),
 });
+
 const AddColumnPopup = dynamic(() => import('@/app/components/TaskColumn/AddColumnPopup'), {
      loading: () => <div className="text-slate-400">Ładowanie...</div>,
 });
@@ -41,6 +44,10 @@ const BoardNotesModal = dynamic(() => import('@/app/components/Board/BoardNotesM
 
 const ApiTokensModal = dynamic(() => import('@/app/components/Board/ApiTokensModal'), {
      loading: () => <div className="text-slate-400">Ładowanie...</div>,
+     ssr: false,
+});
+
+const TaskCompletionModal = dynamic(() => import('@/app/components/TaskCompletionModal/TaskCompletionModal'), {
      ssr: false,
 });
 
@@ -81,12 +88,16 @@ export default function Page() {
      const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
      const [notesOpen, setNotesOpen] = useState(false);
      const [apiTokensOpen, setApiTokensOpen] = useState(false);
+     const [completionModalOpen, setCompletionModalOpen] = useState(false);
+     const [pendingCompletionTask, setPendingCompletionTask] = useState<{ taskId: string; title: string } | null>(null);
 
      const prevBoardIdRef = useRef<string | null>(null);
      const columnsContainerRef = useRef<HTMLDivElement>(null);
      const savedScrollPosition = useRef<{ x: number; y: number } | null>(null);
      const columnScrollRefs = useRef<Map<string, HTMLDivElement>>(new Map());
      const savedColumnScrollPositions = useRef<Map<string, number>>(new Map());
+
+     const [updateTask] = useUpdateTaskMutation();
 
      const handleOpenNotes = () => setNotesOpen(true);
      const handleCloseNotes = () => setNotesOpen(false);
@@ -299,6 +310,18 @@ export default function Page() {
                                         errors.map((e) => e.error),
                                    );
                               }
+
+                              // Sprawdzanie kolumny "Done" i pokazywanie modala
+                              const isDoneColumn = dstCol.title?.toLowerCase() === 'done';
+                              const isTaskNotCompleted = !movedTask.completed;
+
+                              if (isDoneColumn && isTaskNotCompleted) {
+                                   setPendingCompletionTask({
+                                        taskId: movedTask.id,
+                                        title: movedTask.title || 'Untitled task',
+                                   });
+                                   setCompletionModalOpen(true);
+                              }
                          } catch (err) {
                               console.error('[DnD] Exception:', err);
                          }
@@ -309,6 +332,31 @@ export default function Page() {
           },
           [localColumns, fetchBoardData],
      );
+
+     const handleConfirmCompletion = async () => {
+          if (!pendingCompletionTask) return;
+
+          try {
+               await updateTask({
+                    taskId: pendingCompletionTask.taskId,
+                    data: { completed: true },
+               }).unwrap();
+
+               toast.success('Zadanie oznaczone jako zakończone');
+               await fetchBoardData();
+          } catch (error) {
+               console.error('Failed to mark task as completed:', error);
+               toast.error('Nie udało się oznaczyć zadania jako zakończone');
+          } finally {
+               setCompletionModalOpen(false);
+               setPendingCompletionTask(null);
+          }
+     };
+
+     const handleCancelCompletion = () => {
+          setCompletionModalOpen(false);
+          setPendingCompletionTask(null);
+     };
 
      if (!boardId) {
           return (
@@ -528,6 +576,9 @@ export default function Page() {
                          />
                     </Suspense>
                )}
+
+               <TaskCompletionModal isOpen={completionModalOpen} onClose={handleCancelCompletion} onConfirm={handleConfirmCompletion} taskTitle={pendingCompletionTask?.title || ''} />
+
                <BoardNotesModal isOpen={notesOpen} onClose={handleCloseNotes} boardId={boardId} />
                <ApiTokensModal isOpen={apiTokensOpen} onClose={handleCloseApiTokens} boardId={boardId} />
           </div>

@@ -309,18 +309,18 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                           custom_image: authorObj.custom_image,
                                      }
                                    : c.source === 'api' && c.author_email
-                                     ? {
-                                            id: 'api',
-                                            name: c.author_email,
-                                            email: c.author_email,
-                                            image: undefined,
-                                       }
-                                     : {
-                                            id: '',
-                                            name: 'Nieznany użytkownik',
-                                            email: '',
-                                            image: undefined,
-                                       };
+                                   ? {
+                                          id: 'api',
+                                          name: c.author_email,
+                                          email: c.author_email,
+                                          image: undefined,
+                                     }
+                                   : {
+                                          id: '',
+                                          name: 'Nieznany użytkownik',
+                                          email: '',
+                                          image: undefined,
+                                     };
 
                               return {
                                    id: c.id,
@@ -641,19 +641,24 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           },
      }),
 
-     updateTaskCompletion: builder.mutation<void, { taskId: string; completed: boolean }>({
+     updateTaskCompletion: builder.mutation<{ success: boolean }, { taskId: string; completed: boolean }>({
           async queryFn({ taskId, completed }) {
                try {
                     const { error } = await getSupabase().from('tasks').update({ completed }).eq('id', taskId);
+
                     if (error) throw error;
-                    return { data: undefined };
+
+                    return { data: { success: true } };
                } catch (err) {
                     const error = err as Error;
                     console.error('[apiSlice.updateTaskCompletion] error:', error);
                     return { error: { status: 'CUSTOM_ERROR', error: error.message } };
                }
           },
-          invalidatesTags: (_result, _error, { taskId }) => [{ type: 'Task', id: taskId }],
+          invalidatesTags: (_result, _error, { taskId }) => [
+               { type: 'Task', id: taskId },
+               { type: 'Column', id: 'LIST' },
+          ],
      }),
 
      updateTaskDates: builder.mutation<void, { taskId: string; start_date: string | null; end_date: string | null }>({
