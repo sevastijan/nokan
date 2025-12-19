@@ -240,13 +240,15 @@ const SingleTaskView = ({
      }, [deleteTask, onClose]);
 
      const handleCopyLink = useCallback(() => {
-          if (!task?.id) return;
-          const url = `${window.location.origin}/task/${task.id}`;
+          if (!task?.id || !boardId) return;
+
+          const url = `${window.location.origin}/board/${boardId}?task=${task.id}`;
+
           navigator.clipboard
                .writeText(url)
                .then(() => toast.success('Link do zadania skopiowany!'))
                .catch(() => toast.error('Nie udało się skopiować linku'));
-     }, [task?.id]);
+     }, [task?.id, boardId]);
 
      const handleTypeChange = useCallback(
           async (newType: TaskType) => {
@@ -376,6 +378,7 @@ const SingleTaskView = ({
                          <TaskHeader
                               isNewTask={isNewTask}
                               taskId={task?.id}
+                              boardId={boardId}
                               title={formData.tempTitle}
                               onTitleChange={handleTitleChange}
                               onTitleKeyDown={handleTitleKeyDown}

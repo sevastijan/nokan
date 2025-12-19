@@ -4,13 +4,12 @@ import dynamic from 'next/dynamic';
 
 import { useEffect, useState, useCallback, useRef, useLayoutEffect, Suspense } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { getSupabase } from '@/app/lib/supabase';
 import { useBoard } from '@/app/hooks/useBoard';
 import Column from '@/app/components/Column';
 import Loader from '@/app/components/Loader';
-import { extractTaskIdFromUrl } from '@/app/utils/helpers';
 import { getPriorities } from '@/app/lib/api';
 import { Column as ColumnType, User, Priority, AssigneeOption } from '@/app/types/globalTypes';
 import BoardHeader from '@/app/components/Board/BoardHeader';
@@ -48,6 +47,7 @@ const ApiTokensModal = dynamic(() => import('@/app/components/Board/ApiTokensMod
 export default function Page() {
      const params = useParams();
      const router = useRouter();
+     const searchParams = useSearchParams();
      const { data: session, status } = useSession();
 
      const boardId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -155,9 +155,12 @@ export default function Page() {
 
      useEffect(() => {
           if (typeof window === 'undefined') return;
-          const taskId = extractTaskIdFromUrl(window.location.href);
-          if (taskId) setSelectedTaskId(taskId);
-     }, []);
+
+          const taskIdFromUrl = searchParams.get('task');
+          if (taskIdFromUrl) {
+               setSelectedTaskId(taskIdFromUrl);
+          }
+     }, [searchParams]);
 
      const saveScrollPosition = useCallback(() => {
           if (columnsContainerRef.current) {
@@ -402,12 +405,24 @@ export default function Page() {
      const handleOpenTaskDetail = (taskId: string) => {
           saveScrollPosition();
           setSelectedTaskId(taskId);
+
+          const params = new URLSearchParams(searchParams.toString());
+          params.set('task', taskId);
+          router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
      };
 
      const handleCloseTaskView = () => {
           saveScrollPosition();
           setSelectedTaskId(null);
           setAddTaskColumnId(null);
+
+          const params = new URLSearchParams(searchParams.toString());
+          if (params.has('task')) {
+               params.delete('task');
+               const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+               router.replace(newUrl, { scroll: false });
+          }
+
           fetchBoardData();
      };
 
@@ -450,7 +465,7 @@ export default function Page() {
                                         {filteredColumns.map((col, idx) => (
                                              <Draggable key={col.id} draggableId={col.id} index={idx}>
                                                   {(prov) => (
-                                                       <div ref={prov.innerRef} {...prov.draggableProps} style={prov.draggableProps.style} className="flex-shrink-0 w-[88vw] sm:w-80 lg:w-96">
+                                                       <div ref={prov.innerRef} {...prov.draggableProps} style={prov.draggableProps.style} className="shrink-0 w-[88vw] sm:w-80 lg:w-96">
                                                             <Column
                                                                  column={col}
                                                                  colIndex={idx}
