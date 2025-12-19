@@ -24,7 +24,6 @@ import { $setBlocksType } from '@lexical/selection';
 import { $isLinkNode } from '@lexical/link';
 import { toast } from 'sonner';
 
-// Custom Image Node for Lexical
 export type SerializedImageNode = Spread<
      {
           src: string;
@@ -320,9 +319,7 @@ function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }: Toolba
                     try {
                          const err = await response.json();
                          errorMessage = err.error || errorMessage;
-                    } catch {
-                         // If JSON parsing fails, use default message
-                    }
+                    } catch {}
                     throw new Error(errorMessage);
                }
 
@@ -533,9 +530,7 @@ function PasteImagePlugin({ taskId, onUploadStart, onUploadEnd }: PasteImagePlug
                                    try {
                                         const err = await response.json();
                                         errorMessage = err.error || errorMessage;
-                                   } catch {
-                                        // If JSON parsing fails, use default message
-                                   }
+                                   } catch {}
                                    throw new Error(errorMessage);
                               }
 
@@ -587,43 +582,29 @@ function LoadContentPlugin({ initialContent }: LoadContentPluginProps) {
      const isLoadingRef = useRef(false);
 
      useEffect(() => {
-          console.log('🔵 LoadContentPlugin effect triggered:', {
-               hasContent: !!initialContent,
-               contentLength: initialContent?.length,
-               isEmpty: initialContent === '<p><br></p>',
-               alreadyLoaded: loadedContentRef.current === initialContent,
-               contentPreview: initialContent?.substring(0, 100),
-          });
-
-          // Skip if no content or if we already loaded this exact content
           if (!initialContent || initialContent === '<p><br></p>' || loadedContentRef.current === initialContent || isLoadingRef.current) {
-               console.log('⏭️  Skipping load');
                return;
           }
 
-          console.log('🟢 LoadContentPlugin - WILL LOAD content');
           isLoadingRef.current = true;
 
           const loadContent = () => {
                editor.update(() => {
                     try {
-                         console.log('🔧 Starting content load...');
-                         console.log('📄 Raw HTML content:', initialContent);
+                         const isHTML = /<[a-z][\s\S]*>/i.test(initialContent);
+                         let contentToLoad = initialContent;
+
+                         if (!isHTML) {
+                              const lines = initialContent.split('\n').filter((line) => line.trim());
+                              contentToLoad = lines.map((line) => `<p>${line}</p>`).join('');
+
+                              if (!contentToLoad) {
+                                   contentToLoad = `<p>${initialContent}</p>`;
+                              }
+                         }
 
                          const parser = new DOMParser();
-                         const dom = parser.parseFromString(initialContent, 'text/html');
-
-                         console.log('🌳 Parsed DOM body:', dom.body.innerHTML);
-                         console.log('🌳 Images in DOM:', dom.querySelectorAll('img').length);
-                         dom.querySelectorAll('img').forEach((img, i) => {
-                              console.log(`   Image ${i}:`, {
-                                   src: img.src.substring(0, 100),
-                                   alt: img.alt,
-                                   attrs: Array.from(img.attributes)
-                                        .map((a) => `${a.name}="${a.value.substring(0, 50)}"`)
-                                        .join(' '),
-                              });
-                         });
+                         const dom = parser.parseFromString(contentToLoad, 'text/html');
 
                          const nodes = $generateNodesFromDOM(editor, dom);
 
@@ -632,12 +613,9 @@ function LoadContentPlugin({ initialContent }: LoadContentPluginProps) {
                          const root = $getRoot();
                          root.clear();
 
-                         // Filter out text nodes and only add element/decorator nodes
                          const validNodes = nodes.filter((node) => {
                               const type = node.getType();
                               console.log('   Node type:', type, node);
-                              // Allow paragraphs, headings, lists, images, etc.
-                              // Reject plain text nodes at root level
                               return type !== 'text' && type !== 'linebreak';
                          });
 
@@ -646,12 +624,10 @@ function LoadContentPlugin({ initialContent }: LoadContentPluginProps) {
                          if (validNodes.length > 0) {
                               root.append(...validNodes);
                          } else {
-                              // If no valid nodes, create a paragraph with the content
                               const paragraph = $createParagraphNode();
                               root.append(paragraph);
                          }
 
-                         console.log('✅ Content loaded successfully!');
                          loadedContentRef.current = initialContent;
                          isLoadingRef.current = false;
                     } catch (error) {
@@ -661,7 +637,6 @@ function LoadContentPlugin({ initialContent }: LoadContentPluginProps) {
                });
           };
 
-          // Load after a short delay to ensure editor is fully ready
           const timeout = setTimeout(loadContent, 50);
 
           return () => {
@@ -684,8 +659,6 @@ export default function TaskDescription({ value, onChange, taskId, onImageClick 
      const isFirstChangeRef = useRef(true);
      const initialValueRef = useRef(value || '');
 
-     // CRITICAL: Update ref IMMEDIATELY when value changes
-     // This fixes the "need to open twice" issue
      if (value && value !== '<p><br></p>' && !initialValueRef.current) {
           console.log('🟡 Setting initialValueRef with loaded content:', value.substring(0, 100));
           initialValueRef.current = value;
@@ -703,9 +676,7 @@ export default function TaskDescription({ value, onChange, taskId, onImageClick 
                editorState.read(() => {
                     const htmlContent = $generateHtmlFromNodes(editor);
 
-                    // Skip first change if it's just loading initial content
                     if (isFirstChangeRef.current && htmlContent === initialValueRef.current) {
-                         console.log('⏭️  Skipping first onChange (loading initial content)');
                          isFirstChangeRef.current = false;
                          return;
                     }
@@ -713,7 +684,6 @@ export default function TaskDescription({ value, onChange, taskId, onImageClick 
                     isFirstChangeRef.current = false;
 
                     if (htmlContent !== value) {
-                         console.log('📝 Content changed, triggering onChange');
                          onChange(htmlContent);
                     }
                });
