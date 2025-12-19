@@ -184,7 +184,7 @@ const CommentForm = ({
                                    onKeyDown={handleKeyDown}
                                    onPaste={handlePaste}
                                    placeholder={replyingTo ? 'Napisz odpowiedź...' : 'Dodaj komentarz... (@ aby oznaczyć)'}
-                                   className="w-full min-h-[80px] p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   className="w-full min-h-20 p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                    disabled={uploading}
                               />
                               {showSuggestions && filteredSuggestions.length > 0 && (

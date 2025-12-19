@@ -646,3 +646,30 @@ export interface ClientSubmission {
 
      status?: Status | null;
 }
+
+export interface LightboxImage {
+     src: string;
+     alt?: string;
+     title?: string;
+     downloadUrl?: string;
+}
+
+export interface TaskImage {
+     id: string;
+     task_id: string;
+     file_name: string;
+     file_path: string;
+     file_size: number;
+     mime_type: string;
+     signed_url?: string;
+     uploaded_by: string;
+     created_at: string;
+}
+
+export interface TaskImageUploadResponse {
+     image: TaskImage;
+}
+
+export interface TaskImageUploadError {
+     error: string;
+}
