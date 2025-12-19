@@ -20,7 +20,7 @@ import ImagePreviewModal from './ImagePreviewModal';
 import ActionFooter from './ActionFooter';
 import RecurringTaskModal from './RecurringTaskModal';
 import TaskMetadataSidebar from './TaskMetadataSidebar';
-import TaskDescription from './TaskDescription';
+import TaskDescription from './TaskDescription/TaskDescription';
 import TaskDatesSection from './TaskDatesSection';
 import TaskPropertiesGrid from './TaskPropertiesGrid';
 import TaskAttachmentsSection from './TaskAttachmentsSection';
