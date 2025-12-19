@@ -24,6 +24,13 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
      const triggerRef = useRef<HTMLButtonElement>(null);
      const menuRef = useRef<HTMLDivElement>(null);
 
+     // Parse HTML description to plain text
+     const getPlainTextFromHtml = useCallback((html: string | undefined): string => {
+          if (!html) return '';
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          return doc.body.textContent || '';
+     }, []);
+
      const priorityConfig = useMemo(() => {
           if (!task.priority) return null;
 
@@ -135,8 +142,9 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
 
      const leftBorderStyle = priorityConfig ? { borderLeftColor: priorityConfig.dotColor } : { borderLeftColor: '#475569' };
 
+     const plainDescription = useMemo(() => getPlainTextFromHtml(task.description), [task.description, getPlainTextFromHtml]);
      const hasTitle = Boolean(task.title?.trim());
-     const hasDesc = Boolean(task.description?.trim());
+     const hasDesc = Boolean(plainDescription.trim());
      const showMeta = Boolean(priorityConfig || task.due_date || hasAssignees);
      const isEmpty = !hasTitle && !hasDesc && !showMeta;
 
@@ -175,16 +183,16 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                     <div className="p-4 flex flex-col gap-2">
                          <h4 className="font-semibold text-white text-base leading-tight truncate flex items-center gap-2">
                               {isSubtask ? (
-                                   <FiCornerDownRight className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                                   <FiCornerDownRight className="w-4 h-4 text-orange-400 shrink-0" />
                               ) : isStory ? (
-                                   <FaLayerGroup className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                                   <FaLayerGroup className="w-4 h-4 text-purple-400 shrink-0" />
                               ) : (
-                                   <FiCheckSquare className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                                   <FiCheckSquare className="w-4 h-4 text-blue-400 shrink-0" />
                               )}
                               {hasTitle ? task.title : <span className="text-white/40 italic">Untitled</span>}
                          </h4>
 
-                         {hasDesc && <p className="text-white/70 text-sm line-clamp-2">{truncateText(task.description!, 80)}</p>}
+                         {hasDesc && <p className="text-white/70 text-sm line-clamp-2">{truncateText(plainDescription, 80)}</p>}
 
                          {showMeta && (
                               <div className="flex items-center justify-between mt-3">
@@ -214,11 +222,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                                    {hasAssignees ? (
                                         <div className="flex items-center -space-x-2">
                                              {assignees.slice(0, 3).map((assignee, idx) => (
-                                                  <div
-                                                       key={assignee.id}
-                                                       style={{ zIndex: 3 - idx }}
-                                                       title={assignee.custom_name || assignee.name || assignee.email || 'User'} // tooltip z imieniem
-                                                  >
+                                                  <div key={assignee.id} style={{ zIndex: 3 - idx }} title={assignee.custom_name || assignee.name || assignee.email || 'User'}>
                                                        <Avatar
                                                             src={assignee.custom_image || assignee.image || ''}
                                                             alt={assignee.custom_name || assignee.name || 'User'}

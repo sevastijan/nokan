@@ -436,7 +436,7 @@ export default function BoardNotesEditor({ initialContent, onSave, isSaving }: B
                     <ToolbarPlugin onSave={handleSave} isSaving={isSaving} />
                     <div className="flex-1 overflow-y-auto relative bg-slate-900/50">
                          <RichTextPlugin
-                              contentEditable={<ContentEditable className="outline-none p-4 min-h-[400px]" style={{ caretColor: '#60a5fa' }} />}
+                              contentEditable={<ContentEditable className="outline-none p-4 min-h-100" style={{ caretColor: '#60a5fa' }} />}
                               placeholder={<div className="absolute top-4 left-4 text-slate-500 pointer-events-none">Zacznij pisać swoje notatki...</div>}
                               ErrorBoundary={LexicalErrorBoundary}
                          />

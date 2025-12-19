@@ -13,14 +13,14 @@ import { useAutosave } from './hooks/useAutosave';
 import { useTaskForm } from './hooks/useTaskForm';
 import { useAttachmentUpload } from './hooks/useAttachmentUpload';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
-
+import { useTaskImages } from '@/app/hooks/useTaskImages';
 import StatusSelector from './StatusSelector';
 import CommentsSection from './CommentsSection';
 import ImagePreviewModal from './ImagePreviewModal';
 import ActionFooter from './ActionFooter';
 import RecurringTaskModal from './RecurringTaskModal';
 import TaskMetadataSidebar from './TaskMetadataSidebar';
-import TaskDescription from './TaskDescription';
+import TaskDescription from './TaskDescription/TaskDescription';
 import TaskDatesSection from './TaskDatesSection';
 import TaskPropertiesGrid from './TaskPropertiesGrid';
 import TaskAttachmentsSection from './TaskAttachmentsSection';
@@ -28,7 +28,7 @@ import TaskHeader from './TaskHeader';
 import { UnsavedChangesModal } from './UnsavedChangesModal';
 import TaskTypeSelector from './TaskTypeSelector';
 import SubtaskList from './SubtaskList';
-
+import Lightbox from '@/app/components/Lightbox/Lightbox';
 import { calculateDuration } from '@/app/utils/helpers';
 import { SingleTaskViewProps, Column, TaskType } from '@/app/types/globalTypes';
 import TaskViewSkeleton from './TaskViewSkeleton';
@@ -49,6 +49,18 @@ const SingleTaskView = ({
      onOpenTask,
 }: SingleTaskViewProps & { columns: Column[] }) => {
      const { currentUser } = useCurrentUser();
+     const user = propCurrentUser || currentUser!;
+
+     const overlayRef = useRef<HTMLDivElement>(null);
+     const modalRef = useRef<HTMLDivElement>(null);
+     const titleInputRef = useRef<HTMLInputElement>(null);
+     const appliedInitialDate = useRef(false);
+     const isInitialMount = useRef(true);
+
+     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+     const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
+     const [showRecurringModal, setShowRecurringModal] = useState(false);
+     const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
 
      const {
           task,
@@ -71,23 +83,13 @@ const SingleTaskView = ({
           mode,
           columnId,
           boardId: boardId!,
-          currentUser: propCurrentUser || currentUser || undefined,
+          currentUser: user,
           initialStartDate,
           onTaskUpdate,
           onTaskAdded,
           onClose,
           propStatuses,
      });
-
-     const overlayRef = useRef<HTMLDivElement>(null);
-     const modalRef = useRef<HTMLDivElement>(null);
-     const titleInputRef = useRef<HTMLInputElement>(null);
-     const appliedInitialDate = useRef(false);
-
-     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-     const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
-     const [showRecurringModal, setShowRecurringModal] = useState(false);
-     const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
 
      const { formData, updateField, syncWithTask } = useTaskForm({
           initialColumnId: columnId,
@@ -102,8 +104,8 @@ const SingleTaskView = ({
           isNewTask,
           currentTaskId,
           boardId: boardId!,
-          currentUserId: currentUser?.id,
-          currentUserName: currentUser?.name,
+          currentUserId: user?.id,
+          currentUserName: user?.name,
           taskTitle: task?.title ?? undefined,
           fetchTaskData,
           updateTask,
@@ -116,7 +118,7 @@ const SingleTaskView = ({
           isNewTask,
           currentTaskId,
           task,
-          currentUserId: currentUser?.id,
+          currentUserId: user?.id,
           boardId: boardId!,
           updateTask,
           updateTaskMutation,
@@ -129,48 +131,27 @@ const SingleTaskView = ({
           shouldSave: hasUnsavedChanges && !isNewTask && !showRecurringModal,
      });
 
-     useEffect(() => {
-          if (task) syncWithTask(task, columnId);
-     }, [task, columnId, syncWithTask]);
+     const taskType: TaskType = task?.type || 'task';
+     const isStory = taskType === 'story';
+     const [updateTaskType] = useUpdateTaskTypeMutation();
 
-     useEffect(() => {
-          if (isNewTask && columnId) {
-               updateField('localColumnId', columnId);
-               updateTask({ column_id: columnId });
-          }
-     }, [isNewTask, columnId, updateTask, updateField]);
+     const { data: subtasks = [], refetch: refetchSubtasks } = useGetSubtasksQuery({ storyId: task?.id || '' }, { skip: !task?.id || !isStory });
 
-     useEffect(() => {
-          if (isNewTask && initialStartDate && !appliedInitialDate.current) {
-               updateField('startDate', initialStartDate);
-               updateTask({ start_date: initialStartDate });
-               appliedInitialDate.current = true;
-          }
-     }, [isNewTask, initialStartDate, updateTask, updateField]);
+     const duration = useMemo(() => calculateDuration(formData.startDate, formData.endDate), [formData.startDate, formData.endDate]);
 
-     useEffect(() => {
-          if (isNewTask && !formData.localColumnId && columns.length > 0) {
-               const defaultCol = columns[0].id;
-               updateField('localColumnId', defaultCol);
-               updateTask({ column_id: defaultCol });
-          }
-     }, [isNewTask, formData.localColumnId, columns, updateTask, updateField]);
+     const canChangeType = useMemo(() => {
+          if (!isStory) return true;
+          return subtasks.length === 0;
+     }, [isStory, subtasks.length]);
 
-     useEffect(() => {
-          if (isNewTask && titleInputRef.current) {
-               titleInputRef.current.focus({ preventScroll: true });
-          }
-     }, [isNewTask]);
-
-     useEffect(() => {
-          const originalOverflow = document.body.style.overflow;
-          document.body.style.overflow = 'hidden';
-          return () => {
-               document.body.style.overflow = originalOverflow;
-          };
-     }, []);
-
-     useEffect(() => cleanupPreviews, [cleanupPreviews]);
+     const {
+          images: descriptionImages,
+          lightboxOpen: descriptionLightboxOpen,
+          currentImageIndex: descriptionImageIndex,
+          handleImageClick: handleDescriptionImageClick,
+          handleClose: handleDescriptionLightboxClose,
+          handleNavigate: handleDescriptionImageNavigate,
+     } = useTaskImages(formData.tempDescription);
 
      const requestClose = useCallback(() => {
           if (hasUnsavedChanges && !isNewTask) {
@@ -179,14 +160,6 @@ const SingleTaskView = ({
                onClose();
           }
      }, [hasUnsavedChanges, isNewTask, onClose]);
-
-     useEffect(() => {
-          const onKeyDown = (e: KeyboardEvent) => {
-               if (e.key === 'Escape') requestClose();
-          };
-          document.addEventListener('keydown', onKeyDown);
-          return () => document.removeEventListener('keydown', onKeyDown);
-     }, [requestClose]);
 
      const confirmExit = useCallback(() => {
           setShowUnsavedConfirm(false);
@@ -201,8 +174,6 @@ const SingleTaskView = ({
                onClose();
           }
      }, [saveExistingTask, onClose]);
-
-     useOutsideClick([modalRef], requestClose);
 
      const handlePriorityChange = useCallback(
           (priorityId: string | null) => {
@@ -277,16 +248,6 @@ const SingleTaskView = ({
                .catch(() => toast.error('Nie udało się skopiować linku'));
      }, [task?.id]);
 
-     const duration = useMemo(() => calculateDuration(formData.startDate, formData.endDate), [formData.startDate, formData.endDate]);
-
-     // Task type management
-     const taskType: TaskType = task?.type || 'task';
-     const isStory = taskType === 'story';
-     const [updateTaskType] = useUpdateTaskTypeMutation();
-
-     // Fetch subtasks only if this is a story
-     const { data: subtasks = [], refetch: refetchSubtasks } = useGetSubtasksQuery({ storyId: task?.id || '' }, { skip: !task?.id || !isStory });
-
      const handleTypeChange = useCallback(
           async (newType: TaskType) => {
                if (!task?.id) {
@@ -306,12 +267,86 @@ const SingleTaskView = ({
           [task?.id, updateTaskType, fetchTaskData, updateTask],
      );
 
-     const canChangeType = useMemo(() => {
-          if (!isStory) return true;
-          return subtasks.length === 0;
-     }, [isStory, subtasks.length]);
+     const handleTitleChange = useCallback(
+          (e: React.ChangeEvent<HTMLInputElement>) => {
+               const value = e.target.value;
+               updateField('tempTitle', value);
+               updateTask({ title: value });
+          },
+          [updateField, updateTask],
+     );
 
-     const user = currentUser!;
+     const handleTitleKeyDown = useCallback(
+          (e: React.KeyboardEvent<HTMLInputElement>) => {
+               if (e.key === 'Enter' && formData.tempTitle.trim()) {
+                    (e.target as HTMLInputElement).blur();
+               }
+          },
+          [formData.tempTitle],
+     );
+
+     const handleDescriptionChange = useCallback(
+          (value: string) => {
+               updateField('tempDescription', value);
+               updateTask({ description: value });
+          },
+          [updateField, updateTask],
+     );
+
+     useEffect(() => {
+          if (task) syncWithTask(task, columnId);
+     }, [task, columnId, syncWithTask]);
+
+     useEffect(() => {
+          if (!isNewTask) return;
+
+          if (columnId) {
+               updateField('localColumnId', columnId);
+               updateTask({ column_id: columnId });
+          } else if (!formData.localColumnId && columns.length > 0) {
+               const defaultCol = columns[0].id;
+               updateField('localColumnId', defaultCol);
+               updateTask({ column_id: defaultCol });
+          }
+
+          if (initialStartDate && !appliedInitialDate.current) {
+               updateField('startDate', initialStartDate);
+               updateTask({ start_date: initialStartDate });
+               appliedInitialDate.current = true;
+          }
+     }, [isNewTask, columnId, initialStartDate, formData.localColumnId, columns, updateTask, updateField]);
+
+     useEffect(() => {
+          if (isNewTask && titleInputRef.current && isInitialMount.current) {
+               titleInputRef.current.focus({ preventScroll: true });
+               isInitialMount.current = false;
+          }
+     }, [isNewTask]);
+
+     useEffect(() => {
+          const originalOverflow = document.body.style.overflow;
+          document.body.style.overflow = 'hidden';
+          return () => {
+               document.body.style.overflow = originalOverflow;
+          };
+     }, []);
+
+     useEffect(() => cleanupPreviews, [cleanupPreviews]);
+
+     useEffect(() => {
+          if (openedSubtaskId) return;
+
+          const onKeyDown = (e: KeyboardEvent) => {
+               if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    requestClose();
+               }
+          };
+          document.addEventListener('keydown', onKeyDown, { capture: true });
+          return () => document.removeEventListener('keydown', onKeyDown, { capture: true });
+     }, [requestClose, openedSubtaskId]);
+
+     useOutsideClick([modalRef], requestClose);
 
      if (!task && !isNewTask) {
           return (
@@ -342,16 +377,8 @@ const SingleTaskView = ({
                               isNewTask={isNewTask}
                               taskId={task?.id}
                               title={formData.tempTitle}
-                              onTitleChange={(e) => {
-                                   const value = e.target.value;
-                                   updateField('tempTitle', value);
-                                   updateTask({ title: value });
-                              }}
-                              onTitleKeyDown={(e) => {
-                                   if (e.key === 'Enter' && formData.tempTitle.trim()) {
-                                        (e.target as HTMLInputElement).blur();
-                                   }
-                              }}
+                              onTitleChange={handleTitleChange}
+                              onTitleKeyDown={handleTitleKeyDown}
                               onCopyLink={handleCopyLink}
                               hasUnsavedChanges={hasUnsavedChanges}
                               saving={saving}
@@ -372,7 +399,6 @@ const SingleTaskView = ({
                                         onColumnChange={handleColumnChange}
                                    />
 
-                                   {/* Task Type Selector - only show if task is not a subtask */}
                                    {!task?.parent_id && (
                                         <div className="mt-4">
                                              <TaskTypeSelector selectedType={taskType} onChange={handleTypeChange} disabled={!canChangeType} />
@@ -394,24 +420,15 @@ const SingleTaskView = ({
                                         </div>
                                    )}
 
-                                   <TaskDescription
-                                        value={formData.tempDescription}
-                                        onChange={(value) => {
-                                             updateField('tempDescription', value);
-                                             updateTask({ description: value });
-                                        }}
-                                   />
+                                   <TaskDescription value={formData.tempDescription} onChange={handleDescriptionChange} taskId={task?.id} onImageClick={handleDescriptionImageClick} />
 
-                                   {/* Subtasks section - only for Story type */}
                                    {isStory && task?.id && !isNewTask && (
                                         <SubtaskList
                                              storyId={task.id}
                                              boardId={boardId!}
                                              columnId={task.column_id || formData.localColumnId || ''}
                                              subtasks={subtasks}
-                                             onSubtaskOpen={(subtaskId) => {
-                                                  setOpenedSubtaskId(subtaskId);
-                                             }}
+                                             onSubtaskOpen={setOpenedSubtaskId}
                                              onRefresh={() => {
                                                   refetchSubtasks();
                                                   fetchTaskData();
@@ -454,7 +471,7 @@ const SingleTaskView = ({
                                                        currentUser={user}
                                                        task={task}
                                                        onRefreshComments={fetchTaskData}
-                                                       onImagePreview={(url) => setPreviewImageUrl(url)}
+                                                       onImagePreview={setPreviewImageUrl}
                                                        teamMembers={teamMembers}
                                                   />
                                              </Suspense>
@@ -497,7 +514,6 @@ const SingleTaskView = ({
                               tempTitle={formData.tempTitle}
                          />
 
-                         {/* Recurring modal - only for Task type (not Story) */}
                          {!isStory && (
                               <RecurringTaskModal
                                    isOpen={showRecurringModal}
@@ -526,7 +542,16 @@ const SingleTaskView = ({
                          isSaving={saving || isAutoSaving}
                     />
 
-                    {/* Nested modal for subtask */}
+                    {descriptionImages.length > 0 && (
+                         <Lightbox
+                              images={descriptionImages}
+                              currentIndex={descriptionImageIndex}
+                              isOpen={descriptionLightboxOpen}
+                              onClose={handleDescriptionLightboxClose}
+                              onNavigate={handleDescriptionImageNavigate}
+                         />
+                    )}
+
                     {openedSubtaskId && (
                          <SingleTaskView
                               taskId={openedSubtaskId}
@@ -543,10 +568,7 @@ const SingleTaskView = ({
                               }}
                               columns={columns}
                               statuses={propStatuses}
-                              onOpenTask={() => {
-                                   // When viewing subtask from Story, clicking "Zobacz Story" just closes the subtask modal
-                                   setOpenedSubtaskId(null);
-                              }}
+                              onOpenTask={() => setOpenedSubtaskId(null)}
                          />
                     )}
                </motion.div>
