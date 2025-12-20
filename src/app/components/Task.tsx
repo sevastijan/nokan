@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent, MouseEvent } from 'react';
-import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus, FiCheckSquare, FiCornerDownRight } from 'react-icons/fi';
+import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus, FiCheckSquare, FiCornerDownRight, FiCheck } from 'react-icons/fi';
 import { FaLayerGroup } from 'react-icons/fa';
 import Avatar from './Avatar/Avatar';
 import { Task as TaskType } from '@/app/types/globalTypes';
@@ -24,7 +24,6 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
      const triggerRef = useRef<HTMLButtonElement>(null);
      const menuRef = useRef<HTMLDivElement>(null);
 
-     // Parse HTML description to plain text
      const getPlainTextFromHtml = useCallback((html: string | undefined): string => {
           if (!html) return '';
           const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -62,6 +61,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
      const hasAssignees = assignees.length > 0;
      const isStory = task.type === 'story';
      const isSubtask = Boolean(task.parent_id);
+     const isCompleted = task.completed === true;
 
      const openMenu = useCallback(() => {
           setMenuOpen(true);
@@ -152,10 +152,11 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
           <div
                onClick={handleCardClick}
                className={`
-        relative cursor-pointer group transition-colors duration-200
+        relative cursor-pointer group transition-all duration-200
         bg-slate-800 border border-slate-700 rounded-lg overflow-hidden
         hover:bg-slate-750 hover:border-slate-600
         ${isEmpty ? 'min-h-16' : 'min-h-24'}
+        ${isCompleted ? 'opacity-60' : ''}
       `}
                style={{
                     borderLeftWidth: '4px',
@@ -181,18 +182,18 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                     </div>
                ) : (
                     <div className="p-4 flex flex-col gap-2">
-                         <h4 className="font-semibold text-white text-base leading-tight truncate flex items-center gap-2">
+                         <h4 className={`font-semibold text-white text-base leading-tight truncate flex items-center gap-2 ${isCompleted ? 'line-through opacity-70' : ''}`}>
                               {isSubtask ? (
                                    <FiCornerDownRight className="w-4 h-4 text-orange-400 shrink-0" />
                               ) : isStory ? (
                                    <FaLayerGroup className="w-4 h-4 text-purple-400 shrink-0" />
                               ) : (
-                                   <FiCheckSquare className="w-4 h-4 text-blue-400 shrink-0" />
+                                   <FiCheckSquare className={`w-4 h-4 shrink-0 ${isCompleted ? 'text-green-400' : 'text-blue-400'}`} />
                               )}
                               {hasTitle ? task.title : <span className="text-white/40 italic">Untitled</span>}
                          </h4>
 
-                         {hasDesc && <p className="text-white/70 text-sm line-clamp-2">{truncateText(plainDescription, 80)}</p>}
+                         {hasDesc && <p className={`text-white/70 text-sm line-clamp-2 ${isCompleted ? 'opacity-70' : ''}`}>{truncateText(plainDescription, 80)}</p>}
 
                          {showMeta && (
                               <div className="flex items-center justify-between mt-3">
@@ -202,14 +203,21 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                                                   className={`
                       inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium
                       ${priorityConfig.cfg.bgColor} ${priorityConfig.cfg.textColor}
+                      ${isCompleted ? 'opacity-60' : ''}
                     `}
                                              >
                                                   <FiFlag size={11} style={{ color: priorityConfig.dotColor }} />
                                                   {priorityConfig.label}
                                              </span>
                                         )}
+                                        {isCompleted && (
+                                             <div className=" bg-green-500/20 border border-green-500/30 rounded-md px-2 py-0.5 flex items-center gap-1">
+                                                  <FiCheck className="w-3 h-3 text-green-400" />
+                                                  <span className="text-xs text-green-400 font-medium">Done</span>
+                                             </div>
+                                        )}
                                         {task.due_date && (
-                                             <span className="flex items-center gap-1 text-white/60">
+                                             <span className={`flex items-center gap-1 text-white/60 ${isCompleted ? 'opacity-60' : ''}`}>
                                                   <FiCalendar size={11} />
                                                   {new Date(task.due_date).toLocaleDateString('pl-PL', {
                                                        day: 'numeric',
@@ -227,12 +235,16 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [] 
                                                             src={assignee.custom_image || assignee.image || ''}
                                                             alt={assignee.custom_name || assignee.name || 'User'}
                                                             size={28}
-                                                            className="border-2 border-slate-800 ring-1 ring-white/10"
+                                                            className={`border-2 border-slate-800 ring-1 ring-white/10 ${isCompleted ? 'opacity-60' : ''}`}
                                                        />
                                                   </div>
                                              ))}
                                              {assignees.length > 3 && (
-                                                  <div className="w-7 h-7 rounded-full bg-slate-700 border-2 border-slate-800 flex items-center justify-center text-xs text-white/70 font-medium">
+                                                  <div
+                                                       className={`w-7 h-7 rounded-full bg-slate-700 border-2 border-slate-800 flex items-center justify-center text-xs text-white/70 font-medium ${
+                                                            isCompleted ? 'opacity-60' : ''
+                                                       }`}
+                                                  >
                                                        +{assignees.length - 3}
                                                   </div>
                                              )}
