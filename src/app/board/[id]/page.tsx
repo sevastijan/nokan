@@ -16,6 +16,7 @@ import { Column as ColumnType, User, Priority, AssigneeOption } from '@/app/type
 import BoardHeader from '@/app/components/Board/BoardHeader';
 import TaskViewSkeleton from '@/app/components/SingleTaskView/TaskViewSkeleton';
 import { useUpdateTaskMutation } from '@/app/store/apiSlice';
+import { FiX } from 'react-icons/fi';
 
 const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
      loading: () => (
@@ -105,13 +106,47 @@ export default function Page() {
      const handleCloseApiTokens = () => setApiTokensOpen(false);
 
      useEffect(() => {
+          const assigneeFromUrl = searchParams.get('assignee');
+          if (assigneeFromUrl) {
+               setFilterAssignee(assigneeFromUrl);
+          }
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+     }, []);
+
+     const handleFilterByAssignee = useCallback(
+          (assigneeId: string) => {
+               const params = new URLSearchParams(searchParams.toString());
+
+               if (filterAssignee === assigneeId) {
+                    setFilterAssignee(null);
+                    params.delete('assignee');
+                    toast.info('Filtr usunięty');
+               } else {
+                    setFilterAssignee(assigneeId);
+                    params.set('assignee', assigneeId);
+                    toast.success(`Filtrowanie tasków`, {
+                         icon: '👤',
+                         duration: 2000,
+                    });
+               }
+
+               const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+               router.replace(newUrl, { scroll: false });
+
+               if (columnsContainerRef.current) {
+                    columnsContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+               }
+          },
+          [filterAssignee, searchParams, router],
+     );
+
+     useEffect(() => {
           if (!board) return;
 
           if (prevBoardIdRef.current !== board.id) {
                prevBoardIdRef.current = board.id;
                setBoardTitle(board.title);
           }
-
           const sortedCols = board.columns
                .map((c) => ({
                     ...c,
@@ -311,7 +346,6 @@ export default function Page() {
                                    );
                               }
 
-                              // Sprawdzanie kolumny "Done" i pokazywanie modala
                               const isDoneColumn = dstCol.title?.toLowerCase() === 'done';
                               const isTaskNotCompleted = !movedTask.completed;
 
@@ -426,12 +460,15 @@ export default function Page() {
      const assigneesList: AssigneeOption[] = [];
      board.columns.forEach((col) => {
           (col.tasks || []).forEach((task) => {
-               if (task.assignee?.id && !assigneesList.find((a) => a.id === task.assignee!.id)) {
-                    assigneesList.push({
-                         id: task.assignee!.id,
-                         name: task.assignee!.name || task.assignee!.email || 'User',
-                    });
-               }
+               (task.collaborators || []).forEach((collab) => {
+                    if (collab.id && !assigneesList.find((a) => a.id === collab.id)) {
+                         assigneesList.push({
+                              id: collab.id,
+                              name: collab.custom_name || collab.name || collab.email || 'User',
+                              image: collab.custom_image || collab.image || undefined,
+                         });
+                    }
+               });
           });
      });
 
@@ -442,7 +479,10 @@ export default function Page() {
                     if (!task.title?.toLowerCase().includes(term) && !task.description?.toLowerCase().includes(term)) return false;
                }
                if (filterPriority && task.priority !== filterPriority) return false;
-               if (filterAssignee && task.assignee?.id !== filterAssignee) return false;
+               if (filterAssignee) {
+                    const hasAssignee = (task.collaborators || []).some((c) => c.id === filterAssignee);
+                    if (!hasAssignee) return false;
+               }
                return true;
           });
           return { ...col, tasks: filteredTasks };
@@ -474,6 +514,8 @@ export default function Page() {
           fetchBoardData();
      };
 
+     const activeFilteredAssignee = assigneesList.find((a) => a.id === filterAssignee);
+
      return (
           <div className="min-h-screen bg-slate-900 flex flex-col">
                <BoardHeader
@@ -496,7 +538,16 @@ export default function Page() {
                     onOpenNotes={handleOpenNotes}
                     onOpenApiTokens={handleOpenApiTokens}
                />
-
+               {filterAssignee && activeFilteredAssignee && (
+                    <div className="px-4 md:px-6 pt-4">
+                         <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-500/40 rounded-lg px-4 py-2 backdrop-blur-sm">
+                              <span className="text-sm text-blue-300 font-medium">Filtr aktywny: {activeFilteredAssignee.name}</span>
+                              <button onClick={() => handleFilterByAssignee(filterAssignee)} className="p-1 hover:bg-blue-500/30 rounded transition-colors" aria-label="Usuń filtr">
+                                   <FiX size={16} className="text-blue-300" />
+                              </button>
+                         </div>
+                    </div>
+               )}
                {viewMode === 'columns' ? (
                     <DragDropContext onDragEnd={onDragEnd}>
                          <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
@@ -528,6 +579,8 @@ export default function Page() {
                                                                  priorities={priorities}
                                                                  dragHandleProps={prov.dragHandleProps ?? undefined}
                                                                  onRegisterScrollRef={registerColumnScrollRef}
+                                                                 onFilterByAssignee={handleFilterByAssignee}
+                                                                 activeFilterAssigneeId={filterAssignee}
                                                             />
                                                        </div>
                                                   )}
@@ -576,9 +629,7 @@ export default function Page() {
                          />
                     </Suspense>
                )}
-
                <TaskCompletionModal isOpen={completionModalOpen} onClose={handleCancelCompletion} onConfirm={handleConfirmCompletion} taskTitle={pendingCompletionTask?.title || ''} />
-
                <BoardNotesModal isOpen={notesOpen} onClose={handleCloseNotes} boardId={boardId} />
                <ApiTokensModal isOpen={apiTokensOpen} onClose={handleCloseApiTokens} boardId={boardId} />
           </div>

@@ -24,6 +24,8 @@ interface ColumnProps {
      onReorderTasks?: (columnId: string, newOrder: TaskType[]) => void;
      dragHandleProps?: DraggableProvidedDragHandleProps;
      onRegisterScrollRef?: (columnId: string, el: HTMLDivElement | null) => void;
+     onFilterByAssignee?: (assigneeId: string) => void;
+     activeFilterAssigneeId?: string | null;
 }
 
 const Column = ({
@@ -39,6 +41,8 @@ const Column = ({
      priorities = [],
      dragHandleProps,
      onRegisterScrollRef,
+     onFilterByAssignee,
+     activeFilterAssigneeId,
 }: ColumnProps) => {
      const [isEditingTitle, setIsEditingTitle] = useState(false);
      const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -127,7 +131,16 @@ const Column = ({
                                                   {...dragProvided.dragHandleProps}
                                                   className={dragSnapshot.isDragging ? 'opacity-90 shadow-2xl' : ''}
                                              >
-                                                  <Task task={task} taskIndex={idx} columnId={column.id} onRemoveTask={onRemoveTask} onOpenTaskDetail={onOpenTaskDetail} priorities={priorities} />
+                                                  <Task
+                                                       task={task}
+                                                       taskIndex={idx}
+                                                       columnId={column.id}
+                                                       onRemoveTask={onRemoveTask}
+                                                       onOpenTaskDetail={onOpenTaskDetail}
+                                                       priorities={priorities}
+                                                       onFilterByAssignee={onFilterByAssignee}
+                                                       activeFilterAssigneeId={activeFilterAssigneeId}
+                                                  />
                                              </div>
                                         )}
                                    </Draggable>
