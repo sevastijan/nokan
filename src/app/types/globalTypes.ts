@@ -167,7 +167,6 @@ export interface Task {
      recurrence_interval?: number | null;
      recurrence_column_id?: string | null;
      next_occurrence_date?: string | null;
-     // Task type fields
      type?: TaskType;
      parent_id?: string | null;
 }
@@ -266,6 +265,7 @@ export interface BoardHeaderProps {
 export interface AssigneeOption {
      id: string;
      name: string;
+     image?: string;
 }
 
 export interface PriorityOption {

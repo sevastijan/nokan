@@ -1,7 +1,7 @@
 'use client';
 
 import { FaRedo, FaLayerGroup } from 'react-icons/fa';
-import { FiCheckSquare, FiCornerDownRight } from 'react-icons/fi';
+import { FiCheckSquare, FiCornerDownRight, FiClock, FiCalendar, FiUser, FiUsers, FiFolder } from 'react-icons/fi';
 import Avatar from '../Avatar/Avatar';
 import { Column, TaskType } from '@/app/types/globalTypes';
 import { calculateDuration, formatDate } from '@/app/utils/helpers';
@@ -72,123 +72,168 @@ const TaskMetadataSidebar = ({ task, columns, selectedAssignees = [], localColum
      const assignees = selectedAssignees || [];
 
      return (
-          <aside className="w-full md:w-72 bg-slate-800/70 border-t md:border-t-0 md:border-l border-slate-600 overflow-y-auto p-4 sm:p-6 text-white flex-shrink-0">
-               <div className="mb-6">
-                    <h3 className="text-sm text-slate-300 uppercase mb-2">Przypisani {assignees.length > 0 && `(${assignees.length})`}</h3>
-                    {assignees.length > 0 ? (
-                         <div className="space-y-2">
-                              {assignees.map((assignee) => {
-                                   const { name, image } = getDisplayData(assignee);
-                                   return (
-                                        <div key={assignee.id} className="flex items-center bg-slate-700 p-2 rounded-lg">
-                                             <Avatar src={image} alt={name} size={28} className="mr-2 border border-white/20" />
-                                             <div className="flex flex-col min-w-0">
-                                                  <span className="text-white text-sm font-medium truncate">{name}</span>
-                                                  <span className="text-slate-400 text-xs truncate">{assignee.email || '-'}</span>
-                                             </div>
-                                        </div>
-                                   );
-                              })}
+          <aside className="w-full md:w-80 bg-linear-to-b from-slate-800/90 to-slate-850/90 backdrop-blur-xl border-t md:border-t-0 md:border-l border-slate-700/50 overflow-y-auto text-white shrink-0">
+               <div className="p-6 space-y-6">
+                    <div className="group">
+                         <div className="flex items-center gap-2 mb-3">
+                              <FiUsers className="w-4 h-4 text-blue-400" />
+                              <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                   Przypisani {assignees.length > 0 && <span className="text-blue-400">({assignees.length})</span>}
+                              </h3>
                          </div>
-                    ) : (
-                         <div className="text-slate-400">Brak przypisania</div>
-                    )}
-               </div>
-
-               <div className="mb-6">
-                    <h3 className="text-sm text-slate-300 uppercase mb-2">Autor zadania</h3>
-                    {task.creator ? (
-                         <div className="flex items-center bg-slate-700 p-3 rounded-lg">
-                              {(() => {
-                                   const { name, image } = getDisplayData(task.creator);
-                                   return (
-                                        <>
-                                             <Avatar src={image} alt={name} size={32} className="mr-3 border-2 border-white/20" />
-                                             <div className="flex flex-col min-w-0">
-                                                  <span className="text-white font-medium truncate">{name}</span>
-                                                  <span className="text-slate-400 text-sm truncate">{task.creator.email || '-'}</span>
+                         {assignees.length > 0 ? (
+                              <div className="space-y-2">
+                                   {assignees.map((assignee) => {
+                                        const { name, image } = getDisplayData(assignee);
+                                        return (
+                                             <div key={assignee.id} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-xl border border-slate-600/30">
+                                                  <Avatar src={image} alt={name} size={36} className="border-2 border-blue-400/30 ring-2 ring-blue-400/10" />
+                                                  <div className="flex flex-col min-w-0 flex-1">
+                                                       <span className="text-white text-sm font-medium truncate">{name}</span>
+                                                       <span className="text-slate-400 text-xs truncate">{assignee.email || '-'}</span>
+                                                  </div>
                                              </div>
-                                        </>
-                                   );
-                              })()}
-                         </div>
-                    ) : (
-                         <div className="text-slate-400">Nieznany</div>
-                    )}
-               </div>
-
-               <div className="mb-6">
-                    <h3 className="text-sm text-slate-300 uppercase mb-2">Utworzono</h3>
-                    <div className="text-sm">{task.created_at ? formatDate(task.created_at) : '-'}</div>
-               </div>
-
-               <div className="mb-6">
-                    <h3 className="text-sm text-slate-300 uppercase mb-2">Ostatnia aktualizacja</h3>
-                    <div className="text-sm">{task.updated_at ? formatDate(task.updated_at) : '-'}</div>
-               </div>
-
-               <div className="mb-6">
-                    <h3 className="text-sm text-slate-300 uppercase mb-2">Kolumna</h3>
-                    <div className="text-sm truncate">{currentColumnTitle}</div>
-               </div>
-
-               <div className="mb-6">
-                    <h3 className="text-sm text-slate-300 uppercase mb-2">Typ</h3>
-                    {isSubtask ? (
-                         <div className="space-y-2">
-                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-500/20 text-orange-300 rounded-lg text-sm font-medium">
-                                   <FiCornerDownRight className="w-4 h-4" />
-                                   Subtask
+                                        );
+                                   })}
                               </div>
-                              {task.parent_id && onOpenTask && (
-                                   <button
-                                        onClick={() => onOpenTask(task.parent_id!)}
-                                        className="w-full flex items-center gap-2 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg text-sm transition-colors"
-                                   >
-                                        <FaLayerGroup className="w-4 h-4" />
-                                        <span>Zobacz Story</span>
-                                   </button>
-                              )}
+                         ) : (
+                              <div className="flex items-center justify-center py-6 px-4 bg-slate-700/30 rounded-xl border border-dashed border-slate-600/50">
+                                   <span className="text-slate-400 text-sm">Brak przypisanych osób</span>
+                              </div>
+                         )}
+                    </div>
+                    <div className="group">
+                         <div className="flex items-center gap-2 mb-3">
+                              <FiUser className="w-4 h-4 text-purple-400" />
+                              <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Autor zadania</h3>
                          </div>
-                    ) : isStory ? (
-                         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg text-sm font-medium">
-                              <FaLayerGroup className="w-4 h-4" />
-                              Story
+                         {task.creator ? (
+                              <div className="flex items-center gap-3 bg-linear-to-br from-slate-700/60 to-slate-700/40 p-4 rounded-xl border border-slate-600/30">
+                                   {(() => {
+                                        const { name, image } = getDisplayData(task.creator);
+                                        return (
+                                             <>
+                                                  <Avatar src={image} alt={name} size={40} className="border-2 border-purple-400/40 ring-2 ring-purple-400/10" />
+                                                  <div className="flex flex-col min-w-0 flex-1">
+                                                       <span className="text-white font-semibold truncate">{name}</span>
+                                                       <span className="text-slate-400 text-sm truncate">{task.creator.email || '-'}</span>
+                                                  </div>
+                                             </>
+                                        );
+                                   })()}
+                              </div>
+                         ) : (
+                              <div className="text-slate-400 text-sm bg-slate-700/30 p-3 rounded-xl">Nieznany</div>
+                         )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                         <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
+                              <div className="flex items-center gap-2 mb-2">
+                                   <FiCalendar className="w-4 h-4 text-green-400" />
+                                   <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Utworzono</h3>
+                              </div>
+                              <div className="text-sm text-white font-medium">{task.created_at ? formatDate(task.created_at) : '-'}</div>
                          </div>
-                    ) : (
-                         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-lg text-sm font-medium">
-                              <FiCheckSquare className="w-4 h-4" />
-                              Task
-                         </div>
-                    )}
-               </div>
 
-               {duration !== null && (
-                    <div className="mb-6">
-                         <h3 className="text-sm text-slate-300 uppercase mb-2">Czas trwania</h3>
-                         <div className="text-sm">
-                              {duration} {duration === 1 ? 'dzień' : 'dni'}
+                         <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
+                              <div className="flex items-center gap-2 mb-2">
+                                   <FiClock className="w-4 h-4 text-orange-400" />
+                                   <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Ostatnia aktualizacja</h3>
+                              </div>
+                              <div className="text-sm text-white font-medium">{task.updated_at ? formatDate(task.updated_at) : '-'}</div>
                          </div>
                     </div>
-               )}
-
-               <div className="mb-6 border-t border-slate-600 pt-6">
-                    <button
-                         onClick={onRecurringModalOpen}
-                         className="w-full flex items-center justify-center gap-4 px-4 py-4 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
-                         aria-label="Ustawienia zadania cyklicznego"
-                    >
-                         <FaRedo className={`w-6 h-6 flex-shrink-0 ${task.is_recurring ? 'text-purple-400' : 'text-slate-400'}`} />
-                         <div className="text-left">
-                              <span className="font-medium block text-white">{task.is_recurring ? 'Zadanie cykliczne (włączone)' : 'Zadanie cykliczne'}</span>
-                              {task.is_recurring && task.recurrence_interval && task.recurrence_type && (
-                                   <span className="text-xs text-purple-300 block mt-1">
-                                        co {task.recurrence_interval}{' '}
-                                        {task.recurrence_type === 'daily' ? 'dzień' : task.recurrence_type === 'weekly' ? 'tydzień' : task.recurrence_type === 'monthly' ? 'miesiąc' : 'rok'}
-                                   </span>
-                              )}
+                    <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
+                         <div className="flex items-center gap-2 mb-2">
+                              <FiFolder className="w-4 h-4 text-cyan-400" />
+                              <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Kolumna</h3>
                          </div>
-                    </button>
+                         <div className="text-sm text-white font-medium truncate">{currentColumnTitle}</div>
+                    </div>
+                    <div>
+                         <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Typ zadania</h3>
+                         {isSubtask ? (
+                              <div className="space-y-2">
+                                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-orange-500/20 to-orange-600/20 text-orange-300 rounded-xl text-sm font-semibold border border-orange-500/30 shadow-lg shadow-orange-500/10">
+                                        <FiCornerDownRight className="w-4 h-4" />
+                                        Subtask
+                                   </div>
+                                   {task.parent_id && onOpenTask && (
+                                        <button
+                                             onClick={() => onOpenTask(task.parent_id!)}
+                                             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 text-purple-300 rounded-xl text-sm font-medium transition-all duration-200 border border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] active:scale-[0.98]"
+                                        >
+                                             <FaLayerGroup className="w-4 h-4" />
+                                             <span>Zobacz Story</span>
+                                        </button>
+                                   )}
+                              </div>
+                         ) : isStory ? (
+                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-purple-500/20 to-purple-600/20 text-purple-300 rounded-xl text-sm font-semibold border border-purple-500/30 shadow-lg shadow-purple-500/10">
+                                   <FaLayerGroup className="w-4 h-4" />
+                                   Story
+                              </div>
+                         ) : (
+                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-blue-500/20 to-blue-600/20 text-blue-300 rounded-xl text-sm font-semibold border border-blue-500/30 shadow-lg shadow-blue-500/10">
+                                   <FiCheckSquare className="w-4 h-4" />
+                                   Task
+                              </div>
+                         )}
+                    </div>
+                    {duration !== null && (
+                         <div className="bg-linear-to-br from-indigo-500/10 to-purple-500/10 p-4 rounded-xl border border-indigo-500/30 shadow-inner">
+                              <div className="flex items-center gap-2 mb-2">
+                                   <FiClock className="w-4 h-4 text-indigo-400" />
+                                   <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Czas trwania</h3>
+                              </div>
+                              <div className="text-xl font-bold text-white">
+                                   {duration} <span className="text-sm font-normal text-slate-300">{duration === 1 ? 'dzień' : 'dni'}</span>
+                              </div>
+                         </div>
+                    )}
+                    <div className="pt-4 border-t border-slate-700/50">
+                         <button
+                              onClick={onRecurringModalOpen}
+                              className={`
+                                   w-full group/recurring
+                                   px-5 py-4 rounded-xl
+                                   transition-all duration-300
+                                   ${
+                                        task.is_recurring
+                                             ? 'bg-linear-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border-2 border-purple-500/40 shadow-lg shadow-purple-500/20'
+                                             : 'bg-slate-700/40 hover:bg-slate-700/60 border-2 border-slate-600/30 hover:border-purple-500/30'
+                                   }
+                                   hover:scale-[1.02] active:scale-[0.98]
+                              `}
+                              aria-label="Ustawienia zadania cyklicznego"
+                         >
+                              <div className="flex items-center gap-4">
+                                   <div
+                                        className={`
+                                        p-3 rounded-xl transition-all duration-300
+                                        ${task.is_recurring ? 'bg-purple-500/20 group-hover/recurring:bg-purple-500/30' : 'bg-slate-600/30 group-hover/recurring:bg-purple-500/20'}
+                                   `}
+                                   >
+                                        <FaRedo
+                                             className={`w-5 h-5 transition-all duration-300 ${
+                                                  task.is_recurring ? 'text-purple-300 group-hover/recurring:rotate-180' : 'text-slate-400 group-hover/recurring:text-purple-400'
+                                             }`}
+                                        />
+                                   </div>
+                                   <div className="text-left flex-1">
+                                        <span className="font-semibold block text-white text-sm">{task.is_recurring ? 'Zadanie cykliczne' : 'Ustaw cykliczność'}</span>
+                                        {task.is_recurring && task.recurrence_interval && task.recurrence_type ? (
+                                             <span className="text-xs text-purple-300 block mt-1 font-medium">
+                                                  co {task.recurrence_interval}{' '}
+                                                  {task.recurrence_type === 'daily' ? 'dzień' : task.recurrence_type === 'weekly' ? 'tydzień' : task.recurrence_type === 'monthly' ? 'miesiąc' : 'rok'}
+                                             </span>
+                                        ) : (
+                                             <span className="text-xs text-slate-400 block mt-1">Kliknij, aby skonfigurować</span>
+                                        )}
+                                   </div>
+                              </div>
+                         </button>
+                    </div>
                </div>
           </aside>
      );
