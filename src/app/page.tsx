@@ -1,15 +1,12 @@
 import { redirect } from 'next/navigation';
-import { getSupabase } from '@/app/lib/supabase';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/lib/auth';
 import AuthButton from './GoogleLogin/AuthButton';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-     const supabase = getSupabase();
-
-     const {
-          data: { session },
-     } = await supabase.auth.getSession();
+     const session = await getServerSession(authOptions);
 
      if (session) {
           redirect('/dashboard');
@@ -79,7 +76,7 @@ export default async function Home() {
 
                               <AuthButton />
 
-                              <p className="mt-6 text-center text-sm text-slate-500">No account? Sign in with Google — we’ll create one automatically.</p>
+                              <p className="mt-6 text-center text-sm text-slate-500">No account? Sign in with Google — we&apos;ll create one automatically.</p>
                          </div>
 
                          <p className="text-center mt-8 text-xs text-slate-600">Open-source • Completely free • No limits</p>
