@@ -16,6 +16,7 @@ import { clientManagementEndpoints } from './endpoints/clientMenagmentEndpoints'
 import { preferencesEndpoints } from './endpoints/preferencesEndpoints';
 import { collaboratorEndpoints } from './endpoints/collaboratorEndpoints';
 import { apiTokenEndpoints } from './endpoints/apiTokenEndpoints';
+import { chatEndpoints } from './endpoints/chatEndpoints';
 
 /**
  * UserRole type in your application.
@@ -52,6 +53,9 @@ export const apiSlice = createApi({
           'CurrentUser',
           'BoardNotes',
           'ApiToken',
+          'ChatChannels',
+          'ChatMessages',
+          'ChatMembers',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -66,6 +70,7 @@ export const apiSlice = createApi({
           ...preferencesEndpoints(builder),
           ...collaboratorEndpoints(builder),
           ...apiTokenEndpoints(builder),
+          ...chatEndpoints(builder),
      }),
 });
 
@@ -148,4 +153,15 @@ export const {
      useCreateApiTokenMutation,
      useUpdateApiTokenMutation,
      useRevokeApiTokenMutation,
+     // Chat hooks
+     useGetChatChannelsQuery,
+     useCreateChatChannelMutation,
+     useGetChatMessagesQuery,
+     useSendChatMessageMutation,
+     useSearchUsersQuery,
+     useUpdateChatChannelMutation,
+     useDeleteChatChannelMutation,
+     useAddChatMemberMutation,
+     useRemoveChatMemberMutation,
+     useGetChatMembersQuery,
 } = apiSlice;

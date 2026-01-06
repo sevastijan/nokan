@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel, Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
+import { useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
      FaHome,
@@ -22,10 +23,13 @@ import {
      FaFileAlt,
      FaCheckDouble,
 } from 'react-icons/fa';
+
 import Avatar from '../components/Avatar/Avatar';
 import Button from '../components/Button/Button';
-import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery } from '@/app/store/apiSlice';
+import SidebarChat from './Chat/SidebarChat';
+import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery, apiSlice } from '@/app/store/apiSlice';
 import { useDisplayUser } from '../hooks/useDisplayUser';
+import { getSupabase } from '@/app/lib/supabase';
 
 interface Notification {
      id: string | number;
@@ -40,9 +44,34 @@ interface Notification {
 const Navbar = () => {
      const { data: session } = useSession();
      const router = useRouter();
+     const dispatch = useDispatch();
 
      const { displayAvatar, displayName, currentUser } = useDisplayUser();
      const userEmail = session?.user?.email ?? '';
+
+     useEffect(() => {
+          const supabase = getSupabase();
+
+          const channel = supabase
+               .channel('any-change')
+               .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+                    console.log('Realtime: Nowa wiadomość!', payload);
+
+                    const channelId = payload.new.channel_id;
+
+                    dispatch(apiSlice.util.invalidateTags([{ type: 'ChatMessages', id: channelId }]));
+               })
+               .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_members' }, () => {
+                    dispatch(apiSlice.util.invalidateTags([{ type: 'ChatChannels', id: 'LIST' }]));
+               })
+               .subscribe((status) => {
+                    console.log('STATUS POŁĄCZENIA:', status);
+               });
+
+          return () => {
+               supabase.removeChannel(channel);
+          };
+     }, [dispatch]);
 
      const { data: userRole, isLoading: roleLoading } = useGetUserRoleQuery(userEmail, {
           skip: !userEmail,
@@ -118,8 +147,8 @@ const Navbar = () => {
      ];
 
      const SidebarContent = () => (
-          <div className="flex flex-col h-full">
-               <div className="p-4 border-b border-slate-700/50">
+          <div className="flex flex-col h-full overflow-hidden">
+               <div className="p-4 border-b border-slate-700/50 shrink-0">
                     <button
                          onClick={() => {
                               router.push('/');
@@ -135,7 +164,7 @@ const Navbar = () => {
                </div>
 
                {session.user && (
-                    <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 shadow-xl mt-5 mx-4">
+                    <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 shadow-xl mt-5 mx-4 shrink-0">
                          <div className="flex items-center gap-4">
                               <Avatar src={displayAvatar} priority={true} alt="User avatar" size={52} className="ring-2 ring-slate-600/50 ring-offset-2 ring-offset-slate-800" />
                               <div className="flex-1 min-w-0">
@@ -200,7 +229,7 @@ const Navbar = () => {
                                                                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                                                                       className={`group px-4 py-3 ${
                                                                            n.read ? 'opacity-70' : 'bg-slate-800/60'
-                                                                      } data-[focus]:bg-slate-800/80 text-white flex flex-col gap-1 cursor-pointer transition-all`}
+                                                                      } data-focus:bg-slate-800/80 text-white flex flex-col gap-1 cursor-pointer transition-all`}
                                                                       onClick={() => {
                                                                            if (n.board_id && n.task_id) {
                                                                                 router.push(`/board/${n.board_id}?task=${n.task_id}`);
@@ -217,7 +246,7 @@ const Navbar = () => {
                                                                            )}
                                                                            {n.task_id && <FaExternalLinkAlt className="ml-2 w-3 h-3 text-blue-400" />}
                                                                       </div>
-                                                                      <span className="text-xs text-slate-400 break-words">{n.message}</span>
+                                                                      <span className="text-xs text-slate-400 wrap-break-word">{n.message}</span>
                                                                       <span className="text-[10px] text-slate-500 mt-0.5">{n.created_at ? new Date(n.created_at).toLocaleString() : ''}</span>
 
                                                                       <div className="flex items-center gap-2 mt-2">
@@ -265,7 +294,7 @@ const Navbar = () => {
                     </div>
                )}
 
-               <div className="flex-1 mt-8">
+               <div className="shrink-0 mt-8">
                     <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider px-6 mb-2">NAVIGATION</h4>
                     <div className="space-y-1 px-2">
                          {nav.map(({ href, label, icon }) => (
@@ -280,8 +309,12 @@ const Navbar = () => {
                     </div>
                </div>
 
+               <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <SidebarChat />
+               </div>
+
                {session.user && (
-                    <div className="p-4 border-t border-slate-700/50">
+                    <div className="p-4 border-t border-slate-700/50 shrink-0">
                          <Button variant="danger" size="sm" fullWidth onClick={() => signOut({ callbackUrl: '/', redirect: true })} icon={<FaSignOutAlt />}>
                               Sign Out
                          </Button>
