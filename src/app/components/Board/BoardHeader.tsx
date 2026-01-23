@@ -2,7 +2,8 @@
 
 import { useState, useRef, ChangeEvent, KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiArrowLeft, FiSearch, FiFilter, FiGrid, FiList, FiPlus, FiUserPlus, FiX, FiFileText, FiCode, FiFlag, FiUsers } from 'react-icons/fi';
+
+import { FiArrowLeft, FiSearch, FiFilter, FiGrid, FiList, FiPlus, FiUserPlus, FiX, FiFileText, FiCode, FiFlag, FiUsers, FiTag } from 'react-icons/fi';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { BoardHeaderProps } from '@/app/types/globalTypes';
 import UserSelector from '@/app/components/SingleTaskView/UserSelector';
@@ -10,6 +11,7 @@ import Avatar from '../Avatar/Avatar';
 import { useGetAllUsersQuery, useGetBoardMembersQuery, useAddMemberToBoardMutation, useRemoveMemberFromBoardMutation } from '@/app/store/apiSlice';
 import { useHasManagementAccess } from '@/app/hooks/useHasManagementAccess';
 import { toast } from 'sonner';
+import type { TaskTypeFilter } from '@/app/types/globalTypes';
 
 interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      boardId: string;
@@ -43,6 +45,8 @@ const BoardHeader = ({
      currentUserId,
      onOpenNotes,
      onOpenApiTokens,
+     filterType,
+     onFilterTypeChange,
 }: ExtendedBoardHeaderProps) => {
      const router = useRouter();
 
@@ -70,6 +74,7 @@ const BoardHeader = ({
      const handleClearFilters = () => {
           onFilterPriorityChange(null);
           onFilterAssigneeChange(null);
+          onFilterTypeChange?.('all');
      };
      const handleViewToggle = (mode: 'columns' | 'list') => onViewModeChange(mode);
      const handleTitleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -104,7 +109,7 @@ const BoardHeader = ({
 
      const availableToAdd = allUsers.filter((u) => u.id !== currentUserId && !boardMembers.some((m) => m.id === u.id));
 
-     const hasActiveFilters = filterPriority !== null || filterAssignee !== null;
+     const hasActiveFilters = filterPriority !== null || filterAssignee !== null || filterType !== 'all';
 
      return (
           <header className="sticky top-0 z-20 bg-slate-800 border-b border-slate-700/50 shadow-md">
@@ -297,6 +302,26 @@ const BoardHeader = ({
                                                             </li>
                                                        ))}
                                                   </ul>
+                                             </div>
+                                             <div className="border-t border-slate-700/50 my-3"></div>
+                                             <div>
+                                                  <div className="flex items-center gap-2 mb-3">
+                                                       <FiTag className="w-4 h-4 text-emerald-400" />
+                                                       <div className="text-sm font-semibold text-slate-200">Typ zadania</div>
+                                                  </div>
+                                                  <div className="flex bg-slate-900/50 rounded-lg p-1 border border-slate-700/50">
+                                                       {(['all', 'task', 'story'] as TaskTypeFilter[]).map((t) => (
+                                                            <button
+                                                                 key={t}
+                                                                 onClick={() => onFilterTypeChange?.(t)}
+                                                                 className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                                                      filterType === t ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+                                                                 }`}
+                                                            >
+                                                                 {t === 'all' ? 'Wszystkie' : t.charAt(0).toUpperCase() + t.slice(1)}
+                                                            </button>
+                                                       ))}
+                                                  </div>
                                              </div>
                                              {hasActiveFilters && (
                                                   <div className="pt-3 border-t border-slate-700/50">

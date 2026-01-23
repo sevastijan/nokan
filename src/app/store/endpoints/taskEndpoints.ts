@@ -309,18 +309,18 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                           custom_image: authorObj.custom_image,
                                      }
                                    : c.source === 'api' && c.author_email
-                                   ? {
-                                          id: 'api',
-                                          name: c.author_email,
-                                          email: c.author_email,
-                                          image: undefined,
-                                     }
-                                   : {
-                                          id: '',
-                                          name: 'Nieznany użytkownik',
-                                          email: '',
-                                          image: undefined,
-                                     };
+                                     ? {
+                                            id: 'api',
+                                            name: c.author_email,
+                                            email: c.author_email,
+                                            image: undefined,
+                                       }
+                                     : {
+                                            id: '',
+                                            name: 'Nieznany użytkownik',
+                                            email: '',
+                                            image: undefined,
+                                       };
 
                               return {
                                    id: c.id,

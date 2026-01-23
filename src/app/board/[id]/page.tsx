@@ -12,7 +12,7 @@ import { useBoard } from '@/app/hooks/useBoard';
 import Column from '@/app/components/Column';
 import Loader from '@/app/components/Loader';
 import { getPriorities } from '@/app/lib/api';
-import { Column as ColumnType, User, Priority, AssigneeOption } from '@/app/types/globalTypes';
+import { Column as ColumnType, User, Priority, AssigneeOption, TaskTypeFilter } from '@/app/types/globalTypes';
 import BoardHeader from '@/app/components/Board/BoardHeader';
 import TaskViewSkeleton from '@/app/components/SingleTaskView/TaskViewSkeleton';
 import { useUpdateTaskMutation } from '@/app/store/apiSlice';
@@ -87,6 +87,7 @@ export default function Page() {
      const [searchTerm, setSearchTerm] = useState('');
      const [filterPriority, setFilterPriority] = useState<string | null>(null);
      const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
+     const [filterType, setFilterType] = useState<TaskTypeFilter>('all');
      const [notesOpen, setNotesOpen] = useState(false);
      const [apiTokensOpen, setApiTokensOpen] = useState(false);
      const [completionModalOpen, setCompletionModalOpen] = useState(false);
@@ -483,6 +484,10 @@ export default function Page() {
                     const hasAssignee = (task.collaborators || []).some((c) => c.id === filterAssignee);
                     if (!hasAssignee) return false;
                }
+               if (filterType !== 'all') {
+                    const taskType = task.type || 'task';
+                    if (taskType !== filterType) return false;
+               }
                return true;
           });
           return { ...col, tasks: filteredTasks };
@@ -533,6 +538,8 @@ export default function Page() {
                     assignees={assigneesList}
                     filterAssignee={filterAssignee}
                     onFilterAssigneeChange={setFilterAssignee}
+                    filterType={filterType}
+                    onFilterTypeChange={setFilterType}
                     boardId={boardId}
                     currentUserId={currentUser?.id}
                     onOpenNotes={handleOpenNotes}

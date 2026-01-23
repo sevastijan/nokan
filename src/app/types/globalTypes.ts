@@ -4,6 +4,7 @@ import { ChangeEvent } from 'react';
 
 export type SingleTaskMode = 'edit' | 'add';
 export type TaskType = 'task' | 'story';
+export type TaskTypeFilter = 'all' | 'task' | 'story';
 
 // === Status Type ===
 export interface Status {
@@ -260,6 +261,8 @@ export interface BoardHeaderProps {
      assignees: AssigneeOption[];
      filterAssignee: string | null;
      onFilterAssigneeChange: (assigneeId: string | null) => void;
+     filterType: TaskTypeFilter;
+     onFilterTypeChange: (type: TaskTypeFilter) => void;
 }
 
 export interface AssigneeOption {
