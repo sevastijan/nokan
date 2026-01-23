@@ -132,7 +132,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                {totalCount > 0 && (
                     <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mb-3">
                          <motion.div
-                              className="h-full bg-gradient-to-r from-purple-500 to-green-500 rounded-full"
+                              className="h-full bg-linear-to-r from-purple-500 to-green-500 rounded-full"
                               initial={{ width: 0 }}
                               animate={{ width: `${progressPercent}%` }}
                               transition={{ duration: 0.3, ease: 'easeOut' }}

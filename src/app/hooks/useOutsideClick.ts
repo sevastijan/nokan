@@ -1,7 +1,9 @@
 import { RefObject, useEffect } from 'react';
 
-export function useOutsideClick(refs: RefObject<HTMLElement | null> | RefObject<HTMLElement | null>[], handler: (event: MouseEvent | TouchEvent) => void) {
+export function useOutsideClick(refs: RefObject<HTMLElement | null> | RefObject<HTMLElement | null>[], handler: (event: MouseEvent | TouchEvent) => void, enabled: boolean = true) {
      useEffect(() => {
+          if (!enabled) return;
+
           const listener = (event: MouseEvent | TouchEvent) => {
                const target = event.target as Node | null;
 
@@ -26,5 +28,5 @@ export function useOutsideClick(refs: RefObject<HTMLElement | null> | RefObject<
                document.removeEventListener('mousedown', listener);
                document.removeEventListener('touchstart', listener);
           };
-     }, [refs, handler]);
+     }, [refs, handler, enabled]);
 }

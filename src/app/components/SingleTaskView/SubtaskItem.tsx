@@ -63,16 +63,14 @@ const SubtaskItem = ({ subtask, onToggleComplete, onDelete, onOpen, isDragging =
                onMouseLeave={() => setIsHovered(false)}
                onClick={handleClick}
           >
-               {/* Drag handle */}
                <div {...dragHandleProps} className="cursor-grab text-slate-500 hover:text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
                     <FaGripVertical className="w-3 h-3" />
                </div>
 
-               {/* Checkbox */}
                <button
                     onClick={handleToggle}
                     className={`
-                         flex-shrink-0 w-5 h-5 rounded border-2
+                         shrink-0 w-5 h-5 rounded border-2
                          flex items-center justify-center
                          transition-all duration-150
                          ${subtask.completed ? 'bg-green-500 border-green-500 text-white' : 'border-slate-500 hover:border-purple-400'}
@@ -85,7 +83,6 @@ const SubtaskItem = ({ subtask, onToggleComplete, onDelete, onOpen, isDragging =
                     )}
                </button>
 
-               {/* Title */}
                <span
                     className={`
                          flex-1 text-sm truncate
@@ -95,7 +92,6 @@ const SubtaskItem = ({ subtask, onToggleComplete, onDelete, onOpen, isDragging =
                     {subtask.title}
                </span>
 
-               {/* Assignee avatars */}
                {assignees.length > 0 && (
                     <div className="flex -space-x-1">
                          {assignees.slice(0, 2).map((user) => (
@@ -115,12 +111,11 @@ const SubtaskItem = ({ subtask, onToggleComplete, onDelete, onOpen, isDragging =
                     </div>
                )}
 
-               {/* Delete button */}
                <button
                     onClick={handleDelete}
                     disabled={isDeleting}
                     className={`
-                         flex-shrink-0 p-1 rounded text-slate-500
+                         shrink-0 p-1 rounded text-slate-500
                          hover:text-red-400 hover:bg-red-400/10
                          transition-all duration-150
                          ${isHovered ? 'opacity-100' : 'opacity-0'}

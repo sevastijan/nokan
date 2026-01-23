@@ -355,7 +355,7 @@ const SingleTaskView = ({
           return () => document.removeEventListener('keydown', onKeyDown, { capture: true });
      }, [requestClose, openedSubtaskId]);
 
-     useOutsideClick([modalRef], requestClose);
+     useOutsideClick([modalRef], requestClose, !openedSubtaskId);
 
      if (!task && !isNewTask) {
           return (
@@ -370,7 +370,11 @@ const SingleTaskView = ({
                <motion.div
                     ref={overlayRef}
                     className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4"
-                    onClick={(e) => e.target === overlayRef.current && requestClose()}
+                    onClick={(e) => {
+                         if (e.target === overlayRef.current && !openedSubtaskId) {
+                              requestClose();
+                         }
+                    }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
