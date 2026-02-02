@@ -5,7 +5,8 @@
       "Bash(npm view:*)",
       "Bash(node:*)",
       "Bash(npm install:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

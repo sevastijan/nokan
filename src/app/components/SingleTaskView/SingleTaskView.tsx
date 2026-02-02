@@ -30,7 +30,7 @@ import TaskTypeSelector from './TaskTypeSelector';
 import SubtaskList from './SubtaskList';
 import Lightbox from '@/app/components/Lightbox/Lightbox';
 import { calculateDuration } from '@/app/utils/helpers';
-import { SingleTaskViewProps, Column, TaskType } from '@/app/types/globalTypes';
+import { SingleTaskViewProps, Column, TaskType, User } from '@/app/types/globalTypes';
 import TaskViewSkeleton from './TaskViewSkeleton';
 import { useGetSubtasksQuery, useUpdateTaskTypeMutation } from '@/app/store/apiSlice';
 
@@ -91,6 +91,12 @@ const SingleTaskView = ({
           propStatuses,
      });
 
+     const availableUsers = useMemo((): User[] => {
+          if (!user) return teamMembers;
+          if (teamMembers.some((m) => m.id === user.id)) return teamMembers;
+          return [...teamMembers, user];
+     }, [teamMembers, user]);
+
      const { formData, updateField, syncWithTask } = useTaskForm({
           initialColumnId: columnId,
      });
@@ -109,7 +115,7 @@ const SingleTaskView = ({
           taskTitle: task?.title ?? undefined,
           fetchTaskData,
           updateTask,
-          teamMembers,
+          teamMembers: availableUsers,
           selectedAssignees: formData.selectedAssignees,
           setSelectedAssignees: (assignees) => updateField('selectedAssignees', assignees),
      });
@@ -406,7 +412,7 @@ const SingleTaskView = ({
                               <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
                                    <TaskPropertiesGrid
                                         selectedAssignees={formData.selectedAssignees}
-                                        availableUsers={teamMembers}
+                                        availableUsers={availableUsers}
                                         onAssigneesChange={handleAssigneesChange}
                                         selectedPriority={task?.priority ?? null}
                                         onPriorityChange={handlePriorityChange}
