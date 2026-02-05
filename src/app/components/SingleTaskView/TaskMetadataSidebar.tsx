@@ -72,165 +72,174 @@ const TaskMetadataSidebar = ({ task, columns, selectedAssignees = [], localColum
      const assignees = selectedAssignees || [];
 
      return (
-          <aside className="w-full md:w-80 bg-linear-to-b from-slate-800/90 to-slate-850/90 backdrop-blur-xl border-t md:border-t-0 md:border-l border-slate-700/50 overflow-y-auto text-white shrink-0">
-               <div className="p-6 space-y-6">
-                    <div className="group">
-                         <div className="flex items-center gap-2 mb-3">
-                              <FiUsers className="w-4 h-4 text-blue-400" />
-                              <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                   Przypisani {assignees.length > 0 && <span className="text-blue-400">({assignees.length})</span>}
-                              </h3>
+          <aside className="w-full md:w-72 lg:w-80 bg-gradient-to-b from-slate-800/80 to-slate-900/80 backdrop-blur-xl border-t md:border-t-0 md:border-l border-slate-700/30 overflow-y-auto text-white shrink-0 thin-scrollbar">
+               {/* Sidebar Header */}
+               <div className="px-5 py-4 border-b border-slate-700/30 bg-slate-800/50">
+                    <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                         <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                         Szczegóły
+                    </h2>
+               </div>
+
+               <div className="p-4 space-y-4">
+                    {/* Assignees Section */}
+                    <div>
+                         <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                   <FiUsers className="w-3.5 h-3.5 text-blue-400" />
+                                   <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Przypisani</h3>
+                              </div>
+                              {assignees.length > 0 && (
+                                   <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{assignees.length}</span>
+                              )}
                          </div>
                          {assignees.length > 0 ? (
-                              <div className="space-y-2">
+                              <div className="space-y-1.5">
                                    {assignees.map((assignee) => {
                                         const { name, image } = getDisplayData(assignee);
                                         return (
-                                             <div key={assignee.id} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-xl border border-slate-600/30">
-                                                  <Avatar src={image} alt={name} size={36} className="border-2 border-blue-400/30 ring-2 ring-blue-400/10" />
+                                             <div key={assignee.id} className="flex items-center gap-2.5 bg-slate-700/30 p-2 rounded-lg border border-slate-700/30 hover:bg-slate-700/50 transition-colors">
+                                                  <Avatar src={image} alt={name} size={28} className="ring-2 ring-blue-400/20" />
                                                   <div className="flex flex-col min-w-0 flex-1">
                                                        <span className="text-white text-sm font-medium truncate">{name}</span>
-                                                       <span className="text-slate-400 text-xs truncate">{assignee.email || '-'}</span>
+                                                       <span className="text-slate-500 text-xs truncate">{assignee.email || '-'}</span>
                                                   </div>
                                              </div>
                                         );
                                    })}
                               </div>
                          ) : (
-                              <div className="flex items-center justify-center py-6 px-4 bg-slate-700/30 rounded-xl border border-dashed border-slate-600/50">
-                                   <span className="text-slate-400 text-sm">Brak przypisanych osób</span>
+                              <div className="flex items-center justify-center py-3 px-3 bg-slate-700/20 rounded-lg border border-dashed border-slate-600/30">
+                                   <span className="text-slate-500 text-xs">Brak przypisanych</span>
                               </div>
                          )}
                     </div>
-                    <div className="group">
-                         <div className="flex items-center gap-2 mb-3">
-                              <FiUser className="w-4 h-4 text-purple-400" />
-                              <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Autor zadania</h3>
+
+                    {/* Creator Section */}
+                    <div>
+                         <div className="flex items-center gap-2 mb-2">
+                              <FiUser className="w-3.5 h-3.5 text-purple-400" />
+                              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Autor</h3>
                          </div>
                          {task.creator ? (
-                              <div className="flex items-center gap-3 bg-linear-to-br from-slate-700/60 to-slate-700/40 p-4 rounded-xl border border-slate-600/30">
+                              <div className="flex items-center gap-2.5 bg-slate-700/30 p-2.5 rounded-lg border border-slate-700/30">
                                    {(() => {
                                         const { name, image } = getDisplayData(task.creator);
                                         return (
                                              <>
-                                                  <Avatar src={image} alt={name} size={40} className="border-2 border-purple-400/40 ring-2 ring-purple-400/10" />
+                                                  <Avatar src={image} alt={name} size={32} className="ring-2 ring-purple-400/20" />
                                                   <div className="flex flex-col min-w-0 flex-1">
-                                                       <span className="text-white font-semibold truncate">{name}</span>
-                                                       <span className="text-slate-400 text-sm truncate">{task.creator.email || '-'}</span>
+                                                       <span className="text-white text-sm font-medium truncate">{name}</span>
+                                                       <span className="text-slate-500 text-xs truncate">{task.creator.email || '-'}</span>
                                                   </div>
                                              </>
                                         );
                                    })()}
                               </div>
                          ) : (
-                              <div className="text-slate-400 text-sm bg-slate-700/30 p-3 rounded-xl">Nieznany</div>
+                              <div className="text-slate-500 text-xs bg-slate-700/20 p-2.5 rounded-lg">Nieznany</div>
                          )}
                     </div>
-                    <div className="grid grid-cols-1 gap-4">
-                         <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
-                              <div className="flex items-center gap-2 mb-2">
-                                   <FiCalendar className="w-4 h-4 text-green-400" />
-                                   <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Utworzono</h3>
-                              </div>
-                              <div className="text-sm text-white font-medium">{task.created_at ? formatDate(task.created_at) : '-'}</div>
-                         </div>
 
-                         <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
-                              <div className="flex items-center gap-2 mb-2">
-                                   <FiClock className="w-4 h-4 text-orange-400" />
-                                   <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Ostatnia aktualizacja</h3>
+                    {/* Dates Grid */}
+                    <div className="grid grid-cols-2 gap-2">
+                         <div className="bg-slate-700/30 p-3 rounded-lg border border-slate-700/30">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                   <FiCalendar className="w-3 h-3 text-green-400" />
+                                   <h3 className="text-[10px] font-semibold text-slate-500 uppercase">Utworzono</h3>
                               </div>
-                              <div className="text-sm text-white font-medium">{task.updated_at ? formatDate(task.updated_at) : '-'}</div>
+                              <div className="text-xs text-white font-medium">{task.created_at ? formatDate(task.created_at) : '-'}</div>
+                         </div>
+                         <div className="bg-slate-700/30 p-3 rounded-lg border border-slate-700/30">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                   <FiClock className="w-3 h-3 text-orange-400" />
+                                   <h3 className="text-[10px] font-semibold text-slate-500 uppercase">Aktualizacja</h3>
+                              </div>
+                              <div className="text-xs text-white font-medium">{task.updated_at ? formatDate(task.updated_at) : '-'}</div>
                          </div>
                     </div>
-                    <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
-                         <div className="flex items-center gap-2 mb-2">
-                              <FiFolder className="w-4 h-4 text-cyan-400" />
-                              <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Kolumna</h3>
+
+                    {/* Column */}
+                    <div className="bg-slate-700/30 p-3 rounded-lg border border-slate-700/30">
+                         <div className="flex items-center gap-1.5 mb-1">
+                              <FiFolder className="w-3 h-3 text-cyan-400" />
+                              <h3 className="text-[10px] font-semibold text-slate-500 uppercase">Kolumna</h3>
                          </div>
                          <div className="text-sm text-white font-medium truncate">{currentColumnTitle}</div>
                     </div>
+
+                    {/* Task Type */}
                     <div>
-                         <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Typ zadania</h3>
+                         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Typ</h3>
                          {isSubtask ? (
                               <div className="space-y-2">
-                                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-orange-500/20 to-orange-600/20 text-orange-300 rounded-xl text-sm font-semibold border border-orange-500/30 shadow-lg shadow-orange-500/10">
-                                        <FiCornerDownRight className="w-4 h-4" />
+                                   <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-500/15 text-orange-300 rounded-lg text-xs font-semibold border border-orange-500/30">
+                                        <FiCornerDownRight className="w-3.5 h-3.5" />
                                         Subtask
                                    </div>
                                    {task.parent_id && onOpenTask && (
                                         <button
                                              onClick={() => onOpenTask(task.parent_id!)}
-                                             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 text-purple-300 rounded-xl text-sm font-medium transition-all duration-200 border border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] active:scale-[0.98]"
+                                             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 rounded-lg text-xs font-medium transition-all duration-200 border border-purple-500/30"
                                         >
-                                             <FaLayerGroup className="w-4 h-4" />
+                                             <FaLayerGroup className="w-3.5 h-3.5" />
                                              <span>Zobacz Story</span>
                                         </button>
                                    )}
                               </div>
                          ) : isStory ? (
-                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-purple-500/20 to-purple-600/20 text-purple-300 rounded-xl text-sm font-semibold border border-purple-500/30 shadow-lg shadow-purple-500/10">
-                                   <FaLayerGroup className="w-4 h-4" />
+                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-500/15 text-purple-300 rounded-lg text-xs font-semibold border border-purple-500/30">
+                                   <FaLayerGroup className="w-3.5 h-3.5" />
                                    Story
                               </div>
                          ) : (
-                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-blue-500/20 to-blue-600/20 text-blue-300 rounded-xl text-sm font-semibold border border-blue-500/30 shadow-lg shadow-blue-500/10">
-                                   <FiCheckSquare className="w-4 h-4" />
+                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/15 text-blue-300 rounded-lg text-xs font-semibold border border-blue-500/30">
+                                   <FiCheckSquare className="w-3.5 h-3.5" />
                                    Task
                               </div>
                          )}
                     </div>
+
+                    {/* Duration */}
                     {duration !== null && (
-                         <div className="bg-linear-to-br from-indigo-500/10 to-purple-500/10 p-4 rounded-xl border border-indigo-500/30 shadow-inner">
-                              <div className="flex items-center gap-2 mb-2">
-                                   <FiClock className="w-4 h-4 text-indigo-400" />
-                                   <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Czas trwania</h3>
+                         <div className="bg-indigo-500/10 p-3 rounded-lg border border-indigo-500/20">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                   <FiClock className="w-3 h-3 text-indigo-400" />
+                                   <h3 className="text-[10px] font-semibold text-slate-500 uppercase">Czas trwania</h3>
                               </div>
-                              <div className="text-xl font-bold text-white">
-                                   {duration} <span className="text-sm font-normal text-slate-300">{duration === 1 ? 'dzień' : 'dni'}</span>
+                              <div className="text-lg font-bold text-white">
+                                   {duration} <span className="text-xs font-normal text-slate-400">{duration === 1 ? 'dzień' : 'dni'}</span>
                               </div>
                          </div>
                     )}
-                    <div className="pt-4 border-t border-slate-700/50">
+
+                    {/* Recurring Task Button */}
+                    <div className="pt-3 border-t border-slate-700/30">
                          <button
                               onClick={onRecurringModalOpen}
                               className={`
-                                   w-full group/recurring
-                                   px-5 py-4 rounded-xl
-                                   transition-all duration-300
+                                   w-full group/recurring flex items-center gap-3 px-3 py-3 rounded-lg
+                                   transition-all duration-200
                                    ${
                                         task.is_recurring
-                                             ? 'bg-linear-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border-2 border-purple-500/40 shadow-lg shadow-purple-500/20'
-                                             : 'bg-slate-700/40 hover:bg-slate-700/60 border-2 border-slate-600/30 hover:border-purple-500/30'
+                                             ? 'bg-purple-500/15 border border-purple-500/30 hover:bg-purple-500/25'
+                                             : 'bg-slate-700/30 border border-slate-700/30 hover:bg-slate-700/50 hover:border-purple-500/30'
                                    }
-                                   hover:scale-[1.02] active:scale-[0.98]
                               `}
-                              aria-label="Ustawienia zadania cyklicznego"
                          >
-                              <div className="flex items-center gap-4">
-                                   <div
-                                        className={`
-                                        p-3 rounded-xl transition-all duration-300
-                                        ${task.is_recurring ? 'bg-purple-500/20 group-hover/recurring:bg-purple-500/30' : 'bg-slate-600/30 group-hover/recurring:bg-purple-500/20'}
-                                   `}
-                                   >
-                                        <FaRedo
-                                             className={`w-5 h-5 transition-all duration-300 ${
-                                                  task.is_recurring ? 'text-purple-300 group-hover/recurring:rotate-180' : 'text-slate-400 group-hover/recurring:text-purple-400'
-                                             }`}
-                                        />
-                                   </div>
-                                   <div className="text-left flex-1">
-                                        <span className="font-semibold block text-white text-sm">{task.is_recurring ? 'Zadanie cykliczne' : 'Ustaw cykliczność'}</span>
-                                        {task.is_recurring && task.recurrence_interval && task.recurrence_type ? (
-                                             <span className="text-xs text-purple-300 block mt-1 font-medium">
-                                                  co {task.recurrence_interval}{' '}
-                                                  {task.recurrence_type === 'daily' ? 'dzień' : task.recurrence_type === 'weekly' ? 'tydzień' : task.recurrence_type === 'monthly' ? 'miesiąc' : 'rok'}
-                                             </span>
-                                        ) : (
-                                             <span className="text-xs text-slate-400 block mt-1">Kliknij, aby skonfigurować</span>
-                                        )}
-                                   </div>
+                              <div className={`p-2 rounded-lg transition-all duration-200 ${task.is_recurring ? 'bg-purple-500/20' : 'bg-slate-600/30 group-hover/recurring:bg-purple-500/15'}`}>
+                                   <FaRedo className={`w-4 h-4 transition-all duration-200 ${task.is_recurring ? 'text-purple-300' : 'text-slate-400 group-hover/recurring:text-purple-400'}`} />
+                              </div>
+                              <div className="text-left flex-1">
+                                   <span className="font-medium block text-white text-sm">{task.is_recurring ? 'Cykliczne' : 'Ustaw cykliczność'}</span>
+                                   {task.is_recurring && task.recurrence_interval && task.recurrence_type ? (
+                                        <span className="text-xs text-purple-300 block mt-0.5">
+                                             co {task.recurrence_interval}{' '}
+                                             {task.recurrence_type === 'daily' ? 'dzień' : task.recurrence_type === 'weekly' ? 'tyg.' : task.recurrence_type === 'monthly' ? 'mies.' : 'rok'}
+                                        </span>
+                                   ) : (
+                                        <span className="text-xs text-slate-500 block mt-0.5">Kliknij, aby skonfigurować</span>
+                                   )}
                               </div>
                          </button>
                     </div>

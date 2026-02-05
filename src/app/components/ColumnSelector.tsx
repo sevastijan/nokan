@@ -1,65 +1,22 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { FaCheck, FaChevronDown, FaColumns } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FiCheck, FiChevronDown, FiColumns } from 'react-icons/fi';
 import type { Column } from '@/app/types/globalTypes';
 
 interface ColumnSelectorProps {
-     /**
-      * Array of columns to display.
-      * Uses the global Column type, which includes at least: id: string, title: string.
-      */
      columns: Column[];
-     /**
-      * Currently selected column ID, or undefined if none selected.
-      */
      value?: string;
-     /**
-      * Callback invoked when user selects a column.
-      * Receives the column ID. Should return void.
-      */
      onChange: (columnId: string) => void;
-     /**
-      * Optional label text displayed above the selector.
-      * If not provided, defaults to "Move to column:".
-      */
      label?: string;
-     /**
-      * Optional disabled flag: if true, selector is not interactive.
-      * If columns array is empty, selector is rendered as non-interactive info.
-      */
      disabled?: boolean;
 }
 
-/**
- * Animation variants for dropdown list.
- */
-type PointerEvents = 'none' | 'auto';
-
-const dropdownAnim: {
-     initial: { opacity: number; y: number; pointerEvents: PointerEvents };
-     animate: { opacity: number; y: number; pointerEvents: PointerEvents };
-     exit: { opacity: number; y: number; pointerEvents: PointerEvents };
-     transition: { duration: number };
-} = {
-     initial: { opacity: 0, y: -10, pointerEvents: 'none' },
-     animate: { opacity: 1, y: 0, pointerEvents: 'auto' },
-     exit: { opacity: 0, y: -10, pointerEvents: 'none' },
-     transition: { duration: 0.18 },
-};
-
-/**
- * ColumnSelector renders a custom dropdown for choosing a column from a list.
- * - Uses global Column type for items.
- * - If columns array is empty or props.disabled is true, shows a non-interactive placeholder.
- * - value can be undefined or a string matching one of columns[].id.
- */
 const ColumnSelector = ({ columns, value, onChange, label, disabled = false }: ColumnSelectorProps) => {
      const [open, setOpen] = useState(false);
      const ref = useRef<HTMLDivElement>(null);
 
-     // Close dropdown on outside click or Escape key
      useEffect(() => {
           if (!open) return;
           const handleClickOutside = (e: MouseEvent) => {
@@ -80,66 +37,78 @@ const ColumnSelector = ({ columns, value, onChange, label, disabled = false }: C
           };
      }, [open]);
 
-     // If disabled or no columns available: render a non-interactive placeholder
      if (disabled || !Array.isArray(columns) || columns.length === 0) {
           return (
-               <div className="mb-4">
-                    <span className="block text-sm font-medium text-slate-300 mb-2">{label ?? 'Move to column:'}</span>
-                    <div className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-400">{columns.length === 0 ? 'No columns available' : 'Disabled'}</div>
+               <div className="relative w-full">
+                    {label && <span className="block text-sm font-medium text-slate-300 mb-2">{label}</span>}
+                    <div className="w-full px-3 py-2.5 min-h-[46px] bg-slate-700/50 border border-slate-600/50 rounded-lg text-slate-500 text-sm flex items-center">
+                         {columns.length === 0 ? 'Brak kolumn' : 'Wyłączone'}
+                    </div>
                </div>
           );
      }
 
-     // Determine selected column: match by value, or fallback to first element
      const selected = columns.find((c) => c.id === value) || columns[0];
 
      return (
-          <div ref={ref} className="mb-4 relative w-full">
-               <span className="block text-sm font-medium text-slate-300 mb-2">{label ?? 'Move to column:'}</span>
+          <div ref={ref} className="relative w-full">
+               {label && <span className="block text-sm font-medium text-slate-300 mb-2">{label}</span>}
                <button
                     type="button"
-                    className={`relative flex items-center justify-between w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 ${
-                         open ? 'ring-2 ring-purple-500 border-transparent' : 'hover:border-slate-500'
-                    }`}
+                    className={`
+                         w-full flex items-center justify-between px-3 py-2 min-h-[46px]
+                         bg-slate-700/50 border rounded-lg text-slate-200
+                         transition-all duration-200
+                         ${open ? 'border-purple-500/50 ring-2 ring-purple-500/50 bg-slate-700/70' : 'border-slate-600/50 hover:border-slate-500'}
+                    `}
                     onClick={() => setOpen((v) => !v)}
                >
-                    <span className="flex items-center gap-2 min-w-0">
-                         <FaColumns className="text-slate-400" />
-                         <span className="truncate">{selected.title}</span>
+                    <span className="flex items-center gap-2.5 min-w-0">
+                         <FiColumns className="w-4 h-4 text-slate-400" />
+                         <span className="truncate text-sm font-medium">{selected.title}</span>
                     </span>
-                    <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.18 }} className="ml-2 shrink-0">
-                         <FaChevronDown className="text-slate-400" />
+                    <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="ml-2 shrink-0">
+                         <FiChevronDown className="w-3.5 h-3.5 text-slate-400" />
                     </motion.div>
                </button>
                <AnimatePresence>
                     {open && (
                          <motion.ul
-                              className="absolute left-0 right-0 mt-1 z-20 rounded-xl bg-slate-800/95 backdrop-blur-sm border border-slate-700 shadow-2xl py-1 overflow-auto"
-                              {...dropdownAnim}
+                              initial={{ opacity: 0, y: -5, scale: 0.98 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -5, scale: 0.98 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute left-0 right-0 mt-2 z-50 rounded-xl bg-slate-800 backdrop-blur-xl border border-slate-700/50 shadow-2xl shadow-black/40 py-1 overflow-auto thin-scrollbar"
                               role="listbox"
                               style={{ maxHeight: '15rem' }}
                          >
-                              {columns.map((col) => (
-                                   <li key={col.id}>
-                                        <button
-                                             type="button"
-                                             className={`w-full flex items-center px-4 py-2 text-sm text-left gap-3 transition-colors duration-150 ${
-                                                  value === col.id ? 'bg-purple-700/30 text-purple-200' : 'text-white hover:bg-slate-700 hover:text-purple-300'
-                                             }`}
-                                             onClick={() => {
-                                                  // Invoke callback and close dropdown
-                                                  onChange(col.id);
-                                                  setOpen(false);
-                                             }}
-                                             role="option"
-                                             aria-selected={value === col.id}
-                                        >
-                                             <FaColumns className="text-slate-400" />
-                                             <span className="flex-1 truncate">{col.title}</span>
-                                             {value === col.id && <FaCheck className="text-purple-400" />}
-                                        </button>
-                                   </li>
-                              ))}
+                              {columns.map((col) => {
+                                   const isSelected = value === col.id;
+                                   return (
+                                        <li key={col.id}>
+                                             <button
+                                                  type="button"
+                                                  className={`
+                                                       w-full flex items-center px-3 py-2.5 text-left gap-2.5
+                                                       transition-all duration-150
+                                                       ${isSelected ? 'bg-purple-500/15' : 'hover:bg-slate-700/50'}
+                                                  `}
+                                                  onClick={() => {
+                                                       onChange(col.id);
+                                                       setOpen(false);
+                                                  }}
+                                                  role="option"
+                                                  aria-selected={isSelected}
+                                             >
+                                                  <FiColumns className={`w-4 h-4 ${isSelected ? 'text-purple-400' : 'text-slate-400'}`} />
+                                                  <span className={`flex-1 truncate text-sm font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                                                       {col.title}
+                                                  </span>
+                                                  {isSelected && <FiCheck className="w-4 h-4 text-purple-400 stroke-[3]" />}
+                                             </button>
+                                        </li>
+                                   );
+                              })}
                          </motion.ul>
                     )}
                </AnimatePresence>

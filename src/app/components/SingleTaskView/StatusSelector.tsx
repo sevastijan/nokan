@@ -25,10 +25,10 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
      const [isAdding, setIsAdding] = useState(false);
      const [newLabel, setNewLabel] = useState('');
      const [newColor, setNewColor] = useState('#94a3b8');
-     const dropdownRef = useRef<HTMLDivElement>(null);
+     const containerRef = useRef<HTMLDivElement>(null);
      const inputRef = useRef<HTMLInputElement>(null);
 
-     useOutsideClick([dropdownRef], () => {
+     useOutsideClick([containerRef], () => {
           setIsOpen(false);
           setIsAdding(false);
           setNewLabel('');
@@ -98,33 +98,40 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
      };
 
      return (
-          <div className="relative">
+          <div ref={containerRef} className="relative">
                {label && <span className="block text-sm font-medium text-slate-300 mb-2">{label}</span>}
 
                <button
                     type="button"
                     onClick={() => !disabled && setIsOpen(!isOpen)}
                     disabled={disabled}
-                    className={`w-full flex items-center justify-between gap-3 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white transition-all ${
-                         disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500'
-                    }`}
+                    className={`
+                         w-full flex items-center justify-between gap-3 px-3 py-2.5 min-h-[46px]
+                         bg-slate-700/50 border rounded-lg text-white
+                         transition-all duration-200
+                         ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500'}
+                         ${isOpen ? 'border-purple-500/50 ring-2 ring-purple-500/50 bg-slate-700/70' : 'border-slate-600/50'}
+                    `}
                >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
                          {selectedStatus ? (
                               <>
-                                   <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: selectedStatus.color }} />
-                                   <span className="truncate font-medium">{selectedStatus.label}</span>
+                                   <div
+                                        className="w-3 h-3 rounded-full flex-shrink-0 shadow-md"
+                                        style={{ backgroundColor: selectedStatus.color, boxShadow: `0 0 8px ${selectedStatus.color}40` }}
+                                   />
+                                   <span className="truncate font-medium text-sm">{selectedStatus.label}</span>
                               </>
                          ) : (
-                              <span className="text-slate-400">Wybierz status...</span>
+                              <span className="text-slate-500 text-sm">Wybierz status...</span>
                          )}
                     </div>
-                    {!disabled && <FaChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
+                    {!disabled && <FaChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />}
                </button>
 
                {isOpen && !disabled && (
-                    <div ref={dropdownRef} className="absolute z-50 w-full mt-2 bg-slate-700 border border-slate-600 rounded-lg shadow-xl overflow-hidden">
-                         <div className="max-h-64 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-2 bg-slate-800 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl shadow-black/40 overflow-hidden">
+                         <div className="max-h-64 overflow-y-auto thin-scrollbar">
                               {statuses.map((status) => (
                                    <button
                                         key={status.id}
@@ -133,27 +140,34 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                              onChange(status.id);
                                              setIsOpen(false);
                                         }}
-                                        className={`group w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${
-                                             selectedStatusId === status.id ? 'bg-purple-600/20 text-white' : 'hover:bg-slate-600'
-                                        }`}
+                                        className={`
+                                             group w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left
+                                             transition-all duration-150
+                                             ${selectedStatusId === status.id ? 'bg-purple-500/15' : 'hover:bg-slate-700/50'}
+                                        `}
                                    >
-                                        <div className="flex items-center gap-3">
-                                             <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: status.color }} />
-                                             <span className="truncate font-medium">{status.label}</span>
+                                        <div className="flex items-center gap-2.5">
+                                             <div
+                                                  className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
+                                                  style={{ backgroundColor: status.color, boxShadow: `0 0 6px ${status.color}30` }}
+                                             />
+                                             <span className={`truncate text-sm font-medium ${selectedStatusId === status.id ? 'text-white' : 'text-slate-300'}`}>
+                                                  {status.label}
+                                             </span>
                                         </div>
 
                                         <div
                                              role="button"
                                              onClick={(e) => handleDeleteStatus(status.id, e)}
-                                             className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-1"
+                                             className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-all duration-150 p-1 hover:bg-red-500/10 rounded"
                                         >
-                                             <FaTrash className="w-3.5 h-3.5" />
+                                             <FaTrash className="w-3 h-3" />
                                         </div>
                                    </button>
                               ))}
 
                               {isAdding ? (
-                                   <div className="p-3 border-t border-slate-600 space-y-3">
+                                   <div className="p-3 border-t border-slate-700/30 space-y-3 bg-slate-800/50">
                                         <input
                                              ref={inputRef}
                                              type="text"
@@ -161,15 +175,24 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                              onChange={(e) => setNewLabel(e.target.value)}
                                              onKeyDown={(e) => e.key === 'Enter' && handleAddStatus()}
                                              placeholder="Nazwa statusu"
-                                             className="w-full px-3 py-2 bg-slate-600 rounded text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                             className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                                              autoFocus
                                         />
-                                        <div className="flex items-center gap-2">
-                                             <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer" />
-                                             <span className="text-xs text-slate-400">Kolor</span>
+                                        <div className="flex items-center gap-3">
+                                             <input
+                                                  type="color"
+                                                  value={newColor}
+                                                  onChange={(e) => setNewColor(e.target.value)}
+                                                  className="w-10 h-10 rounded-lg cursor-pointer border border-slate-600/50"
+                                             />
+                                             <div className="w-4 h-4 rounded-full shadow-md" style={{ backgroundColor: newColor, boxShadow: `0 0 8px ${newColor}40` }} />
+                                             <span className="text-xs text-slate-500">Podgląd</span>
                                         </div>
                                         <div className="flex gap-2">
-                                             <button onClick={handleAddStatus} className="flex-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded">
+                                             <button
+                                                  onClick={handleAddStatus}
+                                                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
+                                             >
                                                   Dodaj
                                              </button>
                                              <button
@@ -177,7 +200,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                                        setIsAdding(false);
                                                        setNewLabel('');
                                                   }}
-                                                  className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded"
+                                                  className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors"
                                              >
                                                   Anuluj
                                              </button>
@@ -186,10 +209,10 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                               ) : (
                                    <button
                                         onClick={() => setIsAdding(true)}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-purple-400 hover:bg-slate-600 transition-colors border-t border-slate-600"
+                                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-purple-400 hover:bg-slate-700/50 transition-all duration-150 border-t border-slate-700/30"
                                    >
-                                        <FaPlus className="w-4 h-4" />
-                                        <span className="font-medium">Dodaj nowy status</span>
+                                        <FaPlus className="w-3.5 h-3.5" />
+                                        <span className="text-sm font-medium">Dodaj nowy status</span>
                                    </button>
                               )}
                          </div>
