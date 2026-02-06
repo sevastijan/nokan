@@ -1,4 +1,4 @@
-import { FaCalendarAlt, FaPlus, FaUserFriends } from 'react-icons/fa';
+import { LayoutDashboard, CheckSquare, Users } from 'lucide-react';
 
 interface DashboardStatsProps {
      totalBoards: number;
@@ -8,34 +8,34 @@ interface DashboardStatsProps {
 
 export const DashboardStats = ({ totalBoards, totalTasks, totalMembers }: DashboardStatsProps) => {
      return (
-          <div className="pb-10 grid gap-4 sm:gap-6 grid-cols-1 xs:grid-cols-2 md:grid-cols-3">
-               <div className="bg-slate-800/70 rounded-2xl border border-slate-700 p-5 flex items-center gap-4 shadow-sm">
-                    <span className="bg-blue-600/30 text-blue-300 p-2 rounded-xl text-2xl">
-                         <FaCalendarAlt />
-                    </span>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+               <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-500/15">
+                         <LayoutDashboard className="w-4.5 h-4.5 text-blue-400" />
+                    </div>
                     <div>
-                         <div className="text-sm text-slate-400">Total Boards</div>
-                         <div className="text-xl font-bold text-white">{totalBoards}</div>
+                         <p className="text-xs text-slate-400">Boards</p>
+                         <p className="text-lg font-semibold text-white leading-tight">{totalBoards}</p>
                     </div>
                </div>
 
-               <div className="bg-slate-800/70 rounded-2xl border border-slate-700 p-5 flex items-center gap-4 shadow-sm">
-                    <span className="bg-green-600/20 text-green-300 p-2 rounded-xl text-2xl">
-                         <FaPlus />
-                    </span>
+               <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/15">
+                         <CheckSquare className="w-4.5 h-4.5 text-emerald-400" />
+                    </div>
                     <div>
-                         <div className="text-sm text-slate-400">Total Tasks</div>
-                         <div className="text-xl font-bold text-white">{totalTasks}</div>
+                         <p className="text-xs text-slate-400">Tasks</p>
+                         <p className="text-lg font-semibold text-white leading-tight">{totalTasks}</p>
                     </div>
                </div>
 
-               <div className="bg-slate-800/70 rounded-2xl border border-slate-700 p-5 flex items-center gap-4 shadow-sm">
-                    <span className="bg-blue-600/20 text-blue-300 p-2 rounded-xl text-2xl">
-                         <FaUserFriends />
-                    </span>
+               <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-violet-500/15">
+                         <Users className="w-4.5 h-4.5 text-violet-400" />
+                    </div>
                     <div>
-                         <div className="text-sm text-slate-400">Team Members (all)</div>
-                         <div className="text-xl font-bold text-white">{totalMembers}</div>
+                         <p className="text-xs text-slate-400">Members</p>
+                         <p className="text-lg font-semibold text-white leading-tight">{totalMembers}</p>
                     </div>
                </div>
           </div>
