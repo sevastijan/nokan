@@ -35,7 +35,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                          console.error('Error loading priorities:', err);
                          setPriorities([
                               { id: 'low', label: 'Low', color: '#10b981' },
-                              { id: 'medium', label: 'Medium', color: '#f59e0b' },
+                              { id: 'medium', label: 'Medium', color: '#eab308' },
                               { id: 'high', label: 'High', color: '#ef4444' },
                               { id: 'urgent', label: 'Urgent', color: '#dc2626' },
                          ]);

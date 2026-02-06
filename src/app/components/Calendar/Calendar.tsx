@@ -17,7 +17,7 @@ const getPriorityColor = (priority: string) => {
       return "#ef4444";
     case "medium":
     case "normal":
-      return "#f59e0b";
+      return "#eab308";
     case "low":
       return "#10b981";
     default:

@@ -68,10 +68,10 @@ export function getPriorityStyleConfig(priorityId: string): PriorityStyleConfig 
                dotColor: '#ea580c',
           },
           medium: {
-               bgColor: 'bg-amber-950/40',
-               textColor: 'text-amber-400/90',
-               borderColor: 'border-amber-900/30',
-               dotColor: '#d97706',
+               bgColor: 'bg-yellow-500/15',
+               textColor: 'text-yellow-400',
+               borderColor: 'border-yellow-500/30',
+               dotColor: '#eab308',
           },
           low: {
                bgColor: 'bg-slate-700/40',

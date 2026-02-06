@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 
-import { useEffect, useState, useCallback, useRef, useLayoutEffect, Suspense } from 'react';
+import { useEffect, useState, useCallback, useRef, useLayoutEffect, Suspense, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -178,7 +178,7 @@ export default function Page() {
                .catch(() => {
                     setPriorities([
                          { id: 'low', label: 'Niski', color: '#10b981' },
-                         { id: 'medium', label: 'Średni', color: '#f59e0b' },
+                         { id: 'medium', label: 'Średni', color: '#eab308' },
                          { id: 'high', label: 'Wysoki', color: '#ef4444' },
                          { id: 'urgent', label: 'Pilny', color: '#dc2626' },
                     ]);
@@ -274,7 +274,7 @@ export default function Page() {
                timeouts.forEach(clearTimeout);
                clearTimeout(clearTimeout2);
           };
-     });
+     }, [localColumns]);
 
      const onDragEnd = useCallback(
           async (result: DropResult) => {
@@ -367,7 +367,7 @@ export default function Page() {
                               if (isDoneColumn && isTaskNotCompleted) {
                                    setPendingCompletionTask({
                                         taskId: movedTask.id,
-                                        title: movedTask.title || 'Untitled task',
+                                        title: movedTask.title || 'Zadanie bez tytułu',
                                    });
                                    setCompletionModalOpen(true);
                               }
@@ -402,10 +402,130 @@ export default function Page() {
           }
      };
 
-     const handleCancelCompletion = () => {
+     const handleCancelCompletion = useCallback(() => {
           setCompletionModalOpen(false);
           setPendingCompletionTask(null);
-     };
+     }, []);
+
+     const onBoardTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+          setBoardTitle(e.target.value);
+     }, []);
+
+     const onBoardTitleBlur = useCallback(() => {
+          const trimmed = boardTitle.trim();
+          if (trimmed && trimmed !== board?.title) handleUpdateBoardTitle(trimmed);
+     }, [boardTitle, board?.title, handleUpdateBoardTitle]);
+
+     const openAddColumn = useCallback(() => setIsPopupOpen(true), []);
+     const closeAddColumn = useCallback(() => setIsPopupOpen(false), []);
+
+     const onAddColumn = useCallback(async () => {
+          if (!newColumnTitle.trim()) return;
+          setIsAddingColumn(true);
+          await handleAddColumn(newColumnTitle.trim());
+          setNewColumnTitle('');
+          setIsPopupOpen(false);
+          await fetchBoardData();
+          setIsAddingColumn(false);
+     }, [newColumnTitle, handleAddColumn, fetchBoardData]);
+
+     const openAddTask = useCallback((colId: string) => {
+          saveScrollPosition();
+          setAddTaskColumnId(colId);
+     }, [saveScrollPosition]);
+
+     const onTaskAdded = useCallback(async (columnId: string, title: string, priority?: string, userId?: string) => {
+          const task = await handleAddTask(columnId, title, priority, userId);
+          setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: [...(c.tasks || []), task] } : c)));
+          setAddTaskColumnId(null);
+          return task;
+     }, [handleAddTask]);
+
+     const onTaskRemoved = useCallback(async (columnId: string, taskId: string) => {
+          await handleRemoveTask(columnId, taskId);
+          setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: c.tasks.filter((t) => t.id !== taskId) } : c)));
+     }, [handleRemoveTask]);
+
+     const assigneesList = useMemo<AssigneeOption[]>(() => {
+          if (!board) return [];
+          const list: AssigneeOption[] = [];
+          const seenIds = new Set<string>();
+
+          board.columns.forEach((col) => {
+               (col.tasks || []).forEach((task) => {
+                    (task.collaborators || []).forEach((collab) => {
+                         if (collab.id && !seenIds.has(collab.id)) {
+                              seenIds.add(collab.id);
+                              list.push({
+                                   id: collab.id,
+                                   name: collab.custom_name || collab.name || collab.email || 'User',
+                                   image: collab.custom_image || collab.image || undefined,
+                              });
+                         }
+                    });
+               });
+          });
+
+          return list;
+     }, [board]);
+
+     const filteredColumns = useMemo(() => {
+          return localColumns.map((col) => {
+               const filteredTasks = (col.tasks || []).filter((task) => {
+                    if (searchTerm) {
+                         const term = searchTerm.toLowerCase();
+                         if (!task.title?.toLowerCase().includes(term) && !task.description?.toLowerCase().includes(term)) return false;
+                    }
+                    if (filterPriority && task.priority !== filterPriority) return false;
+                    if (filterAssignee) {
+                         const hasAssignee = (task.collaborators || []).some((c) => c.id === filterAssignee);
+                         if (!hasAssignee) return false;
+                    }
+                    if (filterType !== 'all') {
+                         const taskType = task.type || 'task';
+                         if (taskType !== filterType) return false;
+                    }
+                    return true;
+               });
+               return { ...col, tasks: filteredTasks };
+          });
+     }, [localColumns, searchTerm, filterPriority, filterAssignee, filterType]);
+
+     const currentColumnId = useMemo(() => {
+          if (addTaskColumnId) return addTaskColumnId;
+          if (selectedTaskId) {
+               return localColumns.find((c) => c.tasks.some((t) => t.id === selectedTaskId))?.id ?? null;
+          }
+          return null;
+     }, [addTaskColumnId, selectedTaskId, localColumns]);
+
+     const handleOpenTaskDetail = useCallback((taskId: string) => {
+          saveScrollPosition();
+          setSelectedTaskId(taskId);
+
+          const params = new URLSearchParams(searchParams.toString());
+          params.set('task', taskId);
+          router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
+     }, [saveScrollPosition, searchParams, router]);
+
+     const handleCloseTaskView = useCallback(() => {
+          saveScrollPosition();
+          setSelectedTaskId(null);
+          setAddTaskColumnId(null);
+
+          const params = new URLSearchParams(searchParams.toString());
+          if (params.has('task')) {
+               params.delete('task');
+               const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+               router.replace(newUrl, { scroll: false });
+          }
+
+          fetchBoardData();
+     }, [saveScrollPosition, searchParams, router, fetchBoardData]);
+
+     const activeFilteredAssignee = useMemo(() => {
+          return assigneesList.find((a) => a.id === filterAssignee);
+     }, [assigneesList, filterAssignee]);
 
      if (!boardId) {
           return (
@@ -436,104 +556,6 @@ export default function Page() {
                </div>
           );
      }
-
-     const onBoardTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => setBoardTitle(e.target.value);
-     const onBoardTitleBlur = () => {
-          const trimmed = boardTitle.trim();
-          if (trimmed && trimmed !== board?.title) handleUpdateBoardTitle(trimmed);
-     };
-
-     const openAddColumn = () => setIsPopupOpen(true);
-     const closeAddColumn = () => setIsPopupOpen(false);
-     const onAddColumn = async () => {
-          if (!newColumnTitle.trim()) return;
-          setIsAddingColumn(true);
-          await handleAddColumn(newColumnTitle.trim());
-          setNewColumnTitle('');
-          closeAddColumn();
-          await fetchBoardData();
-          setIsAddingColumn(false);
-     };
-
-     const openAddTask = (colId: string) => {
-          saveScrollPosition();
-          setAddTaskColumnId(colId);
-     };
-
-     const onTaskAdded = async (columnId: string, title: string, priority?: string, userId?: string) => {
-          const task = await handleAddTask(columnId, title, priority, userId);
-          setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: [...(c.tasks || []), task] } : c)));
-          setAddTaskColumnId(null);
-          return task;
-     };
-
-     const onTaskRemoved = async (columnId: string, taskId: string) => {
-          await handleRemoveTask(columnId, taskId);
-          setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: c.tasks.filter((t) => t.id !== taskId) } : c)));
-     };
-
-     const assigneesList: AssigneeOption[] = [];
-     board.columns.forEach((col) => {
-          (col.tasks || []).forEach((task) => {
-               (task.collaborators || []).forEach((collab) => {
-                    if (collab.id && !assigneesList.find((a) => a.id === collab.id)) {
-                         assigneesList.push({
-                              id: collab.id,
-                              name: collab.custom_name || collab.name || collab.email || 'User',
-                              image: collab.custom_image || collab.image || undefined,
-                         });
-                    }
-               });
-          });
-     });
-
-     const filteredColumns = localColumns.map((col) => {
-          const filteredTasks = (col.tasks || []).filter((task) => {
-               if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    if (!task.title?.toLowerCase().includes(term) && !task.description?.toLowerCase().includes(term)) return false;
-               }
-               if (filterPriority && task.priority !== filterPriority) return false;
-               if (filterAssignee) {
-                    const hasAssignee = (task.collaborators || []).some((c) => c.id === filterAssignee);
-                    if (!hasAssignee) return false;
-               }
-               if (filterType !== 'all') {
-                    const taskType = task.type || 'task';
-                    if (taskType !== filterType) return false;
-               }
-               return true;
-          });
-          return { ...col, tasks: filteredTasks };
-     });
-
-     const currentColumnId = addTaskColumnId || (selectedTaskId ? localColumns.find((c) => c.tasks.some((t) => t.id === selectedTaskId))?.id : null);
-
-     const handleOpenTaskDetail = (taskId: string) => {
-          saveScrollPosition();
-          setSelectedTaskId(taskId);
-
-          const params = new URLSearchParams(searchParams.toString());
-          params.set('task', taskId);
-          router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
-     };
-
-     const handleCloseTaskView = () => {
-          saveScrollPosition();
-          setSelectedTaskId(null);
-          setAddTaskColumnId(null);
-
-          const params = new URLSearchParams(searchParams.toString());
-          if (params.has('task')) {
-               params.delete('task');
-               const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-               router.replace(newUrl, { scroll: false });
-          }
-
-          fetchBoardData();
-     };
-
-     const activeFilteredAssignee = assigneesList.find((a) => a.id === filterAssignee);
 
      return (
           <div className="min-h-screen bg-slate-900 flex flex-col">

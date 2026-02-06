@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent, MouseEvent } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent, MouseEvent } from 'react';
 import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus, FiCheckSquare, FiCornerDownRight, FiCheck, FiTrash2, FiEdit3 } from 'react-icons/fi';
 import { FaLayerGroup } from 'react-icons/fa';
 import Avatar from './Avatar/Avatar';
@@ -77,7 +77,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
      const menuItems = useMemo(
           () => [
                {
-                    label: 'Edit',
+                    label: 'Edytuj',
                     icon: FiEdit3,
                     action: () => {
                          onOpenTaskDetail(task.id);
@@ -85,7 +85,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                     },
                },
                {
-                    label: 'Delete',
+                    label: 'Usuń',
                     icon: FiTrash2,
                     destructive: true,
                     action: () => {
@@ -147,111 +147,106 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
      const showMeta = Boolean(priorityConfig || task.due_date || hasAssignees);
      const isEmpty = !hasTitle && !hasDesc && !showMeta;
 
-     const getGradientOverlay = () => {
-          if (!priorityConfig) return 'from-slate-800/0 to-transparent';
-          return `from-[${priorityConfig.dotColor}]/5 to-transparent`;
-     };
-
      return (
           <div
                onClick={handleCardClick}
                onMouseEnter={() => setIsHovered(true)}
                onMouseLeave={() => setIsHovered(false)}
                className={`
-        relative cursor-pointer group transition-all duration-300 ease-out
-        bg-linear-to-br from-slate-800/95 to-slate-850/95 backdrop-blur-sm
-        border border-slate-700/50 rounded-xl overflow-hidden
-        hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-500/30
-        hover:bg-linear-to-br hover:from-slate-750/95 hover:to-slate-800/95
-        ${isEmpty ? 'min-h-20' : 'min-h-30'}
-        ${isCompleted ? 'opacity-70' : ''}
-        ${isHovered ? 'ring-1 ring-blue-500/20' : ''}
-      `}
+                    relative cursor-pointer group transition-all duration-200
+                    bg-slate-800/90 hover:bg-slate-750/95
+                    border border-slate-700/60 rounded-lg overflow-hidden
+                    hover:border-slate-600 hover:shadow-lg hover:shadow-black/20
+                    ${isEmpty ? 'min-h-16' : ''}
+                    ${isCompleted ? 'opacity-60' : ''}
+               `}
                style={{
                     borderLeftWidth: '3px',
                     borderLeftStyle: 'solid',
                     borderLeftColor: priorityConfig?.dotColor || '#475569',
                }}
           >
-               <div className={`absolute inset-0 bg-linear-to-br ${getGradientOverlay()} opacity-30 pointer-events-none`} />
 
                <button
                     ref={triggerRef}
                     onClick={handleTriggerClick}
                     onKeyDown={handleTriggerKeyDown}
-                    aria-label="Task options"
+                    aria-label="Opcje zadania"
                     aria-haspopup="true"
                     aria-expanded={menuOpen}
                     className={`
-          absolute top-3 right-3 p-2 rounded-lg z-10 transition-all duration-200
-          ${isHovered || menuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
-          hover:bg-slate-700/70 focus:bg-slate-700/70 active:scale-95 backdrop-blur-sm
-        `}
+                         absolute top-2.5 right-2.5 p-1.5 rounded-md z-10 transition-all duration-150
+                         ${isHovered || menuOpen ? 'opacity-100' : 'opacity-0'}
+                         hover:bg-slate-700 focus:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500
+                    `}
                >
-                    <FiMoreVertical size={18} className="text-white/80" />
+                    <FiMoreVertical size={16} className="text-slate-400" />
                </button>
 
                {isEmpty ? (
-                    <div className="flex h-20 items-center justify-center px-4 relative z-1">
-                         <span className="text-white/30 italic text-sm font-medium">Untitled task</span>
+                    <div className="flex h-14 items-center justify-center px-4">
+                         <span className="text-slate-500 italic text-sm">Zadanie bez tytułu</span>
                     </div>
                ) : (
-                    <div className="p-4 flex flex-col gap-3 relative z-1">
-                         <div className="flex items-start gap-2.5 pr-8">
+                    <div className="p-3 flex flex-col gap-2">
+                         <div className="flex items-start gap-2 pr-6">
                               {isSubtask ? (
                                    <FiCornerDownRight className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
                               ) : isStory ? (
                                    <FaLayerGroup className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
                               ) : (
-                                   <FiCheckSquare className={`w-4 h-4 shrink-0 mt-0.5 ${isCompleted ? 'text-green-400' : 'text-blue-400'}`} />
+                                   <FiCheckSquare className={`w-4 h-4 shrink-0 mt-0.5 ${isCompleted ? 'text-green-500' : 'text-slate-500'}`} />
                               )}
 
                               <h4
                                    className={`
-                font-semibold text-white text-[15px] leading-snug break-word
-                ${isCompleted ? 'line-through opacity-70' : ''}
-              `}
+                                        font-medium text-slate-100 text-sm leading-snug
+                                        ${isCompleted ? 'line-through text-slate-400' : ''}
+                                   `}
                               >
-                                   {hasTitle ? task.title : <span className="text-white/40 italic font-normal">Untitled</span>}
+                                   {hasTitle ? task.title : <span className="text-slate-500 italic font-normal">Bez tytułu</span>}
                               </h4>
                          </div>
 
-                         {hasDesc && <p className={`text-white/60 text-sm leading-relaxed line-clamp-2 pl-6 ${isCompleted ? 'opacity-70' : ''}`}>{truncateText(plainDescription, 100)}</p>}
+                         {hasDesc && (
+                              <p className={`text-slate-400 text-xs leading-relaxed line-clamp-2 pl-6 ${isCompleted ? 'text-slate-500' : ''}`}>
+                                   {truncateText(plainDescription, 100)}
+                              </p>
+                         )}
 
                          {showMeta && (
-                              <div className="flex items-center justify-between mt-2 gap-3">
-                                   <div className="flex items-center gap-2 text-xs flex-wrap">
+                              <div className="flex items-center justify-between mt-1 gap-2 pl-6">
+                                   <div className="flex items-center gap-1.5 flex-wrap">
                                         {priorityConfig && (
                                              <span
-                                                  className={`
-                      inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium
-                      ${priorityConfig.cfg.bgColor} ${priorityConfig.cfg.textColor}
-                      backdrop-blur-sm shadow-sm transition-all duration-200
-                      hover:shadow-md hover:brightness-110 ${isCompleted ? 'opacity-60' : ''}
-                    `}
+                                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
+                                                  style={{
+                                                       color: priorityConfig.dotColor,
+                                                       backgroundColor: `${priorityConfig.dotColor}20`,
+                                                  }}
                                              >
-                                                  <FiFlag size={12} style={{ color: priorityConfig.dotColor }} />
-                                                  <span className="text-xs">{priorityConfig.label}</span>
+                                                  <FiFlag size={10} />
+                                                  {priorityConfig.label}
                                              </span>
                                         )}
 
                                         {isCompleted && (
-                                             <div className="bg-green-500/20 border border-green-500/40 rounded-lg px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-sm">
-                                                  <FiCheck className="w-3 h-3 text-green-400" />
-                                                  <span className="text-xs text-green-400 font-medium">Done</span>
-                                             </div>
+                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-500/15 text-green-400">
+                                                  <FiCheck size={10} />
+                                                  Gotowe
+                                             </span>
                                         )}
 
                                         {task.due_date && (
-                                             <span className={`flex items-center gap-1.5 text-white/50 bg-slate-700/40 px-2.5 py-1 rounded-lg backdrop-blur-sm ${isCompleted ? 'opacity-60' : ''}`}>
-                                                  <FiCalendar size={12} />
-                                                  <span className="text-xs">{new Date(task.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
+                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs text-slate-400 bg-slate-700/40">
+                                                  <FiCalendar size={10} />
+                                                  {new Date(task.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}
                                              </span>
                                         )}
                                    </div>
 
                                    {hasAssignees ? (
-                                        <div className="flex items-center -space-x-2">
+                                        <div className="flex items-center -space-x-1.5 shrink-0">
                                              {assignees.slice(0, 3).map((assignee, idx) => (
                                                   <button
                                                        key={assignee.id}
@@ -260,18 +255,17 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                                             onFilterByAssignee?.(assignee.id);
                                                        }}
                                                        style={{ zIndex: 3 - idx }}
-                                                       title={`Filtruj taski: ${assignee.custom_name || assignee.name || assignee.email || 'User'}`}
-                                                       className="transition-all duration-200 hover:-translate-y-0.5 rounded-full focus:outline-none"
+                                                       title={`Filtruj: ${assignee.custom_name || assignee.name || assignee.email || 'User'}`}
+                                                       className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                                                   >
                                                        <Avatar
                                                             src={assignee.custom_image || assignee.image || ''}
                                                             alt={assignee.custom_name || assignee.name || assignee.email || 'User'}
-                                                            size={32}
+                                                            size={24}
                                                             className={`
-                          shadow-lg cursor-pointer transition-all duration-200
-                          ${isCompleted ? 'opacity-60' : ''}
-                          ${assignee.id === activeFilterAssigneeId ? 'border-[3px] border-blue-500 ring-2 ring-blue-400/30 scale-110' : 'border-2 border-slate-800'}
-                        `}
+                                                                 transition-all duration-150
+                                                                 ${assignee.id === activeFilterAssigneeId ? 'ring-2 ring-blue-500' : 'border border-slate-700'}
+                                                            `}
                                                        />
                                                   </button>
                                              ))}
@@ -283,15 +277,12 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                                             if (assignees[0]) onFilterByAssignee?.(assignees[0].id);
                                                        }}
                                                        className={`
-                        w-8 h-8 rounded-full bg-slate-700/80 backdrop-blur-sm
-                        flex items-center justify-center
-                        text-xs text-white/80 font-semibold shadow-lg cursor-pointer
-                        transition-all duration-200 hover:-translate-y-0.5
-                        focus:outline-none
-                        ${isCompleted ? 'opacity-60' : ''}
-                        ${isFilteredByAnyAssignee ? 'border-[3px] border-blue-500 ring-2 ring-blue-400/30 scale-110' : 'border-2 border-slate-800'}
-                      `}
-                                                       title="Filtruj taski przypisanych osób"
+                                                            w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center
+                                                            text-[10px] text-slate-300 font-medium
+                                                            focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
+                                                            ${isFilteredByAnyAssignee ? 'ring-2 ring-blue-500' : 'border border-slate-600'}
+                                                       `}
+                                                       title="Filtruj przypisanych"
                                                   >
                                                        +{assignees.length - 3}
                                                   </button>
@@ -303,10 +294,10 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                                   e.stopPropagation();
                                                   onOpenTaskDetail(task.id);
                                              }}
-                                             className="w-9 h-9 rounded-full border-2 border-dashed border-white/20 hover:border-white/50 hover:bg-white/5 transition-all duration-200 flex items-center justify-center active:scale-95"
-                                             aria-label="Assign user"
+                                             className="w-6 h-6 rounded-full border border-dashed border-slate-600 hover:border-slate-500 hover:bg-slate-700/50 transition-colors flex items-center justify-center"
+                                             aria-label="Przypisz użytkownika"
                                         >
-                                             <FiUserPlus size={16} className="text-white/40 hover:text-white/70 transition-colors" />
+                                             <FiUserPlus size={12} className="text-slate-500" />
                                         </button>
                                    )}
                               </div>
@@ -322,7 +313,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                               role="menu"
                               tabIndex={-1}
                               onKeyDown={handleMenuKeyDown}
-                              className="absolute top-12 right-3 z-50 bg-slate-800/95 backdrop-blur-xl text-slate-100 rounded-xl shadow-2xl shadow-slate-900/50 border border-slate-600/50 overflow-hidden min-w-40 animate-in fade-in slide-in-from-top-2 duration-200"
+                              className="absolute top-8 right-2.5 z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-xl shadow-black/30 overflow-hidden min-w-36 py-1"
                          >
                               {menuItems.map((item, idx) => {
                                    const Icon = item.icon;
@@ -336,13 +327,12 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                                   item.action();
                                              }}
                                              className={`
-                    w-full px-4 py-3 text-left text-sm font-medium flex items-center gap-3
-                    hover:bg-slate-700/70 focus:bg-slate-700/70 focus:outline-none transition-all duration-150
-                    ${item.destructive ? 'text-red-400 hover:text-red-300' : 'text-white/80 hover:text-white'}
-                    ${idx !== menuItems.length - 1 ? 'border-b border-slate-700/50' : ''}
-                  `}
+                                                  w-full px-3 py-2 text-left text-sm flex items-center gap-2
+                                                  hover:bg-slate-700 focus:bg-slate-700 focus:outline-none transition-colors
+                                                  ${item.destructive ? 'text-red-400' : 'text-slate-300'}
+                                             `}
                                         >
-                                             <Icon size={16} />
+                                             <Icon size={14} />
                                              {item.label}
                                         </button>
                                    );
@@ -354,4 +344,4 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
      );
 };
 
-export default Task;
+export default React.memo(Task);

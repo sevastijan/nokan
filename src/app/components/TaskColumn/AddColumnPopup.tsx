@@ -57,11 +57,11 @@ const AddColumnPopup = ({
             transition={{ duration: 0.2 }}
           >
             <h2 className="text-xl font-bold text-slate-100 mb-4">
-              Add New Column
+              Dodaj nową kolumnę
             </h2>
             <input
               type="text"
-              placeholder="Column title"
+              placeholder="Tytuł kolumny"
               value={newColumnTitle}
               onChange={(e) => setNewColumnTitle(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -73,14 +73,14 @@ const AddColumnPopup = ({
                 onClick={onClose}
                 className="flex-1 px-4 py-2 bg-slate-700 text-slate-200 rounded hover:bg-slate-600 transition-colors cursor-pointer"
               >
-                Cancel
+                Anuluj
               </button>
               <button
                 onClick={onAddColumn}
                 disabled={isAddingColumn || !newColumnTitle.trim()}
                 className="flex-1 px-4 py-2 bg-slate-600 text-slate-100 rounded hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
-                {isAddingColumn ? "Adding..." : "Add Column"}
+                {isAddingColumn ? "Dodawanie..." : "Dodaj kolumnę"}
               </button>
             </div>
           </motion.div>

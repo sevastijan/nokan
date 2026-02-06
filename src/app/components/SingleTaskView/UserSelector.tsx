@@ -60,10 +60,10 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                     role="button"
                     tabIndex={0}
                     className={`
-                         relative w-full min-h-[46px] bg-slate-700/50 border rounded-lg px-3 py-2
+                         relative w-full min-h-[42px] bg-slate-700/50 border rounded-lg px-3 py-2
                          text-left cursor-pointer transition-all duration-200
-                         focus:outline-none focus:ring-2 focus:ring-purple-500/50
-                         ${isOpen ? 'ring-2 ring-purple-500/50 border-purple-500/50 bg-slate-700/70' : 'border-slate-600/50 hover:border-slate-500'}
+                         focus:outline-none focus:ring-2 focus:ring-slate-500/50
+                         ${isOpen ? 'ring-2 ring-slate-500/50 border-slate-500/50 bg-slate-700/70' : 'border-slate-600/50 hover:border-slate-500'}
                     `}
                     aria-haspopup="listbox"
                     aria-expanded={isOpen}
@@ -76,33 +76,39 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                     }}
                >
                     <div className="flex items-center justify-between gap-2">
-                         <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
-                              {selectedUsers.length === 0 ? (
-                                   <span className="text-slate-500 text-sm flex items-center gap-2">
-                                        <FiPlus className="w-4 h-4" />
-                                        Wybierz osoby...
-                                   </span>
-                              ) : (
-                                   selectedUsers.map((user) => (
-                                        <motion.span
-                                             key={user.id}
-                                             initial={{ scale: 0.9, opacity: 0 }}
-                                             animate={{ scale: 1, opacity: 1 }}
-                                             className="inline-flex items-center gap-1.5 bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded-md text-sm"
-                                        >
-                                             <Avatar src={getDisplayAvatar(user)} alt={getDisplayName(user)} size={18} className="ring-1 ring-purple-400/30" />
-                                             <span className="text-white truncate max-w-[80px] text-xs font-medium">{getDisplayName(user)}</span>
-                                             <button
-                                                  type="button"
-                                                  onClick={(e) => handleRemoveUser(user.id, e)}
-                                                  className="text-slate-400 hover:text-red-400 transition-colors ml-0.5"
-                                             >
-                                                  <FiX className="w-3 h-3" />
-                                             </button>
-                                        </motion.span>
-                                   ))
-                              )}
-                         </div>
+                         {selectedUsers.length === 0 ? (
+                              <span className="text-slate-500 text-sm flex items-center gap-2">
+                                   <FiPlus className="w-4 h-4" />
+                                   Wybierz osoby...
+                              </span>
+                         ) : (
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                   <div className="flex items-center -space-x-2">
+                                        {selectedUsers.slice(0, 4).map((user, idx) => (
+                                             <div key={user.id} style={{ zIndex: 4 - idx }}>
+                                                  <Avatar
+                                                       src={getDisplayAvatar(user)}
+                                                       alt={getDisplayName(user)}
+                                                       size={26}
+                                                       className="border-2 border-slate-700"
+                                                  />
+                                             </div>
+                                        ))}
+                                        {selectedUsers.length > 4 && (
+                                             <div className="w-[26px] h-[26px] rounded-full bg-slate-600 border-2 border-slate-700 flex items-center justify-center text-[10px] text-slate-300 font-medium">
+                                                  +{selectedUsers.length - 4}
+                                             </div>
+                                        )}
+                                   </div>
+                                   <div className="flex flex-col min-w-0">
+                                        {selectedUsers.length === 1 ? (
+                                             <span className="text-sm text-slate-200 truncate">{getDisplayName(selectedUsers[0])}</span>
+                                        ) : (
+                                             <span className="text-sm text-slate-300">{selectedUsers.length} osoby</span>
+                                        )}
+                                   </div>
+                              </div>
+                         )}
                          <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
                               <FiChevronDown className="w-4 h-4 text-slate-400" />
                          </motion.div>
@@ -111,55 +117,77 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
 
                <AnimatePresence>
                     {isOpen && (
-                         <motion.ul
-                              className="absolute z-50 mt-2 w-full bg-slate-800 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl shadow-black/40 max-h-60 overflow-auto thin-scrollbar"
-                              initial={{ opacity: 0, y: -5, scale: 0.98 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: -5, scale: 0.98 }}
+                         <motion.div
+                              className="absolute z-50 mt-2 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl shadow-black/30 overflow-hidden"
+                              initial={{ opacity: 0, y: -5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -5 }}
                               transition={{ duration: 0.15 }}
-                              role="listbox"
                          >
-                              {availableUsers.length === 0 ? (
-                                   <li className="px-4 py-4 text-slate-500 text-sm text-center">Brak dostępnych użytkowników</li>
-                              ) : (
-                                   availableUsers.map((user) => {
-                                        const selected = isSelected(user.id);
-                                        return (
-                                             <li
-                                                  key={user.id}
-                                                  className={`
-                                                       px-3 py-2.5 cursor-pointer flex items-center gap-3 transition-all duration-150
-                                                       ${selected ? 'bg-purple-500/15' : 'hover:bg-slate-700/50'}
-                                                  `}
-                                                  onClick={() => handleToggleUser(user.id)}
-                                                  role="option"
-                                                  aria-selected={selected}
-                                             >
-                                                  <div
-                                                       className={`
-                                                            w-5 h-5 rounded-md flex items-center justify-center transition-all duration-200
-                                                            ${selected ? 'bg-purple-500 shadow-md shadow-purple-500/30' : 'border-2 border-slate-500'}
-                                                       `}
+                              {/* Selected users section */}
+                              {selectedUsers.length > 0 && (
+                                   <div className="p-2 border-b border-slate-700/50">
+                                        <div className="text-xs text-slate-500 mb-2 px-1">Przypisani ({selectedUsers.length})</div>
+                                        <div className="flex flex-wrap gap-1">
+                                             {selectedUsers.map((user) => (
+                                                  <span
+                                                       key={user.id}
+                                                       className="inline-flex items-center gap-1 bg-slate-700 px-2 py-1 rounded text-xs text-slate-300"
                                                   >
-                                                       {selected && <FiCheck className="w-3.5 h-3.5 text-white stroke-[3]" />}
-                                                  </div>
-                                                  <Avatar
-                                                       src={getDisplayAvatar(user)}
-                                                       alt={getDisplayName(user)}
-                                                       size={28}
-                                                       className={`ring-2 ${selected ? 'ring-purple-400/40' : 'ring-slate-600/50'}`}
-                                                  />
-                                                  <div className="flex flex-col truncate min-w-0 flex-1">
-                                                       <span className={`truncate text-sm font-medium ${selected ? 'text-white' : 'text-slate-300'}`}>
-                                                            {getDisplayName(user)}
-                                                       </span>
-                                                       <span className="text-slate-500 text-xs truncate">{user.email}</span>
-                                                  </div>
-                                             </li>
-                                        );
-                                   })
+                                                       <Avatar src={getDisplayAvatar(user)} alt={getDisplayName(user)} size={16} />
+                                                       <span className="truncate max-w-[100px]">{getDisplayName(user)}</span>
+                                                       <button
+                                                            type="button"
+                                                            onClick={(e) => handleRemoveUser(user.id, e)}
+                                                            className="text-slate-500 hover:text-red-400 transition-colors"
+                                                       >
+                                                            <FiX className="w-3 h-3" />
+                                                       </button>
+                                                  </span>
+                                             ))}
+                                        </div>
+                                   </div>
                               )}
-                         </motion.ul>
+
+                              {/* Available users list */}
+                              <ul className="max-h-48 overflow-auto" role="listbox">
+                                   {availableUsers.length === 0 ? (
+                                        <li className="px-4 py-3 text-slate-500 text-sm text-center">Brak użytkowników</li>
+                                   ) : (
+                                        availableUsers.map((user) => {
+                                             const selected = isSelected(user.id);
+                                             return (
+                                                  <li
+                                                       key={user.id}
+                                                       className={`
+                                                            px-3 py-2 cursor-pointer flex items-center gap-2.5 transition-colors
+                                                            ${selected ? 'bg-slate-700/50' : 'hover:bg-slate-700/30'}
+                                                       `}
+                                                       onClick={() => handleToggleUser(user.id)}
+                                                       role="option"
+                                                       aria-selected={selected}
+                                                  >
+                                                       <div
+                                                            className={`
+                                                                 w-4 h-4 rounded flex items-center justify-center shrink-0
+                                                                 ${selected ? 'bg-blue-500' : 'border border-slate-500'}
+                                                            `}
+                                                       >
+                                                            {selected && <FiCheck className="w-3 h-3 text-white" />}
+                                                       </div>
+                                                       <Avatar src={getDisplayAvatar(user)} alt={getDisplayName(user)} size={24} />
+                                                       <div className="flex flex-col min-w-0 flex-1">
+                                                            <span className={`text-sm truncate ${selected ? 'text-slate-200' : 'text-slate-300'}`}>
+                                                                 {getDisplayName(user)}
+                                                            </span>
+                                                            <span className="text-slate-500 text-xs truncate">{user.email}</span>
+                                                       </div>
+                                                  </li>
+                                             );
+                                        })
+                                   )}
+                              </ul>
+                         </motion.div>
                     )}
                </AnimatePresence>
           </div>

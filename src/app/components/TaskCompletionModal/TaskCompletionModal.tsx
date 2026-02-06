@@ -47,7 +47,7 @@ const TaskCompletionModal = ({ isOpen, onClose, onConfirm, taskTitle }: TaskComp
                                    </p>
                                    <p className="text-slate-400 text-sm mb-4">Czy chcesz oznaczyć to zadanie jako zakończone?</p>
                                    <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
-                                        <p className="text-white font-medium truncate">{taskTitle || 'Untitled task'}</p>
+                                        <p className="text-white font-medium truncate">{taskTitle || 'Zadanie bez tytułu'}</p>
                                    </div>
                               </div>
 
