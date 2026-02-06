@@ -8,7 +8,9 @@
       "Bash(npm install)",
       "mcp__ide__getDiagnostics",
       "Bash(npx tsc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git mv:*)",
+      "Bash(ls:*)"
     ]
   }
 }

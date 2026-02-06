@@ -1,6 +1,10 @@
-import { FiList } from 'react-icons/fi';
-import Image from 'next/image';
+'use client';
+
+import { useMemo } from 'react';
+import { FiList, FiCalendar } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 import { Column as ColumnType } from '@/app/types/globalTypes';
+import Avatar from '@/app/components/Avatar/Avatar';
 
 interface ListViewProps {
      onRemoveTask: (columnId: string, taskId: string) => Promise<void>;
@@ -9,114 +13,248 @@ interface ListViewProps {
      priorities: Array<{ id: string; label: string; color: string }>;
 }
 
-const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
-     const allTasks = columns.flatMap((column) =>
-          column.tasks.map((task) => ({
-               ...task,
-               columnTitle: column.title,
-               columnId: column.id,
-          })),
-     );
+// Strip HTML tags and decode entities
+const stripHtml = (html: string): string => {
+     if (!html) return '';
+     // Remove HTML tags
+     let text = html.replace(/<[^>]*>/g, '');
+     // Decode common HTML entities
+     text = text
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'");
+     // Trim and collapse whitespace
+     return text.replace(/\s+/g, ' ').trim();
+};
 
-     const sortedTasks = allTasks.sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
+     const sortedTasks = useMemo(() => {
+          const allTasks = columns.flatMap((column) =>
+               column.tasks.map((task) => ({
+                    ...task,
+                    columnTitle: column.title,
+                    columnId: column.id,
+               })),
+          );
+          return allTasks.sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+     }, [columns]);
+
+     const getPriority = (priorityId: string | null | undefined) => {
+          if (!priorityId) return null;
+          return priorities.find((p) => p.id === priorityId);
+     };
+
+     const formatDate = (dateStr: string | null | undefined) => {
+          if (!dateStr) return '—';
+          return new Date(dateStr).toLocaleDateString('pl-PL', {
+               day: '2-digit',
+               month: '2-digit',
+               year: 'numeric',
+          });
+     };
+
+     const getCollaborators = (task: (typeof sortedTasks)[0]) => {
+          if (task.collaborators && task.collaborators.length > 0) {
+               return task.collaborators.map((c) => ({
+                    id: c.id,
+                    name: c.custom_name || c.name || c.email || 'Użytkownik',
+                    image: c.custom_image || c.image || '',
+               }));
+          }
+          if (task.assignee) {
+               return [
+                    {
+                         id: task.assignee.id || 'assignee',
+                         name: task.assignee.name || 'Użytkownik',
+                         image: task.assignee.image || '',
+                    },
+               ];
+          }
+          return [];
+     };
+
+     if (sortedTasks.length === 0) {
+          return (
+               <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full max-w-5xl mx-auto mt-8"
+               >
+                    <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-12 text-center">
+                         <FiList className="w-12 h-12 mx-auto mb-4 text-slate-600" />
+                         <p className="text-lg font-medium text-slate-300 mb-1">Brak zadań</p>
+                         <p className="text-sm text-slate-500">Utwórz pierwsze zadanie, aby zacząć</p>
+                    </div>
+               </motion.div>
+          );
+     }
 
      return (
-          <div className="w-full max-w-7xl mx-auto bg-slate-800/80 rounded-2xl border border-slate-700/70 shadow-xl overflow-hidden mt-6">
-               <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-slate-700/50 bg-slate-700/30 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <div className="col-span-3">Task</div>
-                    <div className="col-span-2">Column</div>
-                    <div className="col-span-2">Priority</div>
-                    <div className="col-span-3">Assignee</div>
-                    <div className="col-span-2">Created</div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="w-full max-w-5xl mx-auto">
+               {/* Desktop Header */}
+               <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <div className="col-span-4">Zadanie</div>
+                    <div className="col-span-2">Kolumna</div>
+                    <div className="col-span-2">Priorytet</div>
+                    <div className="col-span-2">Przypisany</div>
+                    <div className="col-span-2">Data</div>
                </div>
 
-               {sortedTasks.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400">
-                         <FiList className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                         <p className="text-lg font-medium mb-2">No tasks found</p>
-                         <p className="text-sm">Create your first task to get started</p>
-                    </div>
-               ) : (
-                    sortedTasks.map((task) => (
-                         <div
-                              key={task.id}
-                              className={`
-              border-b border-slate-700/40 
-              px-4 py-5 md:px-6 md:py-4 
-              hover:bg-slate-800/60 transition 
-              cursor-pointer
-              last:border-b-0
-              flex flex-col gap-3
-              md:grid md:grid-cols-12 md:gap-4 md:items-center
-            `}
-                              onClick={() => onOpenTaskDetail(task.id)}
-                              tabIndex={0}
-                         >
-                              {/* DESKTOP */}
-                              <div className="hidden md:flex md:col-span-3 font-semibold text-white items-center gap-2 min-w-0">
-                                   <span className="truncate">{task.title}</span>
-                                   <span className={`w-2.5 h-2.5 rounded-full ${task.completed ? 'bg-green-400/80' : 'bg-blue-400/70'} ml-2`} />
-                              </div>
-                              <div className="hidden md:flex md:col-span-2 items-center">
-                                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-700 text-slate-300">{task.columnTitle}</span>
-                              </div>
-                              <div className="hidden md:flex md:col-span-2 items-center">
-                                   {task.priority && (
-                                        <span
-                                             className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold border shadow"
-                                             style={{
-                                                  backgroundColor: priorities.find((p) => p.id === task.priority)?.color || '#FFD600',
-                                                  color: '#fff',
-                                                  borderColor: priorities.find((p) => p.id === task.priority)?.color || '#FFD600',
-                                             }}
-                                        >
-                                             {priorities.find((p) => p.id === task.priority)?.label || task.priority}
-                                        </span>
-                                   )}
-                              </div>
-                              <div className="hidden md:flex md:col-span-3 items-center gap-2 min-w-0">
-                                   {task.assignee?.image && (
-                                        <Image src={task.assignee.image} alt={task.assignee.name ?? 'Assignee avatar'} width={22} height={22} className="rounded-full border border-slate-700" />
-                                   )}
-                                   <span className="text-slate-200 text-xs truncate">{task.assignee?.name || <span className="italic text-slate-500">Unassigned</span>}</span>
-                              </div>
-                              <div className="hidden md:flex md:col-span-2 text-slate-400 text-xs font-mono">{task.created_at ? new Date(task.created_at).toLocaleDateString() : '-'}</div>
+               {/* Tasks List */}
+               <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 overflow-hidden">
+                    {sortedTasks.map((task, index) => {
+                         const priority = getPriority(task.priority);
+                         const collaborators = getCollaborators(task);
+                         const description = stripHtml(task.description || '');
 
-                              <div className="md:hidden flex flex-col gap-2">
-                                   <div className="flex items-center gap-2">
-                                        <span className="text-white font-semibold text-lg">{task.title}</span>
-                                        <span className={`w-2.5 h-2.5 rounded-full ${task.completed ? 'bg-green-400/80' : 'bg-blue-400/70'}`} />
+                         return (
+                              <motion.div
+                                   key={task.id}
+                                   initial={{ opacity: 0, y: 10 }}
+                                   animate={{ opacity: 1, y: 0 }}
+                                   transition={{ delay: index * 0.02, duration: 0.2 }}
+                                   onClick={() => onOpenTaskDetail(task.id)}
+                                   className={`
+                                        px-5 py-4 cursor-pointer transition-colors
+                                        hover:bg-slate-700/30
+                                        ${index !== sortedTasks.length - 1 ? 'border-b border-slate-700/30' : ''}
+                                   `}
+                              >
+                                   {/* Desktop Layout */}
+                                   <div className="hidden md:grid grid-cols-12 gap-4 items-center">
+                                        {/* Task Title */}
+                                        <div className="col-span-4 flex items-center gap-3 min-w-0">
+                                             <div
+                                                  className={`w-2 h-2 rounded-full shrink-0 ${
+                                                       task.completed ? 'bg-green-500' : task.type === 'story' ? 'bg-purple-500' : 'bg-blue-500'
+                                                  }`}
+                                             />
+                                             <span className="text-slate-200 font-medium truncate">{task.title}</span>
+                                        </div>
+
+                                        {/* Column */}
+                                        <div className="col-span-2">
+                                             <span className="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded">{task.columnTitle}</span>
+                                        </div>
+
+                                        {/* Priority */}
+                                        <div className="col-span-2">
+                                             {priority ? (
+                                                  <span
+                                                       className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded"
+                                                       style={{
+                                                            backgroundColor: priority.color + '20',
+                                                            color: priority.color,
+                                                       }}
+                                                  >
+                                                       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: priority.color }} />
+                                                       {priority.label}
+                                                  </span>
+                                             ) : (
+                                                  <span className="text-slate-600 text-xs">—</span>
+                                             )}
+                                        </div>
+
+                                        {/* Assignees */}
+                                        <div className="col-span-2 flex items-center gap-2 min-w-0">
+                                             {collaborators.length > 0 ? (
+                                                  <div className="flex items-center">
+                                                       <div className="flex -space-x-2">
+                                                            {collaborators.slice(0, 3).map((person, idx) => (
+                                                                 <div key={person.id} style={{ zIndex: 3 - idx }}>
+                                                                      <Avatar src={person.image} alt={person.name} size={24} className="border-2 border-slate-800" />
+                                                                 </div>
+                                                            ))}
+                                                            {collaborators.length > 3 && (
+                                                                 <div className="w-6 h-6 rounded-full bg-slate-700 border-2 border-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-medium">
+                                                                      +{collaborators.length - 3}
+                                                                 </div>
+                                                            )}
+                                                       </div>
+                                                       {collaborators.length === 1 && (
+                                                            <span className="text-sm text-slate-300 truncate ml-2">{collaborators[0].name}</span>
+                                                       )}
+                                                  </div>
+                                             ) : (
+                                                  <span className="text-slate-600 text-xs">—</span>
+                                             )}
+                                        </div>
+
+                                        {/* Date */}
+                                        <div className="col-span-2 text-sm text-slate-500">{formatDate(task.created_at)}</div>
                                    </div>
-                                   <div className="flex flex-wrap gap-2 mt-1">
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-700/80 text-slate-200 border border-slate-600 text-xs font-semibold shadow">
-                                             {task.columnTitle}
-                                        </span>
-                                        {task.priority && (
-                                             <span
-                                                  className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold border"
-                                                  style={{
-                                                       backgroundColor: priorities.find((p) => p.id === task.priority)?.color || '#FFD600',
-                                                       color: '#fff',
-                                                       borderColor: priorities.find((p) => p.id === task.priority)?.color || '#FFD600',
-                                                  }}
-                                             >
-                                                  {priorities.find((p) => p.id === task.priority)?.label || task.priority}
-                                             </span>
-                                        )}
+
+                                   {/* Mobile Layout */}
+                                   <div className="md:hidden space-y-3">
+                                        {/* Title row */}
+                                        <div className="flex items-start gap-3">
+                                             <div
+                                                  className={`w-2 h-2 rounded-full shrink-0 mt-2 ${
+                                                       task.completed ? 'bg-green-500' : task.type === 'story' ? 'bg-purple-500' : 'bg-blue-500'
+                                                  }`}
+                                             />
+                                             <div className="flex-1 min-w-0">
+                                                  <h3 className="text-slate-100 font-medium">{task.title}</h3>
+
+                                                  {/* Badges */}
+                                                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                       <span className="text-xs text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded">{task.columnTitle}</span>
+                                                       {priority && (
+                                                            <span
+                                                                 className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded"
+                                                                 style={{
+                                                                      backgroundColor: priority.color + '20',
+                                                                      color: priority.color,
+                                                                 }}
+                                                            >
+                                                                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: priority.color }} />
+                                                                 {priority.label}
+                                                            </span>
+                                                       )}
+                                                  </div>
+
+                                                  {/* Meta row */}
+                                                  <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
+                                                       {collaborators.length > 0 && (
+                                                            <div className="flex items-center gap-1.5">
+                                                                 <div className="flex -space-x-1.5">
+                                                                      {collaborators.slice(0, 3).map((person, idx) => (
+                                                                           <div key={person.id} style={{ zIndex: 3 - idx }}>
+                                                                                <Avatar src={person.image} alt={person.name} size={18} className="border border-slate-800" />
+                                                                           </div>
+                                                                      ))}
+                                                                      {collaborators.length > 3 && (
+                                                                           <div className="w-4 h-4 rounded-full bg-slate-700 border border-slate-800 flex items-center justify-center text-[9px] text-slate-300 font-medium">
+                                                                                +{collaborators.length - 3}
+                                                                           </div>
+                                                                      )}
+                                                                 </div>
+                                                                 {collaborators.length <= 2 && (
+                                                                      <span className="text-slate-400">{collaborators.map((c) => c.name).join(', ')}</span>
+                                                                 )}
+                                                            </div>
+                                                       )}
+                                                       <div className="flex items-center gap-1">
+                                                            <FiCalendar className="w-3 h-3" />
+                                                            <span>{formatDate(task.created_at)}</span>
+                                                       </div>
+                                                  </div>
+
+                                                  {/* Description preview */}
+                                                  {description && (
+                                                       <p className="text-xs text-slate-500 mt-2 line-clamp-2">{description}</p>
+                                                  )}
+                                             </div>
+                                        </div>
                                    </div>
-                                   <div className="flex items-center gap-2 mt-2">
-                                        {task.assignee?.image && (
-                                             <Image src={task.assignee.image} alt={task.assignee.name ?? 'Assignee avatar'} width={20} height={20} className="rounded-full border border-slate-700" />
-                                        )}
-                                        <span className="text-slate-200 text-sm">{task.assignee?.name || <span className="italic text-slate-500">Unassigned</span>}</span>
-                                   </div>
-                                   <div className="text-slate-400 text-xs font-mono mt-1">{task.created_at ? new Date(task.created_at).toLocaleDateString() : '-'}</div>
-                                   {task.description && <div className="text-xs text-slate-400 pt-2">{task.description}</div>}
-                              </div>
-                         </div>
-                    ))
-               )}
-          </div>
+                              </motion.div>
+                         );
+                    })}
+               </div>
+          </motion.div>
      );
 };
 

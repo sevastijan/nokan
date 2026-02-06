@@ -20,8 +20,22 @@ import { FiX } from 'react-icons/fi';
 
 const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
      loading: () => (
-          <div className="flex items-center justify-center h-96">
-               <Loader text="Ładowanie widoku listy..." />
+          <div className="w-full max-w-5xl mx-auto animate-pulse">
+               <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3">
+                    {[...Array(5)].map((_, i) => (
+                         <div key={i} className="col-span-2 h-4 bg-slate-700/30 rounded" />
+                    ))}
+               </div>
+               <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 overflow-hidden">
+                    {[...Array(6)].map((_, i) => (
+                         <div key={i} className="px-5 py-4 border-b border-slate-700/30 last:border-b-0">
+                              <div className="flex items-center gap-3">
+                                   <div className="w-2 h-2 rounded-full bg-slate-700/50" />
+                                   <div className="h-5 bg-slate-700/30 rounded flex-1 max-w-xs" />
+                              </div>
+                         </div>
+                    ))}
+               </div>
           </div>
      ),
 });
@@ -547,10 +561,16 @@ export default function Page() {
                />
                {filterAssignee && activeFilteredAssignee && (
                     <div className="px-4 md:px-6 pt-4">
-                         <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-500/40 rounded-lg px-4 py-2 backdrop-blur-sm">
-                              <span className="text-sm text-blue-300 font-medium">Filtr aktywny: {activeFilteredAssignee.name}</span>
-                              <button onClick={() => handleFilterByAssignee(filterAssignee)} className="p-1 hover:bg-blue-500/30 rounded transition-colors" aria-label="Usuń filtr">
-                                   <FiX size={16} className="text-blue-300" />
+                         <div className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+                              <span className="text-sm text-slate-400">
+                                   Filtr: <span className="text-slate-200">{activeFilteredAssignee.name}</span>
+                              </span>
+                              <button
+                                   onClick={() => handleFilterByAssignee(filterAssignee)}
+                                   className="p-1 hover:bg-slate-700 rounded transition-colors"
+                                   aria-label="Usuń filtr"
+                              >
+                                   <FiX size={14} className="text-slate-400 hover:text-slate-200" />
                               </button>
                          </div>
                     </div>
