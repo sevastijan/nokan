@@ -89,11 +89,25 @@ const getErrorMessage = (err: unknown): string => {
 };
 
 export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
-     addBoard: builder.mutation<Board, { title: string; user_id: string }>({
-          async queryFn({ title, user_id }) {
+     addBoard: builder.mutation<Board, { title: string; user_id: string; memberIds?: string[] }>({
+          async queryFn({ title, user_id, memberIds = [] }) {
                try {
                     const { data, error } = await getSupabase().from('boards').insert({ title, user_id }).select('*').single();
                     if (error || !data) throw error || new Error('Add board failed');
+
+                    // Create team and add creator + selected members
+                    const allMemberIds = Array.from(new Set([user_id, ...memberIds]));
+                    const { data: newTeam, error: teamError } = await getSupabase()
+                         .from('teams')
+                         .insert({ board_id: data.id, name: title })
+                         .select('id')
+                         .single();
+                    if (teamError || !newTeam) throw teamError || new Error('Failed to create team');
+
+                    const membersToInsert = allMemberIds.map((uid) => ({ team_id: newTeam.id, user_id: uid }));
+                    const { error: membersError } = await getSupabase().from('team_members').insert(membersToInsert);
+                    if (membersError) throw membersError;
+
                     const newBoard: Board = {
                          id: data.id,
                          title: data.title,

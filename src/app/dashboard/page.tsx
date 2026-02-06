@@ -102,7 +102,7 @@ export default function DashboardPage() {
      }, []);
 
      const handleSave = useCallback(
-          async (title: string, templateId?: string | null) => {
+          async (title: string, templateId?: string | null, memberIds?: string[]) => {
                if (!currentUser) return;
 
                try {
@@ -112,11 +112,13 @@ export default function DashboardPage() {
                                    title,
                                    templateId,
                                    user_id: currentUser.id,
+                                   memberIds,
                               }).unwrap();
                          } else {
                               await addBoard({
                                    title,
                                    user_id: currentUser.id,
+                                   memberIds,
                               }).unwrap();
                          }
                     } else if (modalMode === 'edit' && selectedBoard) {
@@ -322,6 +324,7 @@ export default function DashboardPage() {
                     selectedTemplate={modalMode === 'create' ? selectedTemplate! : undefined}
                     onTemplateSelect={modalMode === 'create' ? setSelectedTemplate : undefined}
                     templateRefreshTrigger={templateRefreshTrigger}
+                    currentUserId={currentUser?.id}
                />
           </>
      );

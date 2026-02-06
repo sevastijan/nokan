@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPlus, FiTrash2, FiX, FiMove } from 'react-icons/fi';
+import { Plus, Trash2, X, GripVertical } from 'lucide-react';
 import { useAddBoardTemplateMutation } from '@/app/store/apiSlice';
 import { ApiTemplateResponse, BoardTemplate, CreateTemplateModalProps } from '@/app/types/globalTypes';
 
@@ -138,14 +138,14 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
           <AnimatePresence>
                {isOpen && (
                     <motion.div
-                         className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                         className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                          initial={{ opacity: 0 }}
                          animate={{ opacity: 1 }}
                          exit={{ opacity: 0 }}
                          onClick={(e) => e.target === e.currentTarget && handleClose()}
                     >
                          <motion.div
-                              className="bg-slate-800 text-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                              className="bg-slate-900/95 border border-slate-700/50 text-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
                               initial={{ scale: 0.8, opacity: 0, y: 50 }}
                               animate={{ scale: 1, opacity: 1, y: 0 }}
                               exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -154,28 +154,28 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                               <div className="flex items-center justify-between mb-6">
                                    <h2 className="text-xl font-bold">Create new template</h2>
                                    <button onClick={handleClose} className="text-slate-400 hover:text-white transition-colors">
-                                        <FiX size={24} />
+                                        <X size={24} />
                                    </button>
                               </div>
 
                               <div className="space-y-4">
                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Template name *</label>
+                                        <label className="block text-sm font-medium mb-2 text-slate-300">Template name *</label>
                                         <input
                                              type="text"
                                              value={name}
                                              onChange={(e) => setName(e.target.value)}
-                                             className="w-full bg-slate-700 text-white border border-slate-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                             className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-slate-500 transition-colors"
                                              placeholder="e.g. Development Workflow"
                                         />
                                    </div>
 
                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Template description</label>
+                                        <label className="block text-sm font-medium mb-2 text-slate-300">Template description</label>
                                         <textarea
                                              value={description}
                                              onChange={(e) => setDescription(e.target.value)}
-                                             className="w-full bg-slate-700 text-white border border-slate-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                                             className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none placeholder-slate-500 transition-colors"
                                              rows={3}
                                              placeholder="Short description..."
                                         />
@@ -183,23 +183,23 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
 
                                    <div>
                                         <div className="flex items-center justify-between mb-3">
-                                             <label className="block text-sm font-medium">Columns *</label>
-                                             <button onClick={addColumn} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
-                                                  <FiPlus size={16} /> Add column
+                                             <label className="block text-sm font-medium text-slate-300">Columns *</label>
+                                             <button onClick={addColumn} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm">
+                                                  <Plus size={16} /> Add column
                                              </button>
                                         </div>
 
                                         <div className="space-y-4">
                                              {columns.map((column, colIdx) => (
-                                                  <div key={column.id} className="bg-slate-700 rounded-lg p-3">
+                                                  <div key={column.id} className="bg-slate-800/60 border border-slate-700/30 rounded-lg p-3">
                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <FiMove className="text-slate-400" />
+                                                            <GripVertical size={16} className="text-slate-500" />
                                                             <span className="text-sm text-slate-400 w-8">{colIdx + 1}.</span>
                                                             <input
                                                                  type="text"
                                                                  value={column.title}
                                                                  onChange={(e) => updateColumnTitle(column.id, e.target.value)}
-                                                                 className="flex-1 bg-slate-600 text-white border border-slate-500 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                                 className="flex-1 bg-slate-900/50 text-white border border-slate-700/50 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
                                                                  placeholder="Column name"
                                                             />
                                                             <button
@@ -207,37 +207,37 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                                                  disabled={columns.length <= 1}
                                                                  className="text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                                             >
-                                                                 <FiTrash2 size={16} />
+                                                                 <Trash2 size={16} />
                                                             </button>
                                                        </div>
 
                                                        <div className="ml-8">
                                                             <div className="flex items-center gap-2 mb-1">
-                                                                 <span className="text-xs text-gray-400">Starter tasks</span>
-                                                                 <button onClick={() => addTask(column.id)} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                                                                      <FiPlus size={12} /> Add task
+                                                                 <span className="text-xs text-slate-400">Starter tasks</span>
+                                                                 <button onClick={() => addTask(column.id)} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
+                                                                      <Plus size={12} /> Add task
                                                                  </button>
                                                             </div>
                                                             <div className="space-y-2">
                                                                  {column.tasks.map((task, tIdx) => (
-                                                                      <div key={task.id} className="flex items-center gap-2 bg-slate-600 rounded p-2">
+                                                                      <div key={task.id} className="flex items-center gap-2 bg-slate-900/40 border border-slate-700/30 rounded-lg p-2">
                                                                            <span className="text-xs text-slate-400">{tIdx + 1}.</span>
                                                                            <input
                                                                                 type="text"
                                                                                 value={task.title}
                                                                                 onChange={(e) => updateTask(column.id, task.id, { title: e.target.value })}
-                                                                                className="flex-1 bg-slate-500 text-white border border-slate-400 rounded px-2 py-1 text-xs"
+                                                                                className="flex-1 bg-slate-800/50 text-white border border-slate-700/50 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
                                                                                 placeholder="Task title"
                                                                            />
                                                                            <input
                                                                                 type="text"
                                                                                 value={task.description}
                                                                                 onChange={(e) => updateTask(column.id, task.id, { description: e.target.value })}
-                                                                                className="flex-1 bg-slate-500 text-white border border-slate-400 rounded px-2 py-1 text-xs"
+                                                                                className="flex-1 bg-slate-800/50 text-white border border-slate-700/50 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
                                                                                 placeholder="Task description"
                                                                            />
                                                                            <button onClick={() => removeTask(column.id, task.id)} className="text-red-400 hover:text-red-300 transition-colors">
-                                                                                <FiTrash2 size={14} />
+                                                                                <Trash2 size={14} />
                                                                            </button>
                                                                       </div>
                                                                  ))}
@@ -250,13 +250,13 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                               </div>
 
                               <div className="flex gap-3 mt-6 justify-end">
-                                   <button onClick={handleClose} className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                                   <button onClick={handleClose} className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 border border-slate-700/50 transition-colors">
                                         Cancel
                                    </button>
                                    <button
                                         onClick={handleSave}
                                         disabled={!name.trim() || isLoading}
-                                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                    >
                                         {isLoading ? 'Saving...' : 'Create template'}
                                    </button>
