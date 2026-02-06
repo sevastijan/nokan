@@ -447,47 +447,6 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
           invalidatesTags: (_result, _error, { boardId }) => [{ type: 'Board', id: boardId }],
      }),
 
-     getUserBoards: builder.query<Board[], string>({
-          async queryFn(userId) {
-               try {
-                    const { data: ownBoardsData, error: ownErr } = await getSupabase().from('boards').select('id,title,user_id,created_at').eq('user_id', userId);
-                    if (ownErr) throw ownErr;
-                    const own = ownBoardsData || [];
-
-                    const { data: tm, error: tmErr } = await getSupabase().from('team_members').select('team_id').eq('user_id', userId);
-                    if (tmErr) throw tmErr;
-                    const teamIds = tm?.map((r) => r.team_id) || [];
-
-                    let teamBoardIds: string[] = [];
-                    if (teamIds.length > 0) {
-                         const { data: tb, error: tbErr } = await getSupabase().from('team_boards').select('board_id').in('team_id', teamIds);
-                         if (tbErr) throw tbErr;
-                         teamBoardIds = tb?.map((r) => r.board_id) || [];
-                    }
-
-                    let teamBoards: { id: string; title: string; user_id: string; created_at?: string }[] = [];
-                    if (teamBoardIds.length > 0) {
-                         const { data: tBoardsData, error: tBoardsErr } = await getSupabase().from('boards').select('id,title,user_id,created_at').in('id', teamBoardIds);
-                         if (tBoardsErr) throw tBoardsErr;
-                         teamBoards = tBoardsData || [];
-                    }
-
-                    const map = new Map<string, Board>();
-                    own.forEach((b) => map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, columns: [], statuses: [], updated_at: undefined } as Board));
-                    teamBoards.forEach((b) => {
-                         if (!map.has(b.id)) map.set(b.id, { ...b, ownerName: undefined, ownerEmail: undefined, statuses: [], columns: [], updated_at: undefined } as Board);
-                    });
-                    const result: Board[] = Array.from(map.values());
-                    return { data: result };
-               } catch (err) {
-                    const errorMessage = getErrorMessage(err);
-                    console.error('[apiSlice.getUserBoards] error:', errorMessage, err);
-                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
-               }
-          },
-          providesTags: (result) => (result ? [...result.map(({ id }) => ({ type: 'Boards' as const, id })), { type: 'Boards', id: 'LIST' }] : [{ type: 'Boards', id: 'LIST' }]),
-     }),
-
      getBoardsByTeamId: builder.query<Board[], string>({
           async queryFn(teamId) {
                try {

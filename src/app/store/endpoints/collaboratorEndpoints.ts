@@ -1,5 +1,5 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { supabase } from '@/app/lib/supabase';
+import { getSupabase } from '@/app/lib/supabase';
 import { User } from '@/app/types/globalTypes';
 
 interface RawUserData {
@@ -23,7 +23,7 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
      getTaskCollaborators: builder.query<User[], string>({
           async queryFn(taskId) {
                try {
-                    const { data, error } = await supabase
+                    const { data, error } = await getSupabase()
                          .from('task_collaborators')
                          .select(
                               `
@@ -63,7 +63,7 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
      addTaskCollaborator: builder.mutation<{ taskId: string; userId: string }, { taskId: string; userId: string }>({
           async queryFn({ taskId, userId }) {
                try {
-                    const { error } = await supabase.from('task_collaborators').insert({
+                    const { error } = await getSupabase().from('task_collaborators').insert({
                          task_id: taskId,
                          user_id: userId,
                     });
@@ -92,7 +92,7 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
      removeTaskCollaborator: builder.mutation<{ taskId: string; userId: string }, { taskId: string; userId: string }>({
           async queryFn({ taskId, userId }) {
                try {
-                    const { error } = await supabase.from('task_collaborators').delete().eq('task_id', taskId).eq('user_id', userId);
+                    const { error } = await getSupabase().from('task_collaborators').delete().eq('task_id', taskId).eq('user_id', userId);
 
                     if (error) throw error;
 
@@ -113,7 +113,7 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
           async queryFn({ taskId, collaboratorIds }) {
                try {
                     // Get current collaborators
-                    const { data: currentCollabs, error: fetchError } = await supabase.from('task_collaborators').select('user_id').eq('task_id', taskId);
+                    const { data: currentCollabs, error: fetchError } = await getSupabase().from('task_collaborators').select('user_id').eq('task_id', taskId);
 
                     if (fetchError) throw fetchError;
 
@@ -123,7 +123,7 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
 
                     // Remove old collaborators
                     if (toRemove.length > 0) {
-                         const { error: deleteError } = await supabase.from('task_collaborators').delete().eq('task_id', taskId).in('user_id', toRemove);
+                         const { error: deleteError } = await getSupabase().from('task_collaborators').delete().eq('task_id', taskId).in('user_id', toRemove);
 
                          if (deleteError) throw deleteError;
                     }
@@ -135,7 +135,7 @@ export const collaboratorEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
                               user_id: userId,
                          }));
 
-                         const { error: insertError } = await supabase.from('task_collaborators').insert(insertData);
+                         const { error: insertError } = await getSupabase().from('task_collaborators').insert(insertData);
 
                          if (insertError) throw insertError;
                     }

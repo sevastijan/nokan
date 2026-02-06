@@ -483,47 +483,6 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           providesTags: (result) => (result ? result.map((t) => ({ type: 'TasksWithDates' as const, id: t.id })) : []),
      }),
 
-     getTasksByBoardsAndDate: builder.query<Task[], { boardIds: string[]; start: string; end: string }>({
-          async queryFn(arg) {
-               const { boardIds, start, end } = arg;
-               if (!boardIds || boardIds.length === 0) {
-                    return { data: [] };
-               }
-               try {
-                    const { data, error } = await getSupabase()
-                         .from('tasks')
-                         .select('id,title,description,start_date,end_date,board_id,priority,color,column_id,sort_order,completed,status_id')
-                         .in('board_id', boardIds)
-                         .gte('start_date', start)
-                         .lte('start_date', end);
-                    if (error) {
-                         console.error('getTasksByBoardsAndDate error:', error.message);
-                         return { error: { status: 'CUSTOM_ERROR', error: error.message } };
-                    }
-                    const tasks: Task[] = (data || []).map((t: RawTask) => ({
-                         id: t.id,
-                         title: t.title,
-                         description: t.description ?? '',
-                         start_date: t.start_date,
-                         end_date: t.end_date,
-                         board_id: t.board_id,
-                         priority: t.priority ?? '',
-                         column_id: t.column_id,
-                         sort_order: t.sort_order ?? 0,
-                         order: t.sort_order ?? 0,
-                         completed: t.completed,
-                         status_id: t.status_id,
-                    }));
-                    return { data: tasks };
-               } catch (err) {
-                    const error = err as Error;
-                    console.error('getTasksByBoardsAndDate unexpected:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
-               }
-          },
-          providesTags: (result) => (result ? [...result.map(({ id }) => ({ type: 'Tasks' as const, id })), { type: 'Tasks', id: 'LIST' }] : [{ type: 'Tasks', id: 'LIST' }]),
-     }),
-
      removeTask: builder.mutation<{ id: string; columnId: string }, { taskId: string; columnId: string }>({
           async queryFn({ taskId, columnId }) {
                try {

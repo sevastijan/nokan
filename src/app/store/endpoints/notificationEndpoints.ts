@@ -54,31 +54,33 @@ export const notificationEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
           providesTags: (result, _error, userId) => (result ? [{ type: 'Notification', id: userId }] : []),
      }),
 
-     deleteNotification: builder.mutation<{ id: string }, { id: string }>({
+     deleteNotification: builder.mutation<{ id: string; user_id?: string }, { id: string }>({
           async queryFn({ id }) {
                try {
+                    const { data: notification } = await getSupabase().from('notifications').select('user_id').eq('id', id).single();
                     const { error } = await getSupabase().from('notifications').delete().eq('id', id);
                     if (error) throw error;
-                    return { data: { id } };
+                    return { data: { id, user_id: notification?.user_id } };
                } catch (err) {
                     const error = err as Error;
                     return { error: { status: 'CUSTOM_ERROR', error: error.message } };
                }
           },
-          invalidatesTags: (_result, _error, { id }) => [{ type: 'Notification', id }],
+          invalidatesTags: (result) => (result?.user_id ? [{ type: 'Notification', id: result.user_id }] : ['Notification']),
      }),
 
-     markNotificationRead: builder.mutation<{ id: string }, { id: string }>({
+     markNotificationRead: builder.mutation<{ id: string; user_id?: string }, { id: string }>({
           async queryFn({ id }) {
                try {
+                    const { data: notification } = await getSupabase().from('notifications').select('user_id').eq('id', id).single();
                     const { error } = await getSupabase().from('notifications').update({ read: true }).eq('id', id);
                     if (error) throw error;
-                    return { data: { id } };
+                    return { data: { id, user_id: notification?.user_id } };
                } catch (err) {
                     const error = err as Error;
                     return { error: { status: 'CUSTOM_ERROR', error: error.message } };
                }
           },
-          invalidatesTags: (_result, _error, { id }) => [{ type: 'Notification', id }],
+          invalidatesTags: (result) => (result?.user_id ? [{ type: 'Notification', id: result.user_id }] : ['Notification']),
      }),
 });
