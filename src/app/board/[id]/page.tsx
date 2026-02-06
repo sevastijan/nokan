@@ -334,6 +334,21 @@ export default function Page() {
                               console.error('[DnD] Exception:', err);
                          }
                     } else {
+                         // Block story with incomplete subtasks from Done column BEFORE moving
+                         const isDoneColumn = dstCol.title?.toLowerCase() === 'done';
+                         const isTaskNotCompleted = !movedTask.completed;
+
+                         if (isDoneColumn && isTaskNotCompleted && movedTask.type === 'story') {
+                              const { data: storySubtasks } = await getSupabase().from('tasks').select('id, completed').eq('parent_id', movedTask.id);
+                              const incompleteCount = storySubtasks?.filter((s) => !s.completed).length || 0;
+                              if (incompleteCount > 0) {
+                                   toast.warning(`Nie można zakończyć Story — ${incompleteCount} subtask${incompleteCount === 1 ? '' : 'ów'} nie jest ukończonych`, {
+                                        description: 'Ukończ wszystkie subtaski przed przeniesieniem Story do Done.',
+                                   });
+                                   return;
+                              }
+                         }
+
                          const updatedSrc = srcTasks.map((t, i) => ({ ...t, order: i, sort_order: i }));
                          const updatedDst = dstTasks.map((t, i) => ({
                               ...t,
@@ -361,8 +376,13 @@ export default function Page() {
                                    );
                               }
 
-                              const isDoneColumn = dstCol.title?.toLowerCase() === 'done';
-                              const isTaskNotCompleted = !movedTask.completed;
+                              // Sync status with column — find status matching destination column name
+                              const matchingStatus = statuses.find(
+                                   (s) => s.label.toLowerCase() === dstCol.title?.toLowerCase(),
+                              );
+                              if (matchingStatus) {
+                                   await getSupabase().from('tasks').update({ status_id: matchingStatus.id }).eq('id', movedTask.id);
+                              }
 
                               if (isDoneColumn && isTaskNotCompleted) {
                                    setPendingCompletionTask({
@@ -472,6 +492,9 @@ export default function Page() {
      const filteredColumns = useMemo(() => {
           return localColumns.map((col) => {
                const filteredTasks = (col.tasks || []).filter((task) => {
+                    // Hide subtasks — they belong inside their parent story
+                    if (task.parent_id) return false;
+
                     if (searchTerm) {
                          const term = searchTerm.toLowerCase();
                          if (!task.title?.toLowerCase().includes(term) && !task.description?.toLowerCase().includes(term)) return false;

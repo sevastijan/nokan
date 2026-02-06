@@ -3,7 +3,7 @@
 import { useState, Fragment } from 'react';
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check, CheckCheck, Trash2, ExternalLink, BellOff } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, ExternalLink, BellOff, AtSign, Inbox } from 'lucide-react';
 
 export interface Notification {
      id: string;
@@ -24,6 +24,19 @@ interface NotificationDropdownProps {
      onDelete: (id: string) => Promise<void>;
      onNavigate: (boardId: string, taskId: string) => void;
 }
+
+const notificationTypeLabels: Record<string, { label: string; icon?: React.ReactNode }> = {
+     mention: { label: 'Wzmianka', icon: <AtSign className="w-3.5 h-3.5 text-blue-400 inline mr-1" /> },
+     task_assigned: { label: 'Przypisanie' },
+     task_unassigned: { label: 'Usunięcie z zadania' },
+     status_changed: { label: 'Zmiana statusu' },
+     priority_changed: { label: 'Zmiana priorytetu' },
+     new_comment: { label: 'Komentarz' },
+     due_date_changed: { label: 'Zmiana terminu' },
+     collaborator_added: { label: 'Współpracownik' },
+     collaborator_removed: { label: 'Usunięcie współpracownika' },
+     new_submission: { label: 'Nowe zgłoszenie', icon: <Inbox className="w-3.5 h-3.5 text-purple-400 inline mr-1" /> },
+};
 
 const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead, onDelete, onNavigate }: NotificationDropdownProps) => {
      const [showRead, setShowRead] = useState(false);
@@ -112,7 +125,10 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                                                        {/* Content */}
                                                        <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-2">
-                                                                 <span className="font-medium text-sm text-white truncate">{n.type || 'Notification'}</span>
+                                                                 <span className="font-medium text-sm text-white truncate">
+                                                                      {notificationTypeLabels[n.type]?.icon}
+                                                                      {notificationTypeLabels[n.type]?.label || n.type || 'Notification'}
+                                                                 </span>
                                                                  {n.board_id && (
                                                                       <span className="flex-shrink-0 bg-slate-700/30 px-1.5 py-0.5 rounded text-[11px] text-slate-400 border border-slate-600/30">
                                                                            {getBoardName(n.board_id)}

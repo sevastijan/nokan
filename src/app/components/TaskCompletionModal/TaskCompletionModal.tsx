@@ -1,8 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheckCircle, FiX } from 'react-icons/fi';
-import Button from '../Button/Button';
+import { FiCheck, FiX } from 'react-icons/fi';
 
 interface TaskCompletionModalProps {
      isOpen: boolean;
@@ -19,45 +18,56 @@ const TaskCompletionModal = ({ isOpen, onClose, onConfirm, taskTitle }: TaskComp
                          initial={{ opacity: 0 }}
                          animate={{ opacity: 1 }}
                          exit={{ opacity: 0 }}
-                         className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-100 p-4"
+                         transition={{ duration: 0.2 }}
+                         className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
                          onClick={onClose}
                     >
                          <motion.div
-                              initial={{ scale: 0.95, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0.95, opacity: 0 }}
+                              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                              animate={{ scale: 1, opacity: 1, y: 0 }}
+                              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                               onClick={(e) => e.stopPropagation()}
-                              className="bg-slate-800 rounded-xl shadow-2xl border border-slate-600 max-w-md w-full overflow-hidden"
+                              className="bg-gradient-to-b from-slate-800 to-slate-850 rounded-2xl shadow-2xl shadow-black/40 border border-slate-700/50 max-w-md w-full overflow-hidden"
                          >
-                              <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                              {/* Header */}
+                              <div className="px-6 py-5 flex items-center justify-between">
                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                                             <FiCheckCircle className="w-5 h-5 text-green-400" />
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 border border-emerald-500/30 flex items-center justify-center">
+                                             <FiCheck className="w-5 h-5 text-emerald-400" />
                                         </div>
-                                        <h3 className="text-lg font-semibold text-white">Oznaczyć jako zakończone?</h3>
+                                        <div>
+                                             <h3 className="text-lg font-semibold text-white">Oznaczyć jako zakończone?</h3>
+                                             <p className="text-xs text-slate-500 mt-0.5">Przeniesiono do kolumny Done</p>
+                                        </div>
                                    </div>
-                                   <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white" aria-label="Close">
+                                   <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-700/60 transition-all duration-200 text-slate-500 hover:text-slate-300" aria-label="Zamknij">
                                         <FiX className="w-5 h-5" />
                                    </button>
                               </div>
 
-                              <div className="px-6 py-4">
-                                   <p className="text-slate-300 mb-2">
-                                        Zadanie zostało przeniesione do kolumny <span className="font-semibold text-white">&quot;Done&quot;</span>.
-                                   </p>
-                                   <p className="text-slate-400 text-sm mb-4">Czy chcesz oznaczyć to zadanie jako zakończone?</p>
-                                   <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
+                              {/* Body */}
+                              <div className="px-6 pb-5">
+                                   <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/50">
+                                        <p className="text-sm text-slate-400 mb-1">Zadanie</p>
                                         <p className="text-white font-medium truncate">{taskTitle || 'Zadanie bez tytułu'}</p>
                                    </div>
                               </div>
 
-                              <div className="px-6 py-4 bg-slate-900/30 border-t border-slate-700 flex items-center justify-end gap-3">
-                                   <Button variant="ghost" onClick={onClose} className="text-slate-300 hover:text-white">
-                                        Nie, zostaw bez zmian
-                                   </Button>
-                                   <Button variant="primary" onClick={onConfirm} className="bg-green-600 hover:bg-green-700 text-white">
-                                        Tak, oznacz jako zakończone
-                                   </Button>
+                              {/* Footer */}
+                              <div className="px-6 py-4 bg-slate-900/30 border-t border-slate-700/50 flex items-center justify-end gap-3">
+                                   <button
+                                        onClick={onClose}
+                                        className="px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 rounded-xl transition-all duration-200"
+                                   >
+                                        Zostaw bez zmian
+                                   </button>
+                                   <button
+                                        onClick={onConfirm}
+                                        className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200"
+                                   >
+                                        Oznacz jako zakończone
+                                   </button>
                               </div>
                          </motion.div>
                     </motion.div>

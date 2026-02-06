@@ -4,8 +4,20 @@ import CommentForm from './CommentForm';
 import CommentList from './CommentList';
 import { CommentsSectionProps } from '@/app/types/globalTypes';
 import { User } from '@/app/types/globalTypes';
+import { extractMentionedUserIds } from '@/app/lib/mentionUtils';
+import { useAddNotificationMutation } from '@/app/store/apiSlice';
+import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 
-const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComments, onImagePreview, teamMembers }: CommentsSectionProps & { teamMembers: User[] }) => {
+interface CommentsSectionExtendedProps extends CommentsSectionProps {
+     teamMembers: User[];
+     boardId?: string;
+     boardName?: string;
+     taskTitle?: string;
+}
+
+const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComments, onImagePreview, teamMembers, boardId, boardName, taskTitle }: CommentsSectionExtendedProps) => {
+     const [addNotification] = useAddNotificationMutation();
+
      const addComment = async (content: string, parentId?: string) => {
           if (!content.trim() || !taskId) return;
 
@@ -18,6 +30,38 @@ const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComment
                });
 
                if (error) throw error;
+
+               // Trigger mention notifications
+               const mentionedIds = extractMentionedUserIds(content, teamMembers);
+               const currentUserName = currentUser.custom_name || currentUser.name || 'Ktoś';
+               const title = taskTitle || task?.title || 'zadanie';
+
+               for (const mentionedId of mentionedIds) {
+                    if (mentionedId === currentUser.id) continue;
+
+                    addNotification({
+                         user_id: mentionedId,
+                         type: 'mention',
+                         task_id: taskId,
+                         board_id: boardId,
+                         message: `${currentUserName} wspomniał(a) Cię w komentarzu do zadania "${title}"`,
+                    });
+
+                    if (boardId) {
+                         triggerEmailNotification({
+                              type: 'mention',
+                              taskId,
+                              taskTitle: title,
+                              boardId,
+                              boardName,
+                              recipientId: mentionedId,
+                              metadata: {
+                                   mentionerName: currentUserName,
+                                   commentPreview: content.substring(0, 100),
+                              },
+                         });
+                    }
+               }
 
                await onRefreshComments();
                toast.success(parentId ? 'Odpowiedź dodana' : 'Komentarz dodany');

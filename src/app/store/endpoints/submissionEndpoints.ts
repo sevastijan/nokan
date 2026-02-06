@@ -1,6 +1,7 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { getSupabase } from '@/app/lib/supabase';
 import { ClientSubmission } from '@/app/types/globalTypes';
+import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 
 export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
      createSubmission: builder.mutation<
@@ -53,6 +54,54 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                          submission_id: submission.id,
                          status: null,
                     };
+
+                    // Notify OWNER and PROJECT_MANAGER users about new submission
+                    try {
+                         const { data: admins } = await getSupabase()
+                              .from('users')
+                              .select('id')
+                              .in('role', ['OWNER', 'PROJECT_MANAGER']);
+
+                         const { data: submitter } = await getSupabase()
+                              .from('users')
+                              .select('name')
+                              .eq('id', client_id)
+                              .single();
+
+                         const clientName = submitter?.name || 'Klient';
+                         const message = `Nowe zgłoszenie od ${clientName}: ${title}`;
+
+                         if (admins && admins.length > 0) {
+                              for (const admin of admins) {
+                                   if (admin.id === client_id) continue;
+
+                                   await getSupabase().from('notifications').insert({
+                                        user_id: admin.id,
+                                        type: 'new_submission',
+                                        task_id: task.id,
+                                        board_id,
+                                        message,
+                                        read: false,
+                                   });
+
+                                   triggerEmailNotification({
+                                        type: 'new_submission',
+                                        taskId: task.id,
+                                        taskTitle: title,
+                                        boardId: board_id,
+                                        boardName: boardTitle,
+                                        recipientId: admin.id,
+                                        metadata: {
+                                             clientName,
+                                             submissionDescription: description.substring(0, 100),
+                                        },
+                                   });
+                              }
+                         }
+                    } catch (notifyErr) {
+                         console.error('[createSubmission] notification error (non-blocking):', notifyErr);
+                    }
+
                     return { data: result };
                } catch (err) {
                     const error = err as Error;

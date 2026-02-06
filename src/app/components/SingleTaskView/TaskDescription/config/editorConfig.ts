@@ -3,6 +3,7 @@ import { ListItemNode, ListNode } from '@lexical/list';
 import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { LinkNode } from '@lexical/link';
 import { ImageNode } from '../nodes/ImageNode';
+import { MentionNode } from '../nodes/MentionNode';
 
 export const editorConfig = {
      namespace: 'TaskDescriptionEditor',
@@ -33,5 +34,5 @@ export const editorConfig = {
      onError: (error: Error) => {
           console.error('Lexical Error:', error);
      },
-     nodes: [HeadingNode, ListNode, ListItemNode, QuoteNode, CodeNode, CodeHighlightNode, LinkNode, ImageNode],
+     nodes: [HeadingNode, ListNode, ListItemNode, QuoteNode, CodeNode, CodeHighlightNode, LinkNode, ImageNode, MentionNode],
 };

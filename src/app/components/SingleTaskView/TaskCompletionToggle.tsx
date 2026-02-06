@@ -4,23 +4,30 @@ import { motion } from 'framer-motion';
 interface TaskCompletionToggleProps {
      completed: boolean;
      onToggle: (completed: boolean) => void;
+     disabled?: boolean;
+     disabledTooltip?: string;
 }
 
-const TaskCompletionToggle = ({ completed, onToggle }: TaskCompletionToggleProps) => {
+const TaskCompletionToggle = ({ completed, onToggle, disabled, disabledTooltip }: TaskCompletionToggleProps) => {
      return (
           <motion.button
-               whileHover={{ scale: 1.02 }}
-               whileTap={{ scale: 0.98 }}
-               onClick={() => onToggle(!completed)}
+               whileHover={disabled ? {} : { scale: 1.02 }}
+               whileTap={disabled ? {} : { scale: 0.98 }}
+               onClick={() => {
+                    if (disabled) return;
+                    onToggle(!completed);
+               }}
                className={`
                     group flex items-center gap-2.5 px-4 py-2 rounded-xl transition-all duration-300
                     ${
-                         completed
-                              ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
-                              : 'bg-slate-700/40 border border-slate-600/50 hover:border-emerald-500/30 hover:bg-slate-700/60'
+                         disabled
+                              ? 'bg-slate-700/30 border border-slate-600/30 opacity-60 cursor-not-allowed'
+                              : completed
+                                   ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                                   : 'bg-slate-700/40 border border-slate-600/50 hover:border-emerald-500/30 hover:bg-slate-700/60'
                     }
                `}
-               title={completed ? 'Oznacz jako niezakończone' : 'Oznacz jako zakończone'}
+               title={disabled ? (disabledTooltip || 'Ukończ najpierw wszystkie subtaski') : completed ? 'Oznacz jako niezakończone' : 'Oznacz jako zakończone'}
           >
                <div
                     className={`

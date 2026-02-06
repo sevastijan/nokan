@@ -26,7 +26,7 @@ import { $isLinkNode } from '@lexical/link';
 const editorConfig = {
      namespace: 'BoardNotesEditor',
      theme: {
-          root: 'p-4 border-none focus:outline-none min-h-[400px] max-h-[600px] overflow-y-auto text-slate-100',
+          root: 'border-none focus:outline-none text-slate-100',
           link: 'text-blue-400 hover:text-blue-300 underline cursor-pointer',
           text: {
                bold: 'font-bold',
@@ -436,7 +436,7 @@ export default function BoardNotesEditor({ initialContent, onSave, isSaving }: B
                     <ToolbarPlugin onSave={handleSave} isSaving={isSaving} />
                     <div className="flex-1 overflow-y-auto relative bg-slate-900/50">
                          <RichTextPlugin
-                              contentEditable={<ContentEditable className="outline-none p-4 min-h-100" style={{ caretColor: '#60a5fa' }} />}
+                              contentEditable={<ContentEditable className="outline-none p-4 min-h-full" style={{ caretColor: '#60a5fa' }} />}
                               placeholder={<div className="absolute top-4 left-4 text-slate-500 pointer-events-none">Zacznij pisać swoje notatki...</div>}
                               ErrorBoundary={LexicalErrorBoundary}
                          />

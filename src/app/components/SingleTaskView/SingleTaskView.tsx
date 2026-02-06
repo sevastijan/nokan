@@ -6,6 +6,9 @@ import { toast } from 'sonner';
 import { FiLayers, FiMessageCircle, FiPaperclip } from 'react-icons/fi';
 
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
+import { extractMentionedUserIds } from '@/app/lib/mentionUtils';
+import { useAddNotificationMutation } from '@/app/store/apiSlice';
+import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 import { useTaskManagement } from './hooks/useTaskManagement';
 import { useTaskAssignees } from './hooks/useTaskAssignees';
 import { useTaskStatus } from './hooks/useTaskStatus';
@@ -77,6 +80,7 @@ const SingleTaskView = ({
           uploadAttachmentMutation,
           uploadAttachment,
           autoSaveTask,
+          boardData,
      } = useTaskManagement({
           taskId,
           mode,
@@ -119,7 +123,7 @@ const SingleTaskView = ({
           setSelectedAssignees: (assignees) => updateField('selectedAssignees', assignees),
      });
 
-     const { handleStatusChange } = useTaskStatus({
+     const { handleStatusChange: rawHandleStatusChange } = useTaskStatus({
           isNewTask,
           currentTaskId,
           task,
@@ -130,11 +134,30 @@ const SingleTaskView = ({
           fetchTaskData,
      });
 
+     // Wrap status change to also sync column — find column matching the new status label
+     const handleStatusChange = useCallback(
+          async (newStatusId: string) => {
+               const newStatus = task?.statuses?.find((s) => s.id === newStatusId);
+               if (newStatus) {
+                    const matchingColumn = columns.find((c) => c.title?.toLowerCase() === newStatus.label.toLowerCase());
+                    if (matchingColumn && matchingColumn.id !== formData.localColumnId) {
+                         updateField('localColumnId', matchingColumn.id);
+                         updateTask({ column_id: matchingColumn.id });
+                    }
+               }
+               await rawHandleStatusChange(newStatusId);
+          },
+          [rawHandleStatusChange, task?.statuses, columns, formData.localColumnId, updateField, updateTask],
+     );
+
      const { isAutoSaving } = useAutosave({
           callback: autoSaveTask,
           delay: 3500,
           shouldSave: hasUnsavedChanges && !isNewTask && !showRecurringModal,
      });
+
+     const [addNotification] = useAddNotificationMutation();
+     const notifiedDescMentions = useRef(new Set<string>());
 
      const taskType: TaskType = task?.type || 'task';
      const isStory = taskType === 'story';
@@ -188,11 +211,17 @@ const SingleTaskView = ({
      );
 
      const handleColumnChange = useCallback(
-          async (newColId: string) => {
+          (newColId: string) => {
                updateField('localColumnId', newColId);
-               await updateTask({ column_id: newColId });
+               // Sync status with column — find status matching column title
+               const column = columns.find((c) => c.id === newColId);
+               const matchingStatus = column && task?.statuses ? task.statuses.find((s) => s.label.toLowerCase() === column.title?.toLowerCase()) : null;
+               updateTask({
+                    column_id: newColId,
+                    ...(matchingStatus && { status_id: matchingStatus.id }),
+               });
           },
-          [updateTask, updateField],
+          [updateTask, updateField, columns, task?.statuses],
      );
 
      const handleDateChange = useCallback(
@@ -296,15 +325,64 @@ const SingleTaskView = ({
           (value: string) => {
                updateField('tempDescription', value);
                updateTask({ description: value });
+
+               // Detect new @mentions in description
+               const mentionedIds = extractMentionedUserIds(value, teamMembers);
+               const currentUserName = user?.custom_name || user?.name || 'Ktoś';
+               const title = task?.title || formData.tempTitle || 'zadanie';
+
+               for (const mentionedId of mentionedIds) {
+                    if (mentionedId === user?.id) continue;
+                    if (notifiedDescMentions.current.has(mentionedId)) continue;
+
+                    notifiedDescMentions.current.add(mentionedId);
+
+                    addNotification({
+                         user_id: mentionedId,
+                         type: 'mention',
+                         task_id: task?.id,
+                         board_id: boardId,
+                         message: `${currentUserName} wspomniał(a) Cię w opisie zadania "${title}"`,
+                    });
+
+                    if (boardId) {
+                         triggerEmailNotification({
+                              type: 'mention',
+                              taskId: task?.id || '',
+                              taskTitle: title,
+                              boardId,
+                              boardName: boardData?.title,
+                              recipientId: mentionedId,
+                              metadata: { mentionerName: currentUserName },
+                         });
+                    }
+               }
           },
-          [updateField, updateTask],
+          [updateField, updateTask, teamMembers, user, task, formData.tempTitle, boardId, boardData, addNotification],
      );
+
+     const hasIncompleteSubtasks = useMemo(() => {
+          if (!isStory) return false;
+          if (subtasks.length === 0) return false;
+          return subtasks.some((s) => !s.completed);
+     }, [isStory, subtasks]);
+
+     const incompleteSubtaskCount = useMemo(() => {
+          if (!isStory) return 0;
+          return subtasks.filter((s) => !s.completed).length;
+     }, [isStory, subtasks]);
 
      const handleCompletionToggle = useCallback(
           (completed: boolean) => {
+               if (completed && hasIncompleteSubtasks) {
+                    toast.error(
+                         `Nie można zakończyć Story — ${incompleteSubtaskCount} subtask${incompleteSubtaskCount === 1 ? '' : 'ów'} nie jest ukończonych`,
+                    );
+                    return;
+               }
                updateTask({ completed });
           },
-          [updateTask],
+          [updateTask, hasIncompleteSubtasks, incompleteSubtaskCount],
      );
 
      useEffect(() => {
@@ -407,6 +485,8 @@ const SingleTaskView = ({
                               titleInputRef={titleInputRef}
                               completed={task?.completed || false}
                               onCompletionToggle={handleCompletionToggle}
+                              completionDisabled={hasIncompleteSubtasks && !task?.completed}
+                              completionDisabledTooltip="Ukończ najpierw wszystkie subtaski"
                          />
 
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
@@ -469,7 +549,7 @@ const SingleTaskView = ({
                                              <div className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
                                              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Opis</h3>
                                         </div>
-                                        <TaskDescription value={formData.tempDescription} onChange={handleDescriptionChange} taskId={task?.id} onImageClick={handleDescriptionImageClick} />
+                                        <TaskDescription value={formData.tempDescription} onChange={handleDescriptionChange} taskId={task?.id} onImageClick={handleDescriptionImageClick} teamMembers={teamMembers} />
                                    </div>
 
                                    {/* Subtasks Section */}
@@ -540,6 +620,9 @@ const SingleTaskView = ({
                                                        onRefreshComments={fetchTaskData}
                                                        onImagePreview={setPreviewImageUrl}
                                                        teamMembers={teamMembers}
+                                                       boardId={boardId}
+                                                       boardName={boardData?.title}
+                                                       taskTitle={task.title ?? undefined}
                                                   />
                                              </Suspense>
                                         </div>

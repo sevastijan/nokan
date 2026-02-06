@@ -33,11 +33,13 @@ const stripHtml = (html: string): string => {
 const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
      const sortedTasks = useMemo(() => {
           const allTasks = columns.flatMap((column) =>
-               column.tasks.map((task) => ({
-                    ...task,
-                    columnTitle: column.title,
-                    columnId: column.id,
-               })),
+               column.tasks
+                    .filter((task) => !task.parent_id)
+                    .map((task) => ({
+                         ...task,
+                         columnTitle: column.title,
+                         columnId: column.id,
+                    })),
           );
           return allTasks.sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
      }, [columns]);

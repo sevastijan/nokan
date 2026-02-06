@@ -19,6 +19,8 @@ interface TaskHeaderProps {
      titleInputRef: RefObject<HTMLInputElement | null>;
      completed?: boolean;
      onCompletionToggle?: (completed: boolean) => void;
+     completionDisabled?: boolean;
+     completionDisabledTooltip?: string;
 }
 
 const TaskHeader = ({
@@ -35,6 +37,8 @@ const TaskHeader = ({
      titleInputRef,
      completed,
      onCompletionToggle,
+     completionDisabled,
+     completionDisabledTooltip,
 }: TaskHeaderProps) => {
      return (
           <div className="relative">
@@ -123,7 +127,7 @@ const TaskHeader = ({
                          />
 
                          {!isNewTask && onCompletionToggle !== undefined && completed !== undefined && (
-                              <TaskCompletionToggle completed={completed} onToggle={onCompletionToggle} />
+                              <TaskCompletionToggle completed={completed} onToggle={onCompletionToggle} disabled={completionDisabled} disabledTooltip={completionDisabledTooltip} />
                          )}
                     </div>
                </div>

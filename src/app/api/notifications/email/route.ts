@@ -23,6 +23,9 @@ interface EmailRequestBody {
           unassignerName?: string;
           adderName?: string;
           removerName?: string;
+          mentionerName?: string;
+          clientName?: string;
+          submissionDescription?: string;
      };
 }
 
@@ -36,6 +39,8 @@ const preferenceKeyMap: Record<EmailNotificationType, string> = {
      due_date_changed: 'email_due_date_changed',
      collaborator_added: 'email_collaborator_added',
      collaborator_removed: 'email_collaborator_removed',
+     mention: 'email_mention',
+     new_submission: 'email_new_submission',
 };
 
 /**
