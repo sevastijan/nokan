@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { FaCalendarAlt } from 'react-icons/fa';
+import { FiLayers, FiMessageCircle, FiPaperclip } from 'react-icons/fi';
 
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
+import { extractMentionedUserIds } from '@/app/lib/mentionUtils';
+import { useAddNotificationMutation } from '@/app/store/apiSlice';
+import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 import { useTaskManagement } from './hooks/useTaskManagement';
 import { useTaskAssignees } from './hooks/useTaskAssignees';
 import { useTaskStatus } from './hooks/useTaskStatus';
@@ -29,7 +32,6 @@ import { UnsavedChangesModal } from './UnsavedChangesModal';
 import TaskTypeSelector from './TaskTypeSelector';
 import SubtaskList from './SubtaskList';
 import Lightbox from '@/app/components/Lightbox/Lightbox';
-import { calculateDuration } from '@/app/utils/helpers';
 import { SingleTaskViewProps, Column, TaskType, User } from '@/app/types/globalTypes';
 import TaskViewSkeleton from './TaskViewSkeleton';
 import { useGetSubtasksQuery, useUpdateTaskTypeMutation } from '@/app/store/apiSlice';
@@ -78,6 +80,7 @@ const SingleTaskView = ({
           uploadAttachmentMutation,
           uploadAttachment,
           autoSaveTask,
+          boardData,
      } = useTaskManagement({
           taskId,
           mode,
@@ -120,7 +123,7 @@ const SingleTaskView = ({
           setSelectedAssignees: (assignees) => updateField('selectedAssignees', assignees),
      });
 
-     const { handleStatusChange } = useTaskStatus({
+     const { handleStatusChange: rawHandleStatusChange } = useTaskStatus({
           isNewTask,
           currentTaskId,
           task,
@@ -131,11 +134,30 @@ const SingleTaskView = ({
           fetchTaskData,
      });
 
+     // Wrap status change to also sync column — find column matching the new status label
+     const handleStatusChange = useCallback(
+          async (newStatusId: string) => {
+               const newStatus = task?.statuses?.find((s) => s.id === newStatusId);
+               if (newStatus) {
+                    const matchingColumn = columns.find((c) => c.title?.toLowerCase() === newStatus.label.toLowerCase());
+                    if (matchingColumn && matchingColumn.id !== formData.localColumnId) {
+                         updateField('localColumnId', matchingColumn.id);
+                         updateTask({ column_id: matchingColumn.id });
+                    }
+               }
+               await rawHandleStatusChange(newStatusId);
+          },
+          [rawHandleStatusChange, task?.statuses, columns, formData.localColumnId, updateField, updateTask],
+     );
+
      const { isAutoSaving } = useAutosave({
           callback: autoSaveTask,
           delay: 3500,
           shouldSave: hasUnsavedChanges && !isNewTask && !showRecurringModal,
      });
+
+     const [addNotification] = useAddNotificationMutation();
+     const notifiedDescMentions = useRef(new Set<string>());
 
      const taskType: TaskType = task?.type || 'task';
      const isStory = taskType === 'story';
@@ -143,7 +165,7 @@ const SingleTaskView = ({
 
      const { data: subtasks = [], refetch: refetchSubtasks } = useGetSubtasksQuery({ storyId: task?.id || '' }, { skip: !task?.id || !isStory });
 
-     const duration = useMemo(() => calculateDuration(formData.startDate, formData.endDate), [formData.startDate, formData.endDate]);
+     // Duration is now calculated inside TaskDatesSection - no need for duplicate here
 
      const canChangeType = useMemo(() => {
           if (!isStory) return true;
@@ -189,11 +211,17 @@ const SingleTaskView = ({
      );
 
      const handleColumnChange = useCallback(
-          async (newColId: string) => {
+          (newColId: string) => {
                updateField('localColumnId', newColId);
-               await updateTask({ column_id: newColId });
+               // Sync status with column — find status matching column title
+               const column = columns.find((c) => c.id === newColId);
+               const matchingStatus = column && task?.statuses ? task.statuses.find((s) => s.label.toLowerCase() === column.title?.toLowerCase()) : null;
+               updateTask({
+                    column_id: newColId,
+                    ...(matchingStatus && { status_id: matchingStatus.id }),
+               });
           },
-          [updateTask, updateField],
+          [updateTask, updateField, columns, task?.statuses],
      );
 
      const handleDateChange = useCallback(
@@ -297,15 +325,64 @@ const SingleTaskView = ({
           (value: string) => {
                updateField('tempDescription', value);
                updateTask({ description: value });
+
+               // Detect new @mentions in description
+               const mentionedIds = extractMentionedUserIds(value, teamMembers);
+               const currentUserName = user?.custom_name || user?.name || 'Ktoś';
+               const title = task?.title || formData.tempTitle || 'zadanie';
+
+               for (const mentionedId of mentionedIds) {
+                    if (mentionedId === user?.id) continue;
+                    if (notifiedDescMentions.current.has(mentionedId)) continue;
+
+                    notifiedDescMentions.current.add(mentionedId);
+
+                    addNotification({
+                         user_id: mentionedId,
+                         type: 'mention',
+                         task_id: task?.id,
+                         board_id: boardId,
+                         message: `${currentUserName} wspomniał(a) Cię w opisie zadania "${title}"`,
+                    });
+
+                    if (boardId) {
+                         triggerEmailNotification({
+                              type: 'mention',
+                              taskId: task?.id || '',
+                              taskTitle: title,
+                              boardId,
+                              boardName: boardData?.title,
+                              recipientId: mentionedId,
+                              metadata: { mentionerName: currentUserName },
+                         });
+                    }
+               }
           },
-          [updateField, updateTask],
+          [updateField, updateTask, teamMembers, user, task, formData.tempTitle, boardId, boardData, addNotification],
      );
+
+     const hasIncompleteSubtasks = useMemo(() => {
+          if (!isStory) return false;
+          if (subtasks.length === 0) return false;
+          return subtasks.some((s) => !s.completed);
+     }, [isStory, subtasks]);
+
+     const incompleteSubtaskCount = useMemo(() => {
+          if (!isStory) return 0;
+          return subtasks.filter((s) => !s.completed).length;
+     }, [isStory, subtasks]);
 
      const handleCompletionToggle = useCallback(
           (completed: boolean) => {
+               if (completed && hasIncompleteSubtasks) {
+                    toast.error(
+                         `Nie można zakończyć Story — ${incompleteSubtaskCount} subtask${incompleteSubtaskCount === 1 ? '' : 'ów'} nie jest ukończonych`,
+                    );
+                    return;
+               }
                updateTask({ completed });
           },
-          [updateTask],
+          [updateTask, hasIncompleteSubtasks, incompleteSubtaskCount],
      );
 
      useEffect(() => {
@@ -375,7 +452,7 @@ const SingleTaskView = ({
           <AnimatePresence initial={false}>
                <motion.div
                     ref={overlayRef}
-                    className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+                    className="fixed inset-0 bg-black/40 backdrop-blur-md flex justify-center items-center z-50 p-2 md:p-4"
                     onClick={(e) => {
                          if (e.target === overlayRef.current && !openedSubtaskId) {
                               requestClose();
@@ -384,13 +461,15 @@ const SingleTaskView = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                >
                     <motion.div
                          ref={modalRef}
-                         className="bg-slate-800 rounded-xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl max-h-screen flex flex-col shadow-xl border border-slate-600 overflow-hidden"
-                         initial={{ scale: 0.95, opacity: 0 }}
-                         animate={{ scale: 1, opacity: 1 }}
-                         exit={{ scale: 0.95, opacity: 0 }}
+                         className="bg-gradient-to-b from-slate-800 to-slate-850 rounded-2xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50 overflow-hidden"
+                         initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                         animate={{ scale: 1, opacity: 1, y: 0 }}
+                         exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     >
                          <TaskHeader
                               isNewTask={isNewTask}
@@ -406,86 +485,132 @@ const SingleTaskView = ({
                               titleInputRef={titleInputRef}
                               completed={task?.completed || false}
                               onCompletionToggle={handleCompletionToggle}
+                              completionDisabled={hasIncompleteSubtasks && !task?.completed}
+                              completionDisabledTooltip="Ukończ najpierw wszystkie subtaski"
                          />
 
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-                              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-white">
-                                   <TaskPropertiesGrid
-                                        selectedAssignees={formData.selectedAssignees}
-                                        availableUsers={availableUsers}
-                                        onAssigneesChange={handleAssigneesChange}
-                                        selectedPriority={task?.priority ?? null}
-                                        onPriorityChange={handlePriorityChange}
-                                        columns={columns}
-                                        localColumnId={formData.localColumnId}
-                                        onColumnChange={handleColumnChange}
-                                   />
+                              {/* Main Content Area */}
+                              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 text-white thin-scrollbar">
+                                   {/* Properties Section - highest z-index for dropdowns */}
+                                   <div className="relative z-40">
+                                        <TaskPropertiesGrid
+                                             selectedAssignees={formData.selectedAssignees}
+                                             availableUsers={availableUsers}
+                                             onAssigneesChange={handleAssigneesChange}
+                                             selectedPriority={task?.priority ?? null}
+                                             onPriorityChange={handlePriorityChange}
+                                             columns={columns}
+                                             localColumnId={formData.localColumnId}
+                                             onColumnChange={handleColumnChange}
+                                        />
+                                   </div>
 
-                                   {!task?.parent_id && (
-                                        <div className="mt-4">
-                                             <TaskTypeSelector selectedType={taskType} onChange={handleTypeChange} disabled={!canChangeType} />
-                                             {!canChangeType && <p className="text-xs text-amber-400 mt-1">Usuń najpierw subtaski, aby zmienić typ na Task</p>}
+                                   {/* Type & Status Section */}
+                                   <div className="relative z-30 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {!task?.parent_id && (
+                                             <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                                  <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
+                                                       <div className="w-1 h-4 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full" />
+                                                       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Typ</h3>
+                                                  </div>
+                                                  <TaskTypeSelector selectedType={taskType} onChange={handleTypeChange} disabled={!canChangeType} />
+                                                  {!canChangeType && (
+                                                       <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
+                                                            <FiLayers className="w-3 h-3" />
+                                                            Usuń subtaski, aby zmienić typ
+                                                       </p>
+                                                  )}
+                                             </div>
+                                        )}
+
+                                        {task?.statuses && task.statuses.length > 0 && (
+                                             <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                                  <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
+                                                       <div className="w-1 h-4 bg-gradient-to-b from-yellow-500 to-orange-500 rounded-full" />
+                                                       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</h3>
+                                                  </div>
+                                                  <StatusSelector
+                                                       statuses={task.statuses}
+                                                       selectedStatusId={task.status_id || null}
+                                                       onChange={handleStatusChange}
+                                                       onStatusesChange={(newStatuses) => updateTask({ statuses: newStatuses })}
+                                                       boardId={boardId}
+                                                       disabled={false}
+                                                       label=""
+                                                  />
+                                             </div>
+                                        )}
+                                   </div>
+
+                                   {/* Description Section */}
+                                   <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                        <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
+                                             <div className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
+                                             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Opis</h3>
                                         </div>
-                                   )}
+                                        <TaskDescription value={formData.tempDescription} onChange={handleDescriptionChange} taskId={task?.id} onImageClick={handleDescriptionImageClick} teamMembers={teamMembers} />
+                                   </div>
 
-                                   {task?.statuses && task.statuses.length > 0 && (
-                                        <div className="mt-6">
-                                             <StatusSelector
-                                                  statuses={task.statuses}
-                                                  selectedStatusId={task.status_id || null}
-                                                  onChange={handleStatusChange}
-                                                  onStatusesChange={(newStatuses) => updateTask({ statuses: newStatuses })}
-                                                  boardId={boardId}
-                                                  disabled={false}
-                                                  label="Status"
+                                   {/* Subtasks Section */}
+                                   {isStory && task?.id && !isNewTask && (
+                                        <div className="relative z-[5] bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
+                                                  <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full" />
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Subtaski</h3>
+                                                  <span className="ml-auto text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">{subtasks.length}</span>
+                                             </div>
+                                             <SubtaskList
+                                                  storyId={task.id}
+                                                  boardId={boardId!}
+                                                  columnId={task.column_id || formData.localColumnId || ''}
+                                                  subtasks={subtasks}
+                                                  onSubtaskOpen={setOpenedSubtaskId}
+                                                  onRefresh={() => {
+                                                       refetchSubtasks();
+                                                       fetchTaskData();
+                                                  }}
                                              />
                                         </div>
                                    )}
 
-                                   <TaskDescription value={formData.tempDescription} onChange={handleDescriptionChange} taskId={task?.id} onImageClick={handleDescriptionImageClick} />
-
-                                   {isStory && task?.id && !isNewTask && (
-                                        <SubtaskList
-                                             storyId={task.id}
-                                             boardId={boardId!}
-                                             columnId={task.column_id || formData.localColumnId || ''}
-                                             subtasks={subtasks}
-                                             onSubtaskOpen={setOpenedSubtaskId}
-                                             onRefresh={() => {
-                                                  refetchSubtasks();
-                                                  fetchTaskData();
-                                             }}
-                                        />
-                                   )}
-
+                                   {/* Dates Section */}
                                    <TaskDatesSection startDate={formData.startDate} endDate={formData.endDate} onDateChange={handleDateChange} />
 
-                                   {duration !== null && (
-                                        <div className="p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200 flex items-center gap-2">
-                                             <FaCalendarAlt className="text-white w-4 h-4" />
-                                             <span className="font-medium">
-                                                  Czas trwania: {duration} {duration === 1 ? 'dzień' : 'dni'}
-                                             </span>
+                                   {/* Attachments Section */}
+                                   <Suspense fallback={<div className="text-slate-400 text-sm p-4">Ładowanie załączników...</div>}>
+                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
+                                                  <div className="w-1 h-4 bg-gradient-to-b from-teal-500 to-green-500 rounded-full" />
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Załączniki</h3>
+                                                  <FiPaperclip className="w-3.5 h-3.5 text-slate-500 ml-1" />
+                                             </div>
+                                             <TaskAttachmentsSection
+                                                  isNewTask={isNewTask}
+                                                  taskId={task?.id}
+                                                  attachments={task?.attachments || []}
+                                                  localFilePreviews={localFilePreviews}
+                                                  onAddFiles={addFiles}
+                                                  onRemoveLocalFile={removeFile}
+                                                  currentUser={user}
+                                                  onTaskUpdate={fetchTaskData}
+                                                  onAttachmentsUpdate={fetchTaskData}
+                                                  onUploadAttachment={uploadAttachment}
+                                             />
                                         </div>
-                                   )}
-
-                                   <Suspense fallback={<div className="text-slate-400 text-sm">Ładowanie załączników...</div>}>
-                                        <TaskAttachmentsSection
-                                             isNewTask={isNewTask}
-                                             taskId={task?.id}
-                                             attachments={task?.attachments || []}
-                                             localFilePreviews={localFilePreviews}
-                                             onAddFiles={addFiles}
-                                             onRemoveLocalFile={removeFile}
-                                             currentUser={user}
-                                             onTaskUpdate={fetchTaskData}
-                                             onAttachmentsUpdate={fetchTaskData}
-                                             onUploadAttachment={uploadAttachment}
-                                        />
                                    </Suspense>
 
+                                   {/* Comments Section */}
                                    {!isNewTask && task?.id && (
-                                        <div className="mt-6">
+                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
+                                                  <div className="w-1 h-4 bg-gradient-to-b from-amber-500 to-yellow-500 rounded-full" />
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Komentarze</h3>
+                                                  <FiMessageCircle className="w-3.5 h-3.5 text-slate-500 ml-1" />
+                                                  {task.comments && task.comments.length > 0 && (
+                                                       <span className="ml-auto text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">{task.comments.length}</span>
+                                                  )}
+                                             </div>
                                              <Suspense fallback={<div className="animate-pulse text-slate-400">Ładowanie komentarzy...</div>}>
                                                   <CommentsSection
                                                        taskId={task.id}
@@ -495,6 +620,9 @@ const SingleTaskView = ({
                                                        onRefreshComments={fetchTaskData}
                                                        onImagePreview={setPreviewImageUrl}
                                                        teamMembers={teamMembers}
+                                                       boardId={boardId}
+                                                       boardName={boardData?.title}
+                                                       taskTitle={task.title ?? undefined}
                                                   />
                                              </Suspense>
                                         </div>

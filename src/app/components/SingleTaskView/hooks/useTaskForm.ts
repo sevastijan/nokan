@@ -40,14 +40,14 @@ export const useTaskForm = ({ initialColumnId }: UseTaskFormProps) => {
      const syncWithTask = useCallback((taskData: TaskData | null | undefined, columnId?: string) => {
           if (!taskData) return;
 
-          setFormData({
+          setFormData((prev) => ({
                tempTitle: taskData.title || '',
                tempDescription: taskData.description || '',
                selectedAssignees: taskData.collaborators || [],
-               localColumnId: taskData.column_id || columnId,
+               localColumnId: prev.localColumnId || taskData.column_id || columnId,
                startDate: taskData.start_date || '',
                endDate: taskData.end_date || '',
-          });
+          }));
      }, []);
 
      return {

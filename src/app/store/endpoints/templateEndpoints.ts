@@ -93,8 +93,8 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
           invalidatesTags: () => [{ type: 'Board', id: 'TEMPLATE-LIST' }],
      }),
 
-     createBoardFromTemplate: builder.mutation<Board, { title: string; templateId: string; user_id: string }>({
-          async queryFn({ title, templateId, user_id }) {
+     createBoardFromTemplate: builder.mutation<Board, { title: string; templateId: string; user_id: string; memberIds?: string[] }>({
+          async queryFn({ title, templateId, user_id, memberIds = [] }) {
                try {
                     const { data: newBoard, error: boardErr } = await getSupabase().from('boards').insert({ title, user_id }).select('*').single();
                     if (boardErr || !newBoard) throw boardErr || new Error('Failed to create board');
@@ -133,6 +133,19 @@ export const templateEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, 
                          const { error: insertTasksErr } = await getSupabase().from('tasks').insert(tasksToInsert);
                          if (insertTasksErr) throw insertTasksErr;
                     }
+
+                    // Create team and add creator + selected members
+                    const allMemberIds = Array.from(new Set([user_id, ...memberIds]));
+                    const { data: newTeam, error: teamError } = await getSupabase()
+                         .from('teams')
+                         .insert({ board_id: boardId, name: title })
+                         .select('id')
+                         .single();
+                    if (teamError || !newTeam) throw teamError || new Error('Failed to create team');
+
+                    const membersToInsert = allMemberIds.map((uid) => ({ team_id: newTeam.id, user_id: uid }));
+                    const { error: membersError } = await getSupabase().from('team_members').insert(membersToInsert);
+                    if (membersError) throw membersError;
 
                     let ownerName, ownerEmail;
                     try {

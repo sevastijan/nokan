@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { FaFilter, FaLayerGroup } from 'react-icons/fa';
-import { FiX } from 'react-icons/fi';
-import { IoMdCheckmark } from 'react-icons/io';
-import clsx from 'clsx';
+import { useRef, useMemo, useCallback } from 'react';
+import { FiFilter, FiX } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
+import FilterRadioItem from './FilterRadioItem';
+import Avatar from '@/app/components/Avatar/Avatar';
 import type { TaskTypeFilter } from '@/app/types/globalTypes';
 
 export interface PriorityOption {
@@ -17,277 +17,165 @@ export interface PriorityOption {
 export interface AssigneeOption {
      id: string;
      name: string;
+     image?: string;
 }
 
 interface FilterDropdownProps {
+     isOpen: boolean;
+     onToggle: () => void;
+     onClose: () => void;
      priorities: PriorityOption[];
-     assignees: AssigneeOption[];
      filterPriority: string | null;
-     filterAssignee: string | null;
-     filterType?: TaskTypeFilter;
      onFilterPriorityChange: (priorityId: string | null) => void;
+     assignees: AssigneeOption[];
+     filterAssignee: string | null;
      onFilterAssigneeChange: (assigneeId: string | null) => void;
+     filterType: TaskTypeFilter;
      onFilterTypeChange?: (type: TaskTypeFilter) => void;
 }
 
-const FilterDropdown = ({ priorities, assignees, filterPriority, filterAssignee, filterType = 'all', onFilterPriorityChange, onFilterAssigneeChange, onFilterTypeChange }: FilterDropdownProps) => {
-     const [open, setOpen] = useState(false);
-     const ref = useRef<HTMLDivElement>(null);
+const FilterDropdown = ({
+     isOpen,
+     onToggle,
+     onClose,
+     priorities,
+     filterPriority,
+     onFilterPriorityChange,
+     assignees,
+     filterAssignee,
+     onFilterAssigneeChange,
+     filterType,
+     onFilterTypeChange,
+}: FilterDropdownProps) => {
+     const containerRef = useRef<HTMLDivElement>(null);
 
-     useOutsideClick([ref], () => {
-          if (open) setOpen(false);
-     });
+     useOutsideClick([containerRef], onClose, isOpen);
 
-     useEffect(() => {
-          const handler = (e: KeyboardEvent) => {
-               if (e.key === 'Escape' && open) {
-                    setOpen(false);
-               }
-          };
-          document.addEventListener('keydown', handler);
-          return () => document.removeEventListener('keydown', handler);
-     }, [open]);
+     const hasActiveFilters = useMemo(
+          () => filterPriority !== null || filterAssignee !== null || filterType !== 'all',
+          [filterPriority, filterAssignee, filterType],
+     );
 
-     const hasActiveFilters = filterPriority !== null || filterAssignee !== null || filterType !== 'all';
-     const activeAssignee = assignees.find((a) => a.id === filterAssignee);
-     const activeFiltersCount = (filterPriority ? 1 : 0) + (filterAssignee ? 1 : 0) + (filterType !== 'all' ? 1 : 0);
+     const activeFiltersCount = useMemo(() => {
+          let count = 0;
+          if (filterPriority !== null) count++;
+          if (filterAssignee !== null) count++;
+          if (filterType !== 'all') count++;
+          return count;
+     }, [filterPriority, filterAssignee, filterType]);
 
-     const getTypeLabel = (type: TaskTypeFilter) => {
-          switch (type) {
-               case 'task':
-                    return '📋 Tasks';
-               case 'story':
-                    return '📚 Stories';
-               default:
-                    return 'All types';
-          }
-     };
+     const handleClearFilters = useCallback(() => {
+          onFilterPriorityChange(null);
+          onFilterAssigneeChange(null);
+          onFilterTypeChange?.('all');
+     }, [onFilterPriorityChange, onFilterAssigneeChange, onFilterTypeChange]);
 
      return (
-          <div className="relative" ref={ref}>
-               <div className="flex items-center gap-2">
-                    {hasActiveFilters && (
-                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
-                              {filterAssignee && activeAssignee && (
-                                   <div className="flex items-center gap-2 bg-blue-500/20 border border-blue-500/30 rounded-lg px-3 py-1.5 backdrop-blur-sm">
-                                        <span className="text-xs font-medium text-blue-300">👤 {activeAssignee.name}</span>
-                                        <button
-                                             onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  onFilterAssigneeChange(null);
-                                             }}
-                                             className="hover:bg-blue-500/30 rounded p-0.5 transition-colors"
-                                             title="Usuń filtr"
-                                        >
-                                             <FiX className="w-3 h-3 text-blue-300" />
-                                        </button>
-                                   </div>
-                              )}
-                              {filterPriority && (
-                                   <div className="flex items-center gap-2 bg-purple-500/20 border border-purple-500/30 rounded-lg px-3 py-1.5 backdrop-blur-sm">
-                                        <span className="text-xs font-medium text-purple-300">🏷️ {priorities.find((p) => p.id === filterPriority)?.label || 'Priority'}</span>
-                                        <button
-                                             onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  onFilterPriorityChange(null);
-                                             }}
-                                             className="hover:bg-purple-500/30 rounded p-0.5 transition-colors"
-                                             title="Usuń filtr"
-                                        >
-                                             <FiX className="w-3 h-3 text-purple-300" />
-                                        </button>
-                                   </div>
-                              )}
-                              {filterType !== 'all' && (
-                                   <div className="flex items-center gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-3 py-1.5 backdrop-blur-sm">
-                                        <span className="text-xs font-medium text-green-300">{getTypeLabel(filterType)}</span>
-                                        <button
-                                             onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  onFilterTypeChange?.('all');
-                                             }}
-                                             className="hover:bg-green-500/30 rounded p-0.5 transition-colors"
-                                             title="Usuń filtr"
-                                        >
-                                             <FiX className="w-3 h-3 text-green-300" />
-                                        </button>
-                                   </div>
-                              )}
-                         </div>
-                    )}
+          <div className="relative" ref={containerRef}>
+               <button
+                    onClick={onToggle}
+                    className={`
+                         flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors
+                         ${hasActiveFilters || isOpen ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}
+                    `}
+                    aria-haspopup="true"
+                    aria-expanded={isOpen}
+               >
+                    <FiFilter className="w-4 h-4" />
+                    <span className="hidden sm:inline font-medium">Filtry</span>
+                    {hasActiveFilters && <span className="bg-slate-500 text-slate-100 text-xs px-1.5 py-0.5 rounded min-w-[18px] text-center">{activeFiltersCount}</span>}
+               </button>
 
-                    <button
-                         type="button"
-                         onClick={() => setOpen((o) => !o)}
-                         className={clsx(
-                              'flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200',
-                              open || hasActiveFilters ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-purple-200 hover:text-white hover:bg-purple-700/50 backdrop-blur-sm',
-                         )}
-                    >
-                         <FaFilter className="w-4 h-4" />
-                         <span className="hidden sm:inline text-sm font-medium">Filters</span>
-                         {hasActiveFilters && <span className="bg-white/20 text-xs font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center">{activeFiltersCount}</span>}
-                    </button>
-               </div>
+               <AnimatePresence>
+                    {isOpen && (
+                         <motion.div
+                              initial={{ opacity: 0, y: -8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute right-0 mt-2 w-72 bg-slate-800 rounded-xl shadow-xl border border-slate-700 z-50 overflow-hidden"
+                         >
+                              {/* Header */}
+                              <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+                                   <span className="text-sm font-medium text-slate-200">Filtruj zadania</span>
+                                   {hasActiveFilters && (
+                                        <button onClick={handleClearFilters} className="text-xs text-slate-400 hover:text-slate-200 transition-colors">
+                                             Wyczyść
+                                        </button>
+                                   )}
+                              </div>
 
-               {open && (
-                    <div className="absolute right-0 mt-2 w-72 bg-slate-800/95 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl shadow-slate-900/50 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                         <div className="p-4 space-y-4">
-                              {/* Task Type Filter */}
-                              {onFilterTypeChange && (
-                                   <>
-                                        <div>
-                                             <div className="flex items-center justify-between mb-2">
-                                                  <h4 className="text-sm font-semibold text-white">Type</h4>
-                                                  {filterType !== 'all' && (
-                                                       <button onClick={() => onFilterTypeChange('all')} className="text-xs text-slate-400 hover:text-white transition-colors">
-                                                            Clear
-                                                       </button>
-                                                  )}
-                                             </div>
-                                             <div className="space-y-1.5">
-                                                  <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors">
-                                                       <input
-                                                            type="radio"
-                                                            name="filterType"
-                                                            value="all"
-                                                            checked={filterType === 'all'}
-                                                            onChange={() => onFilterTypeChange('all')}
-                                                            className="form-radio text-purple-500 bg-slate-700 border-slate-600 focus:ring-purple-500 focus:ring-offset-slate-800"
-                                                       />
-                                                       <span className="text-sm text-slate-300">All types</span>
-                                                  </label>
-                                                  <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors">
-                                                       <input
-                                                            type="radio"
-                                                            name="filterType"
-                                                            value="task"
-                                                            checked={filterType === 'task'}
-                                                            onChange={() => onFilterTypeChange('task')}
-                                                            className="form-radio text-purple-500 bg-slate-700 border-slate-600 focus:ring-purple-500 focus:ring-offset-slate-800"
-                                                       />
-                                                       <div className="flex items-center gap-2">
-                                                            <IoMdCheckmark className="w-4 h-4 text-blue-400" />
-                                                            <span className="text-sm text-slate-300">Tasks only</span>
-                                                       </div>
-                                                  </label>
-                                                  <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors">
-                                                       <input
-                                                            type="radio"
-                                                            name="filterType"
-                                                            value="story"
-                                                            checked={filterType === 'story'}
-                                                            onChange={() => onFilterTypeChange('story')}
-                                                            className="form-radio text-purple-500 bg-slate-700 border-slate-600 focus:ring-purple-500 focus:ring-offset-slate-800"
-                                                       />
-                                                       <div className="flex items-center gap-2">
-                                                            <FaLayerGroup className="w-4 h-4 text-purple-400" />
-                                                            <span className="text-sm text-slate-300">Stories only</span>
-                                                       </div>
-                                                  </label>
-                                             </div>
+                              <div className="p-3 space-y-4 max-h-[60vh] overflow-y-auto">
+                                   {/* Priority Filter */}
+                                   <div>
+                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">Priorytet</div>
+                                        <ul className="space-y-0.5">
+                                             <li>
+                                                  <FilterRadioItem name="filter-priority" checked={filterPriority === null} onChange={() => onFilterPriorityChange(null)}>
+                                                       <span className="text-sm text-slate-300">Wszystkie</span>
+                                                  </FilterRadioItem>
+                                             </li>
+                                             {priorities.map((p) => (
+                                                  <li key={p.id}>
+                                                       <FilterRadioItem name="filter-priority" checked={filterPriority === p.id} onChange={() => onFilterPriorityChange(p.id)}>
+                                                            <div className="flex items-center gap-2">
+                                                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+                                                                 <span className="text-sm text-slate-300">{p.label}</span>
+                                                            </div>
+                                                       </FilterRadioItem>
+                                                  </li>
+                                             ))}
+                                        </ul>
+                                   </div>
+
+                                   <div className="border-t border-slate-700/50" />
+
+                                   {/* Assignee Filter */}
+                                   <div>
+                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">Przypisani</div>
+                                        <ul className="space-y-0.5 max-h-40 overflow-y-auto">
+                                             <li>
+                                                  <FilterRadioItem name="filter-assignee" checked={filterAssignee === null} onChange={() => onFilterAssigneeChange(null)}>
+                                                       <span className="text-sm text-slate-300">Wszyscy</span>
+                                                  </FilterRadioItem>
+                                             </li>
+                                             {assignees.map((u) => (
+                                                  <li key={u.id}>
+                                                       <FilterRadioItem name="filter-assignee" checked={filterAssignee === u.id} onChange={() => onFilterAssigneeChange(u.id)}>
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                 <Avatar src={u.image || ''} alt={u.name} size={20} className="shrink-0" />
+                                                                 <span className="text-sm text-slate-300 truncate">{u.name}</span>
+                                                            </div>
+                                                       </FilterRadioItem>
+                                                  </li>
+                                             ))}
+                                        </ul>
+                                   </div>
+
+                                   <div className="border-t border-slate-700/50" />
+
+                                   {/* Task Type Filter */}
+                                   <div>
+                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">Typ zadania</div>
+                                        <div className="flex bg-slate-900/50 rounded-lg p-0.5">
+                                             {(['all', 'task', 'story'] as TaskTypeFilter[]).map((t) => (
+                                                  <button
+                                                       key={t}
+                                                       onClick={() => onFilterTypeChange?.(t)}
+                                                       className={`
+                                                            flex-1 py-1.5 text-xs font-medium rounded-md transition-colors
+                                                            ${filterType === t ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'}
+                                                       `}
+                                                  >
+                                                       {t === 'all' ? 'Wszystkie' : t === 'task' ? 'Task' : 'Story'}
+                                                  </button>
+                                             ))}
                                         </div>
-                                        <hr className="border-slate-700/50" />
-                                   </>
-                              )}
-
-                              {/* Priority Filter */}
-                              <div>
-                                   <div className="flex items-center justify-between mb-2">
-                                        <h4 className="text-sm font-semibold text-white">Priority</h4>
-                                        {filterPriority && (
-                                             <button onClick={() => onFilterPriorityChange(null)} className="text-xs text-slate-400 hover:text-white transition-colors">
-                                                  Clear
-                                             </button>
-                                        )}
                                    </div>
-                                   <ul className="space-y-1.5 max-h-48 overflow-auto scrollbar-thin scrollbar-thumb-slate-600">
-                                        <li>
-                                             <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors">
-                                                  <input
-                                                       type="radio"
-                                                       name="filterPriority"
-                                                       value=""
-                                                       checked={filterPriority === null}
-                                                       onChange={() => onFilterPriorityChange(null)}
-                                                       className="form-radio text-purple-500 bg-slate-700 border-slate-600 focus:ring-purple-500 focus:ring-offset-slate-800"
-                                                  />
-                                                  <span className="text-sm text-slate-300">All priorities</span>
-                                             </label>
-                                        </li>
-                                        {priorities.map((p) => (
-                                             <li key={p.id}>
-                                                  <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors">
-                                                       <input
-                                                            type="radio"
-                                                            name="filterPriority"
-                                                            value={p.id}
-                                                            checked={filterPriority === p.id}
-                                                            onChange={() => onFilterPriorityChange(p.id)}
-                                                            className="form-radio text-purple-500 bg-slate-700 border-slate-600 focus:ring-purple-500 focus:ring-offset-slate-800"
-                                                       />
-                                                       <span
-                                                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium shadow-sm"
-                                                            style={{
-                                                                 backgroundColor: p.color + '20',
-                                                                 color: p.color,
-                                                                 border: `1px solid ${p.color}40`,
-                                                            }}
-                                                       >
-                                                            {p.label}
-                                                       </span>
-                                                  </label>
-                                             </li>
-                                        ))}
-                                   </ul>
                               </div>
-
-                              <hr className="border-slate-700/50" />
-
-                              {/* Assignee Filter */}
-                              <div>
-                                   <div className="flex items-center justify-between mb-2">
-                                        <h4 className="text-sm font-semibold text-white">Assignee</h4>
-                                        {filterAssignee && (
-                                             <button onClick={() => onFilterAssigneeChange(null)} className="text-xs text-slate-400 hover:text-white transition-colors">
-                                                  Clear
-                                             </button>
-                                        )}
-                                   </div>
-                                   <ul className="space-y-1.5 max-h-48 overflow-auto scrollbar-thin scrollbar-thumb-slate-600">
-                                        <li>
-                                             <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors">
-                                                  <input
-                                                       type="radio"
-                                                       name="filterAssignee"
-                                                       value=""
-                                                       checked={filterAssignee === null}
-                                                       onChange={() => onFilterAssigneeChange(null)}
-                                                       className="form-radio text-purple-500 bg-slate-700 border-slate-600 focus:ring-purple-500 focus:ring-offset-slate-800"
-                                                  />
-                                                  <span className="text-sm text-slate-300">All assignees</span>
-                                             </label>
-                                        </li>
-                                        {assignees.map((u) => (
-                                             <li key={u.id}>
-                                                  <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors">
-                                                       <input
-                                                            type="radio"
-                                                            name="filterAssignee"
-                                                            value={u.id}
-                                                            checked={filterAssignee === u.id}
-                                                            onChange={() => onFilterAssigneeChange(u.id)}
-                                                            className="form-radio text-purple-500 bg-slate-700 border-slate-600 focus:ring-purple-500 focus:ring-offset-slate-800"
-                                                       />
-                                                       <span className="text-sm text-slate-300 truncate">{u.name}</span>
-                                                  </label>
-                                             </li>
-                                        ))}
-                                   </ul>
-                              </div>
-                         </div>
-                    </div>
-               )}
+                         </motion.div>
+                    )}
+               </AnimatePresence>
           </div>
      );
 };

@@ -13,7 +13,7 @@ export interface Status {
      color: string;
 }
 
-// === Core Types ===
+// === User & Role Types ===
 export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | 'CLIENT';
 
 export interface User {
@@ -487,29 +487,6 @@ export interface CommentFormProps {
 export interface ImagePreviewModalProps {
      imageUrl: string | null;
      onClose: () => void;
-}
-
-export interface CalendarEvent {
-     id: string;
-     title: string;
-     start: string;
-     end: string;
-     priority: string;
-     assignee: User | null;
-     description: string;
-     backgroundColor: string;
-     borderColor: string;
-     extendedProps: {
-          priority: string;
-          assignee: User | null;
-          description: string;
-     };
-}
-
-export interface CalendarProps {
-     events: CalendarEvent[];
-     viewMode?: 'month' | 'week' | 'day';
-     onTaskClick?: (taskId: string) => void;
 }
 
 export interface ConfirmDialogProps {

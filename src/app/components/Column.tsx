@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import AddTaskForm from './TaskColumn/AddTaskForm';
 import Task from './Task';
@@ -47,6 +47,26 @@ const Column = ({
      const [isEditingTitle, setIsEditingTitle] = useState(false);
      const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
+     const handleTitleFocus = useCallback(() => setIsEditingTitle(true), []);
+
+     const handleTitleBlur = useCallback(
+          (e: React.FocusEvent<HTMLInputElement>) => {
+               setIsEditingTitle(false);
+               onUpdateColumnTitle(column.id, e.target.value.trim());
+          },
+          [column.id, onUpdateColumnTitle],
+     );
+
+     const handleTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+          if (e.key === 'Enter') {
+               e.currentTarget.blur();
+          }
+     }, []);
+
+     const handleRemoveClick = useCallback(() => {
+          onRemoveColumn(column.id);
+     }, [column.id, onRemoveColumn]);
+
      const localTasks = useMemo(() => {
           const arr = Array.isArray(column.tasks) ? column.tasks : [];
           const filtered = arr.filter((t) => t != null);
@@ -63,43 +83,41 @@ const Column = ({
      }, [column.tasks]);
 
      return (
-          <div className="h-full flex flex-col bg-slate-800/50 border border-slate-700/40 rounded-xl shadow-lg overflow-hidden">
-               <div className="flex items-center gap-3 px-4 py-4 bg-slate-800/80 border-b border-slate-700/40">
-                    <div className="text-slate-400/60 hover:text-slate-300 cursor-grab active:cursor-grabbing transition-colors duration-200" {...dragHandleProps}>
-                         <FaGripVertical size={18} />
+          <div className="h-full flex flex-col bg-slate-850 border border-slate-700/50 rounded-lg overflow-hidden">
+               <div className="flex items-center gap-2 px-3 py-3 bg-slate-800/60 border-b border-slate-700/50 group/header">
+                    <div
+                         className="text-slate-500 hover:text-slate-400 cursor-grab active:cursor-grabbing transition-colors p-1 -ml-1"
+                         {...dragHandleProps}
+                    >
+                         <FaGripVertical size={14} />
                     </div>
 
                     <input
                          type="text"
                          defaultValue={column.title}
-                         onFocus={() => setIsEditingTitle(true)}
-                         onBlur={(e) => {
-                              setIsEditingTitle(false);
-                              onUpdateColumnTitle(column.id, e.target.value.trim());
-                         }}
-                         onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                   e.currentTarget.blur();
-                              }
-                         }}
+                         onFocus={handleTitleFocus}
+                         onBlur={handleTitleBlur}
+                         onKeyDown={handleTitleKeyDown}
                          className={`
-            flex-1 bg-transparent text-slate-100 text-lg font-semibold
-            focus:outline-none focus:ring-2 focus:ring-slate-500/50 rounded-lg px-2 py-1
-            transition-all duration-200
-            ${isEditingTitle ? 'bg-slate-700/50' : ''}
-          `}
+                              flex-1 bg-transparent text-slate-200 text-sm font-semibold
+                              focus:outline-none rounded px-1.5 py-0.5
+                              hover:bg-slate-700/50 focus:bg-slate-700/50
+                              transition-colors
+                         `}
                          placeholder="Tytuł kolumny"
                     />
 
-                    <div className="flex items-center gap-2">
-                         <span className="text-xs font-medium text-slate-300/70 bg-slate-600/20 px-2.5 py-1 rounded-full">{localTasks.length}</span>
+                    <div className="flex items-center gap-1.5">
+                         <span className="text-xs font-medium text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded">
+                              {localTasks.length}
+                         </span>
 
                          <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => onRemoveColumn(column.id)}
-                              icon={<FaTimes />}
-                              className="p-2 text-red-400/70 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all duration-200"
+                              onClick={handleRemoveClick}
+                              icon={<FaTimes size={12} />}
+                              className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-700 rounded opacity-0 group-hover/header:opacity-100 transition-all"
                          />
                     </div>
                </div>
@@ -113,14 +131,21 @@ const Column = ({
                                    onRegisterScrollRef?.(column.id, el);
                               }}
                               {...provided.droppableProps}
-                              className={`flex-1 overflow-y-auto p-3 space-y-2.5 ${snapshot.isDraggingOver ? 'bg-slate-700/30' : ''}`}
+                              className={`
+                                   flex-1 overflow-y-auto p-2 space-y-2 transition-colors
+                                   ${snapshot.isDraggingOver ? 'bg-slate-700/20' : ''}
+                              `}
                               style={{
                                    minHeight: '400px',
-                                   maxHeight: 'calc(100vh - 320px)',
+                                   maxHeight: 'calc(100vh - 280px)',
                                    overflowAnchor: 'none',
                               }}
                          >
-                              {localTasks.length === 0 && !snapshot.isDraggingOver && <div className="flex items-center justify-center h-32 text-slate-400/50 text-sm">Brak zadań</div>}
+                              {localTasks.length === 0 && !snapshot.isDraggingOver && (
+                                   <div className="flex flex-col items-center justify-center h-24 text-slate-500 text-sm">
+                                        <span>Brak zadań</span>
+                                   </div>
+                              )}
 
                               {localTasks.map((task, idx) => (
                                    <Draggable key={task.id} draggableId={task.id} index={idx}>
@@ -150,12 +175,18 @@ const Column = ({
                     )}
                </Droppable>
 
-               {/* Add Task Form */}
-               <div className="p-3 bg-slate-800/60 border-t border-slate-700/40">
-                    <AddTaskForm boardId={column.boardId} columnId={column.id} onTaskAdded={onTaskAdded} currentUser={currentUser} selectedTaskId={selectedTaskId} onOpenAddTask={onOpenAddTask} />
+               <div className="p-2 border-t border-slate-700/50">
+                    <AddTaskForm
+                         boardId={column.boardId}
+                         columnId={column.id}
+                         onTaskAdded={onTaskAdded}
+                         currentUser={currentUser}
+                         selectedTaskId={selectedTaskId}
+                         onOpenAddTask={onOpenAddTask}
+                    />
                </div>
           </div>
      );
 };
 
-export default Column;
+export default React.memo(Column);

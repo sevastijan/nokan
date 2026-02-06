@@ -16,15 +16,18 @@ import { ToolbarPlugin } from './plugins/ToolbarPlugin';
 import { PasteImagePlugin } from './plugins/PasteImagePlugin';
 import { LoadContentPlugin } from './plugins/LoadContentPlugin';
 import { SmartEnterPlugin, SmartPastePlugin } from './plugins/SmartPlugins';
+import { MentionPlugin } from './plugins/MentionPlugin';
+import type { User } from '@/app/types/globalTypes';
 
 interface TaskDescriptionProps {
      value: string;
      onChange: (value: string) => void;
      taskId?: string;
      onImageClick?: (url: string) => void;
+     teamMembers?: User[];
 }
 
-export default function TaskDescription({ value, onChange, taskId, onImageClick }: TaskDescriptionProps) {
+export default function TaskDescription({ value, onChange, taskId, onImageClick, teamMembers = [] }: TaskDescriptionProps) {
      const [uploading, setUploading] = useState(false);
      const isFirstChangeRef = useRef(true);
      const initialValueRef = useRef(value || '');
@@ -111,6 +114,7 @@ export default function TaskDescription({ value, onChange, taskId, onImageClick 
                               <SmartEnterPlugin />
                               <SmartPastePlugin />
                               <PasteImagePlugin taskId={taskId} onUploadStart={() => setUploading(true)} onUploadEnd={() => setUploading(false)} />
+                              {teamMembers.length > 0 && <MentionPlugin teamMembers={teamMembers} />}
                          </div>
                          {uploading && <div className="p-2 bg-slate-800/50 border-t border-slate-700 text-xs text-blue-400">Wysyłanie obrazu...</div>}
                     </LexicalComposer>

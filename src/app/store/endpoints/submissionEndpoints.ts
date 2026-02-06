@@ -1,6 +1,7 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { getSupabase } from '@/app/lib/supabase';
-import { ClientSubmission, Status } from '@/app/types/globalTypes';
+import { ClientSubmission } from '@/app/types/globalTypes';
+import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 
 export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
      createSubmission: builder.mutation<
@@ -53,6 +54,54 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                          submission_id: submission.id,
                          status: null,
                     };
+
+                    // Notify OWNER and PROJECT_MANAGER users about new submission
+                    try {
+                         const { data: admins } = await getSupabase()
+                              .from('users')
+                              .select('id')
+                              .in('role', ['OWNER', 'PROJECT_MANAGER']);
+
+                         const { data: submitter } = await getSupabase()
+                              .from('users')
+                              .select('name')
+                              .eq('id', client_id)
+                              .single();
+
+                         const clientName = submitter?.name || 'Klient';
+                         const message = `Nowe zgłoszenie od ${clientName}: ${title}`;
+
+                         if (admins && admins.length > 0) {
+                              for (const admin of admins) {
+                                   if (admin.id === client_id) continue;
+
+                                   await getSupabase().from('notifications').insert({
+                                        user_id: admin.id,
+                                        type: 'new_submission',
+                                        task_id: task.id,
+                                        board_id,
+                                        message,
+                                        read: false,
+                                   });
+
+                                   triggerEmailNotification({
+                                        type: 'new_submission',
+                                        taskId: task.id,
+                                        taskTitle: title,
+                                        boardId: board_id,
+                                        boardName: boardTitle,
+                                        recipientId: admin.id,
+                                        metadata: {
+                                             clientName,
+                                             submissionDescription: description.substring(0, 100),
+                                        },
+                                   });
+                              }
+                         }
+                    } catch (notifyErr) {
+                         console.error('[createSubmission] notification error (non-blocking):', notifyErr);
+                    }
+
                     return { data: result };
                } catch (err) {
                     const error = err as Error;
@@ -117,64 +166,6 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                if (!result) return [{ type: 'Submission', id: 'LIST' }];
                return [...result.map((s) => ({ type: 'Submission' as const, id: s.submission_id })), { type: 'Submission', id: 'LIST' }];
           },
-     }),
-
-     getClientSubmissions: builder.query<ClientSubmission[], string>({
-          async queryFn(clientId) {
-               try {
-                    const { data: submissions } = await getSupabase()
-                         .from('submissions')
-                         .select(
-                              `
-                        *,
-                        task:tasks!submissions_task_id_fkey(*),
-                        client:users!submissions_client_id_fkey(id, name, email, image),
-                        status_obj:statuses!tasks_status_id_fkey(id, label, color)
-                    `,
-                         )
-                         .eq('client_id', clientId)
-                         .order('created_at', { ascending: false });
-
-                    if (!submissions || submissions.length === 0) return { data: [] };
-
-                    const { data: boards } = await getSupabase().from('boards').select('id, title');
-
-                    const mapped: ClientSubmission[] = submissions.map((s) => {
-                         const task = Array.isArray(s.task) && s.task.length > 0 ? s.task[0] : null;
-                         const client = Array.isArray(s.client) && s.client.length > 0 ? s.client[0] : null;
-                         const statusObj = Array.isArray(s.status_obj) && s.status_obj.length > 0 ? s.status_obj[0] : null;
-                         const status: Status | null = statusObj ? { id: statusObj.id, label: statusObj.label, color: statusObj.color } : null;
-                         const boardTitle = boards?.find((b) => b.id === (task?.board_id || s.board_id))?.title ?? 'Nieznany board';
-
-                         return {
-                              id: task?.id || s.task_id || '',
-                              title: s.title,
-                              description: s.description || '',
-                              column_id: task?.column_id || s.column_id,
-                              board_id: task?.board_id || s.board_id,
-                              board_title: boardTitle,
-                              priority: task?.priority || s.priority || 'low',
-                              user_id: task?.user_id || s.client_id,
-                              order: task?.sort_order ?? 0,
-                              sort_order: task?.sort_order ?? 0,
-                              completed: task?.completed ?? false,
-                              created_at: task?.created_at || s.created_at,
-                              updated_at: task?.updated_at || s.updated_at,
-                              submission_id: s.id,
-                              client_name: client?.name || 'Nieznany',
-                              client_email: client?.email || 'Nieznany',
-                              status,
-                         };
-                    });
-                    return { data: mapped };
-               } catch (err) {
-                    const error = err as Error;
-                    console.error('[apiSlice.getClientSubmissions] error:', error);
-                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
-               }
-          },
-          providesTags: (result) =>
-               result ? [...result.map((s) => ({ type: 'Submission' as const, id: s.submission_id })), { type: 'Submission', id: 'LIST' }] : [{ type: 'Submission', id: 'LIST' }],
      }),
 
      updateSubmission: builder.mutation<ClientSubmission, { submissionId: string; taskId: string; data: { title?: string; description?: string; priority?: string } }>({

@@ -1,6 +1,6 @@
 'use client';
 
-import { FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { FiCalendar, FiClock, FiArrowRight } from 'react-icons/fi';
 import { calculateDuration } from '@/app/utils/helpers';
 
 interface TaskDatesSectionProps {
@@ -13,42 +13,70 @@ const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSection
      const duration = startDate && endDate ? calculateDuration(startDate, endDate) : null;
 
      return (
-          <>
-               <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-                    <div className="flex-1">
-                         <span className="text-sm flex items-center gap-1 text-slate-300">
-                              <FaClock className="w-4 h-4" /> Data rozpoczęcia
+          <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+               {/* Section Header */}
+               <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-700/30">
+                    <div className="w-1 h-4 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Terminy</h3>
+                    {duration !== null && (
+                         <span className="ml-auto flex items-center gap-1.5 text-xs bg-purple-500/10 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/20">
+                              <FiClock className="w-3 h-3" />
+                              {duration} {duration === 1 ? 'dzień' : 'dni'}
                          </span>
+                    )}
+               </div>
+
+               {/* Date Inputs */}
+               <div className="flex flex-col md:flex-row items-stretch md:items-end gap-4">
+                    {/* Start Date */}
+                    <div className="flex-1">
+                         <label className="flex items-center gap-2 text-sm text-slate-300 mb-2">
+                              <FiCalendar className="w-4 h-4 text-green-400" />
+                              <span>Data rozpoczęcia</span>
+                         </label>
                          <input
                               type="date"
-                              className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white
+                                        focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50
+                                        transition-all duration-200 hover:border-slate-500
+                                        [&::-webkit-calendar-picker-indicator]:brightness-0
+                                        [&::-webkit-calendar-picker-indicator]:invert
+                                        [&::-webkit-calendar-picker-indicator]:opacity-50
+                                        [&::-webkit-calendar-picker-indicator]:hover:opacity-100
+                                        [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                               value={startDate}
                               onChange={(e) => onDateChange('start', e.target.value)}
                          />
                     </div>
+
+                    {/* Arrow indicator */}
+                    <div className="hidden md:flex items-center justify-center pb-3">
+                         <FiArrowRight className="w-5 h-5 text-slate-500" />
+                    </div>
+
+                    {/* End Date */}
                     <div className="flex-1">
-                         <label className="text-sm flex items-center gap-1 text-slate-300">
-                              <FaClock className="w-4 h-4" /> Termin
+                         <label className="flex items-center gap-2 text-sm text-slate-300 mb-2">
+                              <FiCalendar className="w-4 h-4 text-red-400" />
+                              <span>Termin wykonania</span>
                          </label>
                          <input
                               type="date"
-                              className="mt-1 w-full p-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white
+                                        focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50
+                                        transition-all duration-200 hover:border-slate-500
+                                        [&::-webkit-calendar-picker-indicator]:brightness-0
+                                        [&::-webkit-calendar-picker-indicator]:invert
+                                        [&::-webkit-calendar-picker-indicator]:opacity-50
+                                        [&::-webkit-calendar-picker-indicator]:hover:opacity-100
+                                        [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                               value={endDate}
                               min={startDate || undefined}
                               onChange={(e) => onDateChange('end', e.target.value)}
                          />
                     </div>
                </div>
-
-               {duration !== null && (
-                    <div className="p-2 bg-slate-700/50 border border-slate-600 rounded text-sm text-slate-200 flex items-center gap-2">
-                         <FaCalendarAlt className="text-white w-4 h-4" />
-                         <span className="font-medium">
-                              Czas trwania: {duration} {duration === 1 ? 'dzień' : 'dni'}
-                         </span>
-                    </div>
-               )}
-          </>
+          </div>
      );
 };
 

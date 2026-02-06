@@ -12,7 +12,7 @@ import { notificationEndpoints } from './endpoints/notificationEndpoints';
 import { userEndpoints } from './endpoints/userEndpoints';
 import { templateEndpoints } from './endpoints/templateEndpoints';
 import { submissionEndpoints } from './endpoints/submissionEndpoints';
-import { clientManagementEndpoints } from './endpoints/clientMenagmentEndpoints';
+import { clientManagementEndpoints } from './endpoints/clientManagementEndpoints';
 import { preferencesEndpoints } from './endpoints/preferencesEndpoints';
 import { collaboratorEndpoints } from './endpoints/collaboratorEndpoints';
 import { apiTokenEndpoints } from './endpoints/apiTokenEndpoints';
@@ -107,8 +107,6 @@ export const {
      useGetBoardsByTeamIdQuery,
      useUpdateTeamBoardsMutation,
      useGetMyTeamsQuery,
-     useGetUserBoardsQuery,
-     useGetTasksByBoardsAndDateQuery,
      useGetClientSubmissionsQuery,
      useUpdateSubmissionMutation,
      useDeleteSubmissionMutation,

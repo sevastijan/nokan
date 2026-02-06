@@ -399,3 +399,69 @@ export function collaboratorRemovedTemplate(
     </div>
   `);
 }
+
+export function newSubmissionTemplate(
+     taskTitle: string,
+     boardName: string,
+     taskUrl: string,
+     clientName?: string,
+     descriptionPreview?: string
+): string {
+     const descriptionHtml = descriptionPreview
+          ? `<div class="comment-box">"${descriptionPreview}"</div>`
+          : '';
+
+     return wrapHtml(`
+    <div class="header" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+      <div class="icon">📩</div>
+      <h1>Nowe zgłoszenie od klienta</h1>
+    </div>
+    <div class="content">
+      <div class="card">
+        <p class="task-title">${taskTitle}</p>
+        <div class="divider"></div>
+        <p class="meta">
+          <span class="badge badge-blue">${boardName}</span>
+          ${clientName ? `<span class="badge badge-purple">od ${clientName}</span>` : ''}
+        </p>
+        ${descriptionHtml}
+      </div>
+      <div style="text-align: center;">
+        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">🔗 Zobacz zgłoszenie</a>
+      </div>
+    </div>
+  `);
+}
+
+export function mentionTemplate(
+     taskTitle: string,
+     boardName: string,
+     taskUrl: string,
+     mentionerName?: string,
+     context?: string
+): string {
+     const contextText = context
+          ? `<div class="comment-box">"${context}"</div>`
+          : '<p class="meta" style="margin-top: 16px;">w opisie zadania</p>';
+
+     return wrapHtml(`
+    <div class="header">
+      <div class="icon">📣</div>
+      <h1>Wspomniano Cię w zadaniu</h1>
+    </div>
+    <div class="content">
+      <div class="card">
+        <p class="task-title">${taskTitle}</p>
+        <div class="divider"></div>
+        <p class="meta">
+          <span class="badge badge-blue">${boardName}</span>
+          ${mentionerName ? `<span class="badge badge-purple">przez ${mentionerName}</span>` : ''}
+        </p>
+        ${contextText}
+      </div>
+      <div style="text-align: center;">
+        <a href="${taskUrl}" class="button">🔗 Zobacz zadanie</a>
+      </div>
+    </div>
+  `);
+}

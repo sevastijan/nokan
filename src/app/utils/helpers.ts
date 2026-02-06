@@ -1,9 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '@/app/store/hooks';
-import { setAvatar, removeAvatar } from '@/app/store/slices/avatarSlice';
 import { toast } from 'sonner';
-import { getSupabase } from '@/app/lib/supabase';
-import { User, TaskDetail } from '@/app/types/globalTypes';
+import { TaskDetail } from '@/app/types/globalTypes';
 
 export type PriorityStyleConfig = {
      bgColor: string;
@@ -68,10 +64,10 @@ export function getPriorityStyleConfig(priorityId: string): PriorityStyleConfig 
                dotColor: '#ea580c',
           },
           medium: {
-               bgColor: 'bg-amber-950/40',
-               textColor: 'text-amber-400/90',
-               borderColor: 'border-amber-900/30',
-               dotColor: '#d97706',
+               bgColor: 'bg-yellow-500/15',
+               textColor: 'text-yellow-400',
+               borderColor: 'border-yellow-500/30',
+               dotColor: '#eab308',
           },
           low: {
                bgColor: 'bg-slate-700/40',
@@ -92,105 +88,6 @@ export function truncateText(text: string, maxWords: number = 12): string {
      const words = text.trim().split(/\s+/);
      return words.length <= maxWords ? text : words.slice(0, maxWords).join(' ') + '...';
 }
-
-/**
- * Returns display name with priority: custom_name > name > 'User'
- */
-export function getDisplayName(user: { name?: string | null; custom_name?: string | null } | null): string {
-     if (!user) return 'User';
-     return user.custom_name || user.name || 'User';
-}
-
-/**
- * Generates avatar URL from a user's custom_image or image.
- * Priority: custom_image > image > initials-based fallback
- */
-export function getAvatarUrl(user: { image?: string | null; custom_image?: string | null; name?: string | null; custom_name?: string | null } | null): string | null {
-     if (!user) return null;
-
-     if (user.custom_image) {
-          // If custom_image is a full URL, return as is
-          if (user.custom_image.startsWith('http://') || user.custom_image.startsWith('https://')) {
-               return user.custom_image;
-          }
-          // If custom_image is a Supabase bucket path
-          try {
-               const { data } = getSupabase().storage.from('avatars').getPublicUrl(user.custom_image);
-               if (data && data.publicUrl) {
-                    return data.publicUrl;
-               }
-          } catch (e) {
-               console.error('Error obtaining custom_image URL:', e);
-          }
-     }
-
-     if (user.image) {
-          // If image is a full URL, return as is
-          if (user.image.startsWith('http://') || user.image.startsWith('https://')) {
-               return user.image;
-          }
-          // If image is a Supabase bucket path
-          try {
-               const { data } = getSupabase().storage.from('avatars').getPublicUrl(user.image);
-               if (data && data.publicUrl) {
-                    return data.publicUrl;
-               }
-          } catch (e) {
-               console.error('Error obtaining image URL:', e);
-          }
-     }
-
-     // ✅ PRIORITY 3: Fallback to initials-based avatar
-     const displayName = user.custom_name || user.name;
-     if (displayName) {
-          const initials = displayName
-               .split(' ')
-               .map((n) => n[0] || '')
-               .join('')
-               .toUpperCase()
-               .slice(0, 2);
-          return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=374151&color=ffffff&size=128`;
-     }
-
-     return null;
-}
-
-/**
- * Custom React hook for loading and caching a user's avatar URL in Redux store.
- * Uses `setAvatar`, `removeAvatar`, `clearAvatars` actions from avatarSlice.
- */
-export const useUserAvatar = (user: User | null): string | null => {
-     const dispatch = useAppDispatch();
-     const cache = useAppSelector((state) => state.avatars.cache);
-     // Use email or id as cache key
-     const key = user?.email || user?.id || '';
-     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-     useEffect(() => {
-          if (!user || !key) {
-               // If no user or no key, clear local avatar state
-               setAvatarUrl(null);
-               return;
-          }
-          // Generate URL
-          const url = getAvatarUrl(user);
-          if (url) {
-               // If cache differs or missing, dispatch setAvatar
-               if (cache[key] !== url) {
-                    dispatch(setAvatar({ key, url }));
-               }
-               setAvatarUrl(url);
-          } else {
-               // No URL obtained: clear local state and remove from cache if exists
-               setAvatarUrl(null);
-               if (cache[key]) {
-                    dispatch(removeAvatar(key));
-               }
-          }
-     }, [user, key, cache, dispatch]);
-
-     return avatarUrl;
-};
 
 /**
  * Converts file size in bytes to human-readable format.

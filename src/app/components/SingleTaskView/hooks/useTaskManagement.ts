@@ -506,5 +506,6 @@ export const useTaskManagement = ({
           currentTaskId,
           uploadAttachmentMutation,
           autoSaveTask,
+          boardData,
      };
 };

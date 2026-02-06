@@ -139,7 +139,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      getAllUsers: builder.query<User[], void>({
           async queryFn() {
                try {
-                    const { data, error } = await getSupabase().from('users').select('id, name, email, image, custom_name, custom_image');
+                    const { data, error } = await getSupabase().from('users').select('id, name, email, image, custom_name, custom_image, role');
 
                     if (error) throw error;
 
@@ -150,6 +150,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          image: u.image || undefined,
                          custom_name: u.custom_name || undefined,
                          custom_image: u.custom_image || undefined,
+                         role: isValidUserRole(u.role) ? u.role : undefined,
                     }));
 
                     return { data: users };
@@ -167,7 +168,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
       * @param userId - The user's ID
       * @param role - The new role to assign
       */
-     setUserRole: builder.mutation<void, { userId: string; role: UserRole }>({
+     setUserRole: builder.mutation<null, { userId: string; role: UserRole }>({
           async queryFn({ userId, role }) {
                if (!isValidUserRole(role)) {
                     return { error: { status: 'VALIDATION_ERROR', error: `Invalid role: ${role}` } };
@@ -177,7 +178,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     const { error } = await getSupabase().from('users').update({ role }).eq('id', userId);
 
                     if (error) throw error;
-                    return { data: undefined };
+                    return { data: null };
                } catch (error) {
                     const message = error instanceof Error ? error.message : 'Unknown error';
                     console.error('[setUserRole] Error:', message);

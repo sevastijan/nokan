@@ -1,7 +1,7 @@
 // app/calendar/page.tsx
 "use client";
 
-import Calendar from "@/app/components/Calendar";
+import Calendar from "@/app/components/Calendar/Calendar";
 
 const CalendarPage = () => {
   return (

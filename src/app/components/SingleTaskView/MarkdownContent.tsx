@@ -18,6 +18,38 @@ interface MarkdownContentProps {
  * Images are extracted and rendered using next/image for optimization.
  * Non-image text parts are rendered inside <span> elements preserving whitespace.
  */
+/**
+ * Renders a text segment, replacing @{Name} patterns with styled mention chips.
+ */
+const renderTextWithMentions = (text: string, keyPrefix: string) => {
+     const mentionRegex = /@\{([^}]+)\}/g;
+     const result: React.ReactNode[] = [];
+     let lastIndex = 0;
+     let match: RegExpExecArray | null;
+
+     while ((match = mentionRegex.exec(text)) !== null) {
+          if (match.index > lastIndex) {
+               result.push(text.substring(lastIndex, match.index));
+          }
+          result.push(
+               <span
+                    key={`${keyPrefix}-mention-${match.index}`}
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 rounded-md bg-blue-500/20 text-blue-300 text-sm font-medium"
+               >
+                    <span className="text-blue-400/70">@</span>
+                    {match[1]}
+               </span>,
+          );
+          lastIndex = match.index + match[0].length;
+     }
+
+     if (lastIndex < text.length) {
+          result.push(text.substring(lastIndex));
+     }
+
+     return result.length > 0 ? result : text;
+};
+
 const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {
      const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
      const parts = content.split(imageRegex);
@@ -28,7 +60,7 @@ const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {
           if (parts[i]) {
                elements.push(
                     <span key={`text-${i}`} className="whitespace-pre-wrap">
-                         {parts[i]}
+                         {renderTextWithMentions(parts[i], `t-${i}`)}
                     </span>,
                );
           }

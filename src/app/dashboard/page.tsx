@@ -12,7 +12,6 @@ import {
      useRemoveBoardMutation,
      useCreateBoardFromTemplateMutation,
 } from '@/app/store/apiSlice';
-import { getSupabase } from '@/app/lib/supabase';
 import Loader from '@/app/components/Loader';
 import BoardModal from '@/app/components/Board/BoardModal';
 import { BoardTemplate } from '@/app/types/globalTypes';
@@ -21,36 +20,15 @@ import { BoardListItem } from '@/app/components/Dashboard/BoardListItem';
 import { DashboardStats } from '@/app/components/Dashboard/DashboardStats';
 import { Layers, ArrowRight, Sparkles } from 'lucide-react';
 
+function getTaskLabel(count: number) {
+     if (count === 1) return 'zadanie';
+     if (count >= 2 && count <= 4) return 'zadania';
+     return 'zadań';
+}
+
 export default function DashboardPage() {
      const { data: session, status: authStatus } = useSession();
      const router = useRouter();
-
-     const [clientUuid, setClientUuid] = useState<string | null>(null);
-     const [userRole, setUserRole] = useState<string | null>(null);
-     const [fetchingUserData, setFetchingUserData] = useState(true);
-
-     useEffect(() => {
-          if (authStatus === 'authenticated' && session?.user?.email) {
-               const fetchUserData = async () => {
-                    try {
-                         const { data } = await getSupabase().from('users').select('id, role').eq('email', session.user.email).single();
-
-                         if (data) {
-                              setClientUuid(data.id);
-                              setUserRole(data.role);
-                         }
-                    } catch (error) {
-                         console.error('Error fetching user data:', error);
-                    } finally {
-                         setFetchingUserData(false);
-                    }
-               };
-
-               fetchUserData();
-          } else if (authStatus === 'unauthenticated') {
-               setFetchingUserData(false);
-          }
-     }, [session?.user?.email, authStatus]);
 
      const { data: currentUser, isFetching: loadingUser } = useGetCurrentUserQuery(session!, {
           skip: authStatus !== 'authenticated',
@@ -64,8 +42,11 @@ export default function DashboardPage() {
           skip: !currentUser?.id,
      });
 
-     const { data: assignedBoards = [], isFetching: loadingAssignedBoards } = useGetClientBoardsWithDetailsQuery(clientUuid ?? '', {
-          skip: !clientUuid || userRole !== 'CLIENT',
+     const userRole = currentUser?.role ?? null;
+     const isClient = userRole === 'CLIENT';
+
+     const { data: assignedBoards = [], isFetching: loadingAssignedBoards } = useGetClientBoardsWithDetailsQuery(currentUser?.id ?? '', {
+          skip: !currentUser?.id || !isClient,
      });
 
      const [addBoard] = useAddBoardMutation();
@@ -82,7 +63,6 @@ export default function DashboardPage() {
      const [searchTerm, setSearchTerm] = useState('');
      const [hasTasksOnly, setHasTasksOnly] = useState(false);
      const [hasMembersOnly, setHasMembersOnly] = useState(false);
-     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
      useEffect(() => {
           if (authStatus === 'unauthenticated') {
@@ -90,15 +70,13 @@ export default function DashboardPage() {
           }
      }, [authStatus, router]);
 
-     const boardsToDisplay = myBoards;
-
      const stats = useMemo(
           () => ({
-               totalBoards: boardsToDisplay.length,
-               totalTasks: boardsToDisplay.reduce((sum, board) => sum + (board._count?.tasks ?? 0), 0),
-               totalMembers: boardsToDisplay.reduce((sum, board) => sum + (board._count?.teamMembers ?? 0), 0),
+               totalBoards: myBoards.length,
+               totalTasks: myBoards.reduce((sum, board) => sum + (board._count?.tasks ?? 0), 0),
+               totalMembers: myBoards.reduce((sum, board) => sum + (board._count?.teamMembers ?? 0), 0),
           }),
-          [boardsToDisplay],
+          [myBoards],
      );
 
      const openCreate = useCallback(() => {
@@ -115,18 +93,16 @@ export default function DashboardPage() {
           setSelectedBoard(boardId);
           setModalTitle(boardTitle);
           setModalOpen(true);
-          setOpenMenuId(null);
      }, []);
 
      const openDelete = useCallback((boardId: string) => {
           setModalMode('delete');
           setSelectedBoard(boardId);
           setModalOpen(true);
-          setOpenMenuId(null);
      }, []);
 
      const handleSave = useCallback(
-          async (title: string, templateId?: string | null) => {
+          async (title: string, templateId?: string | null, memberIds?: string[]) => {
                if (!currentUser) return;
 
                try {
@@ -136,11 +112,13 @@ export default function DashboardPage() {
                                    title,
                                    templateId,
                                    user_id: currentUser.id,
+                                   memberIds,
                               }).unwrap();
                          } else {
                               await addBoard({
                                    title,
                                    user_id: currentUser.id,
+                                   memberIds,
                               }).unwrap();
                          }
                     } else if (modalMode === 'edit' && selectedBoard) {
@@ -181,14 +159,14 @@ export default function DashboardPage() {
      );
 
      const filteredBoards = useMemo(() => {
-          return boardsToDisplay.filter((board) => {
+          return myBoards.filter((board) => {
                const matchesSearch = !searchTerm || board.title.toLowerCase().includes(searchTerm.toLowerCase());
                const matchesTasks = !hasTasksOnly || (board._count?.tasks && board._count.tasks > 0);
                const matchesMembers = !hasMembersOnly || (board._count?.teamMembers && board._count.teamMembers > 0);
 
                return matchesSearch && matchesTasks && matchesMembers;
           });
-     }, [boardsToDisplay, searchTerm, hasTasksOnly, hasMembersOnly]);
+     }, [myBoards, searchTerm, hasTasksOnly, hasMembersOnly]);
 
      const handleClearFilters = useCallback(() => {
           setHasTasksOnly(false);
@@ -196,14 +174,7 @@ export default function DashboardPage() {
           setSearchTerm('');
      }, []);
 
-     const getTaskLabel = useCallback((count: number) => {
-          if (count === 1) return 'zadanie';
-          if (count >= 2 && count <= 4) return 'zadania';
-          return 'zadań';
-     }, []);
-
-     const isLoading = authStatus === 'loading' || fetchingUserData || loadingUser || loadingMyBoards || loadingAssignedBoards;
-     const isClient = userRole === 'CLIENT';
+     const isLoading = authStatus === 'loading' || loadingUser || loadingMyBoards || loadingAssignedBoards;
      const hasAssignedBoards = isClient && assignedBoards.length > 0;
      const hasActiveFilters = searchTerm || hasTasksOnly || hasMembersOnly;
 
@@ -222,37 +193,32 @@ export default function DashboardPage() {
 
                     <div className="relative">
                          <section className="px-4 sm:px-6 lg:px-8 pt-8 pb-6">
-                              <DashboardToolbar
-                                   searchTerm={searchTerm}
-                                   onSearchChange={setSearchTerm}
-                                   hasTasksOnly={hasTasksOnly}
-                                   setHasTasksOnly={setHasTasksOnly}
-                                   hasMembersOnly={hasMembersOnly}
-                                   setHasMembersOnly={setHasMembersOnly}
-                                   onClearFilters={handleClearFilters}
-                                   onCalendarClick={() => router.push('/calendar')}
-                                   onCreateClick={openCreate}
-                              />
+                              <div className="max-w-7xl mx-auto flex flex-col gap-6">
+                                   <DashboardToolbar
+                                        searchTerm={searchTerm}
+                                        onSearchChange={setSearchTerm}
+                                        hasTasksOnly={hasTasksOnly}
+                                        setHasTasksOnly={setHasTasksOnly}
+                                        hasMembersOnly={hasMembersOnly}
+                                        setHasMembersOnly={setHasMembersOnly}
+                                        onClearFilters={handleClearFilters}
+                                        onCreateClick={openCreate}
+                                   />
+
+                                   <DashboardStats totalBoards={stats.totalBoards} totalTasks={stats.totalTasks} totalMembers={stats.totalMembers} />
+                              </div>
                          </section>
 
                          <section className="px-4 sm:px-6 lg:px-8 pb-12">
                               <div className="max-w-7xl mx-auto">
                                    {filteredBoards.length > 0 ? (
-                                        <div className="flex flex-col gap-6">
+                                        <div className="flex flex-col gap-3">
                                              {filteredBoards.map((board) => (
                                                   <BoardListItem
                                                        key={board.id}
                                                        board={board}
-                                                       isMenuOpen={openMenuId === board.id}
-                                                       onMenuToggle={() => setOpenMenuId(openMenuId === board.id ? null : board.id)}
-                                                       onEdit={(e) => {
-                                                            e.stopPropagation();
-                                                            openEdit(board.id, board.title);
-                                                       }}
-                                                       onDelete={(e) => {
-                                                            e.stopPropagation();
-                                                            openDelete(board.id);
-                                                       }}
+                                                       onEdit={() => openEdit(board.id, board.title)}
+                                                       onDelete={() => openDelete(board.id)}
                                                        onBoardClick={() => handleBoardClick(board.id)}
                                                   />
                                              ))}
@@ -287,12 +253,6 @@ export default function DashboardPage() {
                                              )}
                                         </div>
                                    )}
-                              </div>
-                         </section>
-
-                         <section className="pb-8 px-4 sm:px-6 lg:px-8">
-                              <div className="max-w-7xl mx-auto">
-                                   <DashboardStats totalBoards={stats.totalBoards} totalTasks={stats.totalTasks} totalMembers={stats.totalMembers} />
                               </div>
                          </section>
 
@@ -364,6 +324,7 @@ export default function DashboardPage() {
                     selectedTemplate={modalMode === 'create' ? selectedTemplate! : undefined}
                     onTemplateSelect={modalMode === 'create' ? setSelectedTemplate : undefined}
                     templateRefreshTrigger={templateRefreshTrigger}
+                    currentUserId={currentUser?.id}
                />
           </>
      );

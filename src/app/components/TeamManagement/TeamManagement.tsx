@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { FiArrowLeft, FiPlus, FiUsers } from 'react-icons/fi';
+import { ArrowLeft, Plus, Users, UserPlus, LayoutGrid } from 'lucide-react';
+import { motion } from 'framer-motion';
 import DOMPurify from 'dompurify';
 import TeamList from './TeamList';
 import TeamFormModal from './TeamFormModal';
+import Loader from '../Loader';
 import { Team } from '@/app/types/globalTypes';
 
 import {
@@ -130,52 +132,91 @@ const TeamManagement = () => {
           }
      };
 
-     const loadingOverall = loadingUser || loadingBoards || loadingTeams || isAdding || isUpdating;
+     const loadingOverall = loadingUser || loadingBoards || loadingTeams;
+
+     if (loadingOverall) {
+          return <Loader text="Loading teams..." />;
+     }
+
+     const stats = [
+          { label: 'Teams', value: teamsAll.length, icon: Users, color: 'blue' },
+          { label: 'Available Users', value: availableUsers.length, icon: UserPlus, color: 'emerald' },
+          { label: 'Boards', value: boards.length, icon: LayoutGrid, color: 'violet' },
+     ];
+
+     const iconColorMap: Record<string, string> = {
+          blue: 'bg-blue-500/10 text-blue-400',
+          emerald: 'bg-emerald-500/10 text-emerald-400',
+          violet: 'bg-violet-500/10 text-violet-400',
+     };
 
      return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-               {/* Header */}
-               <div className="bg-slate-800/30 backdrop-blur-sm border-b border-slate-700/50">
-                    <div className="mx-auto px-4 py-4 flex items-center justify-between">
-                         <button onClick={handleBack} className="flex items-center gap-2 text-slate-400 hover:text-white">
-                              <FiArrowLeft />
-                              Back to Dashboard
-                         </button>
-                         <button onClick={openCreate} className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2">
-                              <FiPlus /> Create New Team
-                         </button>
-                    </div>
-               </div>
+          <div className="min-h-screen bg-slate-900">
+               <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+                    {/* Back button */}
+                    <motion.button
+                         onClick={handleBack}
+                         className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8"
+                         whileHover={{ x: -4 }}
+                         whileTap={{ scale: 0.95 }}
+                    >
+                         <ArrowLeft className="w-5 h-5" />
+                         Back to Dashboard
+                    </motion.button>
 
-               {/* Stats */}
-               <div className="mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-2xl text-white flex justify-between items-center">
+                    {/* Header */}
+                    <motion.div
+                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8"
+                         initial={{ opacity: 0, y: -20 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         transition={{ duration: 0.4 }}
+                    >
                          <div>
-                              <p className="text-2xl font-bold">{teamsAll.length}</p>
-                              <p className="text-blue-200">Teams</p>
+                              <h1 className="text-4xl font-bold text-white">Manage Teams</h1>
+                              <p className="text-slate-400 mt-1">Create and manage your teams and members</p>
                          </div>
-                         <FiUsers className="text-4xl" />
-                    </div>
-                    <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-6 rounded-2xl text-white flex justify-between items-center">
-                         <div>
-                              <p className="text-2xl font-bold">{availableUsers.length}</p>
-                              <p className="text-purple-200">Available Users</p>
-                         </div>
-                         <FiUsers className="text-4xl" />
-                    </div>
-                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-6 rounded-2xl text-white flex justify-between items-center">
-                         <div>
-                              <p className="text-2xl font-bold">{boards.length}</p>
-                              <p className="text-emerald-200">Boards</p>
-                         </div>
-                         <FiUsers className="text-4xl" />
-                    </div>
-               </div>
+                         <motion.button
+                              onClick={openCreate}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-colors self-start"
+                              whileTap={{ scale: 0.95 }}
+                         >
+                              <Plus className="w-5 h-5" />
+                              Create New Team
+                         </motion.button>
+                    </motion.div>
 
-               {/* Team List */}
-               <div className="mx-auto px-4 py-6 bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700">
-                    <TeamList teams={teamsAll} onEditTeam={openEdit} onDeleteTeam={handleDelete} availableUsers={availableUsers} />
-                    {loadingOverall && <p className="text-white mt-4">Loading…</p>}
+                    {/* Stats */}
+                    <motion.div
+                         className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+                         initial={{ opacity: 0, y: 10 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         transition={{ duration: 0.4, delay: 0.1 }}
+                    >
+                         {stats.map((stat) => (
+                              <div
+                                   key={stat.label}
+                                   className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5 flex items-center gap-4"
+                              >
+                                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconColorMap[stat.color]}`}>
+                                        <stat.icon className="w-5 h-5" />
+                                   </div>
+                                   <div>
+                                        <p className="text-2xl font-bold text-white">{stat.value}</p>
+                                        <p className="text-slate-400 text-sm">{stat.label}</p>
+                                   </div>
+                              </div>
+                         ))}
+                    </motion.div>
+
+                    {/* Team List */}
+                    <motion.div
+                         initial={{ opacity: 0, y: 10 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         transition={{ duration: 0.4, delay: 0.2 }}
+                    >
+                         <TeamList teams={teamsAll} onEditTeam={openEdit} onDeleteTeam={handleDelete} availableUsers={availableUsers} />
+                         {(isAdding || isUpdating) && <p className="text-slate-400 mt-4">Saving…</p>}
+                    </motion.div>
                </div>
 
                {/* Modal */}

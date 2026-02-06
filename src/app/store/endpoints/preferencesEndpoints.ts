@@ -11,6 +11,8 @@ const defaultPreferences: Omit<NotificationPreferences, 'id' | 'user_id' | 'crea
      email_due_date_changed: true,
      email_collaborator_added: true,
      email_collaborator_removed: true,
+     email_mention: true,
+     email_new_submission: true,
 };
 
 export const preferencesEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({

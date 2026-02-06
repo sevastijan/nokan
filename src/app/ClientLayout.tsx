@@ -25,7 +25,7 @@ const ClientLayout = ({ children }: ClientLayoutProps) => {
      return (
           <>
                {loggedIn && <Navbar />}
-               <main className={`main-content min-h-screen ${loggedIn ? 'md:ml-64' : ''}`}>{children}</main>
+               <main className={`main-content min-h-screen ${loggedIn ? 'md:ml-60' : ''}`}>{children}</main>
           </>
      );
 };

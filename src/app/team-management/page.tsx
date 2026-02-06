@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useUserRole } from '../hooks/useUserRole';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import TeamManagement from '../components/TeamMenagment/TeamMenagment';
+import TeamManagement from '../components/TeamManagement/TeamManagement';
 
 const TeamManagementPage = () => {
      const { data: session, status } = useSession();

@@ -35,7 +35,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                          console.error('Error loading priorities:', err);
                          setPriorities([
                               { id: 'low', label: 'Low', color: '#10b981' },
-                              { id: 'medium', label: 'Medium', color: '#f59e0b' },
+                              { id: 'medium', label: 'Medium', color: '#eab308' },
                               { id: 'high', label: 'High', color: '#ef4444' },
                               { id: 'urgent', label: 'Urgent', color: '#dc2626' },
                          ]);
@@ -137,64 +137,68 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
      if (loading) {
           return (
                <div className="relative">
-                    <span className="block text-sm font-medium text-slate-300 mb-2">Priority</span>
-                    <div className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-slate-400">Loading priorities...</div>
+                    <div className="w-full min-h-[46px] p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-slate-500 text-sm flex items-center gap-2">
+                         <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                         </svg>
+                         Ładowanie...
+                    </div>
                </div>
           );
      }
 
      return (
           <div className="relative w-full">
-               <span className="block text-sm font-medium text-slate-300 mb-2">Priority</span>
-
                <button
                     type="button"
                     onClick={toggle}
                     className={`
-          w-full flex items-center justify-between px-4 py-2 min-h-[46px] 
-          bg-slate-700 border rounded-lg text-slate-200 
-          transition-colors duration-150
-          ${isOpen ? 'border-purple-500 ring-1 ring-purple-500' : 'border-slate-600 hover:border-slate-500'}
-        `}
+                         w-full flex items-center justify-between px-3 py-2 min-h-[46px]
+                         bg-slate-700/50 border rounded-lg text-slate-200
+                         transition-all duration-200
+                         ${isOpen ? 'border-purple-500/50 ring-2 ring-purple-500/50 bg-slate-700/70' : 'border-slate-600/50 hover:border-slate-500'}
+                    `}
                >
-                    <div className="flex items-center gap-2 truncate">
+                    <div className="flex items-center gap-2.5 truncate">
                          {selectedObj ? (
                               <>
-                                   <FaFlag className="w-4 h-4" style={{ color: selectedObj.color }} />
-                                   <span className="truncate">{selectedObj.label}</span>
+                                   <div className="w-3 h-3 rounded-full shadow-md" style={{ backgroundColor: selectedObj.color, boxShadow: `0 0 8px ${selectedObj.color}40` }} />
+                                   <span className="truncate text-sm font-medium">{selectedObj.label}</span>
                               </>
                          ) : (
                               <>
-                                   <FaFlag className="w-4 h-4 text-slate-400" />
-                                   <span className="text-slate-400 truncate">Select priority</span>
+                                   <FaFlag className="w-3.5 h-3.5 text-slate-500" />
+                                   <span className="text-slate-500 truncate text-sm">Wybierz priorytet...</span>
                               </>
                          )}
                     </div>
-                    <FaChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <FaChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                </button>
 
                <AnimatePresence>
                     {isOpen && (
                          <motion.div
-                              initial={{ opacity: 0, y: -5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -5 }}
-                              className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                              initial={{ opacity: 0, y: -5, scale: 0.98 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -5, scale: 0.98 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute z-50 mt-2 w-full bg-slate-800 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl shadow-black/40 max-h-60 overflow-y-auto thin-scrollbar"
                          >
                               <button
                                    type="button"
                                    onClick={handleClear}
                                    className={`
-                w-full flex items-center gap-2 px-3 py-2 text-left 
-                hover:bg-slate-700 transition-colors duration-150
-                ${selectedObj === null ? 'bg-purple-600/30' : ''}
-              `}
+                                        w-full flex items-center gap-2.5 px-3 py-2.5 text-left
+                                        transition-all duration-150
+                                        ${selectedObj === null ? 'bg-slate-700/50' : 'hover:bg-slate-700/50'}
+                                   `}
                               >
-                                   <FaTimes className="w-4 h-4 text-slate-400" />
-                                   <span className="text-slate-200">No priority</span>
+                                   <FaTimes className="w-3.5 h-3.5 text-slate-400" />
+                                   <span className="text-slate-300 text-sm">Brak priorytetu</span>
                               </button>
 
-                              <hr className="border-slate-600 my-1" />
+                              <div className="h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent my-1" />
 
                               {priorities.length === 0 && <div className="px-3 py-2 text-slate-400 text-sm text-center">No priorities available</div>}
 
