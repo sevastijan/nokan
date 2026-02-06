@@ -375,9 +375,7 @@ const SingleTaskView = ({
      const handleCompletionToggle = useCallback(
           (completed: boolean) => {
                if (completed && hasIncompleteSubtasks) {
-                    toast.error(
-                         `Nie można zakończyć Story — ${incompleteSubtaskCount} subtask${incompleteSubtaskCount === 1 ? '' : 'ów'} nie jest ukończonych`,
-                    );
+                    toast.error(`Nie można zakończyć Story — ${incompleteSubtaskCount} subtask${incompleteSubtaskCount === 1 ? '' : 'ów'} nie jest ukończonych`);
                     return;
                }
                updateTask({ completed });
@@ -549,7 +547,13 @@ const SingleTaskView = ({
                                              <div className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
                                              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Opis</h3>
                                         </div>
-                                        <TaskDescription value={formData.tempDescription} onChange={handleDescriptionChange} taskId={task?.id} onImageClick={handleDescriptionImageClick} teamMembers={teamMembers} />
+                                        <TaskDescription
+                                             value={formData.tempDescription}
+                                             onChange={handleDescriptionChange}
+                                             taskId={task?.id}
+                                             onImageClick={handleDescriptionImageClick}
+                                             teamMembers={teamMembers}
+                                        />
                                    </div>
 
                                    {/* Subtasks Section */}

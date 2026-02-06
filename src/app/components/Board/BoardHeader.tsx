@@ -84,10 +84,7 @@ const BoardHeader = ({
 
      const handleCloseMobileSearch = useCallback(() => setShowMobileSearch(false), []);
 
-     const hasActiveFilters = useMemo(
-          () => filterPriority !== null || filterAssignee !== null || filterType !== 'all',
-          [filterPriority, filterAssignee, filterType],
-     );
+     const hasActiveFilters = useMemo(() => filterPriority !== null || filterAssignee !== null || filterType !== 'all', [filterPriority, filterAssignee, filterType]);
 
      return (
           <header className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-md border-b border-slate-800">
@@ -135,10 +132,7 @@ const BoardHeader = ({
                                         onChange={handleSearchInputChange}
                                    />
                                    {searchTerm && (
-                                        <button
-                                             onClick={() => onSearchChange('')}
-                                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                                        >
+                                        <button onClick={() => onSearchChange('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
                                              <FiX className="w-3.5 h-3.5" />
                                         </button>
                                    )}
@@ -146,11 +140,7 @@ const BoardHeader = ({
                          </div>
 
                          {/* Search - Mobile */}
-                         <button
-                              className="sm:hidden p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-                              onClick={handleSearchIconClick}
-                              aria-label="Szukaj"
-                         >
+                         <button className="sm:hidden p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors" onClick={handleSearchIconClick} aria-label="Szukaj">
                               <FiSearch className="w-5 h-5" />
                          </button>
 
@@ -196,9 +186,7 @@ const BoardHeader = ({
                          )}
 
                          {/* Members Dropdown */}
-                         {hasManagementAccess && (
-                              <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />
-                         )}
+                         {hasManagementAccess && <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />}
 
                          {/* Add Column */}
                          <button
