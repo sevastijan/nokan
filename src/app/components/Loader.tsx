@@ -1,10 +1,16 @@
 'use client';
 
+import { usePWASplash } from '../context/PWASplashContext';
+
 interface LoaderProps {
      text?: string;
 }
 
 const Loader = ({ text = 'Loading...' }: LoaderProps) => {
+     const { isSplashActive } = usePWASplash();
+
+     if (isSplashActive) return null;
+
      return (
           <div className="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 select-none">
                {/* Ambient background glow */}

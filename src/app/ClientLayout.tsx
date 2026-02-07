@@ -3,6 +3,10 @@
 import { ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import Navbar from './components/Navbar';
+import PWASplashScreen from './components/PWASplashScreen';
+import { PWASplashProvider } from './context/PWASplashContext';
+import { useServiceWorker } from './hooks/useServiceWorker';
+import { usePWAStandalone } from './hooks/usePWAStandalone';
 
 /**
  * ClientLayout wraps pages on the client side.
@@ -18,15 +22,15 @@ interface ClientLayoutProps {
 const ClientLayout = ({ children }: ClientLayoutProps) => {
      const { status } = useSession();
      const loggedIn = status === 'authenticated';
-
-     // Optional: if you want to redirect or do something on session change, you can useEffect here.
-     // e.g. close modals, etc. For now we just rely on rendering logic.
+     const isStandalone = usePWAStandalone();
+     useServiceWorker();
 
      return (
-          <>
+          <PWASplashProvider isStandalone={isStandalone}>
+               <PWASplashScreen />
                {loggedIn && <Navbar />}
                <main className={`main-content min-h-screen ${loggedIn ? 'md:ml-60' : ''}`}>{children}</main>
-          </>
+          </PWASplashProvider>
      );
 };
 
