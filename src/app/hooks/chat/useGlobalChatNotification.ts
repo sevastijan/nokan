@@ -18,6 +18,13 @@ export function useGlobalChatNotification(currentUserId: string | null) {
 	const dispatch = useDispatch<AppDispatch>();
 	const originalTitleRef = useRef('');
 	const titleIntervalRef = useRef<NodeJS.Timeout | null>(null);
+	const audioRef = useRef<HTMLAudioElement | null>(null);
+
+	// Preload notification sound
+	useEffect(() => {
+		audioRef.current = new Audio('/message-sound.mp3');
+		audioRef.current.volume = 0.5;
+	}, []);
 
 	// Store original title
 	useEffect(() => {
@@ -76,6 +83,12 @@ export function useGlobalChatNotification(currentUserId: string | null) {
 					if (!document.hasFocus()) {
 						const content = (record.content as string) || '';
 						const preview = content.length > 80 ? content.slice(0, 80) + '...' : content;
+
+						// Play notification sound
+						if (audioRef.current) {
+							audioRef.current.currentTime = 0;
+							audioRef.current.play().catch(() => {});
+						}
 
 						// Tab title flash
 						if (!titleIntervalRef.current) {
