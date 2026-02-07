@@ -20,10 +20,27 @@ export function useGlobalChatNotification(currentUserId: string | null) {
 	const titleIntervalRef = useRef<NodeJS.Timeout | null>(null);
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 
-	// Preload notification sound
+	// Preload notification sound & unlock audio on first user interaction
 	useEffect(() => {
-		audioRef.current = new Audio('/message-sound.mp3');
-		audioRef.current.volume = 0.5;
+		const audio = new Audio('/message-sound.mp3');
+		audio.volume = 0.5;
+		audioRef.current = audio;
+
+		const unlock = () => {
+			audio.play().then(() => {
+				audio.pause();
+				audio.currentTime = 0;
+			}).catch(() => {});
+			window.removeEventListener('click', unlock);
+			window.removeEventListener('keydown', unlock);
+		};
+		window.addEventListener('click', unlock);
+		window.addEventListener('keydown', unlock);
+
+		return () => {
+			window.removeEventListener('click', unlock);
+			window.removeEventListener('keydown', unlock);
+		};
 	}, []);
 
 	// Store original title

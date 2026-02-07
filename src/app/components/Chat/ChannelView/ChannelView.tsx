@@ -53,12 +53,12 @@ const ChannelView = () => {
 		return () => clearInterval(interval);
 	}, [selectedChannelId, refetch]);
 
-	// Mark channel as read when opening
+	// Mark channel as read when opening and when new messages arrive
 	useEffect(() => {
 		if (selectedChannelId && currentUser?.id) {
 			markRead({ channelId: selectedChannelId, userId: currentUser.id });
 		}
-	}, [selectedChannelId, currentUser?.id, markRead]);
+	}, [selectedChannelId, currentUser?.id, markRead, messages.length]);
 
 	// Scroll to bottom only when new messages arrive
 	useEffect(() => {
