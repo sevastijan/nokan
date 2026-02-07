@@ -29,9 +29,19 @@ export async function POST(request: NextRequest) {
 			return Response.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 400 });
 		}
 
-		const fileName = `${Date.now()}-${file.name}`;
-		const filePath = `${channelId}/${fileName}`;
+		const ext = file.name.includes('.') ? '.' + file.name.split('.').pop() : '';
+		const safeFileName = `${Date.now()}-${crypto.randomUUID()}${ext}`;
+		const filePath = `${channelId}/${safeFileName}`;
 		const supabaseAdmin = getSupabaseAdmin();
+
+		// Ensure bucket exists
+		const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+		if (!buckets?.some((b) => b.name === 'chat-attachments')) {
+			await supabaseAdmin.storage.createBucket('chat-attachments', {
+				public: false,
+				fileSizeLimit: 10 * 1024 * 1024,
+			});
+		}
 
 		// Upload to storage
 		const { error: uploadError } = await supabaseAdmin.storage
