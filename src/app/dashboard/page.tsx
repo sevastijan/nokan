@@ -80,6 +80,7 @@ export default function DashboardPage() {
      const [searchTerm, setSearchTerm] = useState('');
      const [hasTasksOnly, setHasTasksOnly] = useState(false);
      const [hasMembersOnly, setHasMembersOnly] = useState(false);
+     const [sortBy, setSortBy] = useState<'name' | 'tasks' | 'members' | 'newest'>('newest');
 
      useEffect(() => {
           if (authStatus === 'unauthenticated') {
@@ -194,24 +195,39 @@ export default function DashboardPage() {
      );
 
      const filteredBoards = useMemo(() => {
-          return myBoards.filter((board) => {
+          const filtered = myBoards.filter((board) => {
                const matchesSearch = !searchTerm || board.title.toLowerCase().includes(searchTerm.toLowerCase());
                const matchesTasks = !hasTasksOnly || (board._count?.tasks && board._count.tasks > 0);
                const matchesMembers = !hasMembersOnly || (board._count?.teamMembers && board._count.teamMembers > 0);
 
                return matchesSearch && matchesTasks && matchesMembers;
           });
-     }, [myBoards, searchTerm, hasTasksOnly, hasMembersOnly]);
+
+          return [...filtered].sort((a, b) => {
+               switch (sortBy) {
+                    case 'name':
+                         return (a.title || '').localeCompare(b.title || '', 'pl');
+                    case 'tasks':
+                         return (b._count?.tasks ?? 0) - (a._count?.tasks ?? 0);
+                    case 'members':
+                         return (b._count?.teamMembers ?? 0) - (a._count?.teamMembers ?? 0);
+                    case 'newest':
+                    default:
+                         return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+               }
+          });
+     }, [myBoards, searchTerm, hasTasksOnly, hasMembersOnly, sortBy]);
 
      const handleClearFilters = useCallback(() => {
           setHasTasksOnly(false);
           setHasMembersOnly(false);
           setSearchTerm('');
+          setSortBy('newest');
      }, []);
 
      const isLoading = authStatus === 'loading' || loadingUser || loadingMyBoards || loadingAssignedBoards;
      const hasAssignedBoards = isClient && assignedBoards.length > 0;
-     const hasActiveFilters = searchTerm || hasTasksOnly || hasMembersOnly;
+     const hasActiveFilters = searchTerm || hasTasksOnly || hasMembersOnly || sortBy !== 'newest';
 
      if (isLoading) {
           return <Loader text="Ładowanie..." />;
@@ -248,6 +264,8 @@ export default function DashboardPage() {
                                              setHasTasksOnly={setHasTasksOnly}
                                              hasMembersOnly={hasMembersOnly}
                                              setHasMembersOnly={setHasMembersOnly}
+                                             sortBy={sortBy}
+                                             setSortBy={setSortBy}
                                              onClearFilters={handleClearFilters}
                                              onCreateClick={openCreate}
                                         />

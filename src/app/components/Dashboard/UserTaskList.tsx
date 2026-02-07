@@ -2,12 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, ListChecks, SlidersHorizontal } from 'lucide-react';
+import { Search, ListChecks, SlidersHorizontal, Layers, CheckSquare } from 'lucide-react';
 import { Popover, Transition } from '@headlessui/react';
 import { UserTaskItem } from './UserTaskItem';
 import type { UserTask } from '@/app/store/endpoints/taskEndpoints';
 
 type StatusFilter = 'all' | 'active' | 'completed';
+type TypeFilter = 'all' | 'task' | 'story';
 type PriorityFilter = string | null;
 
 interface UserTaskListProps {
@@ -19,6 +20,7 @@ interface UserTaskListProps {
 export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskListProps) => {
      const [searchTerm, setSearchTerm] = useState('');
      const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
+     const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
      const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>(null);
 
      const filteredTasks = useMemo(() => {
@@ -28,11 +30,12 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                     statusFilter === 'all' ||
                     (statusFilter === 'active' && !task.completed) ||
                     (statusFilter === 'completed' && task.completed);
+               const matchesType = typeFilter === 'all' || (task.type || 'task') === typeFilter;
                const matchesPriority = !priorityFilter || task.priority_info?.label.toLowerCase() === priorityFilter;
 
-               return matchesSearch && matchesStatus && matchesPriority;
+               return matchesSearch && matchesStatus && matchesType && matchesPriority;
           });
-     }, [tasks, searchTerm, statusFilter, priorityFilter]);
+     }, [tasks, searchTerm, statusFilter, typeFilter, priorityFilter]);
 
      const uniquePriorities = useMemo(() => {
           const map = new Map<string, { label: string; color: string }>();
@@ -47,7 +50,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
           return Array.from(map.entries());
      }, [tasks]);
 
-     const hasActiveFilters = searchTerm || statusFilter !== 'all' || priorityFilter;
+     const hasActiveFilters = searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || priorityFilter;
 
      if (isLoading) {
           return (
@@ -62,7 +65,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
      return (
           <div className="flex flex-col gap-4">
                {/* Toolbar */}
-               <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+               <div className="flex flex-wrap gap-2.5 items-center">
                     <div className="relative flex-1 sm:max-w-xs">
                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                          <input
@@ -94,6 +97,37 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                                         }`}
                                    >
                                         {labels[status]}
+                                   </button>
+                              );
+                         })}
+                    </div>
+
+                    {/* Type filter chips */}
+                    <div className="flex items-center gap-1.5">
+                         {(['all', 'task', 'story'] as TypeFilter[]).map((type) => {
+                              const labels: Record<TypeFilter, string> = {
+                                   all: 'Wszystkie',
+                                   task: 'Task',
+                                   story: 'Story',
+                              };
+                              const icons: Record<TypeFilter, React.ReactNode> = {
+                                   all: null,
+                                   task: <CheckSquare className="w-3 h-3" />,
+                                   story: <Layers className="w-3 h-3" />,
+                              };
+                              const isActive = typeFilter === type;
+                              return (
+                                   <button
+                                        key={type}
+                                        onClick={() => setTypeFilter(type)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                                             isActive
+                                                  ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                                                  : 'bg-slate-800/40 text-slate-400 border border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
+                                        }`}
+                                   >
+                                        {icons[type]}
+                                        {labels[type]}
                                    </button>
                               );
                          })}
@@ -189,6 +223,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                                    onClick={() => {
                                         setSearchTerm('');
                                         setStatusFilter('all');
+                                        setTypeFilter('all');
                                         setPriorityFilter(null);
                                    }}
                                    className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl transition-all duration-200 border border-slate-700 hover:border-slate-600 cursor-pointer"

@@ -79,6 +79,7 @@ export interface UserTask {
      created_at?: string;
      updated_at?: string;
      due_date?: string | null;
+     type?: 'task' | 'story';
      collaborators: Array<{
           id: string;
           name: string;
@@ -99,7 +100,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          .select(
                               `
                               id, title, description, column_id, board_id, priority,
-                              user_id, completed, created_at, updated_at, due_date,
+                              user_id, completed, created_at, updated_at, due_date, type,
                               board:boards!tasks_board_id_fkey(title),
                               priority_data:priorities!tasks_priority_fkey(id, label, color),
                               collaborators:task_collaborators(
@@ -133,7 +134,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               .select(
                                    `
                                    id, title, description, column_id, board_id, priority,
-                                   user_id, completed, created_at, updated_at, due_date,
+                                   user_id, completed, created_at, updated_at, due_date, type,
                                    board:boards!tasks_board_id_fkey(title),
                                    priority_data:priorities!tasks_priority_fkey(id, label, color),
                                    collaborators:task_collaborators(
@@ -192,6 +193,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               created_at: t.created_at as string | undefined,
                               updated_at: t.updated_at as string | undefined,
                               due_date: (t.due_date as string) || null,
+                              type: (t.type as 'task' | 'story') || 'task',
                               collaborators,
                          };
                     };
