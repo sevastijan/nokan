@@ -165,16 +165,18 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                onMouseLeave={() => setIsHovered(false)}
                className={`
                     relative cursor-pointer group transition-all duration-200
-                    bg-slate-800/90 hover:bg-slate-750/95
-                    border border-slate-700/60 rounded-lg overflow-hidden
-                    hover:border-slate-600 hover:shadow-lg hover:shadow-black/20
+                    ${isSubtask
+                         ? 'bg-slate-800/60 hover:bg-slate-750/70 border border-dashed border-slate-600/60 hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-900/10'
+                         : 'bg-slate-800/90 hover:bg-slate-750/95 border border-slate-700/60 hover:border-slate-600 hover:shadow-lg hover:shadow-black/20'
+                    }
+                    rounded-lg overflow-hidden
                     ${isEmpty ? 'min-h-16' : ''}
                     ${isCompleted ? 'opacity-60' : ''}
                `}
                style={{
                     borderLeftWidth: '3px',
-                    borderLeftStyle: 'solid',
-                    borderLeftColor: priorityConfig?.dotColor || '#475569',
+                    borderLeftStyle: isSubtask ? 'solid' : 'solid',
+                    borderLeftColor: isSubtask ? '#f97316' : (priorityConfig?.dotColor || '#475569'),
                }}
           >
 
@@ -238,6 +240,13 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                              >
                                                   <FiFlag size={10} />
                                                   {priorityConfig.label}
+                                             </span>
+                                        )}
+
+                                        {isSubtask && (
+                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-500/15 text-orange-400">
+                                                  <FiCornerDownRight size={10} />
+                                                  Subtask
                                              </span>
                                         )}
 

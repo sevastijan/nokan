@@ -14,6 +14,7 @@ import Loader from '@/app/components/Loader';
 import { getPriorities } from '@/app/lib/api';
 import { Column as ColumnType, User, Priority, AssigneeOption, TaskTypeFilter } from '@/app/types/globalTypes';
 import BoardHeader from '@/app/components/Board/BoardHeader';
+import { getSubtaskPreference } from '@/app/hooks/useSubtaskPreference';
 import TaskViewSkeleton from '@/app/components/SingleTaskView/TaskViewSkeleton';
 import { useUpdateTaskMutation } from '@/app/store/apiSlice';
 import { FiX } from 'react-icons/fi';
@@ -102,6 +103,7 @@ export default function Page() {
      const [filterPriority, setFilterPriority] = useState<string | null>(null);
      const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
      const [filterType, setFilterType] = useState<TaskTypeFilter>('all');
+     const [showSubtasks, setShowSubtasks] = useState(false);
      const [notesOpen, setNotesOpen] = useState(false);
      const [apiTokensOpen, setApiTokensOpen] = useState(false);
      const [completionModalOpen, setCompletionModalOpen] = useState(false);
@@ -209,6 +211,12 @@ export default function Page() {
                }
           })();
      }, [session?.user?.email, session?.user?.name, session?.user?.image]);
+
+     useEffect(() => {
+          if (currentUser?.id) {
+               setShowSubtasks(getSubtaskPreference(currentUser.id));
+          }
+     }, [currentUser?.id]);
 
      useEffect(() => {
           if (status === 'unauthenticated') router.push('/auth/signin');
@@ -492,8 +500,8 @@ export default function Page() {
      const filteredColumns = useMemo(() => {
           return localColumns.map((col) => {
                const filteredTasks = (col.tasks || []).filter((task) => {
-                    // Hide subtasks — they belong inside their parent story
-                    if (task.parent_id) return false;
+                    // Hide subtasks unless the user toggled them visible
+                    if (task.parent_id && !showSubtasks) return false;
 
                     if (searchTerm) {
                          const term = searchTerm.toLowerCase();
@@ -512,7 +520,7 @@ export default function Page() {
                });
                return { ...col, tasks: filteredTasks };
           });
-     }, [localColumns, searchTerm, filterPriority, filterAssignee, filterType]);
+     }, [localColumns, searchTerm, filterPriority, filterAssignee, filterType, showSubtasks]);
 
      const currentColumnId = useMemo(() => {
           if (addTaskColumnId) return addTaskColumnId;
@@ -603,6 +611,8 @@ export default function Page() {
                     currentUserId={currentUser?.id}
                     onOpenNotes={handleOpenNotes}
                     onOpenApiTokens={handleOpenApiTokens}
+                    showSubtasks={showSubtasks}
+                    onShowSubtasksChange={setShowSubtasks}
                />
                {filterAssignee && activeFilteredAssignee && (
                     <div className="px-4 md:px-6 pt-4">

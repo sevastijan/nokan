@@ -6,10 +6,11 @@ import Avatar from '../components/Avatar/Avatar';
 import Loader from '@/app/components/Loader';
 import { useGetUserRoleQuery, useGetMyBoardsQuery, useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation, useUpdateUserMutation } from '@/app/store/apiSlice';
 import Link from 'next/link';
-import { ChevronRight, Bell, Mail, Pencil, Camera, Check, X, LayoutDashboard, ClipboardList, Users, Layers } from 'lucide-react';
+import { ChevronRight, Bell, Mail, Pencil, Camera, Check, X, LayoutDashboard, ClipboardList, Users, Layers, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDisplayUser } from '../hooks/useDisplayUser';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useSubtaskPreference } from '../hooks/useSubtaskPreference';
 
 /* ── Toggle Switch ─────────────────────────────────────────────── */
 
@@ -65,6 +66,9 @@ const ProfilePage = () => {
      const { loading: userLoading, refetchUser } = useCurrentUser();
 
      const fileInputRef = useRef<HTMLInputElement>(null);
+
+     // Subtask preference
+     const [showSubtasks, setShowSubtasks] = useSubtaskPreference(currentUser?.id);
 
      // User role
      const { data: userRole } = useGetUserRoleQuery(email, {
@@ -418,8 +422,32 @@ const ProfilePage = () => {
                                         </div>
                                    </div>
 
-                                   {/* ── Right Column — Notification Settings ── */}
-                                   <div className="lg:col-span-2">
+                                   {/* ── Right Column — Settings ── */}
+                                   <div className="lg:col-span-2 space-y-6">
+                                        {/* Board Settings */}
+                                        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6 sm:p-8">
+                                             <div className="flex items-center gap-3 mb-6">
+                                                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                       <Settings2 className="w-5 h-5 text-white" />
+                                                  </div>
+                                                  <div className="min-w-0">
+                                                       <h1 className="text-xl font-bold text-white">Ustawienia tablicy</h1>
+                                                       <p className="text-slate-400 text-sm">Domyślne ustawienia widoku tablic</p>
+                                                  </div>
+                                             </div>
+
+                                             <ToggleSwitch
+                                                  enabled={showSubtasks}
+                                                  onChange={(value) => {
+                                                       setShowSubtasks(value);
+                                                       toast.success(value ? 'Subtaski będą domyślnie widoczne' : 'Subtaski będą domyślnie ukryte');
+                                                  }}
+                                                  label="Pokaż subtaski na tablicach"
+                                                  description="Domyślnie wyświetlaj subtaski jako osobne karty na tablicach"
+                                             />
+                                        </div>
+
+                                        {/* Notification Settings */}
                                         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6 sm:p-8">
                                              {/* Header */}
                                              <div className="flex items-center gap-3 mb-6">

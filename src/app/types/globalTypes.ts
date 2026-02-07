@@ -274,6 +274,8 @@ export interface BoardHeaderProps {
      onFilterAssigneeChange: (assigneeId: string | null) => void;
      filterType: TaskTypeFilter;
      onFilterTypeChange: (type: TaskTypeFilter) => void;
+     showSubtasks?: boolean;
+     onShowSubtasksChange?: (show: boolean) => void;
 }
 
 export interface AssigneeOption {
