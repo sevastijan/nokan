@@ -16,6 +16,7 @@ import { clientManagementEndpoints } from './endpoints/clientManagementEndpoints
 import { preferencesEndpoints } from './endpoints/preferencesEndpoints';
 import { collaboratorEndpoints } from './endpoints/collaboratorEndpoints';
 import { apiTokenEndpoints } from './endpoints/apiTokenEndpoints';
+import { taskSnapshotEndpoints } from './endpoints/taskSnapshotEndpoints';
 
 /**
  * UserRole type in your application.
@@ -53,6 +54,7 @@ export const apiSlice = createApi({
           'BoardNotes',
           'ApiToken',
           'UserTasks',
+          'TaskSnapshot',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -67,6 +69,7 @@ export const apiSlice = createApi({
           ...preferencesEndpoints(builder),
           ...collaboratorEndpoints(builder),
           ...apiTokenEndpoints(builder),
+          ...taskSnapshotEndpoints(builder),
      }),
 });
 
@@ -149,4 +152,7 @@ export const {
      useRevokeApiTokenMutation,
      // User Tasks hook
      useGetUserTasksQuery,
+     // Task Snapshot hooks
+     useGetTaskSnapshotsQuery,
+     useRestoreTaskSnapshotMutation,
 } = apiSlice;

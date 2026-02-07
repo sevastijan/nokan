@@ -1,6 +1,7 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { getSupabase } from '@/app/lib/supabase';
 import { Task, TaskDetail, Attachment, User } from '@/app/types/globalTypes';
+import { pickSnapshotFields, diffFields } from './taskSnapshotEndpoints';
 
 interface RawTask {
      id: string;
@@ -648,9 +649,16 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           invalidatesTags: (_result, _error, { columnId }) => [{ type: 'Column', id: columnId }],
      }),
 
-     updateTask: builder.mutation<Task, { taskId: string; data: Partial<TaskDetail> }>({
-          async queryFn({ taskId, data }) {
+     updateTask: builder.mutation<Task, { taskId: string; data: Partial<TaskDetail>; userId?: string }>({
+          async queryFn({ taskId, data, userId }) {
                try {
+                    // Fetch current state BEFORE the update (for snapshot)
+                    const { data: beforeTask } = await getSupabase()
+                         .from('tasks')
+                         .select('*')
+                         .eq('id', taskId)
+                         .single();
+
                     const dbPayload: Record<string, unknown> = { ...data };
 
                     if ('order' in dbPayload && dbPayload.order !== undefined) {
@@ -697,6 +705,37 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     if (error || !updated) {
                          console.error('❌ updateTask mutation failed:', error);
                          throw error || new Error('Update failed');
+                    }
+
+                    // Create snapshot if snapshotable fields changed
+                    if (beforeTask) {
+                         const beforeSnapshot = pickSnapshotFields(beforeTask as Record<string, unknown>);
+                         const afterSnapshot = pickSnapshotFields(updated as Record<string, unknown>);
+                         const changedFields = diffFields(beforeSnapshot, afterSnapshot);
+
+                         if (changedFields.length > 0) {
+                              try {
+                                   const { data: maxVersionRow } = await getSupabase()
+                                        .from('task_snapshots')
+                                        .select('version')
+                                        .eq('task_id', taskId)
+                                        .order('version', { ascending: false })
+                                        .limit(1)
+                                        .single();
+
+                                   const nextVersion = (maxVersionRow?.version ?? 0) + 1;
+
+                                   await getSupabase().from('task_snapshots').insert({
+                                        task_id: taskId,
+                                        version: nextVersion,
+                                        changed_by: userId || null,
+                                        snapshot: beforeSnapshot,
+                                        changed_fields: changedFields,
+                                   });
+                              } catch (snapshotErr) {
+                                   console.error('[updateTask] snapshot creation failed:', snapshotErr);
+                              }
+                         }
                     }
 
                     const mapped: Task = {
