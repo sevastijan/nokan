@@ -1,7 +1,7 @@
 /**
- *
  * Main API slice using Redux Toolkit Query (RTK Query) with fakeBaseQuery.
  * Handles all interactions with the Supabase backend.
+ * Includes chat + chat management endpoints.
  */
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { boardEndpoints } from './endpoints/boardEndpoints';
@@ -17,6 +17,7 @@ import { preferencesEndpoints } from './endpoints/preferencesEndpoints';
 import { collaboratorEndpoints } from './endpoints/collaboratorEndpoints';
 import { apiTokenEndpoints } from './endpoints/apiTokenEndpoints';
 import { taskSnapshotEndpoints } from './endpoints/taskSnapshotEndpoints';
+import { chatEndpoints } from './endpoints/chatEndpoints';
 
 /**
  * UserRole type in your application.
@@ -55,6 +56,10 @@ export const apiSlice = createApi({
           'ApiToken',
           'UserTasks',
           'TaskSnapshot',
+          'ChatChannel',
+          'ChatChannelList',
+          'ChatMessages',
+          'ChatMembers',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -70,6 +75,7 @@ export const apiSlice = createApi({
           ...collaboratorEndpoints(builder),
           ...apiTokenEndpoints(builder),
           ...taskSnapshotEndpoints(builder),
+          ...chatEndpoints(builder),
      }),
 });
 
@@ -155,4 +161,23 @@ export const {
      // Task Snapshot hooks
      useGetTaskSnapshotsQuery,
      useRestoreTaskSnapshotMutation,
+     // Chat hooks
+     useGetUserChannelsQuery,
+     useGetChannelMessagesQuery,
+     useGetThreadMessagesQuery,
+     useGetChannelMembersQuery,
+     useCreateDmChannelMutation,
+     useCreateGroupChannelMutation,
+     useSendMessageMutation,
+     useEditMessageMutation,
+     useDeleteMessageMutation,
+     useToggleReactionMutation,
+     useMarkChannelReadMutation,
+     useAddChannelMemberMutation,
+     useRemoveChannelMemberMutation,
+     // Chat management hooks
+     useRenameChannelMutation,
+     usePinMessageMutation,
+     useUnpinMessageMutation,
+     useGetPinnedMessagesQuery,
 } = apiSlice;
