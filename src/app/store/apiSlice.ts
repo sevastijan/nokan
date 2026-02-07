@@ -52,6 +52,7 @@ export const apiSlice = createApi({
           'CurrentUser',
           'BoardNotes',
           'ApiToken',
+          'UserTasks',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -146,4 +147,6 @@ export const {
      useCreateApiTokenMutation,
      useUpdateApiTokenMutation,
      useRevokeApiTokenMutation,
+     // User Tasks hook
+     useGetUserTasksQuery,
 } = apiSlice;

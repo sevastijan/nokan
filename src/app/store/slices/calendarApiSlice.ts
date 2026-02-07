@@ -1,6 +1,28 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { getSupabase } from '@/app/lib/supabase';
-import type { Board, TaskDetail, Column, User } from '@/app/types/globalTypes';
+import type { Board, Column, User } from '@/app/types/globalTypes';
+
+export interface CalendarTask {
+     id: string;
+     title: string | null;
+     description?: string | null;
+     column_id: string | null;
+     board_id: string | null;
+     user_id?: string | null;
+     priority?: string | null;
+     start_date?: string | null;
+     end_date?: string | null;
+     due_date?: string | null;
+     completed?: boolean;
+     status?: string | null;
+     status_id?: string | null;
+     type?: 'task' | 'story';
+     parent_id?: string | null;
+     assignee?: User | null;
+     board_title?: string | null;
+     priority_label?: string | null;
+     priority_color?: string | null;
+}
 
 type SupabaseColumn = {
      id: string;
@@ -138,7 +160,7 @@ export const calendarApi = createApi({
                          : [{ type: 'BoardColumns' as const, id: boardId }],
           }),
 
-          getTasksByBoardsAndDate: builder.query<TaskDetail[], { boardIds: string[]; start: string; end: string }>({
+          getTasksByBoardsAndDate: builder.query<CalendarTask[], { boardIds: string[]; start: string; end: string }>({
                async queryFn({ boardIds, start, end }) {
                     try {
                          if (!boardIds.length) return { data: [] };
@@ -150,7 +172,9 @@ export const calendarApi = createApi({
                               .select(
                                    `
               *,
-              assignee:users!tasks_user_id_fkey(id, name, email, image)
+              assignee:users!tasks_user_id_fkey(id, name, email, image),
+              board:boards!tasks_board_id_fkey(id, title),
+              priority_data:priorities!tasks_priority_fkey(id, label, color)
             `,
                               )
                               .in('board_id', boardIds)
@@ -160,7 +184,15 @@ export const calendarApi = createApi({
                               return { error: { status: error.code ?? 400, data: error.message } };
                          }
 
-                         return { data: (tasks as TaskDetail[]) ?? [] };
+                         const enriched: CalendarTask[] = (tasks ?? []).map((t: Record<string, unknown>) => ({
+                              ...t,
+                              board_title: (t.board as { title?: string } | null)?.title ?? null,
+                              priority_label: (t.priority_data as { label?: string } | null)?.label ?? null,
+                              priority_color: (t.priority_data as { color?: string } | null)?.color ?? null,
+                              assignee: t.assignee as User | null,
+                         })) as CalendarTask[];
+
+                         return { data: enriched };
                     } catch (err) {
                          const error = err as { message?: string };
                          return { error: { status: 500, data: error.message ?? 'Unknown error' } };

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
      useGetCurrentUserQuery,
      useGetMyBoardsQuery,
@@ -11,6 +12,8 @@ import {
      useUpdateBoardTitleMutation,
      useRemoveBoardMutation,
      useCreateBoardFromTemplateMutation,
+     useGetUserTasksQuery,
+     useUpdateTaskCompletionMutation,
 } from '@/app/store/apiSlice';
 import Loader from '@/app/components/Loader';
 import BoardModal from '@/app/components/Board/BoardModal';
@@ -18,6 +21,8 @@ import { BoardTemplate } from '@/app/types/globalTypes';
 import { DashboardToolbar } from '@/app/components/Dashboard/DashboardToolbar';
 import { BoardListItem } from '@/app/components/Dashboard/BoardListItem';
 import { DashboardStats } from '@/app/components/Dashboard/DashboardStats';
+import { DashboardTabs, DashboardTab } from '@/app/components/Dashboard/DashboardTabs';
+import { UserTaskList } from '@/app/components/Dashboard/UserTaskList';
 import { Layers, ArrowRight, Sparkles } from 'lucide-react';
 
 function getTaskLabel(count: number) {
@@ -25,6 +30,12 @@ function getTaskLabel(count: number) {
      if (count >= 2 && count <= 4) return 'zadania';
      return 'zadań';
 }
+
+const tabContentVariants = {
+     enter: { opacity: 0, y: 8 },
+     center: { opacity: 1, y: 0 },
+     exit: { opacity: 0, y: -8 },
+};
 
 export default function DashboardPage() {
      const { data: session, status: authStatus } = useSession();
@@ -49,11 +60,17 @@ export default function DashboardPage() {
           skip: !currentUser?.id || !isClient,
      });
 
+     const { data: userTasks = [], isFetching: loadingUserTasks } = useGetUserTasksQuery(currentUser?.id || '', {
+          skip: !currentUser?.id,
+     });
+
+     const [updateTaskCompletion] = useUpdateTaskCompletionMutation();
      const [addBoard] = useAddBoardMutation();
      const [updateBoardTitle] = useUpdateBoardTitleMutation();
      const [removeBoard] = useRemoveBoardMutation();
      const [createBoardFromTemplate] = useCreateBoardFromTemplateMutation();
 
+     const [activeTab, setActiveTab] = useState<DashboardTab>('boards');
      const [modalOpen, setModalOpen] = useState(false);
      const [modalMode, setModalMode] = useState<'create' | 'edit' | 'delete'>('create');
      const [selectedBoard, setSelectedBoard] = useState<string | null>(null);
@@ -70,7 +87,7 @@ export default function DashboardPage() {
           }
      }, [authStatus, router]);
 
-     const stats = useMemo(
+     const boardStats = useMemo(
           () => ({
                totalBoards: myBoards.length,
                totalTasks: myBoards.reduce((sum, board) => sum + (board._count?.tasks ?? 0), 0),
@@ -78,6 +95,13 @@ export default function DashboardPage() {
           }),
           [myBoards],
      );
+
+     const taskStats = useMemo(() => {
+          const active = userTasks.filter((t) => !t.completed).length;
+          const completed = userTasks.filter((t) => t.completed).length;
+          const overdue = userTasks.filter((t) => t.due_date && !t.completed && new Date(t.due_date) < new Date()).length;
+          return { active, completed, overdue };
+     }, [userTasks]);
 
      const openCreate = useCallback(() => {
           setModalMode('create');
@@ -158,6 +182,17 @@ export default function DashboardPage() {
           [router],
      );
 
+     const handleToggleTaskComplete = useCallback(
+          async (taskId: string, completed: boolean) => {
+               try {
+                    await updateTaskCompletion({ taskId, completed }).unwrap();
+               } catch (error) {
+                    console.error('Toggle task completion failed:', error);
+               }
+          },
+          [updateTaskCompletion],
+     );
+
      const filteredBoards = useMemo(() => {
           return myBoards.filter((board) => {
                const matchesSearch = !searchTerm || board.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -194,65 +229,137 @@ export default function DashboardPage() {
                     <div className="relative">
                          <section className="px-4 sm:px-6 lg:px-8 pt-8 pb-6">
                               <div className="max-w-7xl mx-auto flex flex-col gap-6">
-                                   <DashboardToolbar
-                                        searchTerm={searchTerm}
-                                        onSearchChange={setSearchTerm}
-                                        hasTasksOnly={hasTasksOnly}
-                                        setHasTasksOnly={setHasTasksOnly}
-                                        hasMembersOnly={hasMembersOnly}
-                                        setHasMembersOnly={setHasMembersOnly}
-                                        onClearFilters={handleClearFilters}
-                                        onCreateClick={openCreate}
-                                   />
+                                   {/* Tab bar */}
+                                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <DashboardTabs
+                                             activeTab={activeTab}
+                                             onTabChange={setActiveTab}
+                                             boardsCount={myBoards.length}
+                                             tasksCount={userTasks.length}
+                                        />
+                                   </div>
 
-                                   <DashboardStats totalBoards={stats.totalBoards} totalTasks={stats.totalTasks} totalMembers={stats.totalMembers} />
+                                   {/* Board toolbar (only on boards tab) */}
+                                   {activeTab === 'boards' && (
+                                        <DashboardToolbar
+                                             searchTerm={searchTerm}
+                                             onSearchChange={setSearchTerm}
+                                             hasTasksOnly={hasTasksOnly}
+                                             setHasTasksOnly={setHasTasksOnly}
+                                             hasMembersOnly={hasMembersOnly}
+                                             setHasMembersOnly={setHasMembersOnly}
+                                             onClearFilters={handleClearFilters}
+                                             onCreateClick={openCreate}
+                                        />
+                                   )}
+
+                                   {/* Stats */}
+                                   <AnimatePresence mode="wait">
+                                        {activeTab === 'boards' ? (
+                                             <motion.div
+                                                  key="board-stats"
+                                                  initial={{ opacity: 0 }}
+                                                  animate={{ opacity: 1 }}
+                                                  exit={{ opacity: 0 }}
+                                                  transition={{ duration: 0.15 }}
+                                             >
+                                                  <DashboardStats
+                                                       totalBoards={boardStats.totalBoards}
+                                                       totalTasks={boardStats.totalTasks}
+                                                       totalMembers={boardStats.totalMembers}
+                                                  />
+                                             </motion.div>
+                                        ) : (
+                                             <motion.div
+                                                  key="task-stats"
+                                                  initial={{ opacity: 0 }}
+                                                  animate={{ opacity: 1 }}
+                                                  exit={{ opacity: 0 }}
+                                                  transition={{ duration: 0.15 }}
+                                             >
+                                                  <TaskStats
+                                                       active={taskStats.active}
+                                                       completed={taskStats.completed}
+                                                       overdue={taskStats.overdue}
+                                                  />
+                                             </motion.div>
+                                        )}
+                                   </AnimatePresence>
                               </div>
                          </section>
 
                          <section className="px-4 sm:px-6 lg:px-8 pb-12">
                               <div className="max-w-7xl mx-auto">
-                                   {filteredBoards.length > 0 ? (
-                                        <div className="flex flex-col gap-3">
-                                             {filteredBoards.map((board) => (
-                                                  <BoardListItem
-                                                       key={board.id}
-                                                       board={board}
-                                                       onEdit={() => openEdit(board.id, board.title)}
-                                                       onDelete={() => openDelete(board.id)}
-                                                       onBoardClick={() => handleBoardClick(board.id)}
+                                   <AnimatePresence mode="wait">
+                                        {activeTab === 'boards' ? (
+                                             <motion.div
+                                                  key="boards-content"
+                                                  variants={tabContentVariants}
+                                                  initial="enter"
+                                                  animate="center"
+                                                  exit="exit"
+                                                  transition={{ duration: 0.2 }}
+                                             >
+                                                  {filteredBoards.length > 0 ? (
+                                                       <div className="flex flex-col gap-3">
+                                                            {filteredBoards.map((board) => (
+                                                                 <BoardListItem
+                                                                      key={board.id}
+                                                                      board={board}
+                                                                      onEdit={() => openEdit(board.id, board.title)}
+                                                                      onDelete={() => openDelete(board.id)}
+                                                                      onBoardClick={() => handleBoardClick(board.id)}
+                                                                 />
+                                                            ))}
+                                                       </div>
+                                                  ) : (
+                                                       <div className="flex flex-col items-center justify-center py-20 px-4">
+                                                            <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 border border-slate-700">
+                                                                 <Layers className="w-10 h-10 text-slate-400" />
+                                                            </div>
+                                                            <h3 className="text-2xl font-semibold text-white mb-2">{hasActiveFilters ? 'Nie znaleziono projektów' : 'Brak projektów'}</h3>
+                                                            <p className="text-slate-400 text-center max-w-md mb-6">
+                                                                 {hasActiveFilters ? 'Spróbuj zmienić kryteria wyszukiwania lub wyczyść filtry' : 'Rozpocznij swoją przygodę tworząc pierwszy projekt'}
+                                                            </p>
+                                                            {hasActiveFilters ? (
+                                                                 <button
+                                                                      onClick={handleClearFilters}
+                                                                      className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl transition-all duration-200 border border-slate-700 hover:border-slate-600 cursor-pointer"
+                                                                      aria-label="Wyczyść wszystkie filtry"
+                                                                 >
+                                                                      Wyczyść filtry
+                                                                 </button>
+                                                            ) : (
+                                                                 <button
+                                                                      onClick={openCreate}
+                                                                      className="group px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer"
+                                                                      aria-label="Utwórz nowy projekt"
+                                                                 >
+                                                                      <Sparkles className="w-5 h-5" />
+                                                                      Utwórz pierwszy projekt
+                                                                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                                 </button>
+                                                            )}
+                                                       </div>
+                                                  )}
+                                             </motion.div>
+                                        ) : (
+                                             <motion.div
+                                                  key="tasks-content"
+                                                  variants={tabContentVariants}
+                                                  initial="enter"
+                                                  animate="center"
+                                                  exit="exit"
+                                                  transition={{ duration: 0.2 }}
+                                             >
+                                                  <UserTaskList
+                                                       tasks={userTasks}
+                                                       isLoading={loadingUserTasks}
+                                                       onToggleComplete={handleToggleTaskComplete}
                                                   />
-                                             ))}
-                                        </div>
-                                   ) : (
-                                        <div className="flex flex-col items-center justify-center py-20 px-4">
-                                             <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 border border-slate-700">
-                                                  <Layers className="w-10 h-10 text-slate-400" />
-                                             </div>
-                                             <h3 className="text-2xl font-semibold text-white mb-2">{hasActiveFilters ? 'Nie znaleziono projektów' : 'Brak projektów'}</h3>
-                                             <p className="text-slate-400 text-center max-w-md mb-6">
-                                                  {hasActiveFilters ? 'Spróbuj zmienić kryteria wyszukiwania lub wyczyść filtry' : 'Rozpocznij swoją przygodę tworząc pierwszy projekt'}
-                                             </p>
-                                             {hasActiveFilters ? (
-                                                  <button
-                                                       onClick={handleClearFilters}
-                                                       className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl transition-all duration-200 border border-slate-700 hover:border-slate-600 cursor-pointer"
-                                                       aria-label="Wyczyść wszystkie filtry"
-                                                  >
-                                                       Wyczyść filtry
-                                                  </button>
-                                             ) : (
-                                                  <button
-                                                       onClick={openCreate}
-                                                       className="group px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer"
-                                                       aria-label="Utwórz nowy projekt"
-                                                  >
-                                                       <Sparkles className="w-5 h-5" />
-                                                       Utwórz pierwszy projekt
-                                                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                                  </button>
-                                             )}
-                                        </div>
-                                   )}
+                                             </motion.div>
+                                        )}
+                                   </AnimatePresence>
                               </div>
                          </section>
 
@@ -327,5 +434,51 @@ export default function DashboardPage() {
                     currentUserId={currentUser?.id}
                />
           </>
+     );
+}
+
+/* Task-specific stats shown on the tasks tab */
+function TaskStats({ active, completed, overdue }: { active: number; completed: number; overdue: number }) {
+     return (
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+               <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/15">
+                         <svg className="w-4.5 h-4.5 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                              <path d="m9 12 2 2 4-4" />
+                         </svg>
+                    </div>
+                    <div>
+                         <p className="text-xs text-slate-400">Aktywne</p>
+                         <p className="text-lg font-semibold text-white leading-tight">{active}</p>
+                    </div>
+               </div>
+
+               <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-violet-500/15">
+                         <svg className="w-4.5 h-4.5 text-violet-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                              <polyline points="22 4 12 14.01 9 11.01" />
+                         </svg>
+                    </div>
+                    <div>
+                         <p className="text-xs text-slate-400">Ukończone</p>
+                         <p className="text-lg font-semibold text-white leading-tight">{completed}</p>
+                    </div>
+               </div>
+
+               <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-500/15">
+                         <svg className="w-4.5 h-4.5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10" />
+                              <polyline points="12 6 12 12 16 14" />
+                         </svg>
+                    </div>
+                    <div>
+                         <p className="text-xs text-slate-400">Po terminie</p>
+                         <p className="text-lg font-semibold text-white leading-tight">{overdue}</p>
+                    </div>
+               </div>
+          </div>
      );
 }

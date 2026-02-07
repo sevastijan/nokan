@@ -64,7 +64,157 @@ interface RawPriority {
      color: string;
 }
 
+export interface UserTask {
+     id: string;
+     title: string;
+     description: string;
+     column_id: string;
+     board_id: string;
+     board_title: string;
+     priority: string;
+     priority_info: { id: string; label: string; color: string } | null;
+     user_id?: string;
+     completed: boolean;
+     created_at?: string;
+     updated_at?: string;
+     due_date?: string | null;
+     collaborators: Array<{
+          id: string;
+          name: string;
+          email: string;
+          image?: string | null;
+          custom_name?: string | null;
+          custom_image?: string | null;
+     }>;
+}
+
 export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
+     getUserTasks: builder.query<UserTask[], string>({
+          async queryFn(userId) {
+               try {
+                    // 1. Tasks where user is assigned (but not the creator — excludes auto-assigned own tasks)
+                    const { data: assignedTasks, error: err1 } = await getSupabase()
+                         .from('tasks')
+                         .select(
+                              `
+                              id, title, description, column_id, board_id, priority,
+                              user_id, completed, created_at, updated_at, due_date,
+                              board:boards!tasks_board_id_fkey(title),
+                              priority_data:priorities!tasks_priority_fkey(id, label, color),
+                              collaborators:task_collaborators(
+                                   id, user_id,
+                                   user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
+                              )
+                         `,
+                         )
+                         .eq('user_id', userId)
+                         .neq('created_by', userId)
+                         .is('parent_id', null);
+
+                    if (err1) throw err1;
+
+                    // 2. Tasks where user is collaborator but not primary assignee
+                    const { data: collabRows, error: err2 } = await getSupabase()
+                         .from('task_collaborators')
+                         .select('task_id')
+                         .eq('user_id', userId);
+
+                    if (err2) throw err2;
+
+                    const collabTaskIds = (collabRows || [])
+                         .map((r: { task_id: string }) => r.task_id)
+                         .filter((id: string) => !(assignedTasks || []).some((t: { id: string }) => t.id === id));
+
+                    let collabTasks: typeof assignedTasks = [];
+                    if (collabTaskIds.length > 0) {
+                         const { data: ct, error: err3 } = await getSupabase()
+                              .from('tasks')
+                              .select(
+                                   `
+                                   id, title, description, column_id, board_id, priority,
+                                   user_id, completed, created_at, updated_at, due_date,
+                                   board:boards!tasks_board_id_fkey(title),
+                                   priority_data:priorities!tasks_priority_fkey(id, label, color),
+                                   collaborators:task_collaborators(
+                                        id, user_id,
+                                        user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
+                                   )
+                              `,
+                              )
+                              .in('id', collabTaskIds)
+                              .is('parent_id', null);
+
+                         if (err3) throw err3;
+                         collabTasks = ct;
+                    }
+
+                    const allRaw = [...(assignedTasks || []), ...(collabTasks || [])];
+
+                    const mapTask = (t: Record<string, unknown>): UserTask => {
+                         const board = t.board as { title: string } | { title: string }[] | null;
+                         const boardTitle = Array.isArray(board) ? board[0]?.title ?? '' : board?.title ?? '';
+
+                         const pd = t.priority_data as RawPriority | RawPriority[] | null;
+                         let priorityInfo: UserTask['priority_info'] = null;
+                         if (Array.isArray(pd) && pd.length > 0) {
+                              priorityInfo = { id: pd[0].id, label: pd[0].label, color: pd[0].color };
+                         } else if (pd && !Array.isArray(pd)) {
+                              priorityInfo = { id: pd.id, label: pd.label, color: pd.color };
+                         }
+
+                         const rawCollabs = (t.collaborators || []) as RawCollaborator[];
+                         const collaborators = rawCollabs
+                              .filter((c) => c.user)
+                              .map((c) => {
+                                   const u = Array.isArray(c.user) ? c.user[0] : c.user;
+                                   return {
+                                        id: u?.id || c.user_id,
+                                        name: u?.name || '',
+                                        email: u?.email || '',
+                                        image: u?.image,
+                                        custom_name: u?.custom_name,
+                                        custom_image: u?.custom_image,
+                                   };
+                              });
+
+                         return {
+                              id: t.id as string,
+                              title: (t.title as string) || '',
+                              description: (t.description as string) || '',
+                              column_id: t.column_id as string,
+                              board_id: t.board_id as string,
+                              board_title: boardTitle,
+                              priority: (t.priority as string) || '',
+                              priority_info: priorityInfo,
+                              user_id: t.user_id as string | undefined,
+                              completed: t.completed as boolean,
+                              created_at: t.created_at as string | undefined,
+                              updated_at: t.updated_at as string | undefined,
+                              due_date: (t.due_date as string) || null,
+                              collaborators,
+                         };
+                    };
+
+                    const tasks = allRaw.map((t) => mapTask(t as Record<string, unknown>));
+
+                    // Sort: due_date (soonest first, nulls last), then updated_at desc
+                    tasks.sort((a, b) => {
+                         if (a.due_date && b.due_date) return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+                         if (a.due_date && !b.due_date) return -1;
+                         if (!a.due_date && b.due_date) return 1;
+                         return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+                    });
+
+                    return { data: tasks };
+               } catch (err) {
+                    const error = err as Error;
+                    console.error('[getUserTasks] error:', error);
+                    return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+               }
+          },
+          providesTags: ['UserTasks'],
+     }),
+
      addTask: builder.mutation<Task, Partial<TaskDetail> & { column_id: string }>({
           async queryFn({ column_id, ...rest }) {
                try {
@@ -617,6 +767,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           invalidatesTags: (_result, _error, { taskId }) => [
                { type: 'Task', id: taskId },
                { type: 'Column', id: 'LIST' },
+               'UserTasks',
           ],
      }),
 
