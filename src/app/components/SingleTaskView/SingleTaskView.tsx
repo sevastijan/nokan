@@ -64,6 +64,7 @@ const SingleTaskView = ({
      const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
      const [showRecurringModal, setShowRecurringModal] = useState(false);
      const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
+     const [isVisible, setIsVisible] = useState(true);
 
      const {
           task,
@@ -182,27 +183,31 @@ const SingleTaskView = ({
           handleNavigate: handleDescriptionImageNavigate,
      } = useTaskImages(formData.tempDescription);
 
+     const animateOut = useCallback(() => {
+          setIsVisible(false);
+     }, []);
+
      const requestClose = useCallback(() => {
           if (hasUnsavedChanges && !isNewTask) {
                setShowUnsavedConfirm(true);
           } else {
-               onClose();
+               animateOut();
           }
-     }, [hasUnsavedChanges, isNewTask, onClose]);
+     }, [hasUnsavedChanges, isNewTask, animateOut]);
 
      const confirmExit = useCallback(() => {
           setShowUnsavedConfirm(false);
-          onClose();
-     }, [onClose]);
+          animateOut();
+     }, [animateOut]);
 
      const saveAndExit = useCallback(async () => {
           setShowUnsavedConfirm(false);
           const success = await saveExistingTask();
           if (success) {
                toast.success('Zapisano i zamknięto');
-               onClose();
+               animateOut();
           }
-     }, [saveExistingTask, onClose]);
+     }, [saveExistingTask, animateOut]);
 
      const handlePriorityChange = useCallback(
           (priorityId: string | null) => {
@@ -262,17 +267,17 @@ const SingleTaskView = ({
                toast.success(isNewTask ? 'Zadanie utworzone' : 'Zadanie zaktualizowane');
           }
 
-          onClose();
-     }, [formData.tempTitle, formData.localColumnId, isNewTask, saveNewTask, saveExistingTask, localFilePreviews, currentTaskId, uploadAllAttachments, onClose]);
+          animateOut();
+     }, [formData.tempTitle, formData.localColumnId, isNewTask, saveNewTask, saveExistingTask, localFilePreviews, currentTaskId, uploadAllAttachments, animateOut]);
 
      const handleDelete = useCallback(async () => {
           try {
                await deleteTask();
-               onClose();
+               animateOut();
           } catch {
                toast.error('Nie udało się usunąć zadania');
           }
-     }, [deleteTask, onClose]);
+     }, [deleteTask, animateOut]);
 
      const handleCopyLink = useCallback(() => {
           if (!task?.id || !boardId) return;
@@ -442,7 +447,8 @@ const SingleTaskView = ({
      const isLoaded = Boolean(task) || isNewTask;
 
      return (
-          <AnimatePresence initial={false}>
+          <AnimatePresence onExitComplete={onClose}>
+               {isVisible && (
                <motion.div
                     ref={overlayRef}
                     className="fixed inset-0 bg-black/40 backdrop-blur-md flex justify-center items-center z-50 p-2 md:p-4"
@@ -451,18 +457,17 @@ const SingleTaskView = ({
                               requestClose();
                          }
                     }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={false}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                >
                     <motion.div
                          ref={modalRef}
                          className="bg-linear-to-b from-slate-800 to-slate-850 rounded-2xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50 overflow-hidden"
-                         initial={{ scale: 0.97, opacity: 0, y: 12 }}
+                         initial={{ scale: 0.9, opacity: 0, y: 30 }}
                          animate={{ scale: 1, opacity: 1, y: 0 }}
-                         exit={{ scale: 0.97, opacity: 0, y: 12 }}
-                         transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+                         exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     >
                     {!isLoaded ? (
                          <TaskViewSkeleton />
@@ -731,6 +736,7 @@ const SingleTaskView = ({
                          />
                     )}
                </motion.div>
+               )}
           </AnimatePresence>
      );
 };
