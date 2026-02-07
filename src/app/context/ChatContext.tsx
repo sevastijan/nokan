@@ -6,6 +6,7 @@ import {
 	selectSelectedChannelId,
 	selectThreadParentId,
 	selectMiniChats,
+	selectOnlineUserIds,
 	selectChannel as selectChannelAction,
 	openThread as openThreadAction,
 	closeThread as closeThreadAction,
@@ -23,6 +24,7 @@ export function useChat() {
 	const selectedChannelId = useSelector(selectSelectedChannelId);
 	const threadParentId = useSelector(selectThreadParentId);
 	const miniChats = useSelector(selectMiniChats);
+	const onlineUserIds = useSelector(selectOnlineUserIds);
 
 	const selectChannel = useCallback(
 		(channelId: string | null) => dispatch(selectChannelAction(channelId)),
@@ -55,6 +57,7 @@ export function useChat() {
 		selectedChannelId,
 		threadParentId,
 		miniChats,
+		onlineUserIds,
 		selectChannel,
 		openThread,
 		closeThread,

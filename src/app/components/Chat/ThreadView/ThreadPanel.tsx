@@ -9,11 +9,16 @@ import MessageList from '../ChannelView/MessageList';
 import MessageInput from '../ChannelView/MessageInput';
 import MessageItem from '../ChannelView/MessageItem';
 import { getUserDisplayName } from '../utils';
+import { useRealtimeMessages } from '@/app/hooks/chat/useRealtimeMessages';
 
 const ThreadPanel = () => {
 	const { threadParentId, selectedChannelId, closeThread } = useChat();
 	const { currentUser } = useCurrentUser();
 	const bottomRef = useRef<HTMLDivElement>(null);
+	const { broadcastNewMessage, broadcastMessageUpdate, broadcastReactionUpdate } = useRealtimeMessages(
+		threadParentId ? `thread:${threadParentId}` : null,
+		currentUser?.id ?? ''
+	);
 
 	const { data: threadMessages = [], isLoading } = useGetThreadMessagesQuery(
 		{ parentId: threadParentId! },
@@ -42,8 +47,9 @@ const ThreadPanel = () => {
 				content: content.trim(),
 				parentId: threadParentId,
 			});
+			broadcastNewMessage();
 		},
-		[selectedChannelId, currentUser?.id, threadParentId, sendMessage]
+		[selectedChannelId, currentUser?.id, threadParentId, sendMessage, broadcastNewMessage]
 	);
 
 	if (!threadParentId || !selectedChannelId) return null;
@@ -74,6 +80,8 @@ const ThreadPanel = () => {
 						message={parentMessage}
 						currentUserId={currentUser?.id ?? ''}
 						isThreadParent
+						onMessageUpdate={broadcastMessageUpdate}
+						onReactionUpdate={broadcastReactionUpdate}
 					/>
 				</div>
 			)}
@@ -91,7 +99,7 @@ const ThreadPanel = () => {
 						<p className="text-xs text-slate-600 mt-1">Rozpocznij dyskusję w wątku</p>
 					</div>
 				) : (
-					<MessageList messages={threadMessages} currentUserId={currentUser?.id ?? ''} isThread />
+					<MessageList messages={threadMessages} currentUserId={currentUser?.id ?? ''} isThread onMessageUpdate={broadcastMessageUpdate} onReactionUpdate={broadcastReactionUpdate} />
 				)}
 				<div ref={bottomRef} />
 			</div>

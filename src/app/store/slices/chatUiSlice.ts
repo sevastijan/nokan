@@ -10,12 +10,14 @@ interface ChatUiState {
 	selectedChannelId: string | null;
 	threadParentId: string | null;
 	miniChats: MiniChatWindow[];
+	onlineUserIds: string[];
 }
 
 const initialState: ChatUiState = {
 	selectedChannelId: null,
 	threadParentId: null,
 	miniChats: [],
+	onlineUserIds: [],
 };
 
 const chatUiSlice = createSlice({
@@ -51,6 +53,9 @@ const chatUiSlice = createSlice({
 				mc.channelId === action.payload ? { ...mc, minimized: !mc.minimized } : mc
 			);
 		},
+		setOnlineUserIds(state, action: PayloadAction<string[]>) {
+			state.onlineUserIds = action.payload;
+		},
 	},
 });
 
@@ -61,11 +66,14 @@ export const {
 	openMiniChat,
 	closeMiniChat,
 	toggleMinimizeMiniChat,
+	setOnlineUserIds,
 } = chatUiSlice.actions;
 
 // Selectors
 export const selectSelectedChannelId = (state: RootState) => state.chatUi.selectedChannelId;
 export const selectThreadParentId = (state: RootState) => state.chatUi.threadParentId;
 export const selectMiniChats = (state: RootState) => state.chatUi.miniChats;
+
+export const selectOnlineUserIds = (state: RootState) => state.chatUi.onlineUserIds;
 
 export default chatUiSlice.reducer;

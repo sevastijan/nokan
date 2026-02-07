@@ -9,10 +9,11 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import TypingIndicator from './TypingIndicator';
 import { useTypingIndicator } from '@/app/hooks/chat/useTypingIndicator';
+import { useRealtimeMessages } from '@/app/hooks/chat/useRealtimeMessages';
 import { useChatNotification } from '@/app/hooks/chat/useChatNotification';
 import { useDisplayUser } from '@/app/hooks/useDisplayUser';
 
-const POLL_INTERVAL = 1000;
+const POLL_INTERVAL = 5000;
 
 const ChannelView = () => {
 	const { selectedChannelId } = useChat();
@@ -22,6 +23,7 @@ const ChannelView = () => {
 	const prevMsgCountRef = useRef(0);
 
 	const { sendTyping } = useTypingIndicator(selectedChannelId ?? '', currentUser?.id ?? '');
+	const { broadcastNewMessage, broadcastMessageUpdate, broadcastReactionUpdate } = useRealtimeMessages(selectedChannelId, currentUser?.id ?? '');
 
 	const { data: messages = [], isLoading, refetch } = useGetChannelMessagesQuery(
 		{ channelId: selectedChannelId! },
@@ -74,8 +76,9 @@ const ChannelView = () => {
 				userId: currentUser.id,
 				content: content.trim(),
 			});
+			broadcastNewMessage();
 		},
-		[selectedChannelId, currentUser?.id, sendMessage]
+		[selectedChannelId, currentUser?.id, sendMessage, broadcastNewMessage]
 	);
 
 	if (!selectedChannelId) return null;
@@ -93,7 +96,7 @@ const ChannelView = () => {
 								<div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
 							</div>
 						) : (
-							<MessageList messages={messages} currentUserId={currentUser?.id ?? ''} isAdmin={isAdmin} />
+							<MessageList messages={messages} currentUserId={currentUser?.id ?? ''} isAdmin={isAdmin} onMessageUpdate={broadcastMessageUpdate} onReactionUpdate={broadcastReactionUpdate} />
 						)}
 						<div ref={bottomRef} />
 					</div>

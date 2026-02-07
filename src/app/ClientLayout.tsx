@@ -9,6 +9,9 @@ import { ChatProvider } from './context/ChatContext';
 import MiniChatContainer from './components/Chat/MiniChatContainer';
 import { useServiceWorker } from './hooks/useServiceWorker';
 import { usePWAStandalone } from './hooks/usePWAStandalone';
+import { useCurrentUser } from './hooks/useCurrentUser';
+import { usePresence } from './hooks/chat/usePresence';
+import { useGlobalChatNotification } from './hooks/chat/useGlobalChatNotification';
 
 interface ClientLayoutProps {
      children: ReactNode;
@@ -19,6 +22,9 @@ const ClientLayout = ({ children }: ClientLayoutProps) => {
      const loggedIn = status === 'authenticated';
      const isStandalone = usePWAStandalone();
      useServiceWorker();
+     const { currentUser } = useCurrentUser();
+     usePresence(currentUser?.id ?? null);
+     useGlobalChatNotification(currentUser?.id ?? null);
 
      return (
           <PWASplashProvider isStandalone={isStandalone}>

@@ -1,14 +1,18 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import { getSupabase } from '@/app/lib/supabase';
+import { setOnlineUserIds } from '@/app/store/slices/chatUiSlice';
+import type { AppDispatch } from '@/app/store';
 
 /**
  * Supabase Presence for online/offline status.
  * Tracks all online users globally via a single 'online-users' channel.
+ * Dispatches to Redux so any component can read via selector.
  */
 export function usePresence(currentUserId: string | null) {
-	const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+	const dispatch = useDispatch<AppDispatch>();
 	const channelRef = useRef<ReturnType<ReturnType<typeof getSupabase>['channel']> | null>(null);
 
 	useEffect(() => {
@@ -22,8 +26,8 @@ export function usePresence(currentUserId: string | null) {
 		channel
 			.on('presence', { event: 'sync' }, () => {
 				const state = channel.presenceState();
-				const ids = new Set<string>(Object.keys(state));
-				setOnlineUserIds(ids);
+				const ids = Object.keys(state);
+				dispatch(setOnlineUserIds(ids));
 			})
 			.subscribe(async (status) => {
 				if (status === 'SUBSCRIBED') {
@@ -37,7 +41,5 @@ export function usePresence(currentUserId: string | null) {
 			supabase.removeChannel(channel);
 			channelRef.current = null;
 		};
-	}, [currentUserId]);
-
-	return { onlineUserIds };
+	}, [currentUserId, dispatch]);
 }

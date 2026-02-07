@@ -12,6 +12,7 @@ import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadM
 import { useDisplayUser } from '../hooks/useDisplayUser';
 import { useChat } from '@/app/context/ChatContext';
 import { getUserDisplayName, getUserDisplayAvatar } from './Chat/utils';
+import OnlineIndicator from './Chat/OnlineIndicator';
 import CreateChannelModal from './Chat/ChannelList/CreateChannelModal';
 
 const roleConfig: Record<string, { label: string; classes: string }> = {
@@ -28,7 +29,7 @@ const Navbar = () => {
 
      const { displayAvatar, displayName, currentUser } = useDisplayUser();
      const userEmail = session?.user?.email ?? '';
-     const { selectChannel, openMiniChat } = useChat();
+     const { selectChannel, openMiniChat, onlineUserIds } = useChat();
 
      const { data: userRole, isLoading: roleLoading } = useGetUserRoleQuery(userEmail, {
           skip: !userEmail,
@@ -258,6 +259,7 @@ const Navbar = () => {
                                         const name = getUserDisplayName(other?.user);
                                         const avatar = getUserDisplayAvatar(other?.user);
                                         const isUnread = (ch.unread_count || 0) > 0;
+                                        const isOnline = other?.user_id ? onlineUserIds.includes(other.user_id) : false;
 
                                         return (
                                              <button
@@ -265,7 +267,10 @@ const Navbar = () => {
                                                   onClick={(e) => handleDmClick(e, ch.id)}
                                                   className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-800/50 transition cursor-pointer group"
                                              >
-                                                  <Avatar src={avatar} alt={name} size={20} className="shrink-0" />
+                                                  <div className="relative shrink-0">
+                                                       <Avatar src={avatar} alt={name} size={20} />
+                                                       <OnlineIndicator isOnline={isOnline} className="absolute -bottom-0.5 -right-0.5" />
+                                                  </div>
                                                   <span className={`text-sm truncate ${isUnread ? 'font-semibold text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>
                                                        {name}
                                                   </span>

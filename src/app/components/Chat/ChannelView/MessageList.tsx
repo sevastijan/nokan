@@ -9,9 +9,11 @@ interface MessageListProps {
 	currentUserId: string;
 	isThread?: boolean;
 	isAdmin?: boolean;
+	onMessageUpdate?: () => void;
+	onReactionUpdate?: () => void;
 }
 
-const MessageList = ({ messages, currentUserId, isThread = false, isAdmin = false }: MessageListProps) => {
+const MessageList = ({ messages, currentUserId, isThread = false, isAdmin = false, onMessageUpdate, onReactionUpdate }: MessageListProps) => {
 	if (messages.length === 0) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full text-center py-12">
@@ -55,6 +57,8 @@ const MessageList = ({ messages, currentUserId, isThread = false, isAdmin = fals
 							currentUserId={currentUserId}
 							isGrouped={!!isGrouped}
 							isAdmin={isAdmin}
+							onMessageUpdate={onMessageUpdate}
+							onReactionUpdate={onReactionUpdate}
 						/>
 					</div>
 				);

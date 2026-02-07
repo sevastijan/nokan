@@ -17,9 +17,11 @@ interface MessageItemProps {
 	isGrouped?: boolean;
 	isThreadParent?: boolean;
 	isAdmin?: boolean;
+	onMessageUpdate?: () => void;
+	onReactionUpdate?: () => void;
 }
 
-const MessageItem = ({ message, currentUserId, isGrouped = false, isThreadParent = false, isAdmin = false }: MessageItemProps) => {
+const MessageItem = ({ message, currentUserId, isGrouped = false, isThreadParent = false, isAdmin = false, onMessageUpdate, onReactionUpdate }: MessageItemProps) => {
 	const { openThread, selectedChannelId } = useChat();
 	const [isHovered, setIsHovered] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
@@ -47,6 +49,7 @@ const MessageItem = ({ message, currentUserId, isGrouped = false, isThreadParent
 			channelId: message.channel_id,
 			parentId: message.parent_id,
 		});
+		onMessageUpdate?.();
 		setIsEditing(false);
 	};
 
@@ -56,6 +59,7 @@ const MessageItem = ({ message, currentUserId, isGrouped = false, isThreadParent
 			channelId: message.channel_id,
 			parentId: message.parent_id,
 		});
+		onMessageUpdate?.();
 	};
 
 	const handleReaction = async (emoji: string) => {
@@ -67,6 +71,7 @@ const MessageItem = ({ message, currentUserId, isGrouped = false, isThreadParent
 			channelId: selectedChannelId,
 			parentId: message.parent_id,
 		});
+		onReactionUpdate?.();
 		setShowEmojiPicker(false);
 	};
 

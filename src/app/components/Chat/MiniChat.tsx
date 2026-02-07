@@ -7,11 +7,13 @@ import { useChat } from '@/app/context/ChatContext';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useGetChannelMessagesQuery, useGetChannelMembersQuery, useGetUserChannelsQuery, useSendMessageMutation, useMarkChannelReadMutation } from '@/app/store/apiSlice';
 import Avatar from '@/app/components/Avatar/Avatar';
+import OnlineIndicator from './OnlineIndicator';
 import { getUserDisplayName, getUserDisplayAvatar, formatMessageTime } from './utils';
 import { useTypingIndicator } from '@/app/hooks/chat/useTypingIndicator';
+import { useRealtimeMessages } from '@/app/hooks/chat/useRealtimeMessages';
 import { useDisplayUser } from '@/app/hooks/useDisplayUser';
 
-const POLL_INTERVAL = 1500;
+const POLL_INTERVAL = 5000;
 
 interface MiniChatProps {
 	channelId: string;
@@ -20,7 +22,7 @@ interface MiniChatProps {
 }
 
 const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
-	const { closeMiniChat, toggleMinimizeMiniChat, selectChannel } = useChat();
+	const { closeMiniChat, toggleMinimizeMiniChat, selectChannel, onlineUserIds } = useChat();
 	const router = useRouter();
 	const { currentUser } = useCurrentUser();
 	const { displayName: myName } = useDisplayUser();
@@ -29,6 +31,7 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 	const prevCountRef = useRef(0);
 
 	const { sendTyping } = useTypingIndicator(channelId, currentUser?.id ?? '');
+	const { broadcastNewMessage } = useRealtimeMessages(channelId, currentUser?.id ?? '');
 
 	const { data: messages = [], isLoading, refetch } = useGetChannelMessagesQuery(
 		{ channelId },
@@ -77,7 +80,8 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 		if (!value || !currentUser?.id) return;
 		inputRef.current!.value = '';
 		await sendMessage({ channelId, userId: currentUser.id, content: value });
-	}, [channelId, currentUser?.id, sendMessage]);
+		broadcastNewMessage();
+	}, [channelId, currentUser?.id, sendMessage, broadcastNewMessage]);
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === 'Enter') {
@@ -97,7 +101,10 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 				onClick={() => toggleMinimizeMiniChat(channelId)}
 			>
 				{isDm ? (
-					<Avatar src={headerAvatar} alt={headerName} size={24} className="shrink-0" />
+					<div className="relative shrink-0">
+						<Avatar src={headerAvatar} alt={headerName} size={24} />
+						<OnlineIndicator isOnline={otherMember?.user_id ? onlineUserIds.includes(otherMember.user_id) : false} className="absolute -bottom-0.5 -right-0.5" />
+					</div>
 				) : (
 					<div className="w-6 h-6 rounded bg-blue-600/20 flex items-center justify-center shrink-0">
 						<span className="text-[10px] font-bold text-blue-400">#</span>

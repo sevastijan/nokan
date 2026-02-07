@@ -677,11 +677,9 @@ export const chatEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
 					)
 					.single();
 
-				console.log('[pinMessage]', { data, error });
 				if (error || !data) throw error || new Error('Failed to pin message');
 				return { data };
 			} catch (err) {
-				console.error('[pinMessage] ERROR:', err);
 				const error = err as Error;
 				return { error: { status: 'CUSTOM_ERROR', error: error.message } };
 			}
@@ -746,11 +744,9 @@ export const chatEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
 					.eq('is_pinned', true)
 					.order('pinned_at', { ascending: false });
 
-				console.log('[getPinnedMessages]', { channelId, data, error });
 				if (error) throw error;
 				return { data: data || [] };
 			} catch (err) {
-				console.error('[getPinnedMessages] ERROR:', err);
 				const error = err as Error;
 				return { error: { status: 'CUSTOM_ERROR', error: error.message } };
 			}
