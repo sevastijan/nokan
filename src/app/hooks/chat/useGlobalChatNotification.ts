@@ -15,127 +15,129 @@ import type { AppDispatch } from '@/app/store';
  * 2. Invalidate ChatChannelList cache so unread badges update globally
  */
 export function useGlobalChatNotification(currentUserId: string | null) {
-	const dispatch = useDispatch<AppDispatch>();
-	const originalTitleRef = useRef('');
-	const titleIntervalRef = useRef<NodeJS.Timeout | null>(null);
-	const audioRef = useRef<HTMLAudioElement | null>(null);
+     const dispatch = useDispatch<AppDispatch>();
+     const originalTitleRef = useRef('');
+     const titleIntervalRef = useRef<NodeJS.Timeout | null>(null);
+     const audioRef = useRef<HTMLAudioElement | null>(null);
 
-	// Preload notification sound & unlock audio on first user interaction
-	useEffect(() => {
-		const audio = new Audio('/message-sound.mp3');
-		audio.volume = 0.5;
-		audioRef.current = audio;
+     // Preload notification sound & unlock audio on first user interaction
+     useEffect(() => {
+          const audio = new Audio('/message-sound.mp3');
+          audio.volume = 0.2;
+          audioRef.current = audio;
 
-		const unlock = () => {
-			audio.play().then(() => {
-				audio.pause();
-				audio.currentTime = 0;
-			}).catch(() => {});
-			window.removeEventListener('click', unlock);
-			window.removeEventListener('keydown', unlock);
-		};
-		window.addEventListener('click', unlock);
-		window.addEventListener('keydown', unlock);
+          const unlock = () => {
+               audio.play()
+                    .then(() => {
+                         audio.pause();
+                         audio.currentTime = 0;
+                    })
+                    .catch(() => {});
+               window.removeEventListener('click', unlock);
+               window.removeEventListener('keydown', unlock);
+          };
+          window.addEventListener('click', unlock);
+          window.addEventListener('keydown', unlock);
 
-		return () => {
-			window.removeEventListener('click', unlock);
-			window.removeEventListener('keydown', unlock);
-		};
-	}, []);
+          return () => {
+               window.removeEventListener('click', unlock);
+               window.removeEventListener('keydown', unlock);
+          };
+     }, []);
 
-	// Store original title
-	useEffect(() => {
-		originalTitleRef.current = document.title;
-	}, []);
+     // Store original title
+     useEffect(() => {
+          originalTitleRef.current = document.title;
+     }, []);
 
-	// Reset title on focus
-	useEffect(() => {
-		const handleFocus = () => {
-			if (titleIntervalRef.current) {
-				clearInterval(titleIntervalRef.current);
-				titleIntervalRef.current = null;
-			}
-			document.title = originalTitleRef.current;
-		};
-		window.addEventListener('focus', handleFocus);
-		return () => {
-			window.removeEventListener('focus', handleFocus);
-			if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
-		};
-	}, []);
+     // Reset title on focus
+     useEffect(() => {
+          const handleFocus = () => {
+               if (titleIntervalRef.current) {
+                    clearInterval(titleIntervalRef.current);
+                    titleIntervalRef.current = null;
+               }
+               document.title = originalTitleRef.current;
+          };
+          window.addEventListener('focus', handleFocus);
+          return () => {
+               window.removeEventListener('focus', handleFocus);
+               if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
+          };
+     }, []);
 
-	// Request notification permission
-	useEffect(() => {
-		if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-			Notification.requestPermission();
-		}
-	}, []);
+     // Request notification permission
+     useEffect(() => {
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+               Notification.requestPermission();
+          }
+     }, []);
 
-	useEffect(() => {
-		if (!currentUserId) return;
+     useEffect(() => {
+          if (!currentUserId) return;
 
-		const supabase = getSupabase();
+          const supabase = getSupabase();
 
-		const channel = supabase
-			.channel('global-chat-notifications')
-			.on(
-				'postgres_changes',
-				{
-					event: 'INSERT',
-					schema: 'public',
-					table: 'chat_messages',
-				},
-				(payload) => {
-					const record = payload.new as Record<string, unknown>;
+          const channel = supabase
+               .channel('global-chat-notifications')
+               .on(
+                    'postgres_changes',
+                    {
+                         event: 'INSERT',
+                         schema: 'public',
+                         table: 'chat_messages',
+                    },
+                    (payload) => {
+                         const record = payload.new as Record<string, unknown>;
 
-					// Skip own messages
-					if (record.user_id === currentUserId) return;
-					// Skip deleted messages
-					if (record.is_deleted) return;
+                         // Skip own messages
+                         if (record.user_id === currentUserId) return;
+                         // Skip deleted messages
+                         if (record.is_deleted) return;
 
-					// Invalidate channel list to update unread badges
-					dispatch(apiSlice.util.invalidateTags([{ type: 'ChatChannelList', id: currentUserId }]));
+                         // Invalidate channel list to update unread badges
+                         dispatch(apiSlice.util.invalidateTags([{ type: 'ChatChannelList', id: currentUserId }]));
 
-					// Show notifications only when tab is not focused
-					if (!document.hasFocus()) {
-						const content = (record.content as string) || '';
-						const preview = content.length > 80 ? content.slice(0, 80) + '...' : content;
+                         // Show notifications only when tab is not focused
+                         if (!document.hasFocus()) {
+                              const content = (record.content as string) || '';
+                              const preview = content.length > 80 ? content.slice(0, 80) + '...' : content;
 
-						// Play notification sound
-						if (audioRef.current) {
-							audioRef.current.currentTime = 0;
-							audioRef.current.play().catch(() => {});
-						}
+                              // Play notification sound
+                              if (audioRef.current) {
+                                   audioRef.current.currentTime = 0;
+                                   audioRef.current.play().catch(() => {});
+                              }
 
-						// Tab title flash
-						if (!titleIntervalRef.current) {
-							let flash = true;
-							titleIntervalRef.current = setInterval(() => {
-								document.title = flash ? originalTitleRef.current : 'Nowa wiadomość!';
-								flash = !flash;
-							}, 1500);
-							document.title = 'Nowa wiadomość!';
-						}
+                              // Tab title flash
+                              if (!titleIntervalRef.current) {
+                                   let flash = true;
+                                   titleIntervalRef.current = setInterval(() => {
+                                        document.title = flash ? originalTitleRef.current : 'Nowa wiadomość!';
+                                        flash = !flash;
+                                   }, 1500);
+                                   document.title = 'Nowa wiadomość!';
+                              }
 
-						// Browser push notification
-						try {
-							if ('Notification' in window && Notification.permission === 'granted') {
-								new Notification('Nowa wiadomość', {
-									body: preview,
-									icon: '/icon-192x192.png',
-									tag: `chat-${record.id}`,
-								});
-							}
-						} catch {
-							// Notification API not available
-						}
-					}
-				}
-			)
-			.subscribe();
+                              // Browser push notification
+                              try {
+                                   if ('Notification' in window && Notification.permission === 'granted') {
+                                        new Notification('Nowa wiadomość', {
+                                             body: preview,
+                                             icon: '/icon-192x192.png',
+                                             tag: `chat-${record.id}`,
+                                        });
+                                   }
+                              } catch {
+                                   // Notification API not available
+                              }
+                         }
+                    },
+               )
+               .subscribe();
 
-		return () => {
-			supabase.removeChannel(channel);
-		};
-	}, [currentUserId, dispatch]);
+          return () => {
+               supabase.removeChannel(channel);
+          };
+     }, [currentUserId, dispatch]);
 }

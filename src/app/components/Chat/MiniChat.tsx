@@ -30,7 +30,7 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const prevCountRef = useRef(0);
 
-	const { sendTyping } = useTypingIndicator(channelId, currentUser?.id ?? '');
+	const { sendTyping, typingUsers } = useTypingIndicator(channelId, currentUser?.id ?? '');
 	const { broadcastNewMessage } = useRealtimeMessages(channelId, currentUser?.id ?? '');
 
 	const { data: messages = [], isLoading, refetch } = useGetChannelMessagesQuery(
@@ -187,6 +187,22 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 							<div ref={bottomRef} />
 						</div>
 					</div>
+
+					{/* Typing indicator */}
+					{typingUsers.length > 0 && (
+						<div className="shrink-0 px-3 py-1">
+							<div className="flex items-center gap-1.5">
+								<div className="flex gap-0.5">
+									<span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+									<span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+									<span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+								</div>
+								<span className="text-[10px] text-slate-500">
+									{typingUsers.map((u) => u.userName).join(', ')} {typingUsers.length === 1 ? 'pisze' : 'piszą'}...
+								</span>
+							</div>
+						</div>
+					)}
 
 					{/* Input */}
 					<div className="shrink-0 px-2 py-2 border-t border-slate-800/60">
