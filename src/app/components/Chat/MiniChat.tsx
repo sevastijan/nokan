@@ -12,6 +12,7 @@ import { getUserDisplayName, getUserDisplayAvatar, formatMessageTime } from './u
 import { useTypingIndicator } from '@/app/hooks/chat/useTypingIndicator';
 import { useRealtimeMessages } from '@/app/hooks/chat/useRealtimeMessages';
 import { useDisplayUser } from '@/app/hooks/useDisplayUser';
+import LinkifyText from './LinkifyText';
 
 const POLL_INTERVAL = 5000;
 
@@ -186,7 +187,7 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 														{msg.is_deleted ? (
 															<span className="italic text-slate-500 text-xs">[Usunięta]</span>
 														) : (
-															msg.content
+															<span className="whitespace-pre-wrap break-words"><LinkifyText text={msg.content} /></span>
 														)}
 													</div>
 													<span className={`text-[10px] text-slate-600 mt-0.5 block ${isOwn ? 'text-right' : ''}`}>

@@ -10,6 +10,7 @@ import { formatMessageTime, getUserDisplayName, getUserDisplayAvatar } from '../
 import ReactionBar from './ReactionBar';
 import EmojiPicker from './EmojiPicker';
 import AttachmentPreview from './AttachmentPreview';
+import LinkifyText from '../LinkifyText';
 
 interface MessageItemProps {
 	message: ChatMessage;
@@ -146,7 +147,7 @@ const MessageItem = ({ message, currentUserId, isGrouped = false, isThreadParent
 				) : (
 					<>
 						<p className="text-sm text-slate-300 whitespace-pre-wrap break-words">
-							{message.content}
+							<LinkifyText text={message.content} />
 							{message.is_edited && (
 								<span className="text-[10px] text-slate-600 ml-1">(edytowano)</span>
 							)}
