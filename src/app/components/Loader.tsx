@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { usePWASplash } from '../context/PWASplashContext';
 
 interface LoaderProps {
@@ -8,11 +9,19 @@ interface LoaderProps {
 
 const Loader = ({ text = 'Loading...' }: LoaderProps) => {
      const { isSplashActive } = usePWASplash();
+     // Short delay before showing loader so the PWA splash has time to
+     // activate after standalone detection (avoids a brief loader flash).
+     const [visible, setVisible] = useState(false);
 
-     if (isSplashActive) return null;
+     useEffect(() => {
+          const timer = setTimeout(() => setVisible(true), 150);
+          return () => clearTimeout(timer);
+     }, []);
+
+     if (isSplashActive || !visible) return null;
 
      return (
-          <div className="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 select-none">
+          <div className="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 select-none animate-[fadeIn_0.3s_ease-out]">
                {/* Ambient background glow */}
                <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-blue-500/[0.03] blur-3xl" />
@@ -97,6 +106,10 @@ const Loader = ({ text = 'Loading...' }: LoaderProps) => {
                     @keyframes loaderDot {
                          0%, 80%, 100% { opacity: 0.3; transform: scale(1); }
                          40% { opacity: 1; transform: scale(1.5); }
+                    }
+                    @keyframes fadeIn {
+                         from { opacity: 0; }
+                         to { opacity: 1; }
                     }
                `}</style>
           </div>
