@@ -8,6 +8,14 @@ export function useServiceWorker(): void {
      useEffect(() => {
           if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
+          // In development, unregister any existing SW to avoid stale cache issues
+          if (process.env.NODE_ENV === 'development') {
+               navigator.serviceWorker.getRegistrations().then((regs) => {
+                    regs.forEach((r) => r.unregister());
+               });
+               return;
+          }
+
           let registration: ServiceWorkerRegistration | null = null;
           let intervalId: ReturnType<typeof setInterval> | null = null;
 

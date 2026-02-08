@@ -26,9 +26,10 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 	const router = useRouter();
 	const { currentUser } = useCurrentUser();
 	const { displayName: myName } = useDisplayUser();
-	const bottomRef = useRef<HTMLDivElement>(null);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const prevCountRef = useRef(0);
+	const initialScrollRef = useRef(true);
 
 	const { sendTyping, typingUsers } = useTypingIndicator(channelId, currentUser?.id ?? '');
 	const { broadcastNewMessage } = useRealtimeMessages(channelId, currentUser?.id ?? '');
@@ -70,7 +71,20 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 	// Scroll on new messages
 	useEffect(() => {
 		if (messages.length > prevCountRef.current && !minimized) {
-			bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+			const isInitial = initialScrollRef.current;
+			initialScrollRef.current = false;
+
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					const el = scrollContainerRef.current;
+					if (!el) return;
+					if (isInitial) {
+						el.scrollTop = el.scrollHeight;
+					} else {
+						el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+					}
+				});
+			});
 		}
 		prevCountRef.current = messages.length;
 	}, [messages.length, minimized]);
@@ -143,7 +157,7 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 			{!minimized && (
 				<>
 					{/* Messages */}
-					<div className="flex-1 overflow-y-auto">
+					<div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
 						<div className="flex flex-col justify-end min-h-full px-3 py-2">
 							{isLoading ? (
 								<div className="flex items-center justify-center py-8">
@@ -184,7 +198,6 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 									})}
 								</div>
 							)}
-							<div ref={bottomRef} />
 						</div>
 					</div>
 

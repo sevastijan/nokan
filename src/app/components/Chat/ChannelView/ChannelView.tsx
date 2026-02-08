@@ -19,8 +19,9 @@ const ChannelView = () => {
 	const { selectedChannelId } = useChat();
 	const { currentUser } = useCurrentUser();
 	const { displayName } = useDisplayUser();
-	const bottomRef = useRef<HTMLDivElement>(null);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const prevMsgCountRef = useRef(0);
+	const initialScrollRef = useRef(true);
 
 	const { sendTyping } = useTypingIndicator(selectedChannelId ?? '', currentUser?.id ?? '');
 	const { broadcastNewMessage, broadcastMessageUpdate, broadcastReactionUpdate } = useRealtimeMessages(selectedChannelId, currentUser?.id ?? '');
@@ -60,10 +61,24 @@ const ChannelView = () => {
 		}
 	}, [selectedChannelId, currentUser?.id, markRead, messages.length]);
 
-	// Scroll to bottom only when new messages arrive
+	// Scroll to bottom when new messages arrive
 	useEffect(() => {
 		if (messages.length > prevMsgCountRef.current) {
-			bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+			const isInitial = initialScrollRef.current;
+			initialScrollRef.current = false;
+
+			// Double-rAF ensures CSS/layout is fully computed before scrolling
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					const el = scrollContainerRef.current;
+					if (!el) return;
+					if (isInitial) {
+						el.scrollTop = el.scrollHeight;
+					} else {
+						el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+					}
+				});
+			});
 		}
 		prevMsgCountRef.current = messages.length;
 	}, [messages.length]);
@@ -88,7 +103,7 @@ const ChannelView = () => {
 			<ChannelHeader members={members} currentUserId={currentUser?.id ?? ''} channel={currentChannel ?? null} />
 
 			{/* Messages — justify-end pins messages to bottom like Slack */}
-			<div className="flex-1 overflow-y-auto">
+			<div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
 				<div className="flex flex-col justify-end min-h-full">
 					<div className="px-4 py-3">
 						{isLoading ? (
@@ -98,7 +113,6 @@ const ChannelView = () => {
 						) : (
 							<MessageList messages={messages} currentUserId={currentUser?.id ?? ''} isAdmin={isAdmin} onMessageUpdate={broadcastMessageUpdate} onReactionUpdate={broadcastReactionUpdate} />
 						)}
-						<div ref={bottomRef} />
 					</div>
 				</div>
 			</div>
