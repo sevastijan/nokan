@@ -169,18 +169,13 @@ const BoardHeader = ({
                               onClick={() => onShowSubtasksChange?.(!showSubtasks)}
                               className={`
                                    flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors relative
-                                   ${showSubtasks
-                                        ? 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25'
-                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                                   }
+                                   ${showSubtasks ? 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}
                               `}
                               title={showSubtasks ? 'Ukryj subtaski' : 'Pokaż subtaski'}
                          >
                               <FiCornerDownRight className="w-4 h-4" />
                               <span className="hidden sm:inline">Subtaski</span>
-                              {showSubtasks && (
-                                   <span className="w-1.5 h-1.5 rounded-full bg-orange-400 absolute top-1.5 right-1.5" />
-                              )}
+                              {showSubtasks && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 absolute top-1.5 right-1.5" />}
                          </button>
 
                          {/* Divider */}
