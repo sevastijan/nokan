@@ -5,11 +5,15 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
-import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X } from 'lucide-react';
+import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle } from 'lucide-react';
 import Avatar from '../components/Avatar/Avatar';
 import NotificationDropdown from './Notifications/NotificationDropdown';
-import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery } from '@/app/store/apiSlice';
+import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery, useGetUserChannelsQuery } from '@/app/store/apiSlice';
 import { useDisplayUser } from '../hooks/useDisplayUser';
+import { useChat } from '@/app/context/ChatContext';
+import { getUserDisplayName, getUserDisplayAvatar } from './Chat/utils';
+import OnlineIndicator from './Chat/OnlineIndicator';
+import CreateChannelModal from './Chat/ChannelList/CreateChannelModal';
 
 const roleConfig: Record<string, { label: string; classes: string }> = {
      OWNER: { label: 'Owner', classes: 'bg-amber-500/15 text-amber-300 border-amber-400/25' },
@@ -25,6 +29,7 @@ const Navbar = () => {
 
      const { displayAvatar, displayName, currentUser } = useDisplayUser();
      const userEmail = session?.user?.email ?? '';
+     const { selectChannel, openMiniChat, onlineUserIds } = useChat();
 
      const { data: userRole, isLoading: roleLoading } = useGetUserRoleQuery(userEmail, {
           skip: !userEmail,
@@ -41,7 +46,16 @@ const Navbar = () => {
           skip: !currentUser?.id,
      });
 
+     const { data: channels = [] } = useGetUserChannelsQuery(currentUser?.id ?? '', {
+          skip: !currentUser?.id,
+          pollingInterval: 10000,
+     });
+
+     const groupChannels = channels.filter((ch) => ch.type === 'group');
+     const dmChannels = channels.filter((ch) => ch.type === 'dm');
+
      const [sidebarOpen, setSidebarOpen] = useState(false);
+     const [createModalMode, setCreateModalMode] = useState<'dm' | 'group' | null>(null);
 
      if (!session?.user) return <></>;
 
@@ -65,6 +79,21 @@ const Navbar = () => {
           refetchNotifications();
      };
 
+     const handleGroupChannelClick = (e: React.MouseEvent, channelId: string) => {
+          e.stopPropagation();
+          e.preventDefault();
+          selectChannel(channelId);
+          router.push(`/chat?channel=${channelId}`);
+          setSidebarOpen(false);
+     };
+
+     const handleDmClick = (e: React.MouseEvent, channelId: string) => {
+          e.stopPropagation();
+          e.preventDefault();
+          openMiniChat(channelId);
+          setSidebarOpen(false);
+     };
+
      const role = roleConfig[userRole ?? 'MEMBER'] ?? roleConfig.MEMBER;
 
      const nav = [
@@ -83,8 +112,8 @@ const Navbar = () => {
 
      const renderSidebarContent = () => (
           <div className="flex flex-col h-full">
-               {/* Logo */}
-               <div className="px-5 py-5">
+               {/* ─── Top: Logo ─── */}
+               <div className="px-5 py-5 shrink-0">
                     <button
                          onClick={() => {
                               router.push('/');
@@ -99,9 +128,9 @@ const Navbar = () => {
                     </button>
                </div>
 
-               {/* User profile */}
+               {/* ─── User profile ─── */}
                {session.user && (
-                    <div className="px-4 mb-6">
+                    <div className="px-4 mb-4 shrink-0">
                          <div className="flex items-center gap-3 px-3 py-3">
                               <Avatar src={displayAvatar} priority={true} alt="User avatar" size={36} className="ring-2 ring-slate-700/50 ring-offset-1 ring-offset-slate-900" />
                               <div className="flex-1 min-w-0">
@@ -141,11 +170,11 @@ const Navbar = () => {
                     </div>
                )}
 
-               {/* Divider */}
-               <div className="mx-5 border-t border-slate-800" />
+               {/* ─── Divider ─── */}
+               <div className="mx-5 border-t border-slate-800 shrink-0" />
 
-               {/* Navigation */}
-               <nav className="flex-1 px-3 mt-4">
+               {/* ─── Navigation links ─── */}
+               <nav className="px-3 mt-3 shrink-0">
                     <div className="space-y-0.5">
                          {nav.map(({ href, label, icon: Icon }) => {
                               const active = isActive(href);
@@ -157,7 +186,7 @@ const Navbar = () => {
                                              }`}
                                         >
                                              {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-blue-500" />}
-                                             <Icon className={`w-[18px] h-[18px] ${active ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
+                                             <Icon className={`w-[18px] h-[18px] ${active ? 'text-blue-400' : 'text-slate-500'}`} />
                                              <span>{label}</span>
                                         </div>
                                    </Link>
@@ -166,9 +195,99 @@ const Navbar = () => {
                     </div>
                </nav>
 
-               {/* Sign out */}
+               {/* ─── Divider ─── */}
+               <div className="mx-5 mt-3 border-t border-slate-800 shrink-0" />
+
+               {/* ─── Chat channels (scrollable, fills remaining space) ─── */}
+               <div className="flex-1 overflow-y-auto min-h-0 mt-2 px-3">
+                    {/* Kanały (groups) */}
+                    <div className="mb-2">
+                         <div className="flex items-center justify-between px-3 py-1.5">
+                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kanały</span>
+                              <button
+                                   onClick={() => setCreateModalMode('group')}
+                                   className="p-0.5 rounded text-slate-600 hover:text-slate-300 transition cursor-pointer"
+                                   title="Nowy kanał"
+                              >
+                                   <Plus className="w-3.5 h-3.5" />
+                              </button>
+                         </div>
+                         {groupChannels.length === 0 ? (
+                              <p className="px-3 text-[11px] text-slate-600">Brak kanałów</p>
+                         ) : (
+                              <div className="space-y-0.5">
+                                   {groupChannels.map((ch) => {
+                                        const isUnread = (ch.unread_count || 0) > 0;
+                                        return (
+                                             <button
+                                                  key={ch.id}
+                                                  onClick={(e) => handleGroupChannelClick(e, ch.id)}
+                                                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-800/50 transition cursor-pointer group"
+                                             >
+                                                  <Hash className={`w-4 h-4 shrink-0 ${isUnread ? 'text-white' : 'text-slate-600 group-hover:text-slate-400'}`} />
+                                                  <span className={`text-sm truncate ${isUnread ? 'font-semibold text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>
+                                                       {ch.name || 'Unnamed'}
+                                                  </span>
+                                                  {isUnread && (
+                                                       <span className="ml-auto w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                                                  )}
+                                             </button>
+                                        );
+                                   })}
+                              </div>
+                         )}
+                    </div>
+
+                    {/* Wiadomości (DMs) */}
+                    <div className="mb-2">
+                         <div className="flex items-center justify-between px-3 py-1.5">
+                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Wiadomości</span>
+                              <button
+                                   onClick={() => setCreateModalMode('dm')}
+                                   className="p-0.5 rounded text-slate-600 hover:text-slate-300 transition cursor-pointer"
+                                   title="Nowa wiadomość"
+                              >
+                                   <Plus className="w-3.5 h-3.5" />
+                              </button>
+                         </div>
+                         {dmChannels.length === 0 ? (
+                              <p className="px-3 text-[11px] text-slate-600">Brak wiadomości</p>
+                         ) : (
+                              <div className="space-y-0.5">
+                                   {dmChannels.map((ch) => {
+                                        const other = ch.members?.find((m) => m.user_id !== currentUser?.id);
+                                        const name = getUserDisplayName(other?.user);
+                                        const avatar = getUserDisplayAvatar(other?.user);
+                                        const isUnread = (ch.unread_count || 0) > 0;
+                                        const isOnline = other?.user_id ? onlineUserIds.includes(other.user_id) : false;
+
+                                        return (
+                                             <button
+                                                  key={ch.id}
+                                                  onClick={(e) => handleDmClick(e, ch.id)}
+                                                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-800/50 transition cursor-pointer group"
+                                             >
+                                                  <div className="relative shrink-0">
+                                                       <Avatar src={avatar} alt={name} size={20} />
+                                                       <OnlineIndicator isOnline={isOnline} className="absolute -bottom-0.5 -right-0.5" />
+                                                  </div>
+                                                  <span className={`text-sm truncate ${isUnread ? 'font-semibold text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>
+                                                       {name}
+                                                  </span>
+                                                  {isUnread && (
+                                                       <span className="ml-auto w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                                                  )}
+                                             </button>
+                                        );
+                                   })}
+                              </div>
+                         )}
+                    </div>
+               </div>
+
+               {/* ─── Sign out (pinned bottom) ─── */}
                {session.user && (
-                    <div className="px-3 pb-4 pt-2">
+                    <div className="px-3 pb-4 pt-2 shrink-0">
                          <div className="mx-2 mb-3 border-t border-slate-800" />
                          <button
                               onClick={() => signOut({ callbackUrl: '/', redirect: true })}
@@ -235,6 +354,11 @@ const Navbar = () => {
                          </TransitionChild>
                     </Dialog>
                </Transition>
+
+               {createModalMode && (
+                    <CreateChannelModal initialMode={createModalMode} onClose={() => setCreateModalMode(null)} />
+               )}
+
           </>
      );
 };

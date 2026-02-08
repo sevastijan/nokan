@@ -1,86 +1,208 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import SingleTaskView from '@/app/components/SingleTaskView/SingleTaskView';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
-import { FaRegCalendarDays } from 'react-icons/fa6';
-import { useGetUserBoardsQuery, useGetTasksByBoardsAndDateQuery, useGetColumnsByBoardIdQuery } from '@/app/store/slices/calendarApiSlice';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, differenceInCalendarDays, max as dateMax, min as dateMin } from 'date-fns';
-import Button from '@/app/components/Button/Button';
-import Avatar from '@/app/components/Avatar/Avatar';
+import {
+     useGetUserBoardsQuery,
+     useGetTasksByBoardsAndDateQuery,
+     useGetColumnsByBoardIdQuery,
+} from '@/app/store/slices/calendarApiSlice';
+import type { CalendarTask } from '@/app/store/slices/calendarApiSlice';
+import {
+     format,
+     startOfMonth,
+     endOfMonth,
+     startOfWeek,
+     endOfWeek,
+     addDays,
+     addMonths,
+     subMonths,
+     isSameMonth,
+     isSameDay,
+     parseISO,
+     differenceInCalendarDays,
+     max as dateMax,
+     min as dateMin,
+} from 'date-fns';
+import { pl } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaFilter, FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Layers } from 'lucide-react';
+import Avatar from '@/app/components/Avatar/Avatar';
+import Loader from '@/app/components/Loader';
+import { getPriorityStyleConfig } from '@/app/utils/helpers';
 import type { User } from '@/app/types/globalTypes';
 
+/* ──────────────────────────────────────────────
+   Board color palette — deterministic per index
+   ────────────────────────────────────────────── */
+const BOARD_COLORS = [
+     { bg: 'bg-blue-500/20', border: 'border-blue-500/40', dot: 'bg-blue-500', bar: 'from-blue-600/80 to-blue-500/60', text: 'text-blue-400' },
+     { bg: 'bg-violet-500/20', border: 'border-violet-500/40', dot: 'bg-violet-500', bar: 'from-violet-600/80 to-violet-500/60', text: 'text-violet-400' },
+     { bg: 'bg-emerald-500/20', border: 'border-emerald-500/40', dot: 'bg-emerald-500', bar: 'from-emerald-600/80 to-emerald-500/60', text: 'text-emerald-400' },
+     { bg: 'bg-amber-500/20', border: 'border-amber-500/40', dot: 'bg-amber-500', bar: 'from-amber-600/80 to-amber-500/60', text: 'text-amber-400' },
+     { bg: 'bg-rose-500/20', border: 'border-rose-500/40', dot: 'bg-rose-500', bar: 'from-rose-600/80 to-rose-500/60', text: 'text-rose-400' },
+     { bg: 'bg-cyan-500/20', border: 'border-cyan-500/40', dot: 'bg-cyan-500', bar: 'from-cyan-600/80 to-cyan-500/60', text: 'text-cyan-400' },
+     { bg: 'bg-pink-500/20', border: 'border-pink-500/40', dot: 'bg-pink-500', bar: 'from-pink-600/80 to-pink-500/60', text: 'text-pink-400' },
+     { bg: 'bg-teal-500/20', border: 'border-teal-500/40', dot: 'bg-teal-500', bar: 'from-teal-600/80 to-teal-500/60', text: 'text-teal-400' },
+];
+
+const DAY_NAMES = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'];
+
+const MAX_VISIBLE_TASKS = 3;
+
+/* ──────────────────────────────────────────────
+   Types
+   ────────────────────────────────────────────── */
 interface ProcessedTask {
      id: string;
      title: string;
      start: Date;
      end: Date;
      assignee?: User | null;
+     boardId: string | null;
+     priorityId: string | null;
+     priorityLabel: string | null;
+     priorityColor: string | null;
+     boardTitle: string | null;
 }
 
+interface TaskForWeek {
+     id: string;
+     title: string;
+     assignee?: User | null;
+     colStart: number;
+     colSpan: number;
+     lane: number;
+     boardId: string | null;
+     priorityId: string | null;
+}
+
+interface BoardPickerState {
+     visible: boolean;
+     date: string;
+     x: number;
+     y: number;
+}
+
+/* ──────────────────────────────────────────────
+   Component
+   ────────────────────────────────────────────── */
 const Calendar = () => {
      const { currentUser, loading: userLoading, authStatus } = useCurrentUser();
      const userId = currentUser?.id;
 
+     /* ── Boards ────────────────────────────── */
      const { data: boards = [], isLoading: boardsLoading, isError: boardsError } = useGetUserBoardsQuery(userId ?? '', { skip: !userId });
 
-     const [filterOpen, setFilterOpen] = useState(false);
-     const [selectedBoardId, setSelectedBoardId] = useState<string | undefined>(undefined);
-     const [selectedColumnForNew, setSelectedColumnForNew] = useState<string | undefined>(undefined);
-
-     useEffect(() => {
-          if (boards.length === 1) {
-               setSelectedBoardId(boards[0].id);
-          }
+     const boardColorMap = useMemo(() => {
+          const map = new Map<string, (typeof BOARD_COLORS)[number]>();
+          boards.forEach((b, i) => map.set(b.id, BOARD_COLORS[i % BOARD_COLORS.length]));
+          return map;
      }, [boards]);
 
-     useEffect(() => {
-          setSelectedColumnForNew(undefined);
-     }, [selectedBoardId]);
-
-     const { data: columns = [], isLoading: columnsLoading } = useGetColumnsByBoardIdQuery(selectedBoardId ?? '', {
-          skip: !selectedBoardId,
-     });
+     /* ── Board filter (all selected by default) */
+     const [selectedBoardIds, setSelectedBoardIds] = useState<Set<string>>(new Set());
 
      useEffect(() => {
-          if (selectedBoardId && !columnsLoading && columns.length > 0 && !selectedColumnForNew) {
-               setSelectedColumnForNew(columns[0].id);
+          if (boards.length > 0 && selectedBoardIds.size === 0) {
+               setSelectedBoardIds(new Set(boards.map((b) => b.id)));
           }
-     }, [columnsLoading, columns, selectedBoardId, selectedColumnForNew]);
+     }, [boards, selectedBoardIds.size]);
 
+     const toggleBoard = useCallback((boardId: string) => {
+          setSelectedBoardIds((prev) => {
+               const next = new Set(prev);
+               if (next.has(boardId)) {
+                    if (next.size === 1) return prev; // keep at least one
+                    next.delete(boardId);
+               } else {
+                    next.add(boardId);
+               }
+               return next;
+          });
+     }, []);
+
+     const selectAllBoards = useCallback(() => {
+          setSelectedBoardIds(new Set(boards.map((b) => b.id)));
+     }, [boards]);
+
+     /* ── Month navigation ──────────────────── */
      const [currentMonth, setCurrentMonth] = useState(new Date());
+     const [direction, setDirection] = useState(0);
+
      const monthStart = useMemo(() => startOfMonth(currentMonth), [currentMonth]);
      const monthEnd = useMemo(() => endOfMonth(currentMonth), [currentMonth]);
-     const fetchStart = format(monthStart, 'yyyy-MM-dd');
-     const fetchEnd = format(monthEnd, 'yyyy-MM-dd');
 
-     const boardIdsToFetch = selectedBoardId ? [selectedBoardId] : [];
+     const calStart = useMemo(() => startOfWeek(monthStart, { weekStartsOn: 1 }), [monthStart]);
+     const calEnd = useMemo(() => endOfWeek(monthEnd, { weekStartsOn: 1 }), [monthEnd]);
+
+     const fetchStart = format(calStart, 'yyyy-MM-dd');
+     const fetchEnd = format(calEnd, 'yyyy-MM-dd');
+
+     const boardIdsToFetch = useMemo(() => Array.from(selectedBoardIds), [selectedBoardIds]);
 
      const { data: tasksRaw = [], refetch: refetchTasks } = useGetTasksByBoardsAndDateQuery(
           { boardIds: boardIdsToFetch, start: fetchStart, end: fetchEnd },
-          { skip: !selectedBoardId || boardIdsToFetch.length === 0 },
+          { skip: boardIdsToFetch.length === 0 },
      );
 
-     const [boardSelectModalOpen, setBoardSelectModalOpen] = useState<boolean>(selectedBoardId == null);
-     useEffect(() => {
-          if (selectedBoardId) {
-               setBoardSelectModalOpen(false);
-          }
-     }, [selectedBoardId]);
+     const prevMonth = useCallback(() => {
+          setDirection(-1);
+          setCurrentMonth((m) => subMonths(m, 1));
+     }, []);
 
+     const nextMonth = useCallback(() => {
+          setDirection(1);
+          setCurrentMonth((m) => addMonths(m, 1));
+     }, []);
+
+     const goToToday = useCallback(() => {
+          const today = new Date();
+          setDirection(today > currentMonth ? 1 : -1);
+          setCurrentMonth(today);
+     }, [currentMonth]);
+
+     /* ── Columns (for selected board when adding task) ── */
+     const [activeBoardForNew, setActiveBoardForNew] = useState<string | undefined>(undefined);
+     const [selectedColumnForNew, setSelectedColumnForNew] = useState<string | undefined>(undefined);
+
+     const { data: columns = [], isLoading: columnsLoading } = useGetColumnsByBoardIdQuery(activeBoardForNew ?? '', {
+          skip: !activeBoardForNew,
+     });
+
+     useEffect(() => {
+          if (activeBoardForNew && !columnsLoading && columns.length > 0 && !selectedColumnForNew) {
+               setSelectedColumnForNew(columns[0].id);
+          }
+     }, [columnsLoading, columns, activeBoardForNew, selectedColumnForNew]);
+
+     /* ── Task modal state ──────────────────── */
      const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
      const [taskModalMode, setTaskModalMode] = useState<'add' | 'edit'>('add');
      const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
      const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(undefined);
 
+     /* ── Board picker for adding tasks ─────── */
+     const [boardPicker, setBoardPicker] = useState<BoardPickerState>({ visible: false, date: '', x: 0, y: 0 });
+     const boardPickerRef = useRef<HTMLDivElement>(null);
+
+     useEffect(() => {
+          if (!boardPicker.visible) return;
+          const handleClick = (e: MouseEvent) => {
+               if (boardPickerRef.current && !boardPickerRef.current.contains(e.target as Node)) {
+                    setBoardPicker((s) => ({ ...s, visible: false }));
+               }
+          };
+          document.addEventListener('mousedown', handleClick);
+          return () => document.removeEventListener('mousedown', handleClick);
+     }, [boardPicker.visible]);
+
+     /* ── Weeks grid ────────────────────────── */
      const weeks = useMemo(() => {
-          const start = startOfWeek(monthStart, { weekStartsOn: 0 });
-          const end = endOfWeek(monthEnd, { weekStartsOn: 0 });
           const wks: Date[][] = [];
-          let curr = start;
-          while (curr <= end) {
+          let curr = calStart;
+          while (curr <= calEnd) {
                const week: Date[] = [];
                for (let i = 0; i < 7; i++) {
                     week.push(addDays(curr, i));
@@ -89,23 +211,29 @@ const Calendar = () => {
                curr = addDays(curr, 7);
           }
           return wks;
-     }, [monthStart, monthEnd]);
+     }, [calStart, calEnd]);
 
+     /* ── Process tasks ─────────────────────── */
      const tasksProcessed: ProcessedTask[] = useMemo(() => {
           if (!tasksRaw) return [];
           return tasksRaw
-               .map((t) => {
+               .filter((t: CalendarTask) => t.type !== 'story')
+               .map((t: CalendarTask) => {
                     if (!t.start_date) return null;
                     try {
                          const s = parseISO(t.start_date);
                          const e = t.end_date ? parseISO(t.end_date) : s;
-                         const assignee = t.assignee ?? null;
                          return {
                               id: t.id!,
                               title: t.title ?? '',
                               start: s,
                               end: e,
-                              assignee,
+                              assignee: t.assignee ?? null,
+                              boardId: t.board_id ?? null,
+                              priorityId: t.priority ?? null,
+                              priorityLabel: t.priority_label ?? null,
+                              priorityColor: t.priority_color ?? null,
+                              boardTitle: t.board_title ?? null,
                          } as ProcessedTask;
                     } catch {
                          return null;
@@ -114,19 +242,13 @@ const Calendar = () => {
                .filter((x): x is ProcessedTask => x !== null);
      }, [tasksRaw]);
 
-     type TaskForWeek = {
-          id: string;
-          title: string;
-          assignee?: User | null;
-          colStart: number;
-          colSpan: number;
-     };
-
+     /* ── Assign lanes to avoid overlap ─────── */
      const tasksByWeek: TaskForWeek[][] = useMemo(() => {
           return weeks.map((week) => {
                const rowStart = week[0];
                const rowEnd = week[6];
                const rowTasks: TaskForWeek[] = [];
+
                tasksProcessed.forEach((t) => {
                     const rs = dateMax([t.start, rowStart]);
                     const re = dateMin([t.end, rowEnd]);
@@ -139,294 +261,436 @@ const Calendar = () => {
                               assignee: t.assignee,
                               colStart: startIdx + 1,
                               colSpan: endIdx - startIdx + 1,
+                              lane: 0,
+                              boardId: t.boardId,
+                              priorityId: t.priorityId,
                          });
                     }
                });
+
+               // Assign lanes (greedy)
+               const lanes: { end: number }[] = [];
+               // Sort by colStart, then wider spans first
+               rowTasks.sort((a, b) => a.colStart - b.colStart || b.colSpan - a.colSpan);
+               for (const task of rowTasks) {
+                    let placed = false;
+                    for (let i = 0; i < lanes.length; i++) {
+                         if (task.colStart > lanes[i].end) {
+                              task.lane = i;
+                              lanes[i].end = task.colStart + task.colSpan - 1;
+                              placed = true;
+                              break;
+                         }
+                    }
+                    if (!placed) {
+                         task.lane = lanes.length;
+                         lanes.push({ end: task.colStart + task.colSpan - 1 });
+                    }
+               }
+
                return rowTasks;
           });
      }, [weeks, tasksProcessed]);
 
-     const handleAddTaskClick = () => {
-          if (!selectedBoardId) return;
-          if (columnsLoading) return;
-          if (columns.length === 0) {
-               alert('This board has no columns; please create a column first.');
-               return;
-          }
-          setSelectedColumnForNew(columns[0].id);
-          const todayStr = format(new Date(), 'yyyy-MM-dd');
-          setSelectedDate(todayStr);
-          setSelectedTaskId(undefined);
-          setTaskModalMode('add');
-          setIsTaskModalOpen(true);
-     };
+     /* ── Overflow tasks per day ────────────── */
+     const overflowByDay = useMemo(() => {
+          const map = new Map<string, number>();
+          weeks.forEach((week, wi) => {
+               week.forEach((day, di) => {
+                    const dayKey = format(day, 'yyyy-MM-dd');
+                    const tasksInDay = tasksByWeek[wi].filter(
+                         (t) => di + 1 >= t.colStart && di + 1 < t.colStart + t.colSpan,
+                    );
+                    const hidden = tasksInDay.filter((t) => t.lane >= MAX_VISIBLE_TASKS).length;
+                    if (hidden > 0) map.set(dayKey, hidden);
+               });
+          });
+          return map;
+     }, [weeks, tasksByWeek]);
 
-     const handleDateClick = (date: Date) => {
-          if (!selectedBoardId) return;
-          if (columnsLoading) return;
-          if (columns.length === 0) {
-               alert('This board has no columns; please create a column first.');
-               return;
-          }
-          const dateStr = format(date, 'yyyy-MM-dd');
-          setSelectedDate(dateStr);
-          setSelectedTaskId(undefined);
-          setTaskModalMode('add');
-          setSelectedColumnForNew(columns[0].id);
-          setIsTaskModalOpen(true);
-     };
+     /* ── Handlers ──────────────────────────── */
+     const handleDateClick = useCallback(
+          (date: Date, e: React.MouseEvent) => {
+               const activeBoardsArray = Array.from(selectedBoardIds);
 
-     const handleTaskClick = (taskId: string) => {
+               if (activeBoardsArray.length === 0) return;
+
+               const dateStr = format(date, 'yyyy-MM-dd');
+
+               if (activeBoardsArray.length === 1) {
+                    // Auto-select the only active board
+                    setActiveBoardForNew(activeBoardsArray[0]);
+                    setSelectedColumnForNew(undefined);
+                    setSelectedDate(dateStr);
+                    setSelectedTaskId(undefined);
+                    setTaskModalMode('add');
+                    setIsTaskModalOpen(true);
+               } else {
+                    // Show board picker
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setBoardPicker({
+                         visible: true,
+                         date: dateStr,
+                         x: rect.left + rect.width / 2,
+                         y: rect.top + rect.height / 2,
+                    });
+               }
+          },
+          [selectedBoardIds],
+     );
+
+     const handleBoardPickerSelect = useCallback(
+          (boardId: string) => {
+               setActiveBoardForNew(boardId);
+               setSelectedColumnForNew(undefined);
+               setSelectedDate(boardPicker.date);
+               setSelectedTaskId(undefined);
+               setTaskModalMode('add');
+               setIsTaskModalOpen(true);
+               setBoardPicker((s) => ({ ...s, visible: false }));
+          },
+          [boardPicker.date],
+     );
+
+     const handleTaskClick = useCallback((taskId: string, boardId: string | null) => {
           setSelectedTaskId(taskId);
-          setTaskModalMode('edit');
+          setActiveBoardForNew(boardId ?? undefined);
           setSelectedColumnForNew(undefined);
+          setTaskModalMode('edit');
           setIsTaskModalOpen(true);
-     };
+     }, []);
 
-     const prevMonth = () => setCurrentMonth((m) => addDays(startOfMonth(m), -1));
-     const nextMonth = () => setCurrentMonth((m) => addDays(endOfMonth(m), 1));
-
-     const closeTaskModal = () => {
+     const closeTaskModal = useCallback(() => {
           setIsTaskModalOpen(false);
           setSelectedDate(undefined);
           setSelectedTaskId(undefined);
           setSelectedColumnForNew(undefined);
-     };
+     }, []);
 
-     const closeBoardSelectModal = () => {
-          setBoardSelectModalOpen(false);
-     };
-
+     /* ── Loading / error states ────────────── */
      if (authStatus === 'loading' || userLoading || boardsLoading) {
-          return <div className="p-4 text-center text-white">Loading calendar...</div>;
+          return <Loader text="Ładowanie kalendarza..." />;
      }
      if (authStatus === 'unauthenticated' || !userId) {
-          return <div className="p-4 text-center text-white">Please log in to view your calendar.</div>;
+          return (
+               <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center">
+                         <CalendarIcon className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                         <p className="text-slate-400 text-lg">Zaloguj się, aby zobaczyć kalendarz.</p>
+                    </div>
+               </div>
+          );
      }
      if (boardsError) {
-          return <div className="p-4 text-center text-red-400">Failed to load your boards.</div>;
+          return (
+               <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center">
+                         <CalendarIcon className="w-12 h-12 text-red-500/60 mx-auto mb-4" />
+                         <p className="text-red-400 text-lg">Nie udało się załadować tablic.</p>
+                    </div>
+               </div>
+          );
      }
+     if (boards.length === 0) {
+          return (
+               <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center">
+                         <Layers className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                         <p className="text-slate-400 text-lg">Nie masz jeszcze żadnych tablic.</p>
+                         <p className="text-slate-500 text-sm mt-1">Utwórz tablicę, aby korzystać z kalendarza.</p>
+                    </div>
+               </div>
+          );
+     }
+
+     /* ── Month animation variants ──────────── */
+     const monthVariants = {
+          enter: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
+          center: { x: 0, opacity: 1 },
+          exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0 }),
+     };
+
+     const monthLabel = format(currentMonth, 'LLLL yyyy', { locale: pl });
+     const capitalizedMonth = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
      return (
           <>
-               <AnimatePresence>
-                    {boardSelectModalOpen && (
-                         <motion.div
-                              key="board-select-overlay"
-                              className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-6"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                         >
-                              <motion.div
-                                   className="bg-slate-800 text-white rounded-lg w-full max-w-lg shadow-xl border border-slate-700"
-                                   initial={{ scale: 0.9, opacity: 0 }}
-                                   animate={{ scale: 1, opacity: 1 }}
-                                   exit={{ scale: 0.9, opacity: 0 }}
-                              >
-                                   <div className="flex items-center justify-between bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-6 py-4 border-b border-slate-700/50">
-                                        <div className="flex items-center gap-2">
-                                             <FaRegCalendarDays className="text-white w-5 h-5" />
-                                             <h3 className="text-white text-lg font-semibold">Select board</h3>
-                                        </div>
-                                        <button onClick={closeBoardSelectModal} className="text-white hover:text-slate-200" aria-label="Close">
-                                             <FaTimes />
-                                        </button>
-                                   </div>
-                                   <div className="px-6 pt-4 pb-2">
-                                        <p className="text-slate-400 text-sm">Select board to display calendar!</p>
-                                   </div>
-                                   <div className="px-6 pb-6">
-                                        {boards.length === 0 ? (
-                                             <p className="text-sm mb-4">No boards available. Create a board to use the calendar.</p>
-                                        ) : (
-                                             <>
-                                                  <select
-                                                       className="w-full p-2 mb-4 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                       value={selectedBoardId ?? ''}
-                                                       onChange={(e) => setSelectedBoardId(e.target.value || undefined)}
-                                                  >
-                                                       <option value="" disabled>
-                                                            Select
-                                                       </option>
-                                                       {boards.map((b) => (
-                                                            <option key={b.id} value={b.id}>
-                                                                 {b.title}
-                                                            </option>
-                                                       ))}
-                                                  </select>
-                                                  <div className="flex justify-end gap-2">
-                                                       <Button variant="secondary" size="md" onClick={closeBoardSelectModal}>
-                                                            Cancel
-                                                       </Button>
-                                                       <Button variant="primary" size="md" onClick={closeBoardSelectModal} disabled={!selectedBoardId}>
-                                                            Continue
-                                                       </Button>
-                                                  </div>
-                                             </>
-                                        )}
-                                   </div>
-                              </motion.div>
-                         </motion.div>
-                    )}
-               </AnimatePresence>
+               <div className="flex flex-col gap-4">
+                    {/* ── Toolbar ────────────────────────── */}
+                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                              {/* Month nav */}
+                              <div className="flex items-center gap-2">
+                                   <button
+                                        onClick={prevMonth}
+                                        className="p-2 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
+                                        aria-label="Poprzedni miesiąc"
+                                   >
+                                        <ChevronLeft className="w-5 h-5" />
+                                   </button>
 
-               {!boardSelectModalOpen && !selectedBoardId && (
-                    <div className="p-6 text-center text-white">
-                         <p className="text-lg font-medium">Calendar not initialized.</p>
-                         <p className="text-sm text-slate-400 mt-2">Please refresh the page to select a board.</p>
-                    </div>
-               )}
+                                   <AnimatePresence mode="wait" custom={direction}>
+                                        <motion.h2
+                                             key={currentMonth.toISOString()}
+                                             custom={direction}
+                                             variants={monthVariants}
+                                             initial="enter"
+                                             animate="center"
+                                             exit="exit"
+                                             transition={{ duration: 0.2 }}
+                                             className="text-white text-lg font-semibold min-w-[180px] text-center select-none"
+                                        >
+                                             {capitalizedMonth}
+                                        </motion.h2>
+                                   </AnimatePresence>
 
-               {!boardSelectModalOpen && selectedBoardId && (
-                    <div className="flex flex-col space-y-4 p-4">
-                         <div className="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-purple-600/20 to-blue-600/20 px-6 py-4 rounded-lg border border-slate-700/50">
-                              <div className="flex items-center space-x-2">
-                                   <Button variant="ghost" size="md" className="text-white hover:bg-slate-700" onClick={prevMonth}>
-                                        <FaChevronLeft />
-                                   </Button>
-                                   <h2 className="text-white text-lg font-semibold">{format(currentMonth, 'MMMM yyyy')}</h2>
-                                   <Button variant="ghost" size="md" className="text-white hover:bg-slate-700" onClick={nextMonth}>
-                                        <FaChevronRight />
-                                   </Button>
-                              </div>
-                              <div className="flex items-center space-x-2 mt-2 md:mt-0">
-                                   <Button variant="ghost" size="md" icon={<FaFilter />} onClick={() => setFilterOpen(true)} className="text-white border border-white/30 hover:bg-slate-700">
-                                        Filter
-                                   </Button>
-                                   <Button variant="primary" size="md" onClick={handleAddTaskClick}>
-                                        + Add Task
-                                   </Button>
+                                   <button
+                                        onClick={nextMonth}
+                                        className="p-2 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
+                                        aria-label="Następny miesiąc"
+                                   >
+                                        <ChevronRight className="w-5 h-5" />
+                                   </button>
+
+                                   <button
+                                        onClick={goToToday}
+                                        className="ml-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 transition-colors"
+                                   >
+                                        Dziś
+                                   </button>
                               </div>
                          </div>
 
-                         <div className="grid grid-cols-7 text-center text-sm font-medium text-slate-300">
-                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                                   <div key={d} className="py-1">
+                         {/* ── Board filter chips ──────────── */}
+                         {boards.length > 1 && (
+                              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                                   <button
+                                        onClick={selectAllBoards}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-all ${
+                                             selectedBoardIds.size === boards.length
+                                                  ? 'bg-white/10 border-white/30 text-white'
+                                                  : 'bg-transparent border-slate-600/50 text-slate-500 hover:text-slate-300 hover:border-slate-500'
+                                        }`}
+                                   >
+                                        Wszystkie
+                                   </button>
+                                   {boards.map((board) => {
+                                        const color = boardColorMap.get(board.id) ?? BOARD_COLORS[0];
+                                        const isActive = selectedBoardIds.has(board.id);
+                                        return (
+                                             <button
+                                                  key={board.id}
+                                                  onClick={() => toggleBoard(board.id)}
+                                                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border transition-all ${
+                                                       isActive
+                                                            ? `${color.bg} ${color.border} ${color.text}`
+                                                            : 'bg-transparent border-slate-700/50 text-slate-500 hover:text-slate-400 hover:border-slate-600'
+                                                  }`}
+                                             >
+                                                  <span className={`w-2 h-2 rounded-full ${isActive ? color.dot : 'bg-slate-600'}`} />
+                                                  {board.title}
+                                             </button>
+                                        );
+                                   })}
+                              </div>
+                         )}
+                    </div>
+
+                    {/* ── Calendar grid ──────────────────── */}
+                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
+                         {/* Day names header */}
+                         <div className="grid grid-cols-7 border-b border-slate-700/50">
+                              {DAY_NAMES.map((d) => (
+                                   <div key={d} className="py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                                         {d}
                                    </div>
                               ))}
                          </div>
 
-                         <div className="grid auto-rows-fr">
-                              {weeks.map((week, wi) => (
-                                   <div key={wi} className="grid grid-cols-7 border-t border-slate-700 relative">
-                                        {week.map((day) => {
-                                             const inMonth = isSameMonth(day, monthStart);
-                                             const isToday = isSameDay(day, new Date());
-                                             const baseBg = inMonth ? 'bg-slate-800' : 'bg-slate-700';
-                                             const todayClasses = isToday
-                                                  ? 'relative z-10 before:absolute before:inset-0 before:bg-gradient-to-b before:from-purple-600/20 before:to-transparent before:rounded-lg'
-                                                  : '';
-                                             return (
-                                                  <div
-                                                       key={day.toISOString()}
-                                                       className={`h-20 border-r border-slate-700 p-1 cursor-pointer flex flex-col ${baseBg} ${todayClasses}`}
-                                                       onClick={() => handleDateClick(day)}
-                                                  >
-                                                       <div className={`text-xs font-medium text-right ${inMonth ? 'text-white' : 'text-slate-400'}`}>{format(day, 'd')}</div>
-                                                  </div>
-                                             );
-                                        })}
+                         {/* Weeks */}
+                         <AnimatePresence mode="wait" custom={direction}>
+                              <motion.div
+                                   key={currentMonth.toISOString()}
+                                   custom={direction}
+                                   initial={{ opacity: 0, x: direction > 0 ? 30 : -30 }}
+                                   animate={{ opacity: 1, x: 0 }}
+                                   exit={{ opacity: 0, x: direction > 0 ? -30 : 30 }}
+                                   transition={{ duration: 0.2 }}
+                              >
+                                   {weeks.map((week, wi) => (
+                                        <div key={wi} className="grid grid-cols-7 relative" style={{ minHeight: '7rem' }}>
+                                             {/* Day cells */}
+                                             {week.map((day) => {
+                                                  const inMonth = isSameMonth(day, monthStart);
+                                                  const isToday = isSameDay(day, new Date());
+                                                  const dayKey = format(day, 'yyyy-MM-dd');
+                                                  const overflow = overflowByDay.get(dayKey);
 
-                                        <div className="absolute top-6 left-0 right-0 pointer-events-none">
-                                             {tasksByWeek[wi].map((t) => {
-                                                  const leftPct = ((t.colStart - 1) / 7) * 100;
-                                                  const widthPct = (t.colSpan / 7) * 100;
                                                   return (
                                                        <div
-                                                            key={t.id}
-                                                            className="absolute flex items-center bg-purple-600 text-white text-xs px-1 rounded cursor-pointer pointer-events-auto"
-                                                            style={{
-                                                                 left: `${leftPct}%`,
-                                                                 width: `${widthPct}%`,
-                                                                 top: 0,
-                                                                 height: '1.25rem',
-                                                            }}
-                                                            onClick={(e) => {
-                                                                 e.stopPropagation();
-                                                                 handleTaskClick(t.id);
-                                                            }}
+                                                            key={day.toISOString()}
+                                                            className={`relative border-b border-r border-slate-700/30 p-1.5 cursor-pointer group transition-colors ${
+                                                                 inMonth ? 'bg-slate-800/40 hover:bg-slate-700/40' : 'bg-slate-800/20'
+                                                            } ${isToday ? 'ring-1 ring-inset ring-blue-500/50' : ''}`}
+                                                            onClick={(e) => handleDateClick(day, e)}
                                                        >
-                                                            {t.assignee?.image ? (
-                                                                 <Avatar src={t.assignee.image} alt={t.assignee.name ?? undefined} size={16} className="mr-1 border border-white/30" />
-                                                            ) : null}
-                                                            <span className="truncate">{t.title}</span>
+                                                            <div className="flex items-center justify-between">
+                                                                 <span
+                                                                      className={`inline-flex items-center justify-center text-xs font-medium w-6 h-6 rounded-full ${
+                                                                           isToday
+                                                                                ? 'bg-blue-600 text-white'
+                                                                                : inMonth
+                                                                                  ? 'text-slate-300'
+                                                                                  : 'text-slate-600'
+                                                                      }`}
+                                                                 >
+                                                                      {format(day, 'd')}
+                                                                 </span>
+                                                                 <Plus className="w-3.5 h-3.5 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                            </div>
+                                                            {overflow && (
+                                                                 <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-slate-500 font-medium">
+                                                                      +{overflow}
+                                                                 </div>
+                                                            )}
                                                        </div>
                                                   );
                                              })}
-                                        </div>
-                                   </div>
-                              ))}
-                         </div>
 
-                         <AnimatePresence>
-                              {filterOpen && (
-                                   <motion.div
-                                        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-40"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                   >
-                                        <motion.div
-                                             className="bg-slate-800 text-white p-6 rounded-lg max-w-md w-full border border-slate-700 shadow-xl"
-                                             initial={{ scale: 0.9, opacity: 0 }}
-                                             animate={{ scale: 1, opacity: 1 }}
-                                             exit={{ scale: 0.9, opacity: 0 }}
-                                        >
-                                             <h3 className="text-lg font-semibold mb-4">Filter Tasks</h3>
-                                             <p className="text-sm text-slate-300">Filter UI goes here.</p>
-                                             <div className="mt-4 flex justify-end">
-                                                  <Button variant="secondary" size="md" onClick={() => setFilterOpen(false)} className="mr-2">
-                                                       Close
-                                                  </Button>
-                                                  <Button variant="primary" size="md" onClick={() => setFilterOpen(false)}>
-                                                       Apply
-                                                  </Button>
+                                             {/* Task bars overlay */}
+                                             <div className="absolute left-0 right-0 pointer-events-none" style={{ top: '1.75rem' }}>
+                                                  {tasksByWeek[wi]
+                                                       .filter((t) => t.lane < MAX_VISIBLE_TASKS)
+                                                       .map((t) => {
+                                                            const leftPct = ((t.colStart - 1) / 7) * 100;
+                                                            const widthPct = (t.colSpan / 7) * 100;
+                                                            const topPx = t.lane * 22;
+
+                                                            const boardColor = t.boardId ? boardColorMap.get(t.boardId) : null;
+                                                            const priorityStyle = t.priorityId ? getPriorityStyleConfig(t.priorityId) : null;
+
+                                                            // Use priority color for task bar border, board color for gradient
+                                                            const barGradient = boardColor?.bar ?? 'from-slate-600/80 to-slate-500/60';
+                                                            const borderClass = priorityStyle
+                                                                 ? priorityStyle.borderColor
+                                                                 : 'border-transparent';
+
+                                                            return (
+                                                                 <div
+                                                                      key={t.id}
+                                                                      className={`absolute flex items-center bg-gradient-to-r ${barGradient} border ${borderClass} text-white text-[11px] px-1.5 rounded-md cursor-pointer pointer-events-auto hover:brightness-125 transition-all shadow-sm`}
+                                                                      style={{
+                                                                           left: `calc(${leftPct}% + 2px)`,
+                                                                           width: `calc(${widthPct}% - 4px)`,
+                                                                           top: `${topPx}px`,
+                                                                           height: '20px',
+                                                                      }}
+                                                                      onClick={(e) => {
+                                                                           e.stopPropagation();
+                                                                           handleTaskClick(t.id, t.boardId);
+                                                                      }}
+                                                                      title={t.title}
+                                                                 >
+                                                                      {t.assignee?.image && (
+                                                                           <Avatar
+                                                                                src={t.assignee.image}
+                                                                                alt={t.assignee.name ?? undefined}
+                                                                                size={14}
+                                                                                className="mr-1 flex-shrink-0"
+                                                                           />
+                                                                      )}
+                                                                      <span className="truncate leading-tight">{t.title}</span>
+                                                                 </div>
+                                                            );
+                                                       })}
                                              </div>
-                                        </motion.div>
-                                   </motion.div>
-                              )}
-                         </AnimatePresence>
-
-                         <AnimatePresence>
-                              {isTaskModalOpen && selectedBoardId && (taskModalMode === 'edit' || (columns.length > 0 && selectedColumnForNew)) && (
-                                   <motion.div
-                                        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-6"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                   >
-                                        <motion.div
-                                             className="bg-slate-800 text-white rounded-lg max-w-3xl w-full h-full md:h-auto overflow-auto"
-                                             initial={{ y: 50, opacity: 0 }}
-                                             animate={{ y: 0, opacity: 1 }}
-                                             exit={{ y: 50, opacity: 0 }}
-                                        >
-                                             <SingleTaskView
-                                                  taskId={taskModalMode === 'edit' ? selectedTaskId : undefined}
-                                                  mode={taskModalMode === 'edit' ? 'edit' : 'add'}
-                                                  columnId={taskModalMode === 'edit' ? tasksRaw.find((t) => t.id === selectedTaskId)?.column_id ?? undefined : selectedColumnForNew!}
-                                                  boardId={selectedBoardId}
-                                                  initialStartDate={selectedDate}
-                                                  onClose={closeTaskModal}
-                                                  onTaskAdded={() => {
-                                                       refetchTasks();
-                                                  }}
-                                                  onTaskUpdate={() => {
-                                                       refetchTasks();
-                                                       closeTaskModal();
-                                                  }}
-                                                  currentUser={currentUser!}
-                                                  columns={columns}
-                                                  statuses={[]}
-                                             />
-                                        </motion.div>
-                                   </motion.div>
-                              )}
+                                        </div>
+                                   ))}
+                              </motion.div>
                          </AnimatePresence>
                     </div>
-               )}
+               </div>
+
+               {/* ── Board picker popover ──────────── */}
+               <AnimatePresence>
+                    {boardPicker.visible && (
+                         <motion.div
+                              ref={boardPickerRef}
+                              className="fixed z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden"
+                              style={{ left: boardPicker.x, top: boardPicker.y, transform: 'translate(-50%, -50%)' }}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              transition={{ duration: 0.15 }}
+                         >
+                              <div className="px-3 py-2 border-b border-slate-700/50">
+                                   <p className="text-xs font-medium text-slate-400">Wybierz tablicę</p>
+                              </div>
+                              <div className="py-1 max-h-60 overflow-y-auto">
+                                   {boards
+                                        .filter((b) => selectedBoardIds.has(b.id))
+                                        .map((board) => {
+                                             const color = boardColorMap.get(board.id) ?? BOARD_COLORS[0];
+                                             return (
+                                                  <button
+                                                       key={board.id}
+                                                       onClick={() => handleBoardPickerSelect(board.id)}
+                                                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700/60 transition-colors"
+                                                  >
+                                                       <span className={`w-2.5 h-2.5 rounded-full ${color.dot}`} />
+                                                       {board.title}
+                                                  </button>
+                                             );
+                                        })}
+                              </div>
+                         </motion.div>
+                    )}
+               </AnimatePresence>
+
+               {/* ── Task modal ─────────────────────── */}
+               <AnimatePresence>
+                    {isTaskModalOpen && activeBoardForNew && (taskModalMode === 'edit' || (columns.length > 0 && selectedColumnForNew)) && (
+                         <motion.div
+                              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              onClick={closeTaskModal}
+                         >
+                              <motion.div
+                                   className="bg-slate-800 text-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-auto border border-slate-700/50 shadow-2xl"
+                                   initial={{ y: 30, opacity: 0 }}
+                                   animate={{ y: 0, opacity: 1 }}
+                                   exit={{ y: 30, opacity: 0 }}
+                                   transition={{ duration: 0.2 }}
+                                   onClick={(e) => e.stopPropagation()}
+                              >
+                                   <SingleTaskView
+                                        taskId={taskModalMode === 'edit' ? selectedTaskId : undefined}
+                                        mode={taskModalMode === 'edit' ? 'edit' : 'add'}
+                                        columnId={
+                                             taskModalMode === 'edit'
+                                                  ? tasksRaw.find((t) => t.id === selectedTaskId)?.column_id ?? undefined
+                                                  : selectedColumnForNew!
+                                        }
+                                        boardId={activeBoardForNew}
+                                        initialStartDate={selectedDate}
+                                        onClose={closeTaskModal}
+                                        onTaskAdded={() => {
+                                             refetchTasks();
+                                        }}
+                                        onTaskUpdate={() => {
+                                             refetchTasks();
+                                             closeTaskModal();
+                                        }}
+                                        currentUser={currentUser!}
+                                        columns={columns}
+                                        statuses={[]}
+                                   />
+                              </motion.div>
+                         </motion.div>
+                    )}
+               </AnimatePresence>
           </>
      );
 };

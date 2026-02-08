@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiArrowLeft, FiSearch, FiPlus, FiFileText, FiCode, FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BoardHeaderProps } from '@/app/types/globalTypes';
 import { useHasManagementAccess } from '@/app/hooks/useHasManagementAccess';
@@ -38,6 +38,8 @@ const BoardHeader = ({
      onOpenApiTokens,
      filterType,
      onFilterTypeChange,
+     showSubtasks,
+     onShowSubtasksChange,
 }: ExtendedBoardHeaderProps) => {
      const router = useRouter();
 
@@ -161,6 +163,25 @@ const BoardHeader = ({
 
                          {/* View Mode Toggle */}
                          <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
+
+                         {/* Subtask Toggle */}
+                         <button
+                              onClick={() => onShowSubtasksChange?.(!showSubtasks)}
+                              className={`
+                                   flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors relative
+                                   ${showSubtasks
+                                        ? 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25'
+                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                   }
+                              `}
+                              title={showSubtasks ? 'Ukryj subtaski' : 'Pokaż subtaski'}
+                         >
+                              <FiCornerDownRight className="w-4 h-4" />
+                              <span className="hidden sm:inline">Subtaski</span>
+                              {showSubtasks && (
+                                   <span className="w-1.5 h-1.5 rounded-full bg-orange-400 absolute top-1.5 right-1.5" />
+                              )}
+                         </button>
 
                          {/* Divider */}
                          <div className="hidden sm:block w-px h-5 bg-slate-700/50 mx-1" />

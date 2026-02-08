@@ -3,14 +3,17 @@
 import { ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import Navbar from './components/Navbar';
+import PWASplashScreen from './components/PWASplashScreen';
+import { PWASplashProvider } from './context/PWASplashContext';
+import { ChatProvider } from './context/ChatContext';
+import MiniChatContainer from './components/Chat/MiniChatContainer';
+import { useServiceWorker } from './hooks/useServiceWorker';
+import { usePWAStandalone } from './hooks/usePWAStandalone';
+import { useCurrentUser } from './hooks/useCurrentUser';
+import { usePresence } from './hooks/chat/usePresence';
+import { useGlobalChatNotification } from './hooks/chat/useGlobalChatNotification';
+import { useGlobalNotification } from './hooks/useGlobalNotification';
 
-/**
- * ClientLayout wraps pages on the client side.
- * - If user is authenticated: renders Navbar and applies left margin on main.
- * - If not authenticated: hides Navbar and main spans full width.
- *
- * Assumes <SessionProvider> is higher up (e.g. in Providers).
- */
 interface ClientLayoutProps {
      children: ReactNode;
 }
@@ -18,15 +21,22 @@ interface ClientLayoutProps {
 const ClientLayout = ({ children }: ClientLayoutProps) => {
      const { status } = useSession();
      const loggedIn = status === 'authenticated';
-
-     // Optional: if you want to redirect or do something on session change, you can useEffect here.
-     // e.g. close modals, etc. For now we just rely on rendering logic.
+     const isStandalone = usePWAStandalone();
+     useServiceWorker();
+     const { currentUser } = useCurrentUser();
+     usePresence(currentUser?.id ?? null);
+     useGlobalChatNotification(currentUser?.id ?? null);
+     useGlobalNotification(currentUser?.id ?? null);
 
      return (
-          <>
-               {loggedIn && <Navbar />}
-               <main className={`main-content min-h-screen ${loggedIn ? 'md:ml-60' : ''}`}>{children}</main>
-          </>
+          <PWASplashProvider isStandalone={isStandalone}>
+               <ChatProvider>
+                    <PWASplashScreen />
+                    {loggedIn && <Navbar />}
+                    <main className={`main-content min-h-screen ${loggedIn ? 'md:ml-60' : ''}`}>{children}</main>
+                    {loggedIn && <MiniChatContainer />}
+               </ChatProvider>
+          </PWASplashProvider>
      );
 };
 

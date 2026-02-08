@@ -11,6 +11,7 @@ import {
      useAddNotificationMutation,
      useGetBoardQuery,
      useGetPrioritiesQuery,
+     useUpdateTaskCollaboratorsMutation,
 } from '@/app/store/apiSlice';
 import { TaskDetail, User, Attachment } from '@/app/types/globalTypes';
 import { pickUpdatable } from '@/app/utils/helpers';
@@ -59,6 +60,7 @@ export const useTaskManagement = ({
      const [addTaskMutation] = useAddTaskMutation();
      const [uploadAttachmentMutation] = useUploadAttachmentMutation();
      const [removeTaskMutation] = useRemoveTaskMutation();
+     const [updateCollaboratorsMutation] = useUpdateTaskCollaboratorsMutation();
 
      const { data: teamMembers = [] } = useGetTeamMembersByBoardIdQuery(boardId, { skip: !boardId });
 
@@ -244,6 +246,7 @@ export const useTaskManagement = ({
                const result = await updateTaskMutation({
                     taskId: currentTaskId,
                     data: payload,
+                    userId: currentUser?.id,
                }).unwrap();
 
                const boardName = boardData?.title;
@@ -391,6 +394,19 @@ export const useTaskManagement = ({
                     };
                });
 
+               // Save collaborators if any were selected
+               if (task.collaborators && task.collaborators.length > 0) {
+                    try {
+                         await updateCollaboratorsMutation({
+                              taskId: result.id,
+                              collaboratorIds: task.collaborators.map((c) => c.id),
+                              boardId,
+                         }).unwrap();
+                    } catch (collabErr) {
+                         console.error('Failed to save collaborators:', collabErr);
+                    }
+               }
+
                if (result.user_id) {
                     await addNotification({
                          user_id: result.user_id,
@@ -425,7 +441,7 @@ export const useTaskManagement = ({
                setError('Failed to create task');
                return false;
           }
-     }, [task, columnId, boardId, addTaskMutation, onTaskAdded, addNotification, boardData, currentUser, normalPriorityId]);
+     }, [task, columnId, boardId, addTaskMutation, onTaskAdded, addNotification, boardData, currentUser, normalPriorityId, updateCollaboratorsMutation]);
 
      const deleteTask = useCallback(async () => {
           if (!currentTaskId || !task) return;
@@ -472,6 +488,7 @@ export const useTaskManagement = ({
                await updateTaskMutation({
                     taskId: currentTaskId,
                     data: payload,
+                    userId: currentUser?.id,
                }).unwrap();
 
                prevUserId.current = task.user_id;
@@ -486,7 +503,7 @@ export const useTaskManagement = ({
                console.error('Autosave failed:', err);
                return false;
           }
-     }, [currentTaskId, task, hasUnsavedChanges, updateTaskMutation]);
+     }, [currentTaskId, task, hasUnsavedChanges, updateTaskMutation, currentUser?.id]);
 
      return {
           task,

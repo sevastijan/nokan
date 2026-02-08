@@ -17,7 +17,11 @@
       "Bash(npx next build:*)",
       "Bash(grep:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebSearch",
+      "WebFetch(domain:developers.google.com)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)"
     ]
   }
 }

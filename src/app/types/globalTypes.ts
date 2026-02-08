@@ -213,6 +213,17 @@ export interface TaskDetail {
      completed_subtasks?: number;
 }
 
+export interface TaskSnapshot {
+     id: string;
+     task_id: string;
+     version: number;
+     changed_by: string | null;
+     changed_by_user?: { id: string; name: string; email: string; image?: string | null; custom_name?: string | null; custom_image?: string | null } | null;
+     snapshot: Record<string, unknown>;
+     changed_fields: string[];
+     created_at: string;
+}
+
 export interface Column {
      id: string;
      boardId: string;
@@ -263,6 +274,8 @@ export interface BoardHeaderProps {
      onFilterAssigneeChange: (assigneeId: string | null) => void;
      filterType: TaskTypeFilter;
      onFilterTypeChange: (type: TaskTypeFilter) => void;
+     showSubtasks?: boolean;
+     onShowSubtasksChange?: (show: boolean) => void;
 }
 
 export interface AssigneeOption {

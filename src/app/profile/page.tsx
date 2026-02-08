@@ -1,14 +1,18 @@
 'use client';
 
-import { Fragment, useEffect, useState, useRef } from 'react';
-import { Transition } from '@headlessui/react';
+import { useEffect, useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import Avatar from '../components/Avatar/Avatar';
+import Loader from '@/app/components/Loader';
 import { useGetUserRoleQuery, useGetMyBoardsQuery, useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation, useUpdateUserMutation } from '@/app/store/apiSlice';
 import Link from 'next/link';
-import { FaTachometerAlt, FaChevronRight, FaBell, FaEnvelope, FaEdit, FaCamera, FaSave, FaTimes } from 'react-icons/fa';
+import { ChevronRight, Bell, Mail, Pencil, Camera, Check, X, LayoutDashboard, ClipboardList, Users, Layers, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDisplayUser } from '../hooks/useDisplayUser';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useSubtaskPreference } from '../hooks/useSubtaskPreference';
+
+/* ── Toggle Switch ─────────────────────────────────────────────── */
 
 interface ToggleSwitchProps {
      enabled: boolean;
@@ -23,17 +27,48 @@ const ToggleSwitch = ({ enabled, onChange, label, description }: ToggleSwitchPro
                <div className="text-white font-medium text-sm sm:text-base">{label}</div>
                <div className="text-slate-400 text-xs sm:text-sm">{description}</div>
           </div>
-          <button onClick={() => onChange(!enabled)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-blue-600' : 'bg-slate-600'}`}>
-               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+          <button
+               onClick={() => onChange(!enabled)}
+               className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 cursor-pointer ${
+                    enabled ? 'bg-blue-600 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-slate-600 hover:bg-slate-500'
+               }`}
+          >
+               <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
      </div>
 );
 
+/* ── Role config ───────────────────────────────────────────────── */
+
+const roleConfig: Record<string, { color: string; label: string }> = {
+     OWNER: {
+          color: 'bg-yellow-600/20 text-yellow-300 border-yellow-400/30',
+          label: 'Owner',
+     },
+     PROJECT_MANAGER: {
+          color: 'bg-blue-600/20 text-blue-300 border-blue-400/30',
+          label: 'Project Menager',
+     },
+     CLIENT: {
+          color: 'bg-emerald-600/20 text-emerald-300 border-emerald-400/30',
+          label: 'Klient',
+     },
+     MEMBER: {
+          color: 'bg-slate-600/20 text-slate-300 border-slate-400/30',
+          label: 'Członek',
+     },
+};
+
+/* ── Page ──────────────────────────────────────────────────────── */
+
 const ProfilePage = () => {
-     const { displayName, email, currentUser, session } = useDisplayUser();
-     const { refetchUser } = useCurrentUser();
+     const { displayAvatar, displayName, email, currentUser, session } = useDisplayUser();
+     const { loading: userLoading, refetchUser } = useCurrentUser();
 
      const fileInputRef = useRef<HTMLInputElement>(null);
+
+     // Subtask preference
+     const [showSubtasks, setShowSubtasks] = useSubtaskPreference(currentUser?.id);
 
      // User role
      const { data: userRole } = useGetUserRoleQuery(email, {
@@ -65,6 +100,10 @@ const ProfilePage = () => {
           email_priority_changed: true,
           email_new_comment: true,
           email_due_date_changed: true,
+          email_collaborator_added: true,
+          email_collaborator_removed: true,
+          email_mention: true,
+          email_new_submission: true,
      });
 
      useEffect(() => {
@@ -76,6 +115,10 @@ const ProfilePage = () => {
                     email_priority_changed: preferences.email_priority_changed ?? true,
                     email_new_comment: preferences.email_new_comment,
                     email_due_date_changed: preferences.email_due_date_changed,
+                    email_collaborator_added: preferences.email_collaborator_added ?? true,
+                    email_collaborator_removed: preferences.email_collaborator_removed ?? true,
+                    email_mention: preferences.email_mention ?? true,
+                    email_new_submission: preferences.email_new_submission ?? true,
                });
           }
      }, [preferences]);
@@ -87,6 +130,7 @@ const ProfilePage = () => {
      const handleToggle = async (key: keyof typeof localPrefs, value: boolean) => {
           if (!currentUser?.id) return;
 
+          const prevPrefs = { ...localPrefs };
           const newPrefs = { ...localPrefs, [key]: value };
           setLocalPrefs(newPrefs);
 
@@ -97,7 +141,7 @@ const ProfilePage = () => {
                }).unwrap();
                toast.success('Preferencje zapisane');
           } catch {
-               setLocalPrefs(localPrefs);
+               setLocalPrefs(prevPrefs);
                toast.error('Nie udało się zapisać preferencji');
           }
      };
@@ -157,6 +201,7 @@ const ProfilePage = () => {
                reader.readAsDataURL(file);
           });
      };
+
      const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           const file = e.target.files?.[0];
           if (!file || !currentUser?.id) return;
@@ -214,242 +259,298 @@ const ProfilePage = () => {
           }
      };
 
-     // Helper function to get display avatar
-     const getDisplayAvatar = () => {
-          return currentUser?.custom_image || currentUser?.image || session?.user?.image || '';
-     };
-
-     // Helper function to get display name
-     const getDisplayName = () => {
-          return currentUser?.custom_name || currentUser?.name || session?.user?.name || 'User';
-     };
-
      // Role badge
      const getRoleBadge = () => {
-          let badgeColor = '',
-               roleText = '';
-          switch (userRole) {
-               case 'OWNER':
-                    badgeColor = 'bg-yellow-600/20 text-yellow-300 border-yellow-400/30';
-                    roleText = 'Owner';
-                    break;
-               case 'PROJECT_MANAGER':
-                    badgeColor = 'bg-blue-600/20 text-blue-300 border-blue-400/30';
-                    roleText = 'Project Manager';
-                    break;
-               default:
-                    badgeColor = 'bg-slate-600/20 text-slate-300 border-slate-400/30';
-                    roleText = 'Member';
-          }
-          return <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${badgeColor}`}>{roleText}</span>;
+          const config = roleConfig[userRole ?? ''] ?? roleConfig.MEMBER;
+          return <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${config.color}`}>{config.label}</span>;
      };
+
+     /* ── Loading state ──────────────────────────────────────── */
+
+     if (userLoading) {
+          return <Loader text="Ładowanie profilu..." />;
+     }
 
      if (!session?.user) {
           return (
-               <div className="max-w-5xl mx-auto pt-8 px-4">
+               <div className="min-h-screen bg-slate-900 flex items-center justify-center">
                     <div className="text-slate-400">Zaloguj się, aby zobaczyć profil.</div>
                </div>
           );
      }
 
      return (
-          <div className="max-w-5xl mx-auto pt-8 px-4 pb-8">
-               <Transition
-                    appear
-                    show={true}
-                    as={Fragment}
-                    enter="transition-all duration-300"
-                    enterFrom="opacity-0 translate-y-4"
-                    enterTo="opacity-100 translate-y-0"
-                    leave="transition-all duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-               >
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                         <div className="lg:col-span-1 space-y-6">
-                              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-slate-700/50 rounded-2xl shadow-xl overflow-hidden">
-                                   <div className="h-16 sm:h-20 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 relative overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900"></div>
-                                   </div>
+          <div className="min-h-screen bg-slate-900">
+               {/* Radial gradient overlay — matches dashboard / calendar */}
+               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800/40 via-transparent to-transparent pointer-events-none" />
 
-                                   <div className="px-4 sm:px-6 pb-6 -mt-10 sm:-mt-12 flex flex-col items-center text-center">
-                                        <div className="relative group mb-3">
-                                             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-300"></div>
-                                             <div className="relative">
-                                                  <Avatar src={getDisplayAvatar()} alt="Avatar" size={80} className="ring-4 ring-slate-900" key={getDisplayAvatar()} />
-                                                  <button
-                                                       onClick={() => fileInputRef.current?.click()}
-                                                       disabled={isUploadingAvatar}
-                                                       className="absolute inset-0 bg-black/70 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed backdrop-blur-sm"
-                                                  >
-                                                       {isUploadingAvatar ? (
-                                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+               <div className="relative">
+                    <section className="px-4 sm:px-6 lg:px-8 pt-8 pb-12">
+                         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="max-w-5xl mx-auto">
+                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                   {/* ── Left Column ──────────────────────────── */}
+                                   <div className="lg:col-span-1 space-y-6">
+                                        {/* Profile Card */}
+                                        <div className="bg-gradient-to-br from-slate-800/60 via-slate-800/60 to-slate-800/40 border border-slate-700/50 rounded-2xl shadow-xl overflow-hidden">
+                                             <div className="h-16 sm:h-20 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 relative overflow-hidden">
+                                                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/80" />
+                                             </div>
+
+                                             <div className="px-4 sm:px-6 pb-6 -mt-10 sm:-mt-12 flex flex-col items-center text-center">
+                                                  <div className="relative group mb-3">
+                                                       <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-300" />
+                                                       <div className="relative">
+                                                            <Avatar src={displayAvatar} alt="Avatar" size={80} className="ring-4 ring-slate-900" key={displayAvatar} />
+                                                            <button
+                                                                 onClick={() => fileInputRef.current?.click()}
+                                                                 disabled={isUploadingAvatar}
+                                                                 className="absolute inset-0 bg-black/70 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed backdrop-blur-sm"
+                                                            >
+                                                                 {isUploadingAvatar ? (
+                                                                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                                 ) : (
+                                                                      <div className="flex flex-col items-center gap-0.5">
+                                                                           <Camera className="w-5 h-5 text-white drop-shadow-lg" />
+                                                                           <span className="text-[10px] text-white font-medium">Zmień</span>
+                                                                      </div>
+                                                                 )}
+                                                            </button>
+                                                       </div>
+                                                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                                                  </div>
+
+                                                  <div className="w-full space-y-2">
+                                                       {/* Name edit */}
+                                                       {isEditingName ? (
+                                                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                                 <input
+                                                                      type="text"
+                                                                      value={editedName}
+                                                                      onChange={(e) => setEditedName(e.target.value)}
+                                                                      onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
+                                                                      className="flex-1 px-3 py-1.5 bg-slate-800/80 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                                      placeholder="Twoja nazwa..."
+                                                                      autoFocus
+                                                                 />
+                                                                 <button
+                                                                      onClick={handleNameSave}
+                                                                      className="p-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                                                                 >
+                                                                      <Check className="w-3.5 h-3.5 text-white" />
+                                                                 </button>
+                                                                 <button
+                                                                      onClick={() => {
+                                                                           setIsEditingName(false);
+                                                                           setEditedName(displayName);
+                                                                      }}
+                                                                      className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-all transform hover:scale-105 active:scale-95"
+                                                                 >
+                                                                      <X className="w-3.5 h-3.5 text-white" />
+                                                                 </button>
+                                                            </div>
                                                        ) : (
-                                                            <div className="flex flex-col items-center gap-0.5">
-                                                                 <FaCamera className="w-5 h-5 text-white drop-shadow-lg" />
-                                                                 <span className="text-[10px] text-white font-medium">Zmień</span>
+                                                            <div className="group/name cursor-pointer" onClick={() => setIsEditingName(true)}>
+                                                                 <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-800/50 transition-all">
+                                                                      <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent truncate">
+                                                                           {displayName}
+                                                                      </h2>
+                                                                      <div className="p-1 rounded-md bg-slate-800/50 group-hover/name:bg-slate-800 transition-all">
+                                                                           <Pencil className="w-3 h-3 text-slate-400 group-hover/name:text-blue-400 transition-colors" />
+                                                                      </div>
+                                                                 </div>
                                                             </div>
                                                        )}
-                                                  </button>
+
+                                                       <div className="flex items-center justify-center gap-2 text-slate-400 text-xs sm:text-sm">
+                                                            <Mail className="w-3 h-3" />
+                                                            <span className="truncate">{session?.user?.email}</span>
+                                                       </div>
+
+                                                       <div className="flex justify-center pt-1">{getRoleBadge()}</div>
+                                                  </div>
                                              </div>
-                                             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                                         </div>
 
-                                        <div className="w-full space-y-2">
-                                             {/* Name edit */}
-                                             {isEditingName ? (
-                                                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                                                       <input
-                                                            type="text"
-                                                            value={editedName}
-                                                            onChange={(e) => setEditedName(e.target.value)}
-                                                            onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
-                                                            className="flex-1 px-3 py-1.5 bg-slate-800/80 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                                            placeholder="Twoja nazwa..."
-                                                            autoFocus
-                                                       />
-                                                       <button
-                                                            onClick={handleNameSave}
-                                                            className="p-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg"
-                                                       >
-                                                            <FaSave className="w-3.5 h-3.5 text-white" />
-                                                       </button>
-                                                       <button
-                                                            onClick={() => {
-                                                                 setIsEditingName(false);
-                                                                 setEditedName(getDisplayName());
-                                                            }}
-                                                            className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-all transform hover:scale-105 active:scale-95"
-                                                       >
-                                                            <FaTimes className="w-3.5 h-3.5 text-white" />
-                                                       </button>
+                                        {/* Boards Card */}
+                                        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6">
+                                             <div className="flex items-center justify-between mb-4">
+                                                  <div className="flex items-center gap-2">
+                                                       <LayoutDashboard className="w-4 h-4 text-blue-400" />
+                                                       <h2 className="text-lg font-semibold text-slate-200">Moje projekty</h2>
+                                                  </div>
+                                                  {boards.length > 0 && <span className="text-xs font-medium text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded-full">{boards.length}</span>}
+                                             </div>
+
+                                             {boardsLoading ? (
+                                                  <div className="flex items-center gap-2 py-4">
+                                                       <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                                       <span className="text-slate-400 text-sm">Ładowanie projektów...</span>
+                                                  </div>
+                                             ) : boards.length === 0 ? (
+                                                  <div className="flex flex-col items-center py-6 text-center">
+                                                       <div className="w-12 h-12 bg-slate-700/50 rounded-xl flex items-center justify-center mb-3">
+                                                            <Layers className="w-6 h-6 text-slate-500" />
+                                                       </div>
+                                                       <p className="text-slate-500 text-sm">Brak projektów</p>
+                                                       <p className="text-slate-600 text-xs mt-1">Utwórz swój pierwszy projekt na dashboardzie</p>
                                                   </div>
                                              ) : (
-                                                  <div className="group/name cursor-pointer" onClick={() => setIsEditingName(true)}>
-                                                       <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-800/50 transition-all">
-                                                            <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent truncate">{getDisplayName()}</h2>
-                                                            <div className="p-1 rounded-md bg-slate-800/50 group-hover/name:bg-slate-800 transition-all">
-                                                                 <FaEdit className="w-3 h-3 text-slate-400 group-hover/name:text-blue-400 transition-colors" />
-                                                            </div>
-                                                       </div>
-                                                  </div>
+                                                  <ul className="space-y-2">
+                                                       {boards.map((b: { id: string; title: string; description?: string; _count?: { tasks?: number; teamMembers?: number } }) => (
+                                                            <li key={b.id}>
+                                                                 <Link
+                                                                      href={`/board/${b.id}`}
+                                                                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-700/30 border border-transparent hover:border-slate-600/50 hover:bg-slate-700/50 transition-all text-slate-100 group"
+                                                                 >
+                                                                      <span className="flex-1 truncate text-sm font-medium">{b.title}</span>
+                                                                      <div className="flex items-center gap-2.5 text-xs text-slate-400">
+                                                                           <span className="flex items-center gap-1">
+                                                                                <ClipboardList className="w-3 h-3 text-slate-500" />
+                                                                                {b._count?.tasks ?? 0}
+                                                                           </span>
+                                                                           <span className="flex items-center gap-1">
+                                                                                <Users className="w-3 h-3 text-slate-500" />
+                                                                                {b._count?.teamMembers ?? 0}
+                                                                           </span>
+                                                                      </div>
+                                                                      <ChevronRight className="text-slate-500 w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
+                                                                 </Link>
+                                                            </li>
+                                                       ))}
+                                                  </ul>
                                              )}
+                                        </div>
+                                   </div>
 
-                                             <div className="flex items-center justify-center gap-2 text-slate-400 text-xs sm:text-sm">
-                                                  <FaEnvelope className="w-3 h-3" />
-                                                  <span className="truncate">{session?.user?.email}</span>
+                                   {/* ── Right Column — Settings ── */}
+                                   <div className="lg:col-span-2 space-y-6">
+                                        {/* Board Settings */}
+                                        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6 sm:p-8">
+                                             <div className="flex items-center gap-3 mb-6">
+                                                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                       <Settings2 className="w-5 h-5 text-white" />
+                                                  </div>
+                                                  <div className="min-w-0">
+                                                       <h1 className="text-xl font-bold text-white">Ustawienia tablicy</h1>
+                                                       <p className="text-slate-400 text-sm">Domyślne ustawienia widoku tablic</p>
+                                                  </div>
                                              </div>
 
-                                             <div className="flex justify-center pt-1">{getRoleBadge()}</div>
-                                        </div>
-                                   </div>
-                              </div>
-
-                              {/* Boards Card */}
-                              <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-xl p-6">
-                                   <div className="flex items-center gap-2 mb-4">
-                                        <FaTachometerAlt className="w-4 h-4 text-blue-400" />
-                                        <h2 className="text-lg font-semibold text-slate-200">My Boards</h2>
-                                   </div>
-
-                                   {boardsLoading ? (
-                                        <div className="text-slate-400 text-sm">Loading...</div>
-                                   ) : boards.length === 0 ? (
-                                        <div className="text-slate-500 text-sm">No boards yet.</div>
-                                   ) : (
-                                        <ul className="space-y-2">
-                                             {boards.map((b: { id: string; title: string; description?: string }) => (
-                                                  <li key={b.id}>
-                                                       <Link
-                                                            href={`/board/${b.id}`}
-                                                            className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/70 transition text-slate-100 group"
-                                                       >
-                                                            <span className="flex-1 truncate text-sm">{b.title}</span>
-                                                            <FaChevronRight className="text-slate-400 w-3 h-3 opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
-                                                       </Link>
-                                                       {b.description && <div className="ml-3 mt-1 text-xs text-slate-400 truncate">{b.description}</div>}
-                                                  </li>
-                                             ))}
-                                        </ul>
-                                   )}
-                              </div>
-                         </div>
-
-                         {/* Right Column - Notification Settings */}
-                         <div className="lg:col-span-2">
-                              <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-xl p-6 sm:p-8">
-                                   {/* Header */}
-                                   <div className="flex items-center gap-3 mb-6">
-                                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                                             <FaBell className="w-5 h-5 text-white" />
-                                        </div>
-                                        <div className="min-w-0">
-                                             <h1 className="text-xl font-bold text-white">Ustawienia powiadomień</h1>
-                                             <p className="text-slate-400 text-sm">Zarządzaj powiadomieniami email</p>
-                                        </div>
-                                   </div>
-
-                                   {/* Email Notifications Section */}
-                                   <div>
-                                        <div className="flex items-center gap-2 mb-4">
-                                             <FaEnvelope className="w-4 h-4 text-blue-400" />
-                                             <h2 className="text-lg font-semibold text-slate-200">Powiadomienia email</h2>
+                                             <ToggleSwitch
+                                                  enabled={showSubtasks}
+                                                  onChange={(value) => {
+                                                       setShowSubtasks(value);
+                                                       toast.success(value ? 'Subtaski będą domyślnie widoczne' : 'Subtaski będą domyślnie ukryte');
+                                                  }}
+                                                  label="Pokaż subtaski na tablicach"
+                                                  description="Domyślnie wyświetlaj subtaski jako osobne karty na tablicach"
+                                             />
                                         </div>
 
-                                        {prefsLoading ? (
-                                             <div className="text-slate-400 text-sm py-4">Ładowanie...</div>
-                                        ) : (
-                                             <div className="space-y-1">
-                                                  <ToggleSwitch
-                                                       enabled={localPrefs.email_task_assigned}
-                                                       onChange={(v) => handleToggle('email_task_assigned', v)}
-                                                       label="Przypisanie do zadania"
-                                                       description="Otrzymuj email gdy zostaniesz przypisany do zadania"
-                                                  />
-                                                  <ToggleSwitch
-                                                       enabled={localPrefs.email_task_unassigned}
-                                                       onChange={(v) => handleToggle('email_task_unassigned', v)}
-                                                       label="Usunięcie z zadania"
-                                                       description="Otrzymuj email gdy zostaniesz usunięty z zadania"
-                                                  />
-                                                  <ToggleSwitch
-                                                       enabled={localPrefs.email_status_changed}
-                                                       onChange={(v) => handleToggle('email_status_changed', v)}
-                                                       label="Zmiana statusu"
-                                                       description="Otrzymuj email gdy zmieni się status Twojego zadania"
-                                                  />
-                                                  <ToggleSwitch
-                                                       enabled={localPrefs.email_priority_changed}
-                                                       onChange={(v) => handleToggle('email_priority_changed', v)}
-                                                       label="Zmiana priorytetu"
-                                                       description="Otrzymuj email gdy zmieni się priorytet Twojego zadania"
-                                                  />
-                                                  <ToggleSwitch
-                                                       enabled={localPrefs.email_new_comment}
-                                                       onChange={(v) => handleToggle('email_new_comment', v)}
-                                                       label="Nowe komentarze"
-                                                       description="Otrzymuj email gdy ktoś skomentuje Twoje zadanie"
-                                                  />
-                                                  <ToggleSwitch
-                                                       enabled={localPrefs.email_due_date_changed}
-                                                       onChange={(v) => handleToggle('email_due_date_changed', v)}
-                                                       label="Zmiana terminu"
-                                                       description="Otrzymuj email gdy zmieni się termin Twojego zadania"
-                                                  />
+                                        {/* Notification Settings */}
+                                        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6 sm:p-8">
+                                             {/* Header */}
+                                             <div className="flex items-center gap-3 mb-6">
+                                                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                       <Bell className="w-5 h-5 text-white" />
+                                                  </div>
+                                                  <div className="min-w-0">
+                                                       <h1 className="text-xl font-bold text-white">Ustawienia powiadomień</h1>
+                                                       <p className="text-slate-400 text-sm">Zarządzaj powiadomieniami email</p>
+                                                  </div>
                                              </div>
-                                        )}
-                                   </div>
 
-                                   {/* Info */}
-                                   <div className="mt-6 p-4 bg-slate-800/50 rounded-xl border border-slate-700/30">
-                                        <p className="text-slate-400 text-xs sm:text-sm">
-                                             Powiadomienia email są wysyłane natychmiast po wystąpieniu zdarzenia. Niezależnie od tych ustawień, zawsze będziesz otrzymywać powiadomienia w aplikacji.
-                                        </p>
+                                             {/* Email Notifications Section */}
+                                             <div>
+                                                  <div className="flex items-center gap-2 mb-4">
+                                                       <Mail className="w-4 h-4 text-blue-400" />
+                                                       <h2 className="text-lg font-semibold text-slate-200">Powiadomienia email</h2>
+                                                  </div>
+
+                                                  {prefsLoading ? (
+                                                       <div className="flex items-center gap-2 py-4">
+                                                            <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                                            <span className="text-slate-400 text-sm">Ładowanie preferencji...</span>
+                                                       </div>
+                                                  ) : (
+                                                       <div className="space-y-1">
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_task_assigned}
+                                                                 onChange={(v) => handleToggle('email_task_assigned', v)}
+                                                                 label="Przypisanie do zadania"
+                                                                 description="Otrzymuj email gdy zostaniesz przypisany do zadania"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_task_unassigned}
+                                                                 onChange={(v) => handleToggle('email_task_unassigned', v)}
+                                                                 label="Usunięcie z zadania"
+                                                                 description="Otrzymuj email gdy zostaniesz usunięty z zadania"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_status_changed}
+                                                                 onChange={(v) => handleToggle('email_status_changed', v)}
+                                                                 label="Zmiana statusu"
+                                                                 description="Otrzymuj email gdy zmieni się status Twojego zadania"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_priority_changed}
+                                                                 onChange={(v) => handleToggle('email_priority_changed', v)}
+                                                                 label="Zmiana priorytetu"
+                                                                 description="Otrzymuj email gdy zmieni się priorytet Twojego zadania"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_new_comment}
+                                                                 onChange={(v) => handleToggle('email_new_comment', v)}
+                                                                 label="Nowe komentarze"
+                                                                 description="Otrzymuj email gdy ktoś skomentuje Twoje zadanie"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_due_date_changed}
+                                                                 onChange={(v) => handleToggle('email_due_date_changed', v)}
+                                                                 label="Zmiana terminu"
+                                                                 description="Otrzymuj email gdy zmieni się termin Twojego zadania"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_collaborator_added}
+                                                                 onChange={(v) => handleToggle('email_collaborator_added', v)}
+                                                                 label="Dodanie współpracownika"
+                                                                 description="Otrzymuj email gdy ktoś zostanie dodany jako współpracownik"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_collaborator_removed}
+                                                                 onChange={(v) => handleToggle('email_collaborator_removed', v)}
+                                                                 label="Usunięcie współpracownika"
+                                                                 description="Otrzymuj email gdy współpracownik zostanie usunięty"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_mention}
+                                                                 onChange={(v) => handleToggle('email_mention', v)}
+                                                                 label="Wzmianki"
+                                                                 description="Otrzymuj email gdy ktoś Cię wspomni w komentarzu"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.email_new_submission}
+                                                                 onChange={(v) => handleToggle('email_new_submission', v)}
+                                                                 label="Nowe zgłoszenia"
+                                                                 description="Otrzymuj email gdy pojawi się nowe zgłoszenie klienta"
+                                                            />
+                                                       </div>
+                                                  )}
+                                             </div>
+
+                                             {/* Info */}
+                                             <div className="mt-6 p-4 bg-slate-700/30 rounded-xl border border-slate-700/30">
+                                                  <p className="text-slate-400 text-xs sm:text-sm">
+                                                       Powiadomienia email są wysyłane natychmiast po wystąpieniu zdarzenia. Niezależnie od tych ustawień, zawsze będziesz otrzymywać powiadomienia w
+                                                       aplikacji.
+                                                  </p>
+                                             </div>
+                                        </div>
                                    </div>
                               </div>
-                         </div>
-                    </div>
-               </Transition>
+                         </motion.div>
+                    </section>
+               </div>
           </div>
      );
 };

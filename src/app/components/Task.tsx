@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent, MouseEvent } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, useLayoutEffect, KeyboardEvent, MouseEvent } from 'react';
 import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus, FiCheckSquare, FiCornerDownRight, FiCheck, FiTrash2, FiEdit3 } from 'react-icons/fi';
 import { FaLayerGroup } from 'react-icons/fa';
 import Avatar from './Avatar/Avatar';
@@ -26,6 +26,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
 
      const triggerRef = useRef<HTMLButtonElement>(null);
      const menuRef = useRef<HTMLDivElement>(null);
+     const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
      const getPlainTextFromHtml = useCallback((html: string | undefined): string => {
           if (!html) return '';
@@ -125,6 +126,16 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
           }
      };
 
+     useLayoutEffect(() => {
+          if (menuOpen && triggerRef.current) {
+               const rect = triggerRef.current.getBoundingClientRect();
+               setMenuPos({
+                    top: rect.bottom + 4,
+                    left: rect.right - 144, // min-w-36 = 144px, align right edge
+               });
+          }
+     }, [menuOpen]);
+
      useEffect(() => {
           if (menuOpen) menuRef.current?.focus();
      }, [menuOpen]);
@@ -154,16 +165,18 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                onMouseLeave={() => setIsHovered(false)}
                className={`
                     relative cursor-pointer group transition-all duration-200
-                    bg-slate-800/90 hover:bg-slate-750/95
-                    border border-slate-700/60 rounded-lg overflow-hidden
-                    hover:border-slate-600 hover:shadow-lg hover:shadow-black/20
+                    ${isSubtask
+                         ? 'bg-slate-800/60 hover:bg-slate-750/70 border border-dashed border-slate-600/60 hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-900/10'
+                         : 'bg-slate-800/90 hover:bg-slate-750/95 border border-slate-700/60 hover:border-slate-600 hover:shadow-lg hover:shadow-black/20'
+                    }
+                    rounded-lg overflow-hidden
                     ${isEmpty ? 'min-h-16' : ''}
                     ${isCompleted ? 'opacity-60' : ''}
                `}
                style={{
                     borderLeftWidth: '3px',
-                    borderLeftStyle: 'solid',
-                    borderLeftColor: priorityConfig?.dotColor || '#475569',
+                    borderLeftStyle: isSubtask ? 'solid' : 'solid',
+                    borderLeftColor: isSubtask ? '#f97316' : (priorityConfig?.dotColor || '#475569'),
                }}
           >
 
@@ -227,6 +240,13 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                              >
                                                   <FiFlag size={10} />
                                                   {priorityConfig.label}
+                                             </span>
+                                        )}
+
+                                        {isSubtask && (
+                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-500/15 text-orange-400">
+                                                  <FiCornerDownRight size={10} />
+                                                  Subtask
                                              </span>
                                         )}
 
@@ -313,7 +333,8 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                               role="menu"
                               tabIndex={-1}
                               onKeyDown={handleMenuKeyDown}
-                              className="absolute top-8 right-2.5 z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-xl shadow-black/30 overflow-hidden min-w-36 py-1"
+                              className="fixed z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-xl shadow-black/30 overflow-hidden min-w-36 py-1"
+                              style={{ top: menuPos.top, left: menuPos.left }}
                          >
                               {menuItems.map((item, idx) => {
                                    const Icon = item.icon;

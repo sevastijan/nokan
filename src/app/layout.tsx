@@ -5,6 +5,10 @@ import { Toaster } from '@/components/ui/sonner';
 
 export const dynamic = 'force-dynamic';
 
+export const viewport = {
+     themeColor: '#0E172B',
+};
+
 export const metadata = {
      title: 'Nokan Taskboard',
      description: 'Taskboard application',
@@ -16,7 +20,6 @@ export const metadata = {
           shortcut: '/favicon.ico',
           apple: '/apple-touch-icon.png',
      },
-     manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

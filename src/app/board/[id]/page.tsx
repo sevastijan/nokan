@@ -14,9 +14,11 @@ import Loader from '@/app/components/Loader';
 import { getPriorities } from '@/app/lib/api';
 import { Column as ColumnType, User, Priority, AssigneeOption, TaskTypeFilter } from '@/app/types/globalTypes';
 import BoardHeader from '@/app/components/Board/BoardHeader';
+import { getSubtaskPreference } from '@/app/hooks/useSubtaskPreference';
 import TaskViewSkeleton from '@/app/components/SingleTaskView/TaskViewSkeleton';
 import { useUpdateTaskMutation } from '@/app/store/apiSlice';
 import { FiX } from 'react-icons/fi';
+import SingleTaskView from '@/app/components/SingleTaskView/SingleTaskView';
 
 const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
      loading: () => (
@@ -36,14 +38,6 @@ const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
                          </div>
                     ))}
                </div>
-          </div>
-     ),
-});
-
-const SingleTaskView = dynamic(() => import('@/app/components/SingleTaskView/SingleTaskView'), {
-     loading: () => (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-               <TaskViewSkeleton />
           </div>
      ),
 });
@@ -102,6 +96,7 @@ export default function Page() {
      const [filterPriority, setFilterPriority] = useState<string | null>(null);
      const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
      const [filterType, setFilterType] = useState<TaskTypeFilter>('all');
+     const [showSubtasks, setShowSubtasks] = useState(false);
      const [notesOpen, setNotesOpen] = useState(false);
      const [apiTokensOpen, setApiTokensOpen] = useState(false);
      const [completionModalOpen, setCompletionModalOpen] = useState(false);
@@ -209,6 +204,12 @@ export default function Page() {
                }
           })();
      }, [session?.user?.email, session?.user?.name, session?.user?.image]);
+
+     useEffect(() => {
+          if (currentUser?.id) {
+               setShowSubtasks(getSubtaskPreference(currentUser.id));
+          }
+     }, [currentUser?.id]);
 
      useEffect(() => {
           if (status === 'unauthenticated') router.push('/auth/signin');
@@ -377,9 +378,7 @@ export default function Page() {
                               }
 
                               // Sync status with column — find status matching destination column name
-                              const matchingStatus = statuses.find(
-                                   (s) => s.label.toLowerCase() === dstCol.title?.toLowerCase(),
-                              );
+                              const matchingStatus = statuses.find((s) => s.label.toLowerCase() === dstCol.title?.toLowerCase());
                               if (matchingStatus) {
                                    await getSupabase().from('tasks').update({ status_id: matchingStatus.id }).eq('id', movedTask.id);
                               }
@@ -449,22 +448,31 @@ export default function Page() {
           setIsAddingColumn(false);
      }, [newColumnTitle, handleAddColumn, fetchBoardData]);
 
-     const openAddTask = useCallback((colId: string) => {
-          saveScrollPosition();
-          setAddTaskColumnId(colId);
-     }, [saveScrollPosition]);
+     const openAddTask = useCallback(
+          (colId: string) => {
+               saveScrollPosition();
+               setAddTaskColumnId(colId);
+          },
+          [saveScrollPosition],
+     );
 
-     const onTaskAdded = useCallback(async (columnId: string, title: string, priority?: string, userId?: string) => {
-          const task = await handleAddTask(columnId, title, priority, userId);
-          setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: [...(c.tasks || []), task] } : c)));
-          setAddTaskColumnId(null);
-          return task;
-     }, [handleAddTask]);
+     const onTaskAdded = useCallback(
+          async (columnId: string, title: string, priority?: string, userId?: string) => {
+               const task = await handleAddTask(columnId, title, priority, userId);
+               setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: [...(c.tasks || []), task] } : c)));
+               setAddTaskColumnId(null);
+               return task;
+          },
+          [handleAddTask],
+     );
 
-     const onTaskRemoved = useCallback(async (columnId: string, taskId: string) => {
-          await handleRemoveTask(columnId, taskId);
-          setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: c.tasks.filter((t) => t.id !== taskId) } : c)));
-     }, [handleRemoveTask]);
+     const onTaskRemoved = useCallback(
+          async (columnId: string, taskId: string) => {
+               await handleRemoveTask(columnId, taskId);
+               setLocalColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, tasks: c.tasks.filter((t) => t.id !== taskId) } : c)));
+          },
+          [handleRemoveTask],
+     );
 
      const assigneesList = useMemo<AssigneeOption[]>(() => {
           if (!board) return [];
@@ -492,8 +500,8 @@ export default function Page() {
      const filteredColumns = useMemo(() => {
           return localColumns.map((col) => {
                const filteredTasks = (col.tasks || []).filter((task) => {
-                    // Hide subtasks — they belong inside their parent story
-                    if (task.parent_id) return false;
+                    // Hide subtasks unless the user toggled them visible
+                    if (task.parent_id && !showSubtasks) return false;
 
                     if (searchTerm) {
                          const term = searchTerm.toLowerCase();
@@ -512,7 +520,7 @@ export default function Page() {
                });
                return { ...col, tasks: filteredTasks };
           });
-     }, [localColumns, searchTerm, filterPriority, filterAssignee, filterType]);
+     }, [localColumns, searchTerm, filterPriority, filterAssignee, filterType, showSubtasks]);
 
      const currentColumnId = useMemo(() => {
           if (addTaskColumnId) return addTaskColumnId;
@@ -522,14 +530,17 @@ export default function Page() {
           return null;
      }, [addTaskColumnId, selectedTaskId, localColumns]);
 
-     const handleOpenTaskDetail = useCallback((taskId: string) => {
-          saveScrollPosition();
-          setSelectedTaskId(taskId);
+     const handleOpenTaskDetail = useCallback(
+          (taskId: string) => {
+               saveScrollPosition();
+               setSelectedTaskId(taskId);
 
-          const params = new URLSearchParams(searchParams.toString());
-          params.set('task', taskId);
-          router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
-     }, [saveScrollPosition, searchParams, router]);
+               const params = new URLSearchParams(searchParams.toString());
+               params.set('task', taskId);
+               router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
+          },
+          [saveScrollPosition, searchParams, router],
+     );
 
      const handleCloseTaskView = useCallback(() => {
           saveScrollPosition();
@@ -603,6 +614,8 @@ export default function Page() {
                     currentUserId={currentUser?.id}
                     onOpenNotes={handleOpenNotes}
                     onOpenApiTokens={handleOpenApiTokens}
+                    showSubtasks={showSubtasks}
+                    onShowSubtasksChange={setShowSubtasks}
                />
                {filterAssignee && activeFilteredAssignee && (
                     <div className="px-4 md:px-6 pt-4">
@@ -610,11 +623,7 @@ export default function Page() {
                               <span className="text-sm text-slate-400">
                                    Filtr: <span className="text-slate-200">{activeFilteredAssignee.name}</span>
                               </span>
-                              <button
-                                   onClick={() => handleFilterByAssignee(filterAssignee)}
-                                   className="p-1 hover:bg-slate-700 rounded transition-colors"
-                                   aria-label="Usuń filtr"
-                              >
+                              <button onClick={() => handleFilterByAssignee(filterAssignee)} className="p-1 hover:bg-slate-700 rounded transition-colors" aria-label="Usuń filtr">
                                    <FiX size={14} className="text-slate-400 hover:text-slate-200" />
                               </button>
                          </div>

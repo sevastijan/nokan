@@ -33,6 +33,7 @@ import TaskTypeSelector from './TaskTypeSelector';
 import SubtaskList from './SubtaskList';
 import Lightbox from '@/app/components/Lightbox/Lightbox';
 import { SingleTaskViewProps, Column, TaskType, User } from '@/app/types/globalTypes';
+import TaskHistory from './TaskHistory';
 import TaskViewSkeleton from './TaskViewSkeleton';
 import { useGetSubtasksQuery, useUpdateTaskTypeMutation } from '@/app/store/apiSlice';
 
@@ -63,6 +64,7 @@ const SingleTaskView = ({
      const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
      const [showRecurringModal, setShowRecurringModal] = useState(false);
      const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
+     const [isVisible, setIsVisible] = useState(true);
 
      const {
           task,
@@ -181,27 +183,31 @@ const SingleTaskView = ({
           handleNavigate: handleDescriptionImageNavigate,
      } = useTaskImages(formData.tempDescription);
 
+     const animateOut = useCallback(() => {
+          setIsVisible(false);
+     }, []);
+
      const requestClose = useCallback(() => {
           if (hasUnsavedChanges && !isNewTask) {
                setShowUnsavedConfirm(true);
           } else {
-               onClose();
+               animateOut();
           }
-     }, [hasUnsavedChanges, isNewTask, onClose]);
+     }, [hasUnsavedChanges, isNewTask, animateOut]);
 
      const confirmExit = useCallback(() => {
           setShowUnsavedConfirm(false);
-          onClose();
-     }, [onClose]);
+          animateOut();
+     }, [animateOut]);
 
      const saveAndExit = useCallback(async () => {
           setShowUnsavedConfirm(false);
           const success = await saveExistingTask();
           if (success) {
                toast.success('Zapisano i zamknięto');
-               onClose();
+               animateOut();
           }
-     }, [saveExistingTask, onClose]);
+     }, [saveExistingTask, animateOut]);
 
      const handlePriorityChange = useCallback(
           (priorityId: string | null) => {
@@ -261,17 +267,17 @@ const SingleTaskView = ({
                toast.success(isNewTask ? 'Zadanie utworzone' : 'Zadanie zaktualizowane');
           }
 
-          onClose();
-     }, [formData.tempTitle, formData.localColumnId, isNewTask, saveNewTask, saveExistingTask, localFilePreviews, currentTaskId, uploadAllAttachments, onClose]);
+          animateOut();
+     }, [formData.tempTitle, formData.localColumnId, isNewTask, saveNewTask, saveExistingTask, localFilePreviews, currentTaskId, uploadAllAttachments, animateOut]);
 
      const handleDelete = useCallback(async () => {
           try {
                await deleteTask();
-               onClose();
+               animateOut();
           } catch {
                toast.error('Nie udało się usunąć zadania');
           }
-     }, [deleteTask, onClose]);
+     }, [deleteTask, animateOut]);
 
      const handleCopyLink = useCallback(() => {
           if (!task?.id || !boardId) return;
@@ -438,16 +444,11 @@ const SingleTaskView = ({
 
      useOutsideClick([modalRef], requestClose, !openedSubtaskId);
 
-     if (!task && !isNewTask) {
-          return (
-               <motion.div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <TaskViewSkeleton />
-               </motion.div>
-          );
-     }
+     const isLoaded = Boolean(task) || isNewTask;
 
      return (
-          <AnimatePresence initial={false}>
+          <AnimatePresence onExitComplete={onClose}>
+               {isVisible && (
                <motion.div
                     ref={overlayRef}
                     className="fixed inset-0 bg-black/40 backdrop-blur-md flex justify-center items-center z-50 p-2 md:p-4"
@@ -456,19 +457,22 @@ const SingleTaskView = ({
                               requestClose();
                          }
                     }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={false}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                >
                     <motion.div
                          ref={modalRef}
-                         className="bg-gradient-to-b from-slate-800 to-slate-850 rounded-2xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50 overflow-hidden"
-                         initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                         className="bg-linear-to-b from-slate-800 to-slate-850 rounded-2xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50 overflow-hidden"
+                         initial={{ scale: 0.9, opacity: 0, y: 30 }}
                          animate={{ scale: 1, opacity: 1, y: 0 }}
                          exit={{ scale: 0.95, opacity: 0, y: 20 }}
                          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     >
+                    {!isLoaded ? (
+                         <TaskViewSkeleton />
+                    ) : (
+                    <>
                          <TaskHeader
                               isNewTask={isNewTask}
                               taskId={task?.id}
@@ -509,7 +513,7 @@ const SingleTaskView = ({
                                         {!task?.parent_id && (
                                              <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                                   <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                       <div className="w-1 h-4 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full" />
+                                                       <div className="w-1 h-4 bg-linear-to-b from-blue-500 to-cyan-500 rounded-full" />
                                                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Typ</h3>
                                                   </div>
                                                   <TaskTypeSelector selectedType={taskType} onChange={handleTypeChange} disabled={!canChangeType} />
@@ -525,7 +529,7 @@ const SingleTaskView = ({
                                         {task?.statuses && task.statuses.length > 0 && (
                                              <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                                   <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                       <div className="w-1 h-4 bg-gradient-to-b from-yellow-500 to-orange-500 rounded-full" />
+                                                       <div className="w-1 h-4 bg-linear-to-b from-yellow-500 to-orange-500 rounded-full" />
                                                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</h3>
                                                   </div>
                                                   <StatusSelector
@@ -544,7 +548,7 @@ const SingleTaskView = ({
                                    {/* Description Section */}
                                    <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                         <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                             <div className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
+                                             <div className="w-1 h-4 bg-linear-to-b from-pink-500 to-purple-500 rounded-full" />
                                              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Opis</h3>
                                         </div>
                                         <TaskDescription
@@ -558,9 +562,9 @@ const SingleTaskView = ({
 
                                    {/* Subtasks Section */}
                                    {isStory && task?.id && !isNewTask && (
-                                        <div className="relative z-[5] bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                        <div className="relative z-5 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full" />
+                                                  <div className="w-1 h-4 bg-linear-to-b from-indigo-500 to-violet-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Subtaski</h3>
                                                   <span className="ml-auto text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">{subtasks.length}</span>
                                              </div>
@@ -585,7 +589,7 @@ const SingleTaskView = ({
                                    <Suspense fallback={<div className="text-slate-400 text-sm p-4">Ładowanie załączników...</div>}>
                                         <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-gradient-to-b from-teal-500 to-green-500 rounded-full" />
+                                                  <div className="w-1 h-4 bg-linear-to-b from-teal-500 to-green-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Załączniki</h3>
                                                   <FiPaperclip className="w-3.5 h-3.5 text-slate-500 ml-1" />
                                              </div>
@@ -604,11 +608,13 @@ const SingleTaskView = ({
                                         </div>
                                    </Suspense>
 
+                                   {!isNewTask && task?.id && <TaskHistory taskId={task.id} columns={columns} onRestore={fetchTaskData} />}
+
                                    {/* Comments Section */}
                                    {!isNewTask && task?.id && (
                                         <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-gradient-to-b from-amber-500 to-yellow-500 rounded-full" />
+                                                  <div className="w-1 h-4 bg-linear-to-b from-amber-500 to-yellow-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Komentarze</h3>
                                                   <FiMessageCircle className="w-3.5 h-3.5 text-slate-500 ml-1" />
                                                   {task.comments && task.comments.length > 0 && (
@@ -684,6 +690,8 @@ const SingleTaskView = ({
                                    columns={columns}
                               />
                          )}
+                    </>
+                    )}
                     </motion.div>
 
                     {previewImageUrl && <ImagePreviewModal imageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />}
@@ -728,6 +736,7 @@ const SingleTaskView = ({
                          />
                     )}
                </motion.div>
+               )}
           </AnimatePresence>
      );
 };

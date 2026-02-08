@@ -10,7 +10,13 @@ export function getSupabase(): SupabaseClient {
      if (!supabaseInstance) {
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
           const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
-          supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+          supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+               realtime: {
+                    params: {
+                         eventsPerSecond: 10,
+                    },
+               },
+          });
      }
      return supabaseInstance;
 }
