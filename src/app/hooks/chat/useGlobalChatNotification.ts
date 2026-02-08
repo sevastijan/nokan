@@ -7,12 +7,14 @@ import { apiSlice } from '@/app/store/apiSlice';
 import type { AppDispatch } from '@/app/store';
 
 /**
- * Global Postgres Changes listener on chat_messages table.
+ * Global Postgres Changes listener on chat_messages + chat_channel_members.
  * Runs at app root (ClientLayout) — not tied to any specific channel.
  *
  * Responsibilities:
  * 1. Show browser tab title + push notification when a new message arrives
  * 2. Invalidate ChatChannelList cache so unread badges update globally
+ * 3. Detect new channel membership (e.g. someone creates a DM with you)
+ *    and refresh the channel list so the conversation appears instantly
  */
 export function useGlobalChatNotification(currentUserId: string | null) {
      const dispatch = useDispatch<AppDispatch>();
@@ -80,6 +82,7 @@ export function useGlobalChatNotification(currentUserId: string | null) {
 
           const channel = supabase
                .channel('global-chat-notifications')
+               // ── New messages → unread badges + browser notifications ──
                .on(
                     'postgres_changes',
                     {
@@ -132,6 +135,20 @@ export function useGlobalChatNotification(currentUserId: string | null) {
                                    // Notification API not available
                               }
                          }
+                    },
+               )
+               // ── New channel membership → conversation appears in sidebar ──
+               // Catches: someone creates a DM with you, or adds you to a group.
+               .on(
+                    'postgres_changes',
+                    {
+                         event: 'INSERT',
+                         schema: 'public',
+                         table: 'chat_channel_members',
+                         filter: `user_id=eq.${currentUserId}`,
+                    },
+                    () => {
+                         dispatch(apiSlice.util.invalidateTags([{ type: 'ChatChannelList', id: currentUserId }]));
                     },
                )
                .subscribe();
