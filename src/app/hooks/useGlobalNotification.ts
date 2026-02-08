@@ -26,6 +26,7 @@ export function useGlobalNotification(currentUserId: string | null) {
      useEffect(() => {
           const audio = new Audio('/notification.mp3');
           audio.volume = 0.3;
+          audio.preload = 'auto';
           audioRef.current = audio;
 
           const unlock = () => {
@@ -33,10 +34,13 @@ export function useGlobalNotification(currentUserId: string | null) {
                     .then(() => {
                          audio.pause();
                          audio.currentTime = 0;
+                         // Only remove listeners after successful unlock
+                         window.removeEventListener('click', unlock);
+                         window.removeEventListener('keydown', unlock);
                     })
-                    .catch(() => {});
-               window.removeEventListener('click', unlock);
-               window.removeEventListener('keydown', unlock);
+                    .catch(() => {
+                         // Keep listeners — will retry on next interaction
+                    });
           };
           window.addEventListener('click', unlock);
           window.addEventListener('keydown', unlock);

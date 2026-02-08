@@ -26,6 +26,7 @@ export function useGlobalChatNotification(currentUserId: string | null) {
      useEffect(() => {
           const audio = new Audio('/message-sound.mp3');
           audio.volume = 0.2;
+          audio.preload = 'auto';
           audioRef.current = audio;
 
           const unlock = () => {
@@ -33,10 +34,13 @@ export function useGlobalChatNotification(currentUserId: string | null) {
                     .then(() => {
                          audio.pause();
                          audio.currentTime = 0;
+                         // Only remove listeners after successful unlock
+                         window.removeEventListener('click', unlock);
+                         window.removeEventListener('keydown', unlock);
                     })
-                    .catch(() => {});
-               window.removeEventListener('click', unlock);
-               window.removeEventListener('keydown', unlock);
+                    .catch(() => {
+                         // Keep listeners — will retry on next interaction
+                    });
           };
           window.addEventListener('click', unlock);
           window.addEventListener('keydown', unlock);
@@ -66,13 +70,6 @@ export function useGlobalChatNotification(currentUserId: string | null) {
                window.removeEventListener('focus', handleFocus);
                if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
           };
-     }, []);
-
-     // Request notification permission
-     useEffect(() => {
-          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-               Notification.requestPermission();
-          }
      }, []);
 
      useEffect(() => {

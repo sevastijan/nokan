@@ -13,6 +13,7 @@ import { useCurrentUser } from './hooks/useCurrentUser';
 import { usePresence } from './hooks/chat/usePresence';
 import { useGlobalChatNotification } from './hooks/chat/useGlobalChatNotification';
 import { useGlobalNotification } from './hooks/useGlobalNotification';
+import { useAutoPushSubscription } from './hooks/useAutoPushSubscription';
 
 interface ClientLayoutProps {
      children: ReactNode;
@@ -27,6 +28,7 @@ const ClientLayout = ({ children }: ClientLayoutProps) => {
      usePresence(currentUser?.id ?? null);
      useGlobalChatNotification(currentUser?.id ?? null);
      useGlobalNotification(currentUser?.id ?? null);
+     useAutoPushSubscription(currentUser?.id ?? null);
 
      return (
           <PWASplashProvider isStandalone={isStandalone}>

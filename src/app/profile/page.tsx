@@ -12,6 +12,7 @@ import { useDisplayUser } from '../hooks/useDisplayUser';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useSubtaskPreference } from '../hooks/useSubtaskPreference';
 import { usePushSubscription } from '../hooks/usePushSubscription';
+import { PUSH_OPTED_OUT_KEY } from '../hooks/useAutoPushSubscription';
 
 /* ── Toggle Switch ─────────────────────────────────────────────── */
 
@@ -161,6 +162,7 @@ const ProfilePage = () => {
                     toast.error('Nie udało się włączyć powiadomień push. Sprawdź uprawnienia przeglądarki.');
                     return;
                }
+               localStorage.removeItem(PUSH_OPTED_OUT_KEY);
                toast.success('Powiadomienia push włączone');
           } else {
                const ok = await pushUnsubscribe();
@@ -168,6 +170,7 @@ const ProfilePage = () => {
                     toast.error('Nie udało się wyłączyć powiadomień push');
                     return;
                }
+               localStorage.setItem(PUSH_OPTED_OUT_KEY, 'true');
                toast.success('Powiadomienia push wyłączone');
           }
      };
