@@ -1,112 +1,102 @@
-steps:
-     - name: build_nokan
-       image: docker:26-cli
-       when:
-            event: push
-            branch: main
-       volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-       environment:
-            NEXT_PUBLIC_SUPABASE_URL:
-                 from_secret: NEXT_PUBLIC_SUPABASE_URL
-            NEXT_PUBLIC_SUPABASE_ANON_KEY:
-                 from_secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
-            SERVICE_ROLE_KEY:
-                 from_secret: SERVICE_ROLE_KEY
-            NEXT_PUBLIC_GOOGLE_CLIENT_ID:
-                 from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
-            NEXT_PUBLIC_GOOGLE_CLIENT_SECRET:
-                 from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_SECRET
-            NEXTAUTH_URL:
-                 from_secret: NEXTAUTH_URL
-            NEXTAUTH_SECRET:
-                 from_secret: NEXTAUTH_SECRET
-            RESEND_API_KEY:
-                 from_secret: RESEND_API_KEY
-            EMAIL_FROM:
-                 from_secret: EMAIL_FROM
-       commands:
-            - docker version
-            - echo "🔍 Checking injected envs (safe preview)..."
-            - echo "NEXT_PUBLIC_SUPABASE_URL length -> $${#NEXT_PUBLIC_SUPABASE_URL}"
-            - echo "NEXTAUTH_SECRET length -> $${#NEXTAUTH_SECRET}"
-            - if [ -z "$${NEXT_PUBLIC_SUPABASE_URL}" ]; then echo "❌ NEXT_PUBLIC_SUPABASE_URL is EMPTY!"; else echo "✅ NEXT_PUBLIC_SUPABASE_URL is set"; fi
-            - if [ -z "$${NEXTAUTH_SECRET}" ]; then echo "❌ NEXTAUTH_SECRET is EMPTY!"; else echo "✅ NEXTAUTH_SECRET is set"; fi
-            - echo "NEXT_PUBLIC_SUPABASE_URL -> $${NEXT_PUBLIC_SUPABASE_URL}"
-            - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY prefix -> $$(echo "$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" | cut -c1-6)"
-            - echo "SERVICE_ROLE_KEY prefix -> $$(echo "$${SERVICE_ROLE_KEY}" | cut -c1-6)"
-            - echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID prefix -> $$(echo "$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" | cut -c1-6)"
-            - echo "NEXTAUTH_URL -> $${NEXTAUTH_URL}"
-            - echo "📝 Rendering .env for build stage..."
-            - |
-                 printf '%s\n' \
-                   "NEXT_PUBLIC_SUPABASE_URL=$${NEXT_PUBLIC_SUPABASE_URL}" \
-                   "NEXT_PUBLIC_SUPABASE_ANON_KEY=$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
-                   "SERVICE_ROLE_KEY=$${SERVICE_ROLE_KEY}" \
-                   "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" \
-                   "NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
-                   "NEXTAUTH_URL=$${NEXTAUTH_URL}" \
-                   "NEXTAUTH_SECRET=$${NEXTAUTH_SECRET}" \
-                   "RESEND_API_KEY=$${RESEND_API_KEY}" \
-                   "EMAIL_FROM=$${EMAIL_FROM}" \
-                   > .env
-            - echo "🚀 Building nokan-taskboard image..."
-            - docker build -t nokan-taskboard:latest .
-            - rm -f .env
+when:
+  - event: push
+    branch: main
 
-     - name: deploy_nokan
-       image: docker:26-cli
-       depends_on:
-            - build_nokan
-       when:
-            event: push
-            branch: main
-       volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-       environment:
-            NEXT_PUBLIC_SUPABASE_URL:
-                 from_secret: NEXT_PUBLIC_SUPABASE_URL
-            NEXT_PUBLIC_SUPABASE_ANON_KEY:
-                 from_secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
-            SERVICE_ROLE_KEY:
-                 from_secret: SERVICE_ROLE_KEY
-            NEXT_PUBLIC_GOOGLE_CLIENT_ID:
-                 from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
-            NEXT_PUBLIC_GOOGLE_CLIENT_SECRET:
-                 from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_SECRET
-            NEXTAUTH_URL:
-                 from_secret: NEXTAUTH_URL
-            NEXTAUTH_SECRET:
-                 from_secret: NEXTAUTH_SECRET
-            RESEND_API_KEY:
-                 from_secret: RESEND_API_KEY
-            EMAIL_FROM:
-                 from_secret: EMAIL_FROM
-       commands:
-            - echo "🧹 Removing old container if exists..."
-            - docker rm -f nokan-taskboard || true
-            - echo "🌐 Ensuring traefik-network is available..."
-            - |
-                 if ! docker network inspect traefik-network >/dev/null 2>&1; then
-                   docker network create traefik-network
-                 fi
-            - echo "▶️ Running new nokan-taskboard container..."
-            - |
-                 docker run -d --name nokan-taskboard \
-                   --network traefik-network \
-                   -e NEXT_PUBLIC_SUPABASE_URL="$${NEXT_PUBLIC_SUPABASE_URL}" \
-                   -e NEXT_PUBLIC_SUPABASE_ANON_KEY="$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
-                   -e SERVICE_ROLE_KEY="$${SERVICE_ROLE_KEY}" \
-                   -e NEXT_PUBLIC_GOOGLE_CLIENT_ID="$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" \
-                   -e NEXT_PUBLIC_GOOGLE_CLIENT_SECRET="$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
-                   -e NEXTAUTH_URL="$${NEXTAUTH_URL}" \
-                   -e NEXTAUTH_SECRET="$${NEXTAUTH_SECRET}" \
-                   -e RESEND_API_KEY="$${RESEND_API_KEY}" \
-                   -e EMAIL_FROM="$${EMAIL_FROM}" \
-                   -l "traefik.enable=true" \
-                   -l "traefik.http.routers.nokan.rule=Host(\`nokan.nkdlab.space\`)" \
-                   -l "traefik.http.routers.nokan.entrypoints=websecure" \
-                   -l "traefik.http.routers.nokan.tls.certresolver=cf" \
-                   -l "traefik.http.services.nokan.loadbalancer.server.port=3000" \
-                   nokan-taskboard:latest
-            - echo "✅ Deploy completed successfully!"
+steps:
+  - name: build_nokan
+    image: docker:26-cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL:
+        from_secret: NEXT_PUBLIC_SUPABASE_URL
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        from_secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
+      SERVICE_ROLE_KEY:
+        from_secret: SERVICE_ROLE_KEY
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID:
+        from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+      NEXT_PUBLIC_GOOGLE_CLIENT_SECRET:
+        from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_SECRET
+      NEXTAUTH_URL:
+        from_secret: NEXTAUTH_URL
+      NEXTAUTH_SECRET:
+        from_secret: NEXTAUTH_SECRET
+      RESEND_API_KEY:
+        from_secret: RESEND_API_KEY
+      EMAIL_FROM:
+        from_secret: EMAIL_FROM
+    commands:
+      - docker version
+      - echo "Checking injected envs..."
+      - if [ -z "$${NEXT_PUBLIC_SUPABASE_URL}" ]; then echo "NEXT_PUBLIC_SUPABASE_URL is EMPTY!"; exit 1; else echo "NEXT_PUBLIC_SUPABASE_URL is set"; fi
+      - if [ -z "$${NEXTAUTH_SECRET}" ]; then echo "NEXTAUTH_SECRET is EMPTY!"; exit 1; else echo "NEXTAUTH_SECRET is set"; fi
+      - |
+        printf '%s\n' \
+          "NEXT_PUBLIC_SUPABASE_URL=$${NEXT_PUBLIC_SUPABASE_URL}" \
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY=$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+          "SERVICE_ROLE_KEY=$${SERVICE_ROLE_KEY}" \
+          "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" \
+          "NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
+          "NEXTAUTH_URL=$${NEXTAUTH_URL}" \
+          "NEXTAUTH_SECRET=$${NEXTAUTH_SECRET}" \
+          "RESEND_API_KEY=$${RESEND_API_KEY}" \
+          "EMAIL_FROM=$${EMAIL_FROM}" \
+          > .env
+      - echo "Building nokan-taskboard image..."
+      - docker build -t nokan-taskboard:latest .
+      - rm -f .env
+
+  - name: deploy_nokan
+    image: docker:26-cli
+    depends_on:
+      - build_nokan
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL:
+        from_secret: NEXT_PUBLIC_SUPABASE_URL
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        from_secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
+      SERVICE_ROLE_KEY:
+        from_secret: SERVICE_ROLE_KEY
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID:
+        from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+      NEXT_PUBLIC_GOOGLE_CLIENT_SECRET:
+        from_secret: NEXT_PUBLIC_GOOGLE_CLIENT_SECRET
+      NEXTAUTH_URL:
+        from_secret: NEXTAUTH_URL
+      NEXTAUTH_SECRET:
+        from_secret: NEXTAUTH_SECRET
+      RESEND_API_KEY:
+        from_secret: RESEND_API_KEY
+      EMAIL_FROM:
+        from_secret: EMAIL_FROM
+    commands:
+      - echo "Removing old container if exists..."
+      - docker rm -f nokan-taskboard || true
+      - echo "Ensuring traefik-network is available..."
+      - |
+        if ! docker network inspect traefik-network >/dev/null 2>&1; then
+          docker network create traefik-network
+        fi
+      - echo "Running new nokan-taskboard container..."
+      - |
+        docker run -d --name nokan-taskboard \
+          --network traefik-network \
+          -e NEXT_PUBLIC_SUPABASE_URL="$${NEXT_PUBLIC_SUPABASE_URL}" \
+          -e NEXT_PUBLIC_SUPABASE_ANON_KEY="$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+          -e SERVICE_ROLE_KEY="$${SERVICE_ROLE_KEY}" \
+          -e NEXT_PUBLIC_GOOGLE_CLIENT_ID="$${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" \
+          -e NEXT_PUBLIC_GOOGLE_CLIENT_SECRET="$${NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}" \
+          -e NEXTAUTH_URL="$${NEXTAUTH_URL}" \
+          -e NEXTAUTH_SECRET="$${NEXTAUTH_SECRET}" \
+          -e RESEND_API_KEY="$${RESEND_API_KEY}" \
+          -e EMAIL_FROM="$${EMAIL_FROM}" \
+          -l "traefik.enable=true" \
+          -l "traefik.http.routers.nokan.rule=Host(\`nokan.nkdlab.space\`)" \
+          -l "traefik.http.routers.nokan.entrypoints=websecure" \
+          -l "traefik.http.routers.nokan.tls.certresolver=cf" \
+          -l "traefik.http.services.nokan.loadbalancer.server.port=3000" \
+          nokan-taskboard:latest
+      - echo "Deploy completed successfully!"
