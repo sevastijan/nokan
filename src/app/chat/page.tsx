@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useChat } from '@/app/context/ChatContext';
 import ChannelView from '@/app/components/Chat/ChannelView/ChannelView';
@@ -10,18 +10,21 @@ import { MessageCircle } from 'lucide-react';
 export default function ChatPage() {
 	const searchParams = useSearchParams();
 	const { selectedChannelId, selectChannel, threadParentId } = useChat();
+	const channelFromUrl = searchParams.get('channel');
 
-	// Sync URL param → context on mount
-	useEffect(() => {
-		const channelFromUrl = searchParams.get('channel');
+	// URL is the source of truth — sync to Redux before paint so ChannelView sees the ID immediately
+	useLayoutEffect(() => {
 		if (channelFromUrl && channelFromUrl !== selectedChannelId) {
 			selectChannel(channelFromUrl);
 		}
-	}, [searchParams, selectChannel, selectedChannelId]);
+	}, [channelFromUrl, selectChannel, selectedChannelId]);
+
+	// Use URL param directly (available immediately) with Redux as fallback
+	const activeChannelId = channelFromUrl || selectedChannelId;
 
 	return (
 		<div className="flex flex-col h-screen bg-slate-950">
-			{selectedChannelId ? (
+			{activeChannelId ? (
 				threadParentId ? (
 					<ThreadPanel />
 				) : (
