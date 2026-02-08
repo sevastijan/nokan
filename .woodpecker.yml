@@ -26,6 +26,10 @@ steps:
         from_secret: RESEND_API_KEY
       EMAIL_FROM:
         from_secret: EMAIL_FROM
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY:
+        from_secret: NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      VAPID_PRIVATE_KEY:
+        from_secret: VAPID_PRIVATE_KEY
     commands:
       - docker version
       - echo "Checking injected envs..."
@@ -42,6 +46,8 @@ steps:
           "NEXTAUTH_SECRET=$${NEXTAUTH_SECRET}" \
           "RESEND_API_KEY=$${RESEND_API_KEY}" \
           "EMAIL_FROM=$${EMAIL_FROM}" \
+          "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$${NEXT_PUBLIC_VAPID_PUBLIC_KEY}" \
+          "VAPID_PRIVATE_KEY=$${VAPID_PRIVATE_KEY}" \
           > .env
       - echo "Building nokan-taskboard image..."
       - docker build -t nokan-taskboard:latest .
@@ -72,6 +78,10 @@ steps:
         from_secret: RESEND_API_KEY
       EMAIL_FROM:
         from_secret: EMAIL_FROM
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY:
+        from_secret: NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      VAPID_PRIVATE_KEY:
+        from_secret: VAPID_PRIVATE_KEY
     commands:
       - echo "Removing old container if exists..."
       - docker rm -f nokan-taskboard || true
@@ -93,6 +103,8 @@ steps:
           -e NEXTAUTH_SECRET="$${NEXTAUTH_SECRET}" \
           -e RESEND_API_KEY="$${RESEND_API_KEY}" \
           -e EMAIL_FROM="$${EMAIL_FROM}" \
+          -e NEXT_PUBLIC_VAPID_PUBLIC_KEY="$${NEXT_PUBLIC_VAPID_PUBLIC_KEY}" \
+          -e VAPID_PRIVATE_KEY="$${VAPID_PRIVATE_KEY}" \
           -l "traefik.enable=true" \
           -l "traefik.http.routers.nokan.rule=Host(\`nokan.nkdlab.space\`)" \
           -l "traefik.http.routers.nokan.entrypoints=websecure" \
