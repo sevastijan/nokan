@@ -13,6 +13,8 @@ const defaultPreferences: Omit<NotificationPreferences, 'id' | 'user_id' | 'crea
      email_collaborator_removed: true,
      email_mention: true,
      email_new_submission: true,
+     push_enabled: true,
+     push_chat_enabled: true,
 };
 
 export const preferencesEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({

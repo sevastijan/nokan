@@ -22,7 +22,8 @@
       "WebFetch(domain:developers.google.com)",
       "Bash(lsof:*)",
       "Bash(kill:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(npx web-push:*)"
     ]
   }
 }

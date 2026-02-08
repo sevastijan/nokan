@@ -54,7 +54,8 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -64,6 +65,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
+    "@types/web-push": "^3.6.4",
     "@types/webpack": "^5.28.5",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",

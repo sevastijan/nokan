@@ -49,6 +49,8 @@ export interface NotificationPreferences {
      email_collaborator_removed: boolean;
      email_mention: boolean;
      email_new_submission: boolean;
+     push_enabled: boolean;
+     push_chat_enabled: boolean;
      created_at: string;
      updated_at: string;
 }
@@ -64,4 +66,6 @@ export interface NotificationPreferencesInput {
      email_collaborator_removed?: boolean;
      email_mention?: boolean;
      email_new_submission?: boolean;
+     push_enabled?: boolean;
+     push_chat_enabled?: boolean;
 }

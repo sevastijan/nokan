@@ -1,5 +1,6 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { getSupabase } from '@/app/lib/supabase';
+import { triggerPushNotification } from '@/app/lib/pushNotification';
 
 // === Types ===
 
@@ -416,6 +417,28 @@ export const chatEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
 					.update({ last_read_at: new Date().toISOString() })
 					.eq('channel_id', channelId)
 					.eq('user_id', userId);
+
+				// Fire-and-forget push notifications to other channel members
+				const senderName = message.user?.custom_name || message.user?.name || 'Ktoś';
+				const preview = content.length > 80 ? content.slice(0, 80) + '...' : content;
+
+				supabase
+					.from('chat_channel_members')
+					.select('user_id')
+					.eq('channel_id', channelId)
+					.neq('user_id', userId)
+					.then(({ data: members }) => {
+						members?.forEach((m) => {
+							triggerPushNotification({
+								userId: m.user_id,
+								title: senderName,
+								body: preview,
+								url: `/chat?channel=${channelId}`,
+								tag: `chat-${channelId}`,
+								type: 'chat',
+							});
+						});
+					});
 
 				return { data: { ...message, reactions: [], attachments: [], reply_count: 0 } };
 			} catch (err) {

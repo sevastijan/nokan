@@ -1,5 +1,6 @@
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { getSupabase } from '@/app/lib/supabase';
+import { triggerPushNotification } from '@/app/lib/pushNotification';
 
 interface Notification {
      id: string;
@@ -31,6 +32,19 @@ export const notificationEndpoints = (builder: EndpointBuilder<BaseQueryFn, stri
                          .select('*')
                          .single();
                     if (error || !data) throw error || new Error('Add notification failed');
+
+                    // Fire-and-forget push notification
+                    triggerPushNotification({
+                         userId: payload.user_id,
+                         title: 'Nowe powiadomienie',
+                         body: payload.message.length > 100 ? payload.message.slice(0, 100) + '...' : payload.message,
+                         url: payload.board_id && payload.task_id
+                              ? `/board/${payload.board_id}?task=${payload.task_id}`
+                              : '/dashboard',
+                         tag: `notification-${data.id}`,
+                         type: 'notification',
+                    });
+
                     return { data };
                } catch (err) {
                     const error = err as Error;

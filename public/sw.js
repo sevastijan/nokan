@@ -95,3 +95,50 @@ self.addEventListener('fetch', (event) => {
           return;
      }
 });
+
+// ─── Push Notifications ──────────────────────────────────────────
+self.addEventListener('push', (event) => {
+     if (!event.data) return;
+
+     let data;
+     try {
+          data = event.data.json();
+     } catch {
+          data = { title: 'Nokan', body: event.data.text() };
+     }
+
+     const options = {
+          body: data.body || '',
+          icon: '/android-chrome-192x192.png',
+          badge: '/favicon-32x32.png',
+          tag: data.tag || 'nokan-notification',
+          renotify: true,
+          data: {
+               url: data.url || '/',
+          },
+     };
+
+     event.waitUntil(self.registration.showNotification(data.title || 'Nokan', options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+     event.notification.close();
+
+     const targetUrl = event.notification.data?.url || '/';
+
+     event.waitUntil(
+          self.clients
+               .matchAll({ type: 'window', includeUncontrolled: true })
+               .then((clients) => {
+                    // Focus existing window if open
+                    for (const client of clients) {
+                         if (new URL(client.url).origin === self.location.origin) {
+                              client.navigate(targetUrl);
+                              return client.focus();
+                         }
+                    }
+                    // Otherwise open new window
+                    return self.clients.openWindow(targetUrl);
+               })
+     );
+});

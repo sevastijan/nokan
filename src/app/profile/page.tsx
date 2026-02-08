@@ -6,11 +6,12 @@ import Avatar from '../components/Avatar/Avatar';
 import Loader from '@/app/components/Loader';
 import { useGetUserRoleQuery, useGetMyBoardsQuery, useGetNotificationPreferencesQuery, useUpdateNotificationPreferencesMutation, useUpdateUserMutation } from '@/app/store/apiSlice';
 import Link from 'next/link';
-import { ChevronRight, Bell, Mail, Pencil, Camera, Check, X, LayoutDashboard, ClipboardList, Users, Layers, Settings2 } from 'lucide-react';
+import { ChevronRight, Bell, Mail, Pencil, Camera, Check, X, LayoutDashboard, ClipboardList, Users, Layers, Settings2, Smartphone, MessageCircle, BellRing } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDisplayUser } from '../hooks/useDisplayUser';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useSubtaskPreference } from '../hooks/useSubtaskPreference';
+import { usePushSubscription } from '../hooks/usePushSubscription';
 
 /* ── Toggle Switch ─────────────────────────────────────────────── */
 
@@ -93,6 +94,9 @@ const ProfilePage = () => {
      const [editedName, setEditedName] = useState('');
      const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+     // Push subscription
+     const { isSupported: pushSupported, isSubscribed: pushSubscribed, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushSubscription();
+
      const [localPrefs, setLocalPrefs] = useState({
           email_task_assigned: true,
           email_task_unassigned: true,
@@ -104,6 +108,8 @@ const ProfilePage = () => {
           email_collaborator_removed: true,
           email_mention: true,
           email_new_submission: true,
+          push_enabled: true,
+          push_chat_enabled: true,
      });
 
      useEffect(() => {
@@ -119,6 +125,8 @@ const ProfilePage = () => {
                     email_collaborator_removed: preferences.email_collaborator_removed ?? true,
                     email_mention: preferences.email_mention ?? true,
                     email_new_submission: preferences.email_new_submission ?? true,
+                    push_enabled: preferences.push_enabled ?? true,
+                    push_chat_enabled: preferences.push_chat_enabled ?? true,
                });
           }
      }, [preferences]);
@@ -143,6 +151,24 @@ const ProfilePage = () => {
           } catch {
                setLocalPrefs(prevPrefs);
                toast.error('Nie udało się zapisać preferencji');
+          }
+     };
+
+     const handlePushMasterToggle = async (enable: boolean) => {
+          if (enable) {
+               const ok = await pushSubscribe();
+               if (!ok) {
+                    toast.error('Nie udało się włączyć powiadomień push. Sprawdź uprawnienia przeglądarki.');
+                    return;
+               }
+               toast.success('Powiadomienia push włączone');
+          } else {
+               const ok = await pushUnsubscribe();
+               if (!ok) {
+                    toast.error('Nie udało się wyłączyć powiadomień push');
+                    return;
+               }
+               toast.success('Powiadomienia push wyłączone');
           }
      };
 
@@ -446,6 +472,69 @@ const ProfilePage = () => {
                                                   description="Domyślnie wyświetlaj subtaski jako osobne karty na tablicach"
                                              />
                                         </div>
+
+                                        {/* Push Notification Settings */}
+                                        {pushSupported && (
+                                             <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6 sm:p-8">
+                                                  <div className="flex items-center gap-3 mb-6">
+                                                       <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                            <Smartphone className="w-5 h-5 text-white" />
+                                                       </div>
+                                                       <div className="min-w-0">
+                                                            <h1 className="text-xl font-bold text-white">Powiadomienia push</h1>
+                                                            <p className="text-slate-400 text-sm">Otrzymuj powiadomienia nawet gdy aplikacja jest zamknięta</p>
+                                                       </div>
+                                                  </div>
+
+                                                  {/* Master toggle */}
+                                                  <div className="flex items-center justify-between py-3 border-b border-slate-700/30 gap-4">
+                                                       <div className="flex-1 min-w-0">
+                                                            <div className="text-white font-medium text-sm sm:text-base flex items-center gap-2">
+                                                                 <BellRing className="w-4 h-4 text-emerald-400" />
+                                                                 Włącz powiadomienia push
+                                                            </div>
+                                                            <div className="text-slate-400 text-xs sm:text-sm">
+                                                                 {pushSubscribed
+                                                                      ? 'Powiadomienia push są aktywne na tym urządzeniu'
+                                                                      : 'Kliknij aby aktywować powiadomienia push'}
+                                                            </div>
+                                                       </div>
+                                                       <button
+                                                            onClick={() => handlePushMasterToggle(!pushSubscribed)}
+                                                            disabled={pushLoading}
+                                                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                                                 pushSubscribed ? 'bg-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-slate-600 hover:bg-slate-500'
+                                                            }`}
+                                                       >
+                                                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${pushSubscribed ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                       </button>
+                                                  </div>
+
+                                                  {/* Sub-toggles (only when subscribed) */}
+                                                  {pushSubscribed && (
+                                                       <div className="mt-1">
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.push_enabled}
+                                                                 onChange={(v) => handleToggle('push_enabled', v)}
+                                                                 label="Powiadomienia o zadaniach"
+                                                                 description="Przypisania, zmiany statusu, komentarze i inne zdarzenia"
+                                                            />
+                                                            <ToggleSwitch
+                                                                 enabled={localPrefs.push_chat_enabled}
+                                                                 onChange={(v) => handleToggle('push_chat_enabled', v)}
+                                                                 label="Powiadomienia o wiadomościach"
+                                                                 description="Nowe wiadomości na czacie"
+                                                            />
+                                                       </div>
+                                                  )}
+
+                                                  <div className="mt-4 p-4 bg-slate-700/30 rounded-xl border border-slate-700/30">
+                                                       <p className="text-slate-400 text-xs sm:text-sm">
+                                                            Powiadomienia push działają nawet gdy przeglądarka jest zamknięta. Subskrypcja jest per urządzenie — włącz na każdym urządzeniu osobno.
+                                                       </p>
+                                                  </div>
+                                             </div>
+                                        )}
 
                                         {/* Notification Settings */}
                                         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6 sm:p-8">
