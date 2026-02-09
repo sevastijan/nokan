@@ -97,10 +97,21 @@ const SingleTaskView = ({
      });
 
      const availableUsers = useMemo((): User[] => {
-          if (!user) return teamMembers;
-          if (teamMembers.some((m) => m.id === user.id)) return teamMembers;
-          return [...teamMembers, user];
-     }, [teamMembers, user]);
+          const users = [...teamMembers];
+          // Always include current user so they can assign themselves
+          if (user && !users.some((m) => m.id === user.id)) {
+               users.push(user);
+          }
+          // Include existing task collaborators (e.g. users who left the team)
+          if (task?.collaborators) {
+               for (const collab of task.collaborators) {
+                    if (!users.some((u) => u.id === collab.id)) {
+                         users.push(collab);
+                    }
+               }
+          }
+          return users;
+     }, [teamMembers, user, task?.collaborators]);
 
      const { formData, updateField, syncWithTask } = useTaskForm({
           initialColumnId: columnId,

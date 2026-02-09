@@ -190,6 +190,8 @@ export default function Page() {
                          name: data.name!,
                          email: data.email,
                          image: data.image || undefined,
+                         custom_name: data.custom_name || undefined,
+                         custom_image: data.custom_image || undefined,
                          created_at: data.created_at!,
                     });
                } else {
@@ -199,6 +201,8 @@ export default function Page() {
                          name: newUser.name!,
                          email: newUser.email,
                          image: newUser.image || undefined,
+                         custom_name: newUser.custom_name || undefined,
+                         custom_image: newUser.custom_image || undefined,
                          created_at: newUser.created_at!,
                     });
                }
@@ -686,7 +690,7 @@ export default function Page() {
                     setNewColumnTitle={setNewColumnTitle}
                     isAddingColumn={isAddingColumn}
                />
-               {(selectedTaskId || addTaskColumnId) && currentColumnId && (
+               {(selectedTaskId || addTaskColumnId) && currentColumnId && currentUser && (
                     <Suspense
                          fallback={
                               <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
@@ -704,7 +708,7 @@ export default function Page() {
                               onClose={handleCloseTaskView}
                               onTaskUpdate={handleCloseTaskView}
                               onTaskAdded={handleCloseTaskView}
-                              currentUser={currentUser!}
+                              currentUser={currentUser}
                               statuses={statuses}
                               onOpenTask={(taskId) => setSelectedTaskId(taskId)}
                          />
