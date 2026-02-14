@@ -51,32 +51,44 @@ const VARIANTS: {
 const TaskVariantSelector = ({ selectedType, onChange, large }: TaskVariantSelectorProps) => {
      if (large) {
           return (
-               <div className="grid grid-cols-3 gap-5">
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
                     {VARIANTS.map((variant) => {
                          const isActive = selectedType === variant.value;
                          return (
                               <button
                                    key={variant.value}
                                    type="button"
+                                   autoFocus={variant.value === 'task'}
                                    onClick={() => onChange(variant.value)}
+                                   onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                             e.preventDefault();
+                                             onChange(variant.value);
+                                        }
+                                   }}
                                    className={`
-                                        group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2
-                                        transition-all duration-200 h-48
+                                        group flex sm:flex-col items-center sm:justify-center gap-4 sm:gap-4
+                                        p-5 sm:p-8 rounded-2xl border-2 outline-none
+                                        sm:h-52
+                                        transition-colors duration-200
+                                        focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 focus-visible:ring-blue-500
                                         ${isActive
                                              ? `${variant.activeClasses} shadow-lg`
-                                             : 'border-slate-700/50 bg-slate-800/30 text-slate-400 hover:border-slate-600 hover:bg-slate-700/30 hover:scale-[1.02]'
+                                             : 'border-slate-700/50 bg-slate-800/30 text-slate-400 hover:border-slate-600 hover:bg-slate-700/30'
                                         }
                                    `}
                               >
                                    <div
-                                        className={`p-4 rounded-xl transition-colors duration-200 ${
+                                        className={`p-4 sm:p-5 rounded-xl transition-colors duration-200 shrink-0 ${
                                              isActive ? variant.activeBg : 'bg-slate-700/50 group-hover:bg-slate-700/70'
                                         }`}
                                    >
                                         {variant.iconLarge}
                                    </div>
-                                   <span className="text-sm font-semibold">{variant.label}</span>
-                                   <span className="text-xs text-slate-500 text-center leading-tight line-clamp-2 h-8">{variant.description}</span>
+                                   <div className="flex flex-col sm:items-center gap-1">
+                                        <span className="text-sm font-semibold">{variant.label}</span>
+                                        <span className="text-xs text-slate-500 sm:text-center leading-tight">{variant.description}</span>
+                                   </div>
                               </button>
                          );
                     })}

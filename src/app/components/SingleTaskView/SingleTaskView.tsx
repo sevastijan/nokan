@@ -519,7 +519,7 @@ const SingleTaskView = ({
                     <motion.div
                          ref={modalRef}
                          className={`bg-linear-to-b from-slate-800 to-slate-850 rounded-2xl w-full max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50 overflow-hidden transition-[max-width] duration-300 ease-out ${
-                              isNewTask && !variantChosen ? 'max-w-xl' : 'max-w-lg md:max-w-3xl lg:max-w-6xl'
+                              isNewTask && !variantChosen ? 'max-w-sm sm:max-w-3xl' : 'max-w-lg md:max-w-3xl lg:max-w-6xl'
                          }`}
                          initial={{ scale: 0.9, opacity: 0, y: 30 }}
                          animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -535,7 +535,7 @@ const SingleTaskView = ({
                          /* ── Step 1: Variant picker screen ── */
                          <motion.div
                               key="variant-picker"
-                              className="p-6 md:p-10 flex flex-col items-center relative"
+                              className="p-6 sm:p-10 sm:py-12 flex flex-col items-center relative"
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.95, y: -10 }}
