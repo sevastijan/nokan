@@ -24,7 +24,7 @@ const BugFields = ({ bugUrl, bugScenario, onBugUrlChange, onBugScenarioChange }:
                     <label className="flex items-center gap-2 text-xs text-slate-400 mb-2">
                          <FiLink className="w-3.5 h-3.5 text-red-400" />
                          <span>Link do miejsca gdzie jest bug</span>
-                         <span className="text-red-400">*</span>
+                         <span className="text-red-400">(wymagane)</span>
                     </label>
                     <input
                          type="url"
@@ -50,11 +50,9 @@ const BugFields = ({ bugUrl, bugScenario, onBugUrlChange, onBugScenarioChange }:
                </div>
 
                {/* Info banner */}
-               <div className="flex items-start gap-2 bg-slate-700/30 rounded-lg px-3 py-2.5 border border-slate-600/30">
-                    <FiInfo className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                    <p className="text-xs text-slate-400">
-                         Dodaj zrzuty ekranu w sekcji <span className="text-slate-300 font-medium">Zalaczniki</span> ponizej, aby lepiej zobrazowac problem.
-                    </p>
+               <div className="flex items-center gap-2 bg-slate-700/30 rounded-lg px-3 py-2.5 border border-slate-600/30">
+                    <FiInfo className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <p className="text-xs text-slate-400">Dodaj zrzuty ekranu w sekcji <span className="text-slate-300 font-medium">Zalaczniki</span> ponizej, aby lepiej zobrazowac problem.</p>
                </div>
           </div>
      );

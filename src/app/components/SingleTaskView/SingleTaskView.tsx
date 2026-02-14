@@ -643,6 +643,16 @@ const SingleTaskView = ({
                                         </div>
                                    )} */}
 
+                                   {/* Bug Fields Section — before description for bug type */}
+                                   {isBug && (
+                                        <BugFields
+                                             bugUrl={formData.bugUrl}
+                                             bugScenario={formData.bugScenario}
+                                             onBugUrlChange={handleBugUrlChange}
+                                             onBugScenarioChange={handleBugScenarioChange}
+                                        />
+                                   )}
+
                                    {/* Description Section */}
                                    <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                         <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
@@ -657,16 +667,6 @@ const SingleTaskView = ({
                                              teamMembers={teamMembers}
                                         />
                                    </div>
-
-                                   {/* Bug Fields Section */}
-                                   {isBug && (
-                                        <BugFields
-                                             bugUrl={formData.bugUrl}
-                                             bugScenario={formData.bugScenario}
-                                             onBugUrlChange={handleBugUrlChange}
-                                             onBugScenarioChange={handleBugScenarioChange}
-                                        />
-                                   )}
 
                                    {/* Subtasks Section */}
                                    {isStory && task?.id && !isNewTask && (
