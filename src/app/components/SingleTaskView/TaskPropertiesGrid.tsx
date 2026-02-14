@@ -29,9 +29,10 @@ interface TaskPropertiesGridProps {
      columns: Column[];
      localColumnId?: string;
      onColumnChange: (newColId: string) => void;
+     hideAssignees?: boolean;
 }
 
-const TaskPropertiesGrid = ({ selectedAssignees, availableUsers, onAssigneesChange, selectedPriority, onPriorityChange, columns, localColumnId, onColumnChange }: TaskPropertiesGridProps) => {
+const TaskPropertiesGrid = ({ selectedAssignees, availableUsers, onAssigneesChange, selectedPriority, onPriorityChange, columns, localColumnId, onColumnChange, hideAssignees }: TaskPropertiesGridProps) => {
      return (
           <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4 space-y-4">
                {/* Section Header */}
@@ -41,15 +42,17 @@ const TaskPropertiesGrid = ({ selectedAssignees, availableUsers, onAssigneesChan
                </div>
 
                {/* Properties Grid */}
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className={`grid grid-cols-1 ${hideAssignees ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-4`}>
                     {/* Assignees */}
-                    <div className="md:col-span-1">
-                         <div className="flex items-center gap-2 mb-2">
-                              <FiUsers className="w-3.5 h-3.5 text-blue-400" />
-                              <span className="text-xs text-slate-400">Przypisani</span>
+                    {!hideAssignees && (
+                         <div className="md:col-span-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                   <FiUsers className="w-3.5 h-3.5 text-blue-400" />
+                                   <span className="text-xs text-slate-400">Przypisani</span>
+                              </div>
+                              <UserSelector selectedUsers={selectedAssignees} availableUsers={availableUsers} onUsersChange={onAssigneesChange} label="" />
                          </div>
-                         <UserSelector selectedUsers={selectedAssignees} availableUsers={availableUsers} onUsersChange={onAssigneesChange} label="" />
-                    </div>
+                    )}
 
                     {/* Priority */}
                     <div className="md:col-span-1">

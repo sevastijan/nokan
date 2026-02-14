@@ -53,7 +53,7 @@ interface RawTask {
      status_id?: string;
      assignee?: unknown;
      collaborators?: RawCollaborator[];
-     type?: 'task' | 'story';
+     type?: 'task' | 'story' | 'bug';
      parent_id?: string | null;
 }
 

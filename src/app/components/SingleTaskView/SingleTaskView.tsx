@@ -30,6 +30,8 @@ import TaskAttachmentsSection from './TaskAttachmentsSection';
 import TaskHeader from './TaskHeader';
 import { UnsavedChangesModal } from './UnsavedChangesModal';
 import TaskTypeSelector from './TaskTypeSelector';
+import TaskVariantSelector from './TaskVariantSelector';
+import BugFields from './BugFields';
 import SubtaskList from './SubtaskList';
 import Lightbox from '@/app/components/Lightbox/Lightbox';
 import { SingleTaskViewProps, Column, TaskType, User } from '@/app/types/globalTypes';
@@ -65,6 +67,7 @@ const SingleTaskView = ({
      const [showRecurringModal, setShowRecurringModal] = useState(false);
      const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
      const [isVisible, setIsVisible] = useState(true);
+     const [variantChosen, setVariantChosen] = useState(mode !== 'add');
 
      const {
           task,
@@ -174,6 +177,7 @@ const SingleTaskView = ({
 
      const taskType: TaskType = task?.type || 'task';
      const isStory = taskType === 'story';
+     const isBug = taskType === 'bug';
      const [updateTaskType] = useUpdateTaskTypeMutation();
 
      const { data: subtasks = [], refetch: refetchSubtasks } = useGetSubtasksQuery({ storyId: task?.id || '' }, { skip: !task?.id || !isStory });
@@ -267,6 +271,19 @@ const SingleTaskView = ({
                toast.error('Kolumna jest wymagana');
                return;
           }
+          if (task?.type === 'bug') {
+               const url = formData.bugUrl.trim();
+               if (!url) {
+                    toast.error('Link do buga jest wymagany');
+                    return;
+               }
+               try {
+                    new URL(url);
+               } catch {
+                    toast.error('Podaj prawidłowy URL');
+                    return;
+               }
+          }
 
           const success = isNewTask ? await saveNewTask() : await saveExistingTask();
           if (!success) return;
@@ -279,7 +296,7 @@ const SingleTaskView = ({
           }
 
           animateOut();
-     }, [formData.tempTitle, formData.localColumnId, isNewTask, saveNewTask, saveExistingTask, localFilePreviews, currentTaskId, uploadAllAttachments, animateOut]);
+     }, [formData.tempTitle, formData.localColumnId, formData.bugUrl, isNewTask, task?.type, saveNewTask, saveExistingTask, localFilePreviews, currentTaskId, uploadAllAttachments, animateOut]);
 
      const handleDelete = useCallback(async () => {
           try {
@@ -318,6 +335,33 @@ const SingleTaskView = ({
                }
           },
           [task?.id, updateTaskType, fetchTaskData, updateTask],
+     );
+
+     const handleVariantChange = useCallback(
+          (newType: TaskType) => {
+               updateTask({ type: newType });
+               if (newType === 'bug') {
+                    updateTask({ user_id: null, assignee: null });
+               }
+               setVariantChosen(true);
+          },
+          [updateTask],
+     );
+
+     const handleBugUrlChange = useCallback(
+          (value: string) => {
+               updateField('bugUrl', value);
+               updateTask({ bug_url: value });
+          },
+          [updateField, updateTask],
+     );
+
+     const handleBugScenarioChange = useCallback(
+          (value: string) => {
+               updateField('bugScenario', value);
+               updateTask({ bug_scenario: value });
+          },
+          [updateField, updateTask],
      );
 
      const handleTitleChange = useCallback(
@@ -424,11 +468,11 @@ const SingleTaskView = ({
      }, [isNewTask, columnId, initialStartDate, formData.localColumnId, columns, updateTask, updateField]);
 
      useEffect(() => {
-          if (isNewTask && titleInputRef.current && isInitialMount.current) {
+          if (isNewTask && variantChosen && titleInputRef.current && isInitialMount.current) {
                titleInputRef.current.focus({ preventScroll: true });
                isInitialMount.current = false;
           }
-     }, [isNewTask]);
+     }, [isNewTask, variantChosen]);
 
      useEffect(() => {
           const originalOverflow = document.body.style.overflow;
@@ -474,16 +518,52 @@ const SingleTaskView = ({
                >
                     <motion.div
                          ref={modalRef}
-                         className="bg-linear-to-b from-slate-800 to-slate-850 rounded-2xl w-full max-w-lg md:max-w-3xl lg:max-w-6xl max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50 overflow-hidden"
+                         className={`bg-linear-to-b from-slate-800 to-slate-850 rounded-2xl w-full max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50 overflow-hidden transition-[max-width] duration-300 ease-out ${
+                              isNewTask && !variantChosen ? 'max-w-xl' : 'max-w-lg md:max-w-3xl lg:max-w-6xl'
+                         }`}
                          initial={{ scale: 0.9, opacity: 0, y: 30 }}
                          animate={{ scale: 1, opacity: 1, y: 0 }}
                          exit={{ scale: 0.95, opacity: 0, y: 20 }}
                          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                         layout
                     >
                     {!isLoaded ? (
                          <TaskViewSkeleton />
                     ) : (
-                    <>
+                    <AnimatePresence mode="wait">
+                    {isNewTask && !variantChosen ? (
+                         /* ── Step 1: Variant picker screen ── */
+                         <motion.div
+                              key="variant-picker"
+                              className="p-6 md:p-10 flex flex-col items-center relative"
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                              transition={{ duration: 0.2 }}
+                         >
+                              <button
+                                   type="button"
+                                   onClick={requestClose}
+                                   className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
+                              >
+                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                   </svg>
+                              </button>
+                              <h2 className="text-lg font-semibold text-slate-200 mb-2">Co chcesz utworzyc?</h2>
+                              <p className="text-sm text-slate-400 mb-8">Wybierz typ zadania, aby kontynuowac</p>
+                              <div className="w-full max-w-xl">
+                                   <TaskVariantSelector selectedType={taskType} onChange={handleVariantChange} large />
+                              </div>
+                         </motion.div>
+                    ) : (
+                    <motion.div
+                         key="task-form"
+                         className="flex flex-col flex-1 overflow-hidden"
+                         initial={{ opacity: 0, y: 20 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    >
                          <TaskHeader
                               isNewTask={isNewTask}
                               taskId={task?.id}
@@ -505,6 +585,11 @@ const SingleTaskView = ({
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                               {/* Main Content Area */}
                               <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 text-white thin-scrollbar">
+                                   {/* Variant Selector - only shown for new tasks */}
+                                   {isNewTask && (
+                                        <TaskVariantSelector selectedType={taskType} onChange={handleVariantChange} />
+                                   )}
+
                                    {/* Properties Section - highest z-index for dropdowns */}
                                    <div className="relative z-40">
                                         <TaskPropertiesGrid
@@ -516,12 +601,13 @@ const SingleTaskView = ({
                                              columns={columns}
                                              localColumnId={formData.localColumnId}
                                              onColumnChange={handleColumnChange}
+                                             hideAssignees={isNewTask && isBug}
                                         />
                                    </div>
 
-                                   {/* Type & Status Section */}
-                                   <div className="relative z-30 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {!task?.parent_id && (
+                                   {/* Type Section (hidden for new tasks — variant selector above handles it) */}
+                                   {!isNewTask && !task?.parent_id && (
+                                        <div className="relative z-30">
                                              <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                                   <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                        <div className="w-1 h-4 bg-linear-to-b from-blue-500 to-cyan-500 rounded-full" />
@@ -535,26 +621,27 @@ const SingleTaskView = ({
                                                        </p>
                                                   )}
                                              </div>
-                                        )}
+                                        </div>
+                                   )}
 
-                                        {task?.statuses && task.statuses.length > 0 && (
-                                             <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
-                                                  <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                       <div className="w-1 h-4 bg-linear-to-b from-yellow-500 to-orange-500 rounded-full" />
-                                                       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</h3>
-                                                  </div>
-                                                  <StatusSelector
-                                                       statuses={task.statuses}
-                                                       selectedStatusId={task.status_id || null}
-                                                       onChange={handleStatusChange}
-                                                       onStatusesChange={(newStatuses) => updateTask({ statuses: newStatuses })}
-                                                       boardId={boardId}
-                                                       disabled={false}
-                                                       label=""
-                                                  />
+                                   {/* Status Section — commented out (unused) */}
+                                   {/* {task?.statuses && task.statuses.length > 0 && (
+                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
+                                                  <div className="w-1 h-4 bg-linear-to-b from-yellow-500 to-orange-500 rounded-full" />
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</h3>
                                              </div>
-                                        )}
-                                   </div>
+                                             <StatusSelector
+                                                  statuses={task.statuses}
+                                                  selectedStatusId={task.status_id || null}
+                                                  onChange={handleStatusChange}
+                                                  onStatusesChange={(newStatuses) => updateTask({ statuses: newStatuses })}
+                                                  boardId={boardId}
+                                                  disabled={false}
+                                                  label=""
+                                             />
+                                        </div>
+                                   )} */}
 
                                    {/* Description Section */}
                                    <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
@@ -570,6 +657,16 @@ const SingleTaskView = ({
                                              teamMembers={teamMembers}
                                         />
                                    </div>
+
+                                   {/* Bug Fields Section */}
+                                   {isBug && (
+                                        <BugFields
+                                             bugUrl={formData.bugUrl}
+                                             bugScenario={formData.bugScenario}
+                                             onBugUrlChange={handleBugUrlChange}
+                                             onBugScenarioChange={handleBugScenarioChange}
+                                        />
+                                   )}
 
                                    {/* Subtasks Section */}
                                    {isStory && task?.id && !isNewTask && (
@@ -590,6 +687,20 @@ const SingleTaskView = ({
                                                        fetchTaskData();
                                                   }}
                                              />
+                                        </div>
+                                   )}
+
+                                   {/* Subtasks placeholder for new Story */}
+                                   {isStory && isNewTask && (
+                                        <div className="bg-slate-800/40 rounded-xl border border-indigo-500/20 p-4">
+                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
+                                                  <div className="w-1 h-4 bg-linear-to-b from-indigo-500 to-violet-500 rounded-full" />
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Subtaski</h3>
+                                             </div>
+                                             <div className="flex items-center gap-3 text-slate-500 py-3">
+                                                  <FiLayers className="w-5 h-5 text-indigo-400/50" />
+                                                  <p className="text-sm">Subtaski beda dostepne po zapisaniu Story</p>
+                                             </div>
                                         </div>
                                    )}
 
@@ -701,7 +812,9 @@ const SingleTaskView = ({
                                    columns={columns}
                               />
                          )}
-                    </>
+                    </motion.div>
+                    )}
+                    </AnimatePresence>
                     )}
                     </motion.div>
 

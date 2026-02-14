@@ -173,11 +173,6 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                     ${isEmpty ? 'min-h-16' : ''}
                     ${isCompleted ? 'opacity-60' : ''}
                `}
-               style={{
-                    borderLeftWidth: '3px',
-                    borderLeftStyle: isSubtask ? 'solid' : 'solid',
-                    borderLeftColor: isSubtask ? '#f97316' : (priorityConfig?.dotColor || '#475569'),
-               }}
           >
 
                <button

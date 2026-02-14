@@ -3,8 +3,8 @@ import { ChangeEvent } from 'react';
 // === Core Types ===
 
 export type SingleTaskMode = 'edit' | 'add';
-export type TaskType = 'task' | 'story';
-export type TaskTypeFilter = 'all' | 'task' | 'story';
+export type TaskType = 'task' | 'story' | 'bug';
+export type TaskTypeFilter = 'all' | 'task' | 'story' | 'bug';
 
 // === Status Type ===
 export interface Status {
@@ -170,6 +170,8 @@ export interface Task {
      next_occurrence_date?: string | null;
      type?: TaskType;
      parent_id?: string | null;
+     bug_url?: string | null;
+     bug_scenario?: string | null;
 }
 
 export interface TaskDetail {
@@ -211,6 +213,9 @@ export interface TaskDetail {
      subtasks?: Task[];
      subtasks_count?: number;
      completed_subtasks?: number;
+     // Bug-specific fields
+     bug_url?: string | null;
+     bug_scenario?: string | null;
 }
 
 export interface TaskSnapshot {

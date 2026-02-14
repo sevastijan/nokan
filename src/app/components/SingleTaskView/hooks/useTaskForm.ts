@@ -8,6 +8,8 @@ interface TaskFormData {
      startDate: string;
      endDate: string;
      localColumnId: string | undefined;
+     bugUrl: string;
+     bugScenario: string;
 }
 
 interface TaskData {
@@ -17,6 +19,8 @@ interface TaskData {
      column_id?: string | null;
      start_date?: string | null;
      end_date?: string | null;
+     bug_url?: string | null;
+     bug_scenario?: string | null;
 }
 
 interface UseTaskFormProps {
@@ -31,6 +35,8 @@ export const useTaskForm = ({ initialColumnId }: UseTaskFormProps) => {
           startDate: '',
           endDate: '',
           localColumnId: initialColumnId,
+          bugUrl: '',
+          bugScenario: '',
      });
 
      const updateField = useCallback(<K extends keyof TaskFormData>(field: K, value: TaskFormData[K]) => {
@@ -47,6 +53,8 @@ export const useTaskForm = ({ initialColumnId }: UseTaskFormProps) => {
                localColumnId: prev.localColumnId || taskData.column_id || columnId,
                startDate: taskData.start_date || '',
                endDate: taskData.end_date || '',
+               bugUrl: taskData.bug_url || '',
+               bugScenario: taskData.bug_scenario || '',
           }));
      }, []);
 
