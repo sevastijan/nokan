@@ -175,6 +175,8 @@ export const useTaskManagement = ({
                     imagePreview: null,
                     statuses,
                     hasUnsavedChanges: false,
+                    bug_url: null,
+                    bug_scenario: null,
                };
 
                setTask(initial);
@@ -366,18 +368,24 @@ export const useTaskManagement = ({
 
      const saveNewTask = useCallback(async (): Promise<boolean> => {
           if (!task || !columnId) return false;
+          const isBug = task.type === 'bug';
           const payload: Partial<TaskDetail> & { column_id: string } = {
                column_id: columnId,
                title: task.title,
                description: task.description,
                board_id: boardId,
                priority: task.priority ?? normalPriorityId,
-               user_id: task.user_id ?? null,
+               user_id: isBug ? null : (task.user_id ?? null),
                created_by: currentUser?.id ?? null,
                start_date: task.start_date ?? null,
                end_date: task.end_date ?? null,
                due_date: task.due_date ?? null,
                status_id: task.status_id ?? null,
+               type: task.type ?? 'task',
+               ...(isBug && {
+                    bug_url: task.bug_url ?? null,
+                    bug_scenario: task.bug_scenario ?? null,
+               }),
           };
 
           try {

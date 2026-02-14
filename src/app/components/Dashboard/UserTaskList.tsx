@@ -2,13 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, ListChecks, SlidersHorizontal, Layers, CheckSquare } from 'lucide-react';
+import { Search, ListChecks, SlidersHorizontal, Layers, CheckSquare, Bug } from 'lucide-react';
 import { Popover, Transition } from '@headlessui/react';
 import { UserTaskItem } from './UserTaskItem';
 import type { UserTask } from '@/app/store/endpoints/taskEndpoints';
 
 type StatusFilter = 'all' | 'active' | 'completed';
-type TypeFilter = 'all' | 'task' | 'story';
+type TypeFilter = 'all' | 'task' | 'story' | 'bug';
 type PriorityFilter = string | null;
 
 interface UserTaskListProps {
@@ -104,16 +104,18 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
 
                     {/* Type filter chips */}
                     <div className="flex items-center gap-1.5">
-                         {(['all', 'task', 'story'] as TypeFilter[]).map((type) => {
+                         {(['all', 'task', 'story', 'bug'] as TypeFilter[]).map((type) => {
                               const labels: Record<TypeFilter, string> = {
                                    all: 'Wszystkie',
                                    task: 'Task',
                                    story: 'Story',
+                                   bug: 'Bug',
                               };
                               const icons: Record<TypeFilter, React.ReactNode> = {
                                    all: null,
                                    task: <CheckSquare className="w-3 h-3" />,
                                    story: <Layers className="w-3 h-3" />,
+                                   bug: <Bug className="w-3 h-3" />,
                               };
                               const isActive = typeFilter === type;
                               return (

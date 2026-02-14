@@ -200,5 +200,13 @@ export function pickUpdatable(task: TaskDetail): Partial<TaskDetail> {
           result.status_id = task.status_id;
      }
 
+     if (task.bug_url !== undefined) {
+          result.bug_url = task.bug_url;
+     }
+
+     if (task.bug_scenario !== undefined) {
+          result.bug_scenario = task.bug_scenario;
+     }
+
      return result;
 }

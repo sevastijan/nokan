@@ -158,7 +158,7 @@ const FilterDropdown = ({
                                    <div>
                                         <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">Typ zadania</div>
                                         <div className="flex bg-slate-900/50 rounded-lg p-0.5">
-                                             {(['all', 'task', 'story'] as TaskTypeFilter[]).map((t) => (
+                                             {(['all', 'task', 'story', 'bug'] as TaskTypeFilter[]).map((t) => (
                                                   <button
                                                        key={t}
                                                        onClick={() => onFilterTypeChange?.(t)}
@@ -167,7 +167,7 @@ const FilterDropdown = ({
                                                             ${filterType === t ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'}
                                                        `}
                                                   >
-                                                       {t === 'all' ? 'Wszystkie' : t === 'task' ? 'Task' : 'Story'}
+                                                       {t === 'all' ? 'Wszystkie' : t === 'task' ? 'Task' : t === 'story' ? 'Story' : 'Bug'}
                                                   </button>
                                              ))}
                                         </div>

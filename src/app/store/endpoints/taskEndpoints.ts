@@ -26,8 +26,10 @@ interface RawTask {
      comments?: unknown[];
      priority_data?: unknown;
      collaborators?: unknown[];
-     type?: 'task' | 'story';
+     type?: 'task' | 'story' | 'bug';
      parent_id?: string | null;
+     bug_url?: string | null;
+     bug_scenario?: string | null;
 }
 
 interface RawCollaborator {
@@ -79,7 +81,7 @@ export interface UserTask {
      created_at?: string;
      updated_at?: string;
      due_date?: string | null;
-     type?: 'task' | 'story';
+     type?: 'task' | 'story' | 'bug';
      collaborators: Array<{
           id: string;
           name: string;
@@ -193,7 +195,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               created_at: t.created_at as string | undefined,
                               updated_at: t.updated_at as string | undefined,
                               due_date: (t.due_date as string) || null,
-                              type: (t.type as 'task' | 'story') || 'task',
+                              type: (t.type as 'task' | 'story' | 'bug') || 'task',
                               collaborators,
                          };
                     };
@@ -543,6 +545,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          next_occurrence_date: rawTask.next_occurrence_date ?? null,
                          type: rawTask.type ?? 'task',
                          parent_id: rawTask.parent_id ?? null,
+                         bug_url: rawTask.bug_url ?? null,
+                         bug_scenario: rawTask.bug_scenario ?? null,
                     };
 
                     return { data: result };
@@ -932,7 +936,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               completed: t.completed,
                               created_at: t.created_at,
                               updated_at: t.updated_at,
-                              type: t.type as 'task' | 'story',
+                              type: t.type as 'task' | 'story' | 'bug',
                               parent_id: t.parent_id,
                               collaborators,
                          };
@@ -1057,7 +1061,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           invalidatesTags: (_result, _error, { storyId }) => [{ type: 'Task', id: `subtasks-${storyId}` }],
      }),
 
-     updateTaskType: builder.mutation<Task, { taskId: string; type: 'task' | 'story' }>({
+     updateTaskType: builder.mutation<Task, { taskId: string; type: 'task' | 'story' | 'bug' }>({
           async queryFn({ taskId, type }) {
                try {
                     // If converting to task, check if it has subtasks

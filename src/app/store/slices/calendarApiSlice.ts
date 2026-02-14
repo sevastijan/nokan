@@ -16,7 +16,7 @@ export interface CalendarTask {
      completed?: boolean;
      status?: string | null;
      status_id?: string | null;
-     type?: 'task' | 'story';
+     type?: 'task' | 'story' | 'bug';
      parent_id?: string | null;
      assignee?: User | null;
      board_title?: string | null;
