@@ -270,7 +270,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                                                       handleStartEdit(p);
                                                                  }}
                                                                  disabled={operationLoading}
-                                                                 className="p-1 text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                                                                 className="p-1 text-purple-400 hover:text-purple-300 disabled:opacity-50"
                                                             >
                                                                  <FaEdit className="w-3 h-3" />
                                                             </button>
@@ -335,7 +335,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                         type="button"
                                         onClick={handleStartAdd}
                                         disabled={operationLoading}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-blue-400 hover:bg-slate-700 hover:text-blue-300 transition-colors duration-150"
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-purple-400 hover:bg-slate-700 hover:text-purple-300 transition-colors duration-150"
                                    >
                                         <FaPlus className="w-4 h-4" />
                                         <span className="text-sm">{t('priority.addNewPriority')}</span>

@@ -33,7 +33,7 @@ const Button = ({
   // Define styles per variant - professional, muted colors
   const variantClasses: Record<string, string> = {
     primary:
-      "bg-blue-600 hover:bg-blue-700 text-white border-blue-500/50 focus:ring-blue-500 shadow-md hover:shadow-lg",
+      "bg-purple-600 hover:bg-purple-700 text-white border-purple-500/50 focus:ring-purple-500 shadow-md hover:shadow-lg",
     secondary:
       "bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-slate-100 border-slate-700/50 focus:ring-slate-500 shadow-sm hover:shadow-md",
     success:

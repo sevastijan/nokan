@@ -141,7 +141,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 								<button
 									onClick={() => { setMode('dm'); setSelectedUserIds([]); }}
 									className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-										mode === 'dm' ? 'bg-blue-600/15 text-blue-300' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+										mode === 'dm' ? 'bg-purple-600/15 text-purple-300' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
 									}`}
 								>
 									<MessageCircle className="w-3.5 h-3.5" />
@@ -150,7 +150,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 								<button
 									onClick={() => { setMode('group'); setSelectedUserIds([]); }}
 									className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-										mode === 'group' ? 'bg-blue-600/15 text-blue-300' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+										mode === 'group' ? 'bg-purple-600/15 text-purple-300' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
 									}`}
 								>
 									<Users className="w-3.5 h-3.5" />
@@ -166,14 +166,14 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 										placeholder={t('chat.channelName')}
 										value={groupName}
 										onChange={(e) => setGroupName(e.target.value)}
-										className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+										className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
 									/>
 									<input
 										type="text"
 										placeholder={t('chat.channelDescription')}
 										value={groupDescription}
 										onChange={(e) => setGroupDescription(e.target.value)}
-										className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+										className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
 									/>
 								</div>
 							)}
@@ -187,7 +187,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 										placeholder={t('chat.searchUsers')}
 										value={search}
 										onChange={(e) => setSearch(e.target.value)}
-										className="w-full pl-9 pr-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+										className="w-full pl-9 pr-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
 									/>
 								</div>
 							</div>
@@ -205,7 +205,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 											onClick={() => toggleUser(user.id)}
 											className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition cursor-pointer ${
 												isSelected
-													? 'bg-blue-600/10 ring-1 ring-blue-500/30'
+													? 'bg-purple-600/10 ring-1 ring-purple-500/30'
 													: 'hover:bg-slate-800/40'
 											}`}
 										>
@@ -215,7 +215,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 												<p className="text-xs text-slate-500 truncate">{user.email}</p>
 											</div>
 											{isSelected && (
-												<div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+												<div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center shrink-0">
 													<svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
 														<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
 													</svg>
@@ -240,7 +240,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 								<button
 									onClick={handleCreate}
 									disabled={!canCreate || isLoading}
-									className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+									className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
 								>
 									{isLoading ? t('chat.creating') : mode === 'dm' ? t('chat.startConversation') : t('chat.createChannel')}
 								</button>

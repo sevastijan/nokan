@@ -25,8 +25,8 @@ const TeamListItem = ({ team, onEditTeam, onDeleteTeam, availableUsers }: TeamLi
                {/* Header */}
                <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center space-x-3">
-                         <div className="p-3 bg-blue-500/10 rounded-xl">
-                              <Users className="w-6 h-6 text-blue-400" />
+                         <div className="p-3 bg-purple-500/10 rounded-xl">
+                              <Users className="w-6 h-6 text-purple-400" />
                          </div>
                          <div>
                               <h4

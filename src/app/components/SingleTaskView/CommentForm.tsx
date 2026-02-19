@@ -171,7 +171,7 @@ const CommentForm = ({
                     <Avatar src={currentUserDisplay.image} alt={currentUserDisplay.name} size={32} />
                     <div className="flex-1 relative">
                          {replyingTo && (
-                              <div className="text-xs text-blue-400 mb-2 flex items-center justify-between">
+                              <div className="text-xs text-purple-400 mb-2 flex items-center justify-between">
                                    <span>{t('comments.replyTo', { name: replyingTo.authorName })}</span>
                                    <button onClick={onCancelReply} className="text-gray-400 hover:text-gray-200">
                                         <FaTimes />
@@ -186,7 +186,7 @@ const CommentForm = ({
                                    onKeyDown={handleKeyDown}
                                    onPaste={handlePaste}
                                    placeholder={replyingTo ? t('comments.replyPlaceholder') : t('comments.addPlaceholder')}
-                                   className="w-full min-h-20 p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   className="w-full min-h-20 p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                    disabled={uploading}
                               />
                               {showSuggestions && filteredSuggestions.length > 0 && (
@@ -209,7 +209,7 @@ const CommentForm = ({
                                         })}
                                    </div>
                               )}
-                              {uploading && <div className="text-sm text-blue-400 mt-2">{t('comments.uploadingImage')}</div>}
+                              {uploading && <div className="text-sm text-purple-400 mt-2">{t('comments.uploadingImage')}</div>}
                               <div className="flex justify-between items-center mt-3">
                                    <span className="text-xs text-gray-400">{t('comments.pasteAndMention')}</span>
                                    <Button type="submit" variant="primary" disabled={!newComment.trim() || uploading}>

@@ -75,7 +75,7 @@ export default function SubmitPage() {
                          <p className="text-slate-400 mb-6">
                               {t('submissions.noAccessDesc')}
                          </p>
-                         <button onClick={() => router.push('/')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">
+                         <button onClick={() => router.push('/')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg">
                               {t('submissions.backToHome')}
                          </button>
                     </div>

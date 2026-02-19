@@ -121,8 +121,8 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 						<OnlineIndicator isOnline={otherMember?.user_id ? onlineUserIds.includes(otherMember.user_id) : false} className="absolute -bottom-0.5 -right-0.5" />
 					</div>
 				) : (
-					<div className="w-6 h-6 rounded bg-blue-600/20 flex items-center justify-center shrink-0">
-						<span className="text-[10px] font-bold text-blue-400">#</span>
+					<div className="w-6 h-6 rounded bg-purple-600/20 flex items-center justify-center shrink-0">
+						<span className="text-[10px] font-bold text-purple-400">#</span>
 					</div>
 				)}
 				<span className="text-sm font-semibold text-white truncate flex-1">{headerName}</span>
@@ -162,7 +162,7 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 						<div className="flex flex-col justify-end min-h-full px-3 py-2">
 							{isLoading ? (
 								<div className="flex items-center justify-center py-8">
-									<div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+									<div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
 								</div>
 							) : messages.length === 0 ? (
 								<p className="text-center text-xs text-slate-600 py-8">Rozpocznij rozmowę</p>
@@ -180,7 +180,7 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 													<div
 														className={`px-3 py-1.5 rounded-2xl text-sm ${
 															isOwn
-																? 'bg-blue-600 text-white rounded-br-sm'
+																? 'bg-purple-600 text-white rounded-br-sm'
 																: 'bg-slate-800 text-slate-200 rounded-bl-sm'
 														}`}
 													>
@@ -207,9 +207,9 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 						<div className="shrink-0 px-3 py-1">
 							<div className="flex items-center gap-1.5">
 								<div className="flex gap-0.5">
-									<span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-									<span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-									<span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+									<span className="w-1 h-1 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+									<span className="w-1 h-1 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+									<span className="w-1 h-1 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '300ms' }} />
 								</div>
 								<span className="text-[10px] text-slate-500">
 									{typingUsers.map((u) => u.userName).join(', ')} {typingUsers.length === 1 ? 'pisze' : 'piszą'}...
@@ -226,7 +226,7 @@ const MiniChat = ({ channelId, minimized, style }: MiniChatProps) => {
 							placeholder="Aa..."
 							onKeyDown={handleKeyDown}
 							onChange={() => sendTyping(myName)}
-							className="w-full px-3 py-2 bg-slate-800/60 border border-slate-700/40 rounded-full text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/40"
+							className="w-full px-3 py-2 bg-slate-800/60 border border-slate-700/40 rounded-full text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/40"
 						/>
 					</div>
 				</>

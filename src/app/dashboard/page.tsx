@@ -349,7 +349,7 @@ export default function DashboardPage() {
                                                             ) : (
                                                                  <button
                                                                       onClick={openCreate}
-                                                                      className="group px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer"
+                                                                      className="group px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-purple-500/25 cursor-pointer"
                                                                       aria-label={t('dashboard.createFirstProject')}
                                                                  >
                                                                       <Sparkles className="w-5 h-5" />
@@ -386,7 +386,7 @@ export default function DashboardPage() {
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                                              <div>
                                                   <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                                                       <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
+                                                       <div className="w-1.5 h-6 bg-purple-500 rounded-full" />
                                                        {t('dashboard.assignedProjects')}
                                                   </h2>
                                                   <p className="text-slate-400 text-sm">{t('dashboard.projectsSharedByAdmin')}</p>
@@ -419,7 +419,7 @@ export default function DashboardPage() {
                                                                  </p>
                                                                  <button
                                                                       onClick={() => router.push(`/submit?boardId=${board.id}`)}
-                                                                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 cursor-pointer group/button"
+                                                                      className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 cursor-pointer group/button"
                                                                       aria-label={`${t('dashboard.addSubmission')} - ${board.title}`}
                                                                  >
                                                                       {t('dashboard.addSubmission')}

@@ -23,7 +23,7 @@ const AttachmentPreview = ({ attachments }: AttachmentPreviewProps) => {
 							href={`/api/chat/upload?filePath=${encodeURIComponent(att.file_path)}`}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="block rounded-lg overflow-hidden border border-slate-700/50 hover:border-blue-500/50 transition max-w-[240px]"
+							className="block rounded-lg overflow-hidden border border-slate-700/50 hover:border-purple-500/50 transition max-w-[240px]"
 						>
 							{/* eslint-disable-next-line @next/next/no-img-element */}
 							<img

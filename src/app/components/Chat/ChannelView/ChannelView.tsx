@@ -99,7 +99,7 @@ const ChannelView = () => {
 	if (!selectedChannelId) return null;
 
 	return (
-		<div className="flex flex-col h-screen bg-slate-950">
+		<div className="flex flex-col h-screen bg-slate-900">
 			<ChannelHeader members={members} currentUserId={currentUser?.id ?? ''} channel={currentChannel ?? null} />
 
 			{/* Messages — justify-end pins messages to bottom like Slack */}
@@ -108,7 +108,7 @@ const ChannelView = () => {
 					<div className="px-4 py-3">
 						{isLoading ? (
 							<div className="flex items-center justify-center py-12">
-								<div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+								<div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
 							</div>
 						) : (
 							<MessageList messages={messages} currentUserId={currentUser?.id ?? ''} isAdmin={isAdmin} onMessageUpdate={broadcastMessageUpdate} onReactionUpdate={broadcastReactionUpdate} />

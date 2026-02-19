@@ -33,7 +33,7 @@ const ToggleSwitch = ({ enabled, onChange, label, description }: ToggleSwitchPro
           <button
                onClick={() => onChange(!enabled)}
                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 cursor-pointer ${
-                    enabled ? 'bg-blue-600 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-slate-600 hover:bg-slate-500'
+                    enabled ? 'bg-purple-600 shadow-[0_0_8px_rgba(152,55,250,0.4)]' : 'bg-slate-600 hover:bg-slate-500'
                }`}
           >
                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -45,7 +45,7 @@ const ToggleSwitch = ({ enabled, onChange, label, description }: ToggleSwitchPro
 
 const roleColors: Record<string, string> = {
      OWNER: 'bg-yellow-600/20 text-yellow-300 border-yellow-400/30',
-     PROJECT_MANAGER: 'bg-blue-600/20 text-blue-300 border-blue-400/30',
+     PROJECT_MANAGER: 'bg-purple-600/20 text-purple-300 border-purple-400/30',
      CLIENT: 'bg-emerald-600/20 text-emerald-300 border-emerald-400/30',
      MEMBER: 'bg-slate-600/20 text-slate-300 border-slate-400/30',
 };
@@ -312,13 +312,13 @@ const ProfilePage = () => {
                                    <div className="lg:col-span-1 space-y-6">
                                         {/* Profile Card */}
                                         <div className="bg-gradient-to-br from-slate-800/60 via-slate-800/60 to-slate-800/40 border border-slate-700/50 rounded-2xl shadow-xl overflow-hidden">
-                                             <div className="h-16 sm:h-20 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 relative overflow-hidden">
+                                             <div className="h-16 sm:h-20 bg-gradient-to-r from-purple-600/20 via-purple-600/20 to-pink-600/20 relative overflow-hidden">
                                                   <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/80" />
                                              </div>
 
                                              <div className="px-4 sm:px-6 pb-6 -mt-10 sm:-mt-12 flex flex-col items-center text-center">
                                                   <div className="relative group mb-3">
-                                                       <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-300" />
+                                                       <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-purple-600 to-pink-600 rounded-full opacity-75 group-hover:opacity-100 blur transition duration-300" />
                                                        <div className="relative">
                                                             <Avatar src={displayAvatar} alt="Avatar" size={80} className="ring-4 ring-slate-900" key={displayAvatar} />
                                                             <button
@@ -348,13 +348,13 @@ const ProfilePage = () => {
                                                                       value={editedName}
                                                                       onChange={(e) => setEditedName(e.target.value)}
                                                                       onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
-                                                                      className="flex-1 px-3 py-1.5 bg-slate-800/80 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                                      className="flex-1 px-3 py-1.5 bg-slate-800/80 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                                                                       placeholder={t('profile.yourName')}
                                                                       autoFocus
                                                                  />
                                                                  <button
                                                                       onClick={handleNameSave}
-                                                                      className="p-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                                                                      className="p-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg"
                                                                  >
                                                                       <Check className="w-3.5 h-3.5 text-white" />
                                                                  </button>
@@ -375,7 +375,7 @@ const ProfilePage = () => {
                                                                            {displayName}
                                                                       </h2>
                                                                       <div className="p-1 rounded-md bg-slate-800/50 group-hover/name:bg-slate-800 transition-all">
-                                                                           <Pencil className="w-3 h-3 text-slate-400 group-hover/name:text-blue-400 transition-colors" />
+                                                                           <Pencil className="w-3 h-3 text-slate-400 group-hover/name:text-purple-400 transition-colors" />
                                                                       </div>
                                                                  </div>
                                                             </div>
@@ -395,7 +395,7 @@ const ProfilePage = () => {
                                         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6">
                                              <div className="flex items-center justify-between mb-4">
                                                   <div className="flex items-center gap-2">
-                                                       <LayoutDashboard className="w-4 h-4 text-blue-400" />
+                                                       <LayoutDashboard className="w-4 h-4 text-purple-400" />
                                                        <h2 className="text-lg font-semibold text-slate-200">{t('profile.myProjects')}</h2>
                                                   </div>
                                                   {boards.length > 0 && <span className="text-xs font-medium text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded-full">{boards.length}</span>}
@@ -403,7 +403,7 @@ const ProfilePage = () => {
 
                                              {boardsLoading ? (
                                                   <div className="flex items-center gap-2 py-4">
-                                                       <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                                       <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
                                                        <span className="text-slate-400 text-sm">{t('profile.loadingProjects')}</span>
                                                   </div>
                                              ) : boards.length === 0 ? (
@@ -534,7 +534,7 @@ const ProfilePage = () => {
                                         <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl shadow-xl p-6 sm:p-8">
                                              {/* Header */}
                                              <div className="flex items-center gap-3 mb-6">
-                                                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
                                                        <Bell className="w-5 h-5 text-white" />
                                                   </div>
                                                   <div className="min-w-0">
@@ -546,13 +546,13 @@ const ProfilePage = () => {
                                              {/* Email Notifications Section */}
                                              <div>
                                                   <div className="flex items-center gap-2 mb-4">
-                                                       <Mail className="w-4 h-4 text-blue-400" />
+                                                       <Mail className="w-4 h-4 text-purple-400" />
                                                        <h2 className="text-lg font-semibold text-slate-200">{t('profile.emailNotifications')}</h2>
                                                   </div>
 
                                                   {prefsLoading ? (
                                                        <div className="flex items-center gap-2 py-4">
-                                                            <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                                            <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
                                                             <span className="text-slate-400 text-sm">{t('profile.loadingPreferences')}</span>
                                                        </div>
                                                   ) : (

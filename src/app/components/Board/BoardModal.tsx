@@ -184,7 +184,7 @@ const BoardModal = ({
       .slice(0, 2)
       .toUpperCase();
     return (
-      <div className="w-8 h-8 rounded-full bg-blue-600/30 flex items-center justify-center text-xs font-medium text-blue-300">
+      <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center text-xs font-medium text-purple-300">
         {initials}
       </div>
     );
@@ -239,7 +239,7 @@ const BoardModal = ({
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-slate-500 transition-colors"
+                      className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 placeholder-slate-500 transition-colors"
                       placeholder={t('boardModal.enterTitle')}
                     />
                   </div>
@@ -269,7 +269,7 @@ const BoardModal = ({
                         onClick={() => setMemberTab("users")}
                         className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                           memberTab === "users"
-                            ? "bg-blue-600/20 text-blue-400"
+                            ? "bg-purple-600/20 text-purple-400"
                             : "text-slate-400 hover:text-slate-300"
                         }`}
                       >
@@ -280,14 +280,14 @@ const BoardModal = ({
                         onClick={() => setMemberTab("teams")}
                         className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                           memberTab === "teams"
-                            ? "bg-blue-600/20 text-blue-400"
+                            ? "bg-purple-600/20 text-purple-400"
                             : "text-slate-400 hover:text-slate-300"
                         }`}
                       >
                         <UsersRound size={14} />
                         {t('boardModal.teamsTab')}
                         {selectedTeamIds.length > 0 && (
-                          <span className="ml-1 text-xs bg-blue-600/30 text-blue-300 px-1.5 py-0.5 rounded-full">
+                          <span className="ml-1 text-xs bg-purple-600/30 text-purple-300 px-1.5 py-0.5 rounded-full">
                             {selectedTeamIds.length}
                           </span>
                         )}
@@ -304,7 +304,7 @@ const BoardModal = ({
                         type="text"
                         value={memberSearch}
                         onChange={(e) => setMemberSearch(e.target.value)}
-                        className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-slate-500 transition-colors"
+                        className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 placeholder-slate-500 transition-colors"
                         placeholder={
                           memberTab === "users"
                             ? t('boardModal.searchUsers')
@@ -341,9 +341,9 @@ const BoardModal = ({
                                 onClick={() => toggleMember(user.id)}
                                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                                   isCreator
-                                    ? "bg-blue-600/10 cursor-default"
+                                    ? "bg-purple-600/10 cursor-default"
                                     : isSelected
-                                    ? "bg-blue-600/15 hover:bg-blue-600/20 cursor-pointer"
+                                    ? "bg-purple-600/15 hover:bg-purple-600/20 cursor-pointer"
                                     : "hover:bg-slate-800/60 cursor-pointer"
                                 }`}
                               >
@@ -352,7 +352,7 @@ const BoardModal = ({
                                   <div className="text-sm font-medium text-white truncate">
                                     {user.custom_name || user.name || t('common.unknown')}
                                     {isCreator && (
-                                      <span className="ml-2 text-xs text-blue-400 font-normal">
+                                      <span className="ml-2 text-xs text-purple-400 font-normal">
                                         {t('boardModal.creator')}
                                       </span>
                                     )}
@@ -367,10 +367,10 @@ const BoardModal = ({
                                   </div>
                                 </div>
                                 {isCreator ? (
-                                  <div className="w-7 h-7 rounded-full bg-blue-600/20 flex items-center justify-center">
+                                  <div className="w-7 h-7 rounded-full bg-purple-600/20 flex items-center justify-center">
                                     <UserPlus
                                       size={14}
-                                      className="text-blue-400"
+                                      className="text-purple-400"
                                     />
                                   </div>
                                 ) : isSelected ? (
@@ -392,7 +392,7 @@ const BoardModal = ({
                                       e.stopPropagation();
                                       toggleMember(user.id);
                                     }}
-                                    className="w-7 h-7 rounded-full bg-slate-700/50 flex items-center justify-center hover:bg-blue-600/20 transition-colors"
+                                    className="w-7 h-7 rounded-full bg-slate-700/50 flex items-center justify-center hover:bg-purple-600/20 transition-colors"
                                   >
                                     <UserPlus
                                       size={14}
@@ -427,14 +427,14 @@ const BoardModal = ({
                               onClick={() => toggleTeam(team.id)}
                               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
                                 isSelected
-                                  ? "bg-blue-600/15 hover:bg-blue-600/20"
+                                  ? "bg-purple-600/15 hover:bg-purple-600/20"
                                   : "hover:bg-slate-800/60"
                               }`}
                             >
                               <div
                                 className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                                   isSelected
-                                    ? "bg-blue-600/25"
+                                    ? "bg-purple-600/25"
                                     : "bg-slate-700/60"
                                 }`}
                               >
@@ -442,7 +442,7 @@ const BoardModal = ({
                                   size={16}
                                   className={
                                     isSelected
-                                      ? "text-blue-400"
+                                      ? "text-purple-400"
                                       : "text-slate-400"
                                   }
                                 />
@@ -484,7 +484,7 @@ const BoardModal = ({
                               <div
                                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                                   isSelected
-                                    ? "bg-blue-600 border-blue-600"
+                                    ? "bg-purple-600 border-purple-600"
                                     : "border-slate-600"
                                 }`}
                               >
@@ -551,7 +551,7 @@ const BoardModal = ({
                   <button
                     onClick={handleSaveClick}
                     disabled={!title.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {mode === "create" ? t('boardModal.create') : t('boardModal.save')}
                   </button>

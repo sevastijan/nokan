@@ -147,7 +147,7 @@ const TeamManagement = () => {
      ];
 
      const iconColorMap: Record<string, string> = {
-          blue: 'bg-blue-500/10 text-blue-400',
+          blue: 'bg-purple-500/10 text-purple-400',
           emerald: 'bg-emerald-500/10 text-emerald-400',
           violet: 'bg-violet-500/10 text-violet-400',
      };
@@ -179,7 +179,7 @@ const TeamManagement = () => {
                          </div>
                          <motion.button
                               onClick={openCreate}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-colors self-start"
+                              className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-colors self-start"
                               whileTap={{ scale: 0.95 }}
                          >
                               <Plus className="w-5 h-5" />

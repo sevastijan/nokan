@@ -30,7 +30,7 @@ const ReactionBar = ({ reactions, currentUserId, onToggle }: ReactionBarProps) =
 					onClick={() => onToggle(emoji)}
 					className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs transition cursor-pointer ${
 						hasOwn
-							? 'bg-blue-600/15 border border-blue-500/30 text-blue-300'
+							? 'bg-purple-600/15 border border-purple-500/30 text-purple-300'
 							: 'bg-slate-800/50 border border-slate-700/30 text-slate-400 hover:bg-slate-800'
 					}`}
 				>

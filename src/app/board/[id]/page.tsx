@@ -572,7 +572,7 @@ export default function Page() {
                <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
                     <div className="text-center">
                          <h2 className="text-2xl font-bold text-red-400 mb-4">{t('board.noBoardId')}</h2>
-                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition">
+                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition">
                               {t('board.backToDashboard')}
                          </button>
                     </div>
@@ -589,7 +589,7 @@ export default function Page() {
                <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
                     <div className="text-center">
                          <h2 className="text-2xl font-bold text-red-400 mb-4">{t('board.loadingError')}</h2>
-                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition">
+                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition">
                               {t('board.backToDashboard')}
                          </button>
                     </div>

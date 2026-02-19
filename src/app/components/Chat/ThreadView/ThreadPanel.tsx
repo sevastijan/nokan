@@ -67,7 +67,7 @@ const ThreadPanel = () => {
 					<ArrowLeft className="w-4 h-4" />
 				</button>
 				<div className="flex items-center gap-2">
-					<MessageSquare className="w-4 h-4 text-blue-400" />
+					<MessageSquare className="w-4 h-4 text-purple-400" />
 					<h3 className="text-sm font-semibold text-white">{t('chat.thread')}</h3>
 					<span className="text-xs text-slate-500">
 						{threadMessages.length} {t('chat.reply', { count: threadMessages.length })}
@@ -92,7 +92,7 @@ const ThreadPanel = () => {
 			<div className="flex-1 overflow-y-auto px-4 py-3">
 				{isLoading ? (
 					<div className="flex items-center justify-center h-full">
-						<div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+						<div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
 					</div>
 				) : threadMessages.length === 0 ? (
 					<div className="flex flex-col items-center justify-center h-full text-center">

@@ -24,7 +24,7 @@ const BoardList = ({ boards, onEdit, onDelete }: BoardListProps) => {
                          </div>
 
                          <div className="absolute top-3 right-3 flex gap-3 opacity-0 group-hover:opacity-100 transition">
-                              <button onClick={() => onEdit(b.id)} className="text-blue-400 hover:text-blue-200" title="Edit board">
+                              <button onClick={() => onEdit(b.id)} className="text-purple-400 hover:text-purple-200" title="Edit board">
                                    <FaPen className="w-4 h-4" />
                               </button>
                               <button onClick={() => onDelete(b.id)} className="text-red-500 hover:text-red-300" title="Delete board">

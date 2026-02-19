@@ -14,7 +14,7 @@ import { Plus, ChevronDown, Calendar, Pencil, Trash2, AlertTriangle, Inbox, Layo
 type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'CLIENT' | 'MEMBER' | null;
 
 const priorityConfig: Record<string, { labelKey: string; color: string; bg: string; border: string; dot: string }> = {
-     low: { labelKey: 'submissions.priorityLow', color: 'text-blue-300', bg: 'bg-blue-500/10', border: 'border-blue-500/20', dot: 'bg-blue-400' },
+     low: { labelKey: 'submissions.priorityLow', color: 'text-purple-300', bg: 'bg-purple-500/10', border: 'border-purple-500/20', dot: 'bg-purple-400' },
      high: { labelKey: 'submissions.priorityHigh', color: 'text-amber-300', bg: 'bg-amber-500/10', border: 'border-amber-500/20', dot: 'bg-amber-400' },
      urgent: { labelKey: 'submissions.priorityUrgent', color: 'text-red-300', bg: 'bg-red-500/10', border: 'border-red-500/20', dot: 'bg-red-400' },
 };
@@ -161,7 +161,7 @@ export default function SubmissionsPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => router.push('/submit')}
-                                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-blue-600/20 transition-colors cursor-pointer"
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-purple-600/20 transition-colors cursor-pointer"
                                    >
                                         <Plus className="w-4 h-4" />
                                         {t('submissions.newSubmission')}
@@ -262,13 +262,13 @@ export default function SubmissionsPage() {
                                                                                                     type="text"
                                                                                                     value={editForm.title}
                                                                                                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                                                                                    className="w-full px-3 py-2 bg-slate-700/60 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                                                                                                    className="w-full px-3 py-2 bg-slate-700/60 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
                                                                                                />
                                                                                                <textarea
                                                                                                     value={editForm.description}
                                                                                                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                                                                                                     rows={3}
-                                                                                                    className="w-full px-3 py-2 bg-slate-700/60 border border-slate-600/50 rounded-lg text-sm text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                                                                                                    className="w-full px-3 py-2 bg-slate-700/60 border border-slate-600/50 rounded-lg text-sm text-white resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
                                                                                                />
                                                                                                <div className="flex gap-2">
                                                                                                     <button
@@ -301,7 +301,7 @@ export default function SubmissionsPage() {
                                                                                                                         e.stopPropagation();
                                                                                                                         startEdit(sub);
                                                                                                                    }}
-                                                                                                                   className="p-1.5 rounded-md text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all cursor-pointer"
+                                                                                                                   className="p-1.5 rounded-md text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all cursor-pointer"
                                                                                                                    title={t('common.edit')}
                                                                                                               >
                                                                                                                    <Pencil className="w-3.5 h-3.5" />

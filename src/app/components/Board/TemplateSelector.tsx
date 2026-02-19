@@ -83,7 +83,7 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
                                         onCreateTemplate?.();
                                         setIsOpen(false);
                                    }}
-                                   className="w-full p-3 text-left hover:bg-slate-800/60 transition-colors border-b border-slate-700/30 flex items-center gap-2 text-blue-400"
+                                   className="w-full p-3 text-left hover:bg-slate-800/60 transition-colors border-b border-slate-700/30 flex items-center gap-2 text-purple-400"
                               >
                                    <Plus size={16} />
                                    <div>
@@ -96,7 +96,7 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
                                    <div
                                         key={template.id}
                                         className={`p-3 hover:bg-slate-800/60 transition-colors cursor-pointer flex items-center justify-between ${
-                                             selectedTemplate?.id === template.id ? 'bg-blue-600/10' : ''
+                                             selectedTemplate?.id === template.id ? 'bg-purple-600/10' : ''
                                         }`}
                                         onClick={() => {
                                              onTemplateSelect?.(template);
@@ -106,7 +106,7 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
                                         <div className="flex-1">
                                              <div className="font-medium flex items-center gap-2">
                                                   {template.name}
-                                                  {!template.is_custom && <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">{t('templates.default')}</span>}
+                                                  {!template.is_custom && <span className="text-xs bg-purple-600/20 text-purple-400 px-2 py-0.5 rounded">{t('templates.default')}</span>}
                                              </div>
                                              <div className="text-xs text-slate-400 mt-1">{template.description}</div>
                                              <div className="text-xs text-slate-500 mt-1">{t('templates.columns', { columns: template.template_columns.map((c) => c.title).join(', ') || t('common.none') })}</div>

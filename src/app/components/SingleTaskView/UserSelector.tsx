@@ -173,7 +173,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label }: U
                                                        <div
                                                             className={`
                                                                  w-4 h-4 rounded flex items-center justify-center shrink-0
-                                                                 ${selected ? 'bg-blue-500' : 'border border-slate-500'}
+                                                                 ${selected ? 'bg-purple-500' : 'border border-slate-500'}
                                                             `}
                                                        >
                                                             {selected && <FiCheck className="w-3 h-3 text-white" />}

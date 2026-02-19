@@ -31,8 +31,8 @@ export default function PWASplashScreen() {
                          <svg className="absolute h-0 w-0" aria-hidden="true">
                               <defs>
                                    <linearGradient id="splash-gradient-outer" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8" />
-                                        <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
+                                        <stop offset="0%" stopColor="#9837FA" stopOpacity="0.8" />
+                                        <stop offset="100%" stopColor="#9837FA" stopOpacity="0" />
                                    </linearGradient>
                                    <linearGradient id="splash-gradient-mid" x1="0%" y1="0%" x2="100%" y2="100%">
                                         <stop offset="0%" stopColor="#6366F1" stopOpacity="0.7" />
@@ -52,7 +52,7 @@ export default function PWASplashScreen() {
                               animate={{ opacity: 1 }}
                               transition={{ duration: 0.4 }}
                          >
-                              <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/[0.07] blur-[100px]" />
+                              <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/[0.07] blur-[100px]" />
                               <div className="absolute left-1/2 top-1/2 h-[350px] w-[350px] -translate-x-[40%] -translate-y-[60%] rounded-full bg-indigo-500/[0.05] blur-[80px]" />
                               <div className="absolute left-1/2 top-1/2 h-[250px] w-[250px] -translate-x-[60%] -translate-y-[40%] rounded-full bg-purple-500/[0.04] blur-[60px]" />
                          </motion.div>
@@ -109,7 +109,7 @@ export default function PWASplashScreen() {
                                    {LETTERS.map((letter, i) => (
                                         <motion.span
                                              key={i}
-                                             className="bg-gradient-to-r from-white via-blue-100 to-blue-300 bg-clip-text text-5xl font-black tracking-[0.2em] text-transparent sm:text-6xl"
+                                             className="bg-gradient-to-r from-white via-purple-100 to-purple-300 bg-clip-text text-5xl font-black tracking-[0.2em] text-transparent sm:text-6xl"
                                              initial={{ opacity: 0, y: 20 }}
                                              animate={{ opacity: 1, y: 0 }}
                                              transition={{

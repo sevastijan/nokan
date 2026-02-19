@@ -70,7 +70,7 @@ const CommentItem = ({ comment, depth = 0, currentUser, task, onDeleteComment, o
                          </div>
 
                          <div className="flex items-center gap-4 text-xs">
-                              <button onClick={() => setReplying(true)} className="text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                              <button onClick={() => setReplying(true)} className="text-purple-400 hover:text-purple-300 flex items-center gap-1">
                                    <FaReply className="w-3 h-3" /> {t('comments.reply')}
                               </button>
                               {(comment.user_id === currentUser.id || task.user_id === currentUser.id) && (

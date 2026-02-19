@@ -166,7 +166,7 @@ const TaskAttachmentsSection = ({
                               type="button"
                               onClick={() => fileInputRef.current?.click()}
                               disabled={uploadingFiles.size > 0}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors shadow-sm"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors shadow-sm"
                          >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -188,7 +188,7 @@ const TaskAttachmentsSection = ({
                                         </div>
                                         <div className="flex items-center gap-2">
                                              {lp.previewUrl && lp.file.type.startsWith('image/') && (
-                                                  <button type="button" onClick={() => handleLocalPreviewClick(lp)} className="text-blue-400 hover:text-blue-300 p-2" title={t('common.preview')}>
+                                                  <button type="button" onClick={() => handleLocalPreviewClick(lp)} className="text-purple-400 hover:text-purple-300 p-2" title={t('common.preview')}>
                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                             <path

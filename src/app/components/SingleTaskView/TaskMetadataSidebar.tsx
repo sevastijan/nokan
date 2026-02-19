@@ -89,11 +89,11 @@ const TaskMetadataSidebar = ({ task, columns, selectedAssignees = [], localColum
                     <div>
                          <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                   <FiUsers className="w-3.5 h-3.5 text-blue-400" />
+                                   <FiUsers className="w-3.5 h-3.5 text-purple-400" />
                                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('taskMeta.assigned')}</h3>
                               </div>
                               {assignees.length > 0 && (
-                                   <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{assignees.length}</span>
+                                   <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{assignees.length}</span>
                               )}
                          </div>
                          {assignees.length > 0 ? (
@@ -102,7 +102,7 @@ const TaskMetadataSidebar = ({ task, columns, selectedAssignees = [], localColum
                                         const { name, image } = getDisplayData(assignee);
                                         return (
                                              <div key={assignee.id} className="flex items-center gap-2.5 bg-slate-700/30 p-2 rounded-lg border border-slate-700/30 hover:bg-slate-700/50 transition-colors">
-                                                  <Avatar src={image} alt={name} size={28} className="ring-2 ring-blue-400/20" />
+                                                  <Avatar src={image} alt={name} size={28} className="ring-2 ring-purple-400/20" />
                                                   <div className="flex flex-col min-w-0 flex-1">
                                                        <span className="text-white text-sm font-medium truncate">{name}</span>
                                                        <span className="text-slate-500 text-xs truncate">{assignee.email || '-'}</span>
@@ -196,7 +196,7 @@ const TaskMetadataSidebar = ({ task, columns, selectedAssignees = [], localColum
                                    {t('taskMeta.story')}
                               </div>
                          ) : (
-                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/15 text-blue-300 rounded-lg text-xs font-semibold border border-blue-500/30">
+                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-500/15 text-purple-300 rounded-lg text-xs font-semibold border border-purple-500/30">
                                    <FiCheckSquare className="w-3.5 h-3.5" />
                                    {t('taskMeta.taskType')}
                               </div>

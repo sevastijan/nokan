@@ -18,7 +18,7 @@ const LinkifyText = ({ text }: LinkifyTextProps) => {
 						href={part}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="text-blue-400 hover:text-blue-300 underline underline-offset-2 break-all"
+						className="text-purple-400 hover:text-purple-300 underline underline-offset-2 break-all"
 						onClick={(e) => e.stopPropagation()}
 					>
 						{part}

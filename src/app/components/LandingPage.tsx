@@ -34,7 +34,7 @@ export default function LandingPage() {
 									<h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-slate-100 leading-[0.95] tracking-tight">
 										{t('landing.heroTitle1')}
 										<br />
-										<span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-blue-400">
+										<span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-fuchsia-300">
 											{t('landing.heroTitle2')}
 										</span>
 									</h1>

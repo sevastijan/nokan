@@ -116,7 +116,7 @@ export default function TaskDescription({ value, onChange, taskId, onImageClick,
                               <PasteImagePlugin taskId={taskId} onUploadStart={() => setUploading(true)} onUploadEnd={() => setUploading(false)} />
                               {teamMembers.length > 0 && <MentionPlugin teamMembers={teamMembers} />}
                          </div>
-                         {uploading && <div className="p-2 bg-slate-800/50 border-t border-slate-700 text-xs text-blue-400">Wysyłanie obrazu...</div>}
+                         {uploading && <div className="p-2 bg-slate-800/50 border-t border-slate-700 text-xs text-purple-400">Wysyłanie obrazu...</div>}
                     </LexicalComposer>
                </div>
           </div>

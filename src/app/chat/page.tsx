@@ -23,7 +23,7 @@ export default function ChatPage() {
 	const activeChannelId = channelFromUrl || selectedChannelId;
 
 	return (
-		<div className="flex flex-col h-screen bg-slate-950">
+		<div className="flex flex-col h-screen bg-slate-900">
 			{activeChannelId ? (
 				threadParentId ? (
 					<ThreadPanel />

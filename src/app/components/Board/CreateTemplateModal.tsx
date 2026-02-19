@@ -167,7 +167,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                              type="text"
                                              value={name}
                                              onChange={(e) => setName(e.target.value)}
-                                             className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-slate-500 transition-colors"
+                                             className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 placeholder-slate-500 transition-colors"
                                              placeholder={t('templates.templateNamePlaceholder')}
                                         />
                                    </div>
@@ -177,7 +177,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                         <textarea
                                              value={description}
                                              onChange={(e) => setDescription(e.target.value)}
-                                             className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none placeholder-slate-500 transition-colors"
+                                             className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 resize-none placeholder-slate-500 transition-colors"
                                              rows={3}
                                              placeholder={t('templates.templateDescPlaceholder')}
                                         />
@@ -186,7 +186,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                    <div>
                                         <div className="flex items-center justify-between mb-3">
                                              <label className="block text-sm font-medium text-slate-300">{t('templates.columnsLabel')}</label>
-                                             <button onClick={addColumn} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm">
+                                             <button onClick={addColumn} className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors text-sm">
                                                   <Plus size={16} /> {t('templates.addColumn')}
                                              </button>
                                         </div>
@@ -201,7 +201,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                                                  type="text"
                                                                  value={column.title}
                                                                  onChange={(e) => updateColumnTitle(column.id, e.target.value)}
-                                                                 className="flex-1 bg-slate-900/50 text-white border border-slate-700/50 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
+                                                                 className="flex-1 bg-slate-900/50 text-white border border-slate-700/50 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500/50 placeholder-slate-500 transition-colors"
                                                                  placeholder={t('templates.columnName')}
                                                             />
                                                             <button
@@ -216,7 +216,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                                        <div className="ml-8">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                  <span className="text-xs text-slate-400">{t('templates.starterTasks')}</span>
-                                                                 <button onClick={() => addTask(column.id)} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
+                                                                 <button onClick={() => addTask(column.id)} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors">
                                                                       <Plus size={12} /> {t('templates.addTask')}
                                                                  </button>
                                                             </div>
@@ -228,14 +228,14 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                                                                 type="text"
                                                                                 value={task.title}
                                                                                 onChange={(e) => updateTask(column.id, task.id, { title: e.target.value })}
-                                                                                className="flex-1 bg-slate-800/50 text-white border border-slate-700/50 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
+                                                                                className="flex-1 bg-slate-800/50 text-white border border-slate-700/50 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder-slate-500 transition-colors"
                                                                                 placeholder={t('templates.taskTitle')}
                                                                            />
                                                                            <input
                                                                                 type="text"
                                                                                 value={task.description}
                                                                                 onChange={(e) => updateTask(column.id, task.id, { description: e.target.value })}
-                                                                                className="flex-1 bg-slate-800/50 text-white border border-slate-700/50 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
+                                                                                className="flex-1 bg-slate-800/50 text-white border border-slate-700/50 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder-slate-500 transition-colors"
                                                                                 placeholder={t('templates.taskDescription')}
                                                                            />
                                                                            <button onClick={() => removeTask(column.id, task.id)} className="text-red-400 hover:text-red-300 transition-colors">
@@ -258,7 +258,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                    <button
                                         onClick={handleSave}
                                         disabled={!name.trim() || isLoading}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                    >
                                         {isLoading ? t('common.saving') : t('templates.createTemplate')}
                                    </button>

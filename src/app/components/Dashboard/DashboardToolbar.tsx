@@ -63,7 +63,7 @@ export const DashboardToolbar = ({
                               placeholder={t('dashboard.searchProjects')}
                               value={searchTerm}
                               onChange={(e) => onSearchChange(e.target.value)}
-                              className="pl-9 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-200 w-full placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+                              className="pl-9 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-200 w-full placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
                          />
                     </div>
 
@@ -72,7 +72,7 @@ export const DashboardToolbar = ({
                          onClick={() => setHasTasksOnly(!hasTasksOnly)}
                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all duration-200 cursor-pointer ${
                               hasTasksOnly
-                                   ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                                   ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
                                    : 'bg-slate-800/40 text-slate-400 border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
                          }`}
                     >
@@ -85,7 +85,7 @@ export const DashboardToolbar = ({
                          onClick={() => setHasMembersOnly(!hasMembersOnly)}
                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all duration-200 cursor-pointer ${
                               hasMembersOnly
-                                   ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                                   ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
                                    : 'bg-slate-800/40 text-slate-400 border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
                          }`}
                     >
