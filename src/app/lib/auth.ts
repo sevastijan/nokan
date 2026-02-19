@@ -4,61 +4,55 @@ import type { JWT } from 'next-auth/jwt';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
-
-const providers: NextAuthOptions['providers'] = [
-	GoogleProvider({
-		clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-		clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-	}),
-];
-
-if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
-	providers.push(
-		GitHubProvider({
-			clientId: process.env.GITHUB_CLIENT_ID,
-			clientSecret: process.env.GITHUB_CLIENT_SECRET,
-		}),
-	);
-}
-
-providers.push(
-	CredentialsProvider({
-		name: 'credentials',
-		credentials: {
-			email: { label: 'Email', type: 'email' },
-			password: { label: 'Password', type: 'password' },
-		},
-		async authorize(credentials) {
-			if (!credentials?.email || !credentials?.password) return null;
-
-			const supabase = getSupabaseAdmin();
-			const { data: user, error } = await supabase
-				.from('users')
-				.select('id, email, name, image, password_hash')
-				.eq('email', credentials.email)
-				.not('password_hash', 'is', null)
-				.single();
-
-			if (error || !user?.password_hash) return null;
-
-			const isValid = await bcrypt.compare(credentials.password, user.password_hash);
-			if (!isValid) return null;
-
-			return {
-				id: String(user.id),
-				email: user.email,
-				name: user.name,
-				image: user.image,
-			};
-		},
-	}),
-);
 
 export const authOptions: NextAuthOptions = {
 	secret: process.env.NEXTAUTH_SECRET,
-	providers,
+	providers: [
+		GoogleProvider({
+			clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+		}),
+		...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+			? [
+					GitHubProvider({
+						clientId: process.env.GITHUB_CLIENT_ID,
+						clientSecret: process.env.GITHUB_CLIENT_SECRET,
+					}),
+				]
+			: []),
+		CredentialsProvider({
+			name: 'credentials',
+			credentials: {
+				email: { label: 'Email', type: 'email' },
+				password: { label: 'Password', type: 'password' },
+			},
+			async authorize(credentials) {
+				if (!credentials?.email || !credentials?.password) return null;
+
+				const bcrypt = (await import('bcryptjs')).default;
+				const supabase = getSupabaseAdmin();
+				const { data: user, error } = await supabase
+					.from('users')
+					.select('id, email, name, image, password_hash')
+					.eq('email', credentials.email)
+					.not('password_hash', 'is', null)
+					.single();
+
+				if (error || !user?.password_hash) return null;
+
+				const isValid = await bcrypt.compare(credentials.password, user.password_hash);
+				if (!isValid) return null;
+
+				return {
+					id: String(user.id),
+					email: user.email,
+					name: user.name,
+					image: user.image,
+				};
+			},
+		}),
+	],
 	callbacks: {
 		async signIn({ user, account }: { user: User; account: Account | null }) {
 			const provider = account?.provider;
@@ -97,8 +91,7 @@ export const authOptions: NextAuthOptions = {
 		},
 
 		async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
-			if (url.includes('signout')) return baseUrl;
-			if (url === baseUrl || url === `${baseUrl}/`) return `${baseUrl}/dashboard`;
+			if (url.includes('signout') || url === baseUrl) return baseUrl;
 			if (url.startsWith(baseUrl)) return url;
 			if (url.startsWith('/')) return `${baseUrl}${url}`;
 			return `${baseUrl}/dashboard`;
