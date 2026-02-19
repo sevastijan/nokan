@@ -59,6 +59,8 @@
           "MEMBER": "Member"
      },
      "landing": {
+          "heroTitle1": "Manage work,",
+          "heroTitle2": "not chaos.",
           "tagline": "Manage tasks, projects, and teams — <1>completely free</1>.",
           "subtitle": "Simple, fast, and intuitive Kanban for everyone.",
           "featureKanban": "Intuitive Kanban",
@@ -73,9 +75,32 @@
      },
      "auth": {
           "signInWithGoogle": "Sign in with Google",
+          "signInWithGitHub": "Sign in with GitHub",
           "welcomeBack": "Welcome back, {{name}}!",
           "goToDashboard": "Go to Dashboard",
-          "signInRequired": "Sign in to view your profile."
+          "signInRequired": "Sign in to view your profile.",
+          "tabLogin": "Login",
+          "tabRegister": "Register",
+          "emailPlaceholder": "Email address",
+          "passwordPlaceholder": "Password",
+          "confirmPasswordPlaceholder": "Confirm password",
+          "namePlaceholder": "Your name",
+          "signIn": "Sign In",
+          "signingIn": "Signing in...",
+          "createAccount": "Create Account",
+          "registering": "Creating account...",
+          "or": "or",
+          "noAccount": "Don't have an account?",
+          "registerLink": "Create one",
+          "alreadyHaveAccount": "Already have an account?",
+          "signInLink": "Sign in",
+          "invalidCredentials": "Invalid email or password",
+          "emailAlreadyExists": "An account with this email already exists",
+          "passwordsDoNotMatch": "Passwords do not match",
+          "passwordTooShort": "Password must be at least 8 characters",
+          "registrationFailed": "Registration failed. Please try again.",
+          "registeredPleaseLogin": "Account created! Please sign in.",
+          "loginSuccess": "Login successful"
      },
      "notFound": {
           "title": "404",

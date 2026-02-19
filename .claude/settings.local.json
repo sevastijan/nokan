@@ -24,7 +24,8 @@
       "Bash(kill:*)",
       "Bash(xxd:*)",
       "Bash(npx web-push:*)",
-      "Bash(git -C /Users/pawelzaton/workflow/nokan ls-files:*)"
+      "Bash(git -C /Users/pawelzaton/workflow/nokan ls-files:*)",
+      "Bash(git status:*)"
     ]
   }
 }

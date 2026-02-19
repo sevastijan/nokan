@@ -1,85 +1,87 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import AuthButton from '../GoogleLogin/AuthButton';
+import AuthButton from '../auth/AuthButton';
+import { InteractiveGridPattern } from '@/components/ui/interactive-grid-pattern';
 
 export default function LandingPage() {
-     const { t } = useTranslation();
+	const { t } = useTranslation();
 
-     return (
-          <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-6">
-               <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 -left-32 w-96 h-96 bg-purple-900/20 rounded-full blur-3xl" />
-                    <div className="absolute bottom-0 -right-32 w-96 h-96 bg-blue-900/20 rounded-full blur-3xl" />
-               </div>
+	return (
+		<div className="min-h-screen bg-slate-950 flex flex-col overflow-hidden">
+			{/* Interactive grid background with content as children */}
+			<InteractiveGridPattern
+				className="absolute inset-0 bg-slate-950"
+				cellSize={54}
+				glowColor="rgba(168, 85, 247, 0.35)"
+				borderColor="rgba(71, 85, 105, 0.15)"
+				proximity={120}
+			>
+				<div className="pointer-events-none flex flex-col min-h-screen">
+					{/* Top bar */}
+					<nav className="pointer-events-auto flex items-center justify-between px-8 md:px-12 py-6">
+						<span className="text-lg font-bold tracking-widest text-slate-100 uppercase">Nokan</span>
+						<span className="text-xs text-slate-600 tracking-wider uppercase hidden sm:block">{t('landing.openSource')}</span>
+					</nav>
 
-               <div className="relative z-10 w-full max-w-5xl">
-                    <div className="text-center mb-16">
-                         <h1 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-linear-to-r from-purple-400 via-purple-500 to-blue-500 tracking-tight">NOKAN</h1>
-                         <p className="mt-6 text-2xl md:text-3xl font-medium text-slate-300">
-                              {t('landing.tagline').split('<1>')[0]}
-                              <span className="text-purple-400 font-bold">
-                                   {t('landing.tagline').match(/<1>(.*?)<\/1>/)?.[1] ?? ''}
-                              </span>
-                              {t('landing.tagline').split('</1>')[1] ?? ''}
-                         </p>
-                         <p className="mt-3 text-lg md:text-xl text-slate-400">{t('landing.subtitle')}</p>
-                    </div>
+					{/* Main content */}
+					<main className="pointer-events-auto flex-1 flex items-center px-8 md:px-12 pb-12">
+						<div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-                         <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-2xl p-8 text-center">
-                              <div className="w-14 h-14 bg-purple-600/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                                   <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path
-                                             strokeLinecap="round"
-                                             strokeLinejoin="round"
-                                             strokeWidth={2}
-                                             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                                        />
-                                   </svg>
-                              </div>
-                              <h3 className="text-xl font-semibold text-slate-100 mb-2">{t('landing.featureKanban')}</h3>
-                              <p className="text-slate-400 text-sm">{t('landing.featureKanbanDesc')}</p>
-                         </div>
+							{/* Left - Hero */}
+							<div className="space-y-10">
+								<div className="space-y-6">
+									<h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-slate-100 leading-[0.95] tracking-tight">
+										{t('landing.heroTitle1')}
+										<br />
+										<span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-blue-400">
+											{t('landing.heroTitle2')}
+										</span>
+									</h1>
+									<p className="text-lg text-slate-400 max-w-md leading-relaxed">
+										{t('landing.subtitle')}
+									</p>
+								</div>
 
-                         <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-2xl p-8 text-center">
-                              <div className="w-14 h-14 bg-blue-600/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                                   <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path
-                                             strokeLinecap="round"
-                                             strokeLinejoin="round"
-                                             strokeWidth={2}
-                                             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                                        />
-                                   </svg>
-                              </div>
-                              <h3 className="text-xl font-semibold text-slate-100 mb-2">{t('landing.featureTeam')}</h3>
-                              <p className="text-slate-400 text-sm">{t('landing.featureTeamDesc')}</p>
-                         </div>
+								{/* Features - minimal list */}
+								<div className="flex flex-col gap-4">
+									{[
+										{ label: t('landing.featureKanban'), desc: t('landing.featureKanbanDesc') },
+										{ label: t('landing.featureTeam'), desc: t('landing.featureTeamDesc') },
+										{ label: t('landing.featureFast'), desc: t('landing.featureFastDesc') },
+									].map((f, i) => (
+										<div key={i} className="flex items-start gap-4 group">
+											<span className="text-xs font-mono text-slate-600 mt-1 shrink-0">0{i + 1}</span>
+											<div>
+												<span className="text-sm font-medium text-slate-200 group-hover:text-purple-400 transition-colors">
+													{f.label}
+												</span>
+												<span className="text-sm text-slate-500 ml-2">
+													- {f.desc}
+												</span>
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
 
-                         <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-2xl p-8 text-center">
-                              <div className="w-14 h-14 bg-green-600/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                                   <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                   </svg>
-                              </div>
-                              <h3 className="text-xl font-semibold text-slate-100 mb-2">{t('landing.featureFast')}</h3>
-                              <p className="text-slate-400 text-sm">{t('landing.featureFastDesc')}</p>
-                         </div>
-                    </div>
+							{/* Right - Auth card */}
+							<div className="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto">
+								<div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-8 shadow-2xl shadow-black/20">
+									<p className="text-xs uppercase tracking-widest text-slate-500 mb-6">{t('landing.getStarted')}</p>
+									<AuthButton />
+								</div>
+							</div>
+						</div>
+					</main>
 
-                    <div className="max-w-md mx-auto">
-                         <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-3xl shadow-2xl p-10">
-                              <h2 className="text-2xl font-bold text-slate-100 text-center mb-8">{t('landing.getStarted')}</h2>
-
-                              <AuthButton />
-
-                              <p className="mt-6 text-center text-sm text-slate-500">{t('landing.noAccount')}</p>
-                         </div>
-
-                         <p className="text-center mt-8 text-xs text-slate-600">{t('landing.openSource')}</p>
-                    </div>
-               </div>
-          </div>
-     );
+					{/* Footer */}
+					<footer className="pointer-events-auto px-8 md:px-12 py-6 flex items-center justify-between border-t border-slate-800/50">
+						<span className="text-xs text-slate-600">&copy; {new Date().getFullYear()} Nokan</span>
+						<span className="text-xs text-slate-600">{t('landing.tagline').replace(/<\/?1>/g, '')}</span>
+					</footer>
+				</div>
+			</InteractiveGridPattern>
+		</div>
+	);
 }

@@ -221,16 +221,19 @@ export default function DashboardPage() {
           setSortBy('newest');
      }, []);
 
-     const isLoading = authStatus === 'loading' || loadingUser || loadingMyBoards || loadingAssignedBoards;
+     const dataLoading = loadingUser || loadingMyBoards || loadingAssignedBoards;
      const hasAssignedBoards = isClient && assignedBoards.length > 0;
      const hasActiveFilters = searchTerm || hasTasksOnly || hasMembersOnly || sortBy !== 'newest';
 
-     if (isLoading) {
-          return <Loader text={t('common.loading')} />;
-     }
-
-     if (authStatus === 'unauthenticated') {
-          return null;
+     // Full-screen cover hides the Navbar immediately while data loads.
+     // The inner <Loader> has a 150ms appear-delay; the outer div ensures
+     // nothing else is visible during that gap.
+     if (authStatus !== 'authenticated' || dataLoading) {
+          return (
+               <div className="fixed inset-0 z-50 bg-slate-900">
+                    <Loader text={t('common.loading')} />
+               </div>
+          );
      }
 
      return (

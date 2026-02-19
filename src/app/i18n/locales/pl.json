@@ -60,6 +60,8 @@
           "MEMBER": "Członek"
      },
      "landing": {
+          "heroTitle1": "Zarządzaj pracą,",
+          "heroTitle2": "nie chaosem.",
           "tagline": "Zarządzaj zadaniami, projektami i zespołami — <1>całkowicie za darmo</1>.",
           "subtitle": "Prosty, szybki i intuicyjny Kanban dla każdego.",
           "featureKanban": "Intuicyjny Kanban",
@@ -74,9 +76,32 @@
      },
      "auth": {
           "signInWithGoogle": "Zaloguj się przez Google",
+          "signInWithGitHub": "Zaloguj się przez GitHub",
           "welcomeBack": "Witaj ponownie, {{name}}!",
           "goToDashboard": "Przejdź do dashboardu",
-          "signInRequired": "Zaloguj się, aby zobaczyć profil."
+          "signInRequired": "Zaloguj się, aby zobaczyć profil.",
+          "tabLogin": "Logowanie",
+          "tabRegister": "Rejestracja",
+          "emailPlaceholder": "Adres email",
+          "passwordPlaceholder": "Hasło",
+          "confirmPasswordPlaceholder": "Potwierdź hasło",
+          "namePlaceholder": "Twoje imię",
+          "signIn": "Zaloguj się",
+          "signingIn": "Logowanie...",
+          "createAccount": "Utwórz konto",
+          "registering": "Tworzenie konta...",
+          "or": "lub",
+          "noAccount": "Nie masz konta?",
+          "registerLink": "Utwórz je",
+          "alreadyHaveAccount": "Masz już konto?",
+          "signInLink": "Zaloguj się",
+          "invalidCredentials": "Nieprawidłowy email lub hasło",
+          "emailAlreadyExists": "Konto z tym adresem email już istnieje",
+          "passwordsDoNotMatch": "Hasła nie są identyczne",
+          "passwordTooShort": "Hasło musi mieć co najmniej 8 znaków",
+          "registrationFailed": "Rejestracja nie powiodła się. Spróbuj ponownie.",
+          "registeredPleaseLogin": "Konto utworzone! Zaloguj się.",
+          "loginSuccess": "Logowanie udane"
      },
      "notFound": {
           "title": "404",

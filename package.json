@@ -30,6 +30,8 @@
     "@supabase/supabase-js": "^2.49.8",
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tanstack/react-query": "^5.80.6",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
