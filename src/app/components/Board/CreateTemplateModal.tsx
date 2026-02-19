@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, X, GripVertical } from 'lucide-react';
 import { useAddBoardTemplateMutation } from '@/app/store/apiSlice';
@@ -14,6 +15,7 @@ interface LocalColumn {
 }
 
 const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTemplateModalProps) => {
+     const { t } = useTranslation();
      const [name, setName] = useState('');
      const [description, setDescription] = useState('');
      const [columns, setColumns] = useState<LocalColumn[]>([
@@ -30,7 +32,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
 
      const removeColumn = (id: string) => {
           if (columns.length <= 1) {
-               alert('A template must have at least one column');
+               alert(t('templates.needOneColumn'));
                return;
           }
           setColumns((prev) => prev.filter((col) => col.id !== id));
@@ -72,12 +74,12 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
 
      const handleSave = async () => {
           if (!name.trim()) {
-               alert('Template name is required');
+               alert(t('templates.templateName'));
                return;
           }
 
           if (columns.some((col) => !col.title.trim())) {
-               alert('All columns must have a title');
+               alert(t('templates.allColumnsMustHaveTitle'));
                return;
           }
 
@@ -119,7 +121,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                handleClose();
           } catch (error) {
                console.error('Failed to create template:', error);
-               alert('Failed to create template');
+               alert(t('templates.createFailed'));
           }
      };
 
@@ -152,7 +154,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                               onClick={(e) => e.stopPropagation()}
                          >
                               <div className="flex items-center justify-between mb-6">
-                                   <h2 className="text-xl font-bold">Create new template</h2>
+                                   <h2 className="text-xl font-bold">{t('templates.createTitle')}</h2>
                                    <button onClick={handleClose} className="text-slate-400 hover:text-white transition-colors">
                                         <X size={24} />
                                    </button>
@@ -160,32 +162,32 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
 
                               <div className="space-y-4">
                                    <div>
-                                        <label className="block text-sm font-medium mb-2 text-slate-300">Template name *</label>
+                                        <label className="block text-sm font-medium mb-2 text-slate-300">{t('templates.templateName')}</label>
                                         <input
                                              type="text"
                                              value={name}
                                              onChange={(e) => setName(e.target.value)}
                                              className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-slate-500 transition-colors"
-                                             placeholder="e.g. Development Workflow"
+                                             placeholder={t('templates.templateNamePlaceholder')}
                                         />
                                    </div>
 
                                    <div>
-                                        <label className="block text-sm font-medium mb-2 text-slate-300">Template description</label>
+                                        <label className="block text-sm font-medium mb-2 text-slate-300">{t('templates.templateDescription')}</label>
                                         <textarea
                                              value={description}
                                              onChange={(e) => setDescription(e.target.value)}
                                              className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none placeholder-slate-500 transition-colors"
                                              rows={3}
-                                             placeholder="Short description..."
+                                             placeholder={t('templates.templateDescPlaceholder')}
                                         />
                                    </div>
 
                                    <div>
                                         <div className="flex items-center justify-between mb-3">
-                                             <label className="block text-sm font-medium text-slate-300">Columns *</label>
+                                             <label className="block text-sm font-medium text-slate-300">{t('templates.columnsLabel')}</label>
                                              <button onClick={addColumn} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm">
-                                                  <Plus size={16} /> Add column
+                                                  <Plus size={16} /> {t('templates.addColumn')}
                                              </button>
                                         </div>
 
@@ -200,7 +202,7 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                                                  value={column.title}
                                                                  onChange={(e) => updateColumnTitle(column.id, e.target.value)}
                                                                  className="flex-1 bg-slate-900/50 text-white border border-slate-700/50 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
-                                                                 placeholder="Column name"
+                                                                 placeholder={t('templates.columnName')}
                                                             />
                                                             <button
                                                                  onClick={() => removeColumn(column.id)}
@@ -213,9 +215,9 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
 
                                                        <div className="ml-8">
                                                             <div className="flex items-center gap-2 mb-1">
-                                                                 <span className="text-xs text-slate-400">Starter tasks</span>
+                                                                 <span className="text-xs text-slate-400">{t('templates.starterTasks')}</span>
                                                                  <button onClick={() => addTask(column.id)} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
-                                                                      <Plus size={12} /> Add task
+                                                                      <Plus size={12} /> {t('templates.addTask')}
                                                                  </button>
                                                             </div>
                                                             <div className="space-y-2">
@@ -227,14 +229,14 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
                                                                                 value={task.title}
                                                                                 onChange={(e) => updateTask(column.id, task.id, { title: e.target.value })}
                                                                                 className="flex-1 bg-slate-800/50 text-white border border-slate-700/50 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
-                                                                                placeholder="Task title"
+                                                                                placeholder={t('templates.taskTitle')}
                                                                            />
                                                                            <input
                                                                                 type="text"
                                                                                 value={task.description}
                                                                                 onChange={(e) => updateTask(column.id, task.id, { description: e.target.value })}
                                                                                 className="flex-1 bg-slate-800/50 text-white border border-slate-700/50 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder-slate-500 transition-colors"
-                                                                                placeholder="Task description"
+                                                                                placeholder={t('templates.taskDescription')}
                                                                            />
                                                                            <button onClick={() => removeTask(column.id, task.id)} className="text-red-400 hover:text-red-300 transition-colors">
                                                                                 <Trash2 size={14} />
@@ -251,14 +253,14 @@ const CreateTemplateModal = ({ isOpen, onClose, onTemplateCreated }: CreateTempl
 
                               <div className="flex gap-3 mt-6 justify-end">
                                    <button onClick={handleClose} className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 border border-slate-700/50 transition-colors">
-                                        Cancel
+                                        {t('common.cancel')}
                                    </button>
                                    <button
                                         onClick={handleSave}
                                         disabled={!name.trim() || isLoading}
                                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                    >
-                                        {isLoading ? 'Saving...' : 'Create template'}
+                                        {isLoading ? t('common.saving') : t('templates.createTemplate')}
                                    </button>
                               </div>
                          </motion.div>

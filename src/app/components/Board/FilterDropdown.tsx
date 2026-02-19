@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiFilter, FiX } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
@@ -47,6 +48,7 @@ const FilterDropdown = ({
      filterType,
      onFilterTypeChange,
 }: FilterDropdownProps) => {
+     const { t } = useTranslation();
      const containerRef = useRef<HTMLDivElement>(null);
 
      useOutsideClick([containerRef], onClose, isOpen);
@@ -82,7 +84,7 @@ const FilterDropdown = ({
                     aria-expanded={isOpen}
                >
                     <FiFilter className="w-4 h-4" />
-                    <span className="hidden sm:inline font-medium">Filtry</span>
+                    <span className="hidden sm:inline font-medium">{t('filter.filters')}</span>
                     {hasActiveFilters && <span className="bg-slate-500 text-slate-100 text-xs px-1.5 py-0.5 rounded min-w-[18px] text-center">{activeFiltersCount}</span>}
                </button>
 
@@ -97,10 +99,10 @@ const FilterDropdown = ({
                          >
                               {/* Header */}
                               <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
-                                   <span className="text-sm font-medium text-slate-200">Filtruj zadania</span>
+                                   <span className="text-sm font-medium text-slate-200">{t('filter.filterTasks')}</span>
                                    {hasActiveFilters && (
                                         <button onClick={handleClearFilters} className="text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                                             Wyczyść
+                                             {t('filter.clear')}
                                         </button>
                                    )}
                               </div>
@@ -108,11 +110,11 @@ const FilterDropdown = ({
                               <div className="p-3 space-y-4 max-h-[60vh] overflow-y-auto">
                                    {/* Priority Filter */}
                                    <div>
-                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">Priorytet</div>
+                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">{t('filter.priority')}</div>
                                         <ul className="space-y-0.5">
                                              <li>
                                                   <FilterRadioItem name="filter-priority" checked={filterPriority === null} onChange={() => onFilterPriorityChange(null)}>
-                                                       <span className="text-sm text-slate-300">Wszystkie</span>
+                                                       <span className="text-sm text-slate-300">{t('filter.all')}</span>
                                                   </FilterRadioItem>
                                              </li>
                                              {priorities.map((p) => (
@@ -132,11 +134,11 @@ const FilterDropdown = ({
 
                                    {/* Assignee Filter */}
                                    <div>
-                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">Przypisani</div>
+                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">{t('filter.assigned')}</div>
                                         <ul className="space-y-0.5 max-h-40 overflow-y-auto">
                                              <li>
                                                   <FilterRadioItem name="filter-assignee" checked={filterAssignee === null} onChange={() => onFilterAssigneeChange(null)}>
-                                                       <span className="text-sm text-slate-300">Wszyscy</span>
+                                                       <span className="text-sm text-slate-300">{t('filter.everyone')}</span>
                                                   </FilterRadioItem>
                                              </li>
                                              {assignees.map((u) => (
@@ -156,18 +158,18 @@ const FilterDropdown = ({
 
                                    {/* Task Type Filter */}
                                    <div>
-                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">Typ zadania</div>
+                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">{t('filter.taskType')}</div>
                                         <div className="flex bg-slate-900/50 rounded-lg p-0.5">
-                                             {(['all', 'task', 'story', 'bug'] as TaskTypeFilter[]).map((t) => (
+                                             {(['all', 'task', 'story', 'bug'] as TaskTypeFilter[]).map((type) => (
                                                   <button
-                                                       key={t}
-                                                       onClick={() => onFilterTypeChange?.(t)}
+                                                       key={type}
+                                                       onClick={() => onFilterTypeChange?.(type)}
                                                        className={`
                                                             flex-1 py-1.5 text-xs font-medium rounded-md transition-colors
-                                                            ${filterType === t ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'}
+                                                            ${filterType === type ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'}
                                                        `}
                                                   >
-                                                       {t === 'all' ? 'Wszystkie' : t === 'task' ? 'Task' : t === 'story' ? 'Story' : 'Bug'}
+                                                       {type === 'all' ? t('filter.all') : type === 'task' ? t('filter.task') : type === 'story' ? t('filter.story') : t('filter.bug')}
                                                   </button>
                                              ))}
                                         </div>

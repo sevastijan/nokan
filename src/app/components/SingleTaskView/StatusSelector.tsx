@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { FaChevronDown, FaPlus, FaTrash } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import { toast } from 'sonner';
 
@@ -20,6 +21,7 @@ interface StatusSelectorProps {
 }
 
 const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange, onStatusesChange, boardId, disabled = false, label = 'Status' }: StatusSelectorProps) => {
+     const { t } = useTranslation();
      const [isOpen, setIsOpen] = useState(false);
      const [statuses, setStatuses] = useState<Status[]>(initialStatuses);
      const [isAdding, setIsAdding] = useState(false);
@@ -39,7 +41,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
      const handleAddStatus = async () => {
           const trimmed = newLabel.trim();
           if (!trimmed || !boardId) {
-               toast.error('Brak nazwy lub boardId');
+               toast.error(t('status.noNameOrBoardId'));
                return;
           }
 
@@ -60,11 +62,11 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                onStatusesChange?.(updated);
                onChange(data.id);
 
-               toast.success(`Dodano: ${trimmed}`);
+               toast.success(t('status.added', { name: trimmed }));
                setNewLabel('');
                setIsAdding(false);
           } catch {
-               toast.error('Nie udało się dodać statusu');
+               toast.error(t('status.addFailed'));
           }
      };
 
@@ -74,7 +76,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
           const status = statuses.find((s) => s.id === statusId);
           if (!status) return;
 
-          if (!confirm(`Na pewno usunąć status "${status.label}"?`)) return;
+          if (!confirm(t('status.confirmDelete', { label: status.label }))) return;
 
           try {
                const res = await fetch(`/api/statuses?id=${statusId}`, {
@@ -91,9 +93,9 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                     onChange(updated[0]?.id || '');
                }
 
-               toast.success('Status usunięty');
+               toast.success(t('status.deleted'));
           } catch {
-               toast.error('Nie udało się usunąć statusu');
+               toast.error(t('status.deleteFailed'));
           }
      };
 
@@ -123,7 +125,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                    <span className="truncate font-medium text-sm">{selectedStatus.label}</span>
                               </>
                          ) : (
-                              <span className="text-slate-500 text-sm">Wybierz status...</span>
+                              <span className="text-slate-500 text-sm">{t('status.selectStatus')}</span>
                          )}
                     </div>
                     {!disabled && <FaChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />}
@@ -174,7 +176,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                              value={newLabel}
                                              onChange={(e) => setNewLabel(e.target.value)}
                                              onKeyDown={(e) => e.key === 'Enter' && handleAddStatus()}
-                                             placeholder="Nazwa statusu"
+                                             placeholder={t('status.statusName')}
                                              className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                                              autoFocus
                                         />
@@ -186,14 +188,14 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                                   className="w-10 h-10 rounded-lg cursor-pointer border border-slate-600/50"
                                              />
                                              <div className="w-4 h-4 rounded-full shadow-md" style={{ backgroundColor: newColor, boxShadow: `0 0 8px ${newColor}40` }} />
-                                             <span className="text-xs text-slate-500">Podgląd</span>
+                                             <span className="text-xs text-slate-500">{t('status.preview')}</span>
                                         </div>
                                         <div className="flex gap-2">
                                              <button
                                                   onClick={handleAddStatus}
                                                   className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
                                              >
-                                                  Dodaj
+                                                  {t('common.add')}
                                              </button>
                                              <button
                                                   onClick={() => {
@@ -202,7 +204,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                                   }}
                                                   className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors"
                                              >
-                                                  Anuluj
+                                                  {t('common.cancel')}
                                              </button>
                                         </div>
                                    </div>
@@ -212,7 +214,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-purple-400 hover:bg-slate-700/50 transition-all duration-150 border-t border-slate-700/30"
                                    >
                                         <FaPlus className="w-3.5 h-3.5" />
-                                        <span className="text-sm font-medium">Dodaj nowy status</span>
+                                        <span className="text-sm font-medium">{t('status.addNew')}</span>
                                    </button>
                               )}
                          </div>

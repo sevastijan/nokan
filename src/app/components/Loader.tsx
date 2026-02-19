@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { usePWASplash } from '../context/PWASplashContext';
+import { useTranslation } from 'react-i18next';
 
 interface LoaderProps {
      text?: string;
 }
 
-const Loader = ({ text = 'Loading...' }: LoaderProps) => {
+const Loader = ({ text }: LoaderProps) => {
+     const { t } = useTranslation();
+     const displayText = text ?? t('common.loading');
      const { isSplashActive } = usePWASplash();
      // Short delay before showing loader so the PWA splash has time to
      // activate after standalone detection (avoids a brief loader flash).
@@ -86,7 +89,7 @@ const Loader = ({ text = 'Loading...' }: LoaderProps) => {
 
                     {/* Text */}
                     <div className="flex flex-col items-center gap-2">
-                         <p className="text-sm font-medium text-slate-300 tracking-widest uppercase">{text}</p>
+                         <p className="text-sm font-medium text-slate-300 tracking-widest uppercase">{displayText}</p>
                          <div className="flex items-center gap-1">
                               {[0, 1, 2].map((i) => (
                                    <span

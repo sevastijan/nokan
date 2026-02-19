@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, ListChecks, SlidersHorizontal, Layers, CheckSquare, Bug } from 'lucide-react';
 import { Popover, Transition } from '@headlessui/react';
@@ -18,6 +19,7 @@ interface UserTaskListProps {
 }
 
 export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskListProps) => {
+     const { t } = useTranslation();
      const [searchTerm, setSearchTerm] = useState('');
      const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
      const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -70,7 +72,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                          <input
                               type="text"
-                              placeholder="Szukaj tasków..."
+                              placeholder={t('userTasks.searchTasks')}
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
                               className="pl-9 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-200 w-full placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
@@ -81,9 +83,9 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                     <div className="flex items-center gap-1.5">
                          {(['all', 'active', 'completed'] as StatusFilter[]).map((status) => {
                               const labels: Record<StatusFilter, string> = {
-                                   all: 'Wszystkie',
-                                   active: 'Aktywne',
-                                   completed: 'Ukończone',
+                                   all: t('userTasks.all'),
+                                   active: t('userTasks.active'),
+                                   completed: t('userTasks.completed'),
                               };
                               const isActive = statusFilter === status;
                               return (
@@ -106,10 +108,10 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                     <div className="flex items-center gap-1.5">
                          {(['all', 'task', 'story', 'bug'] as TypeFilter[]).map((type) => {
                               const labels: Record<TypeFilter, string> = {
-                                   all: 'Wszystkie',
-                                   task: 'Task',
-                                   story: 'Story',
-                                   bug: 'Bug',
+                                   all: t('filter.all'),
+                                   task: t('userTasks.task'),
+                                   story: t('userTasks.story'),
+                                   bug: t('userTasks.bug'),
                               };
                               const icons: Record<TypeFilter, React.ReactNode> = {
                                    all: null,
@@ -149,8 +151,8 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                                         >
                                              <SlidersHorizontal className="w-3.5 h-3.5" />
                                              {priorityFilter
-                                                  ? uniquePriorities.find(([key]) => key === priorityFilter)?.[1].label || 'Priorytet'
-                                                  : 'Priorytet'}
+                                                  ? uniquePriorities.find(([key]) => key === priorityFilter)?.[1].label || t('userTasks.priority')
+                                                  : t('userTasks.priority')}
                                         </Popover.Button>
                                         <Transition
                                              show={open}
@@ -169,7 +171,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                                                             !priorityFilter ? 'bg-slate-700/50 text-white' : 'text-slate-300 hover:bg-slate-700/30'
                                                        }`}
                                                   >
-                                                       Wszystkie
+                                                       {t('common.all')}
                                                   </button>
                                                   {uniquePriorities.map(([key, { label, color }]) => (
                                                        <button
@@ -213,12 +215,12 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                               <ListChecks className="w-10 h-10 text-slate-400" />
                          </div>
                          <h3 className="text-2xl font-semibold text-white mb-2">
-                              {hasActiveFilters ? 'Nie znaleziono tasków' : 'Brak przypisanych tasków'}
+                              {hasActiveFilters ? t('userTasks.noTasksFound') : t('userTasks.noAssignedTasks')}
                          </h3>
                          <p className="text-slate-400 text-center max-w-md mb-6">
                               {hasActiveFilters
-                                   ? 'Spróbuj zmienić kryteria wyszukiwania lub wyczyść filtry'
-                                   : 'Taski przypisane do Ciebie lub w których współpracujesz pojawią się tutaj'}
+                                   ? t('userTasks.tryChangingSearch')
+                                   : t('userTasks.tasksWillAppear')}
                          </p>
                          {hasActiveFilters && (
                               <button
@@ -230,7 +232,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                                    }}
                                    className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl transition-all duration-200 border border-slate-700 hover:border-slate-600 cursor-pointer"
                               >
-                                   Wyczyść filtry
+                                   {t('common.clearFilters')}
                               </button>
                          )}
                     </div>

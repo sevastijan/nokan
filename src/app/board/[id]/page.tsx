@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 
 import { useEffect, useState, useCallback, useRef, useLayoutEffect, Suspense, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -43,16 +44,16 @@ const ListView = dynamic(() => import('@/app/components/ListView/ListView'), {
 });
 
 const AddColumnPopup = dynamic(() => import('@/app/components/TaskColumn/AddColumnPopup'), {
-     loading: () => <div className="text-slate-400">Ładowanie...</div>,
+     loading: () => <div className="text-slate-400">{/* Loading */}</div>,
 });
 
 const BoardNotesModal = dynamic(() => import('@/app/components/Board/BoardNotesModal'), {
-     loading: () => <div className="text-slate-400">Ładowanie notatek...</div>,
+     loading: () => <div className="text-slate-400">{/* Loading notes */}</div>,
      ssr: false,
 });
 
 const ApiTokensModal = dynamic(() => import('@/app/components/Board/ApiTokensModal'), {
-     loading: () => <div className="text-slate-400">Ładowanie...</div>,
+     loading: () => <div className="text-slate-400">{/* Loading */}</div>,
      ssr: false,
 });
 
@@ -61,6 +62,7 @@ const TaskCompletionModal = dynamic(() => import('@/app/components/TaskCompletio
 });
 
 export default function Page() {
+     const { t } = useTranslation();
      const params = useParams();
      const router = useRouter();
      const searchParams = useSearchParams();
@@ -130,11 +132,11 @@ export default function Page() {
                if (filterAssignee === assigneeId) {
                     setFilterAssignee(null);
                     params.delete('assignee');
-                    toast.info('Filtr usunięty');
+                    toast.info(t('board.filterRemoved'));
                } else {
                     setFilterAssignee(assigneeId);
                     params.set('assignee', assigneeId);
-                    toast.success(`Filtrowanie tasków`, {
+                    toast.success(t('board.filteringTasks'), {
                          icon: '👤',
                          duration: 2000,
                     });
@@ -172,10 +174,10 @@ export default function Page() {
                .then(setPriorities)
                .catch(() => {
                     setPriorities([
-                         { id: 'low', label: 'Niski', color: '#10b981' },
-                         { id: 'medium', label: 'Średni', color: '#eab308' },
-                         { id: 'high', label: 'Wysoki', color: '#ef4444' },
-                         { id: 'urgent', label: 'Pilny', color: '#dc2626' },
+                         { id: 'low', label: t('priority.low'), color: '#10b981' },
+                         { id: 'medium', label: t('priority.medium'), color: '#eab308' },
+                         { id: 'high', label: t('priority.high'), color: '#ef4444' },
+                         { id: 'urgent', label: t('priority.urgent'), color: '#dc2626' },
                     ]);
                });
      }, []);
@@ -347,8 +349,8 @@ export default function Page() {
                               const { data: storySubtasks } = await getSupabase().from('tasks').select('id, completed').eq('parent_id', movedTask.id);
                               const incompleteCount = storySubtasks?.filter((s) => !s.completed).length || 0;
                               if (incompleteCount > 0) {
-                                   toast.warning(`Nie można zakończyć Story — ${incompleteCount} subtask${incompleteCount === 1 ? '' : 'ów'} nie jest ukończonych`, {
-                                        description: 'Ukończ wszystkie subtaski przed przeniesieniem Story do Done.',
+                                   toast.warning(t('task.cannotCompleteStory', { count: incompleteCount }), {
+                                        description: t('completion.completeSubtasksBefore'),
                                    });
                                    return;
                               }
@@ -390,7 +392,7 @@ export default function Page() {
                               if (isDoneColumn && isTaskNotCompleted) {
                                    setPendingCompletionTask({
                                         taskId: movedTask.id,
-                                        title: movedTask.title || 'Zadanie bez tytułu',
+                                        title: movedTask.title || t('completion.untitledTask'),
                                    });
                                    setCompletionModalOpen(true);
                               }
@@ -414,11 +416,11 @@ export default function Page() {
                     data: { completed: true },
                }).unwrap();
 
-               toast.success('Zadanie oznaczone jako zakończone');
+               toast.success(t('completion.markedComplete'));
                await fetchBoardData();
           } catch (error) {
                console.error('Failed to mark task as completed:', error);
-               toast.error('Nie udało się oznaczyć zadania jako zakończone');
+               toast.error(t('completion.markFailed'));
           } finally {
                setCompletionModalOpen(false);
                setPendingCompletionTask(null);
@@ -569,9 +571,9 @@ export default function Page() {
           return (
                <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
                     <div className="text-center">
-                         <h2 className="text-2xl font-bold text-red-400 mb-4">Brak ID boarda w URL</h2>
+                         <h2 className="text-2xl font-bold text-red-400 mb-4">{t('board.noBoardId')}</h2>
                          <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition">
-                              Powrót do dashboardu
+                              {t('board.backToDashboard')}
                          </button>
                     </div>
                </div>
@@ -579,16 +581,16 @@ export default function Page() {
      }
 
      if (status === 'loading' || !session || !currentUser || boardLoading || !board) {
-          return <Loader text="Ładowanie boarda..." />;
+          return <Loader text={t('board.loading')} />;
      }
 
      if (boardError) {
           return (
                <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
                     <div className="text-center">
-                         <h2 className="text-2xl font-bold text-red-400 mb-4">Błąd ładowania boarda</h2>
+                         <h2 className="text-2xl font-bold text-red-400 mb-4">{t('board.loadingError')}</h2>
                          <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition">
-                              Powrót do dashboardu
+                              {t('board.backToDashboard')}
                          </button>
                     </div>
                </div>
@@ -627,7 +629,7 @@ export default function Page() {
                               <span className="text-sm text-slate-400">
                                    Filtr: <span className="text-slate-200">{activeFilteredAssignee.name}</span>
                               </span>
-                              <button onClick={() => handleFilterByAssignee(filterAssignee)} className="p-1 hover:bg-slate-700 rounded transition-colors" aria-label="Usuń filtr">
+                              <button onClick={() => handleFilterByAssignee(filterAssignee)} className="p-1 hover:bg-slate-700 rounded transition-colors" aria-label={t('common.clearFilters')}>
                                    <FiX size={14} className="text-slate-400 hover:text-slate-200" />
                               </button>
                          </div>
@@ -694,7 +696,7 @@ export default function Page() {
                     <Suspense
                          fallback={
                               <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
-                                   <Loader text="Ładowanie zadania..." />
+                                   <Loader text={t('board.loadingTask')} />
                               </div>
                          }
                     >

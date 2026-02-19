@@ -1,4 +1,5 @@
 import { FaDownload, FaTrash, FaEye } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 import { Attachment } from '@/app/types/globalTypes';
 import { formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ interface AttachmentsListProps {
 }
 
 const AttachmentsList = ({ attachments, onTaskUpdate, onAttachmentsUpdate, onPreviewImage }: AttachmentsListProps) => {
+     const { t } = useTranslation();
      const handleDownload = async (attachment: Attachment) => {
           try {
                const response = await fetch(`/api/upload?filePath=${encodeURIComponent(attachment.file_path)}&action=download`);
@@ -37,12 +39,12 @@ const AttachmentsList = ({ attachments, onTaskUpdate, onAttachmentsUpdate, onPre
                URL.revokeObjectURL(url);
           } catch (error) {
                console.error('Error downloading file:', error);
-               toast.error('Błąd podczas pobierania pliku');
+               toast.error(t('attachments.downloadError'));
           }
      };
 
      const handleDelete = async (attachment: Attachment) => {
-          if (!confirm('Czy na pewno chcesz usunąć ten załącznik?')) return;
+          if (!confirm(t('attachments.deleteConfirm'))) return;
 
           try {
                const response = await fetch('/api/upload', {
@@ -64,10 +66,10 @@ const AttachmentsList = ({ attachments, onTaskUpdate, onAttachmentsUpdate, onPre
                await onAttachmentsUpdate?.();
                await onTaskUpdate?.();
 
-               toast.success('Załącznik usunięty');
+               toast.success(t('attachments.deleted'));
           } catch (error) {
                console.error('Error deleting attachment:', error);
-               toast.error(error instanceof Error ? error.message : 'Błąd podczas usuwania załącznika');
+               toast.error(error instanceof Error ? error.message : t('attachments.deleteError'));
           }
      };
 
@@ -94,14 +96,14 @@ const AttachmentsList = ({ attachments, onTaskUpdate, onAttachmentsUpdate, onPre
                               <button
                                    onClick={() => handlePreview(attachment)}
                                    className="p-2 text-slate-300 hover:text-white hover:bg-slate-600/50 rounded transition-colors"
-                                   title={attachment.mime_type.startsWith('image/') ? 'Podgląd' : 'Pobierz'}
+                                   title={attachment.mime_type.startsWith('image/') ? t('common.preview') : t('common.download')}
                               >
                                    <FaEye className="w-4 h-4" />
                               </button>
-                              <button onClick={() => handleDownload(attachment)} className="p-2 text-slate-300 hover:text-white hover:bg-slate-600/50 rounded transition-colors" title="Pobierz">
+                              <button onClick={() => handleDownload(attachment)} className="p-2 text-slate-300 hover:text-white hover:bg-slate-600/50 rounded transition-colors" title={t('common.download')}>
                                    <FaDownload className="w-4 h-4" />
                               </button>
-                              <button onClick={() => handleDelete(attachment)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors" title="Usuń">
+                              <button onClick={() => handleDelete(attachment)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors" title={t('common.delete')}>
                                    <FaTrash className="w-4 h-4" />
                               </button>
                          </div>

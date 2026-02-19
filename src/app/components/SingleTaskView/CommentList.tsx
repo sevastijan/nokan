@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { FaReply, FaTrash } from 'react-icons/fa';
 import { formatDate } from '@/app/utils/helpers';
 import MarkdownContent from '@/app/components/MarkdownContent/MarkdownContent';
@@ -44,6 +45,7 @@ interface CommentItemProps {
 }
 
 const CommentItem = ({ comment, depth = 0, currentUser, task, onDeleteComment, onImagePreview, onAddComment, teamMembers }: CommentItemProps) => {
+     const { t } = useTranslation();
      const [replying, setReplying] = useState(false);
 
      const authorDisplay = getDisplayData({
@@ -69,7 +71,7 @@ const CommentItem = ({ comment, depth = 0, currentUser, task, onDeleteComment, o
 
                          <div className="flex items-center gap-4 text-xs">
                               <button onClick={() => setReplying(true)} className="text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                                   <FaReply className="w-3 h-3" /> Odpowiedz
+                                   <FaReply className="w-3 h-3" /> {t('comments.reply')}
                               </button>
                               {(comment.user_id === currentUser.id || task.user_id === currentUser.id) && (
                                    <button onClick={() => onDeleteComment(comment.id)} className="text-red-400 hover:text-red-300">
@@ -125,6 +127,7 @@ const CommentList = ({
      teamMembers: ExtendedUser[];
      onAddComment: (content: string, parentId?: string) => Promise<void>;
 }) => {
+     const { t } = useTranslation();
      const [lightboxOpen, setLightboxOpen] = useState(false);
      const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -206,7 +209,7 @@ const CommentList = ({
      const tree = buildTree(comments);
 
      if (comments.length === 0) {
-          return <div className="text-center text-gray-400 py-8 text-sm">Brak komentarzy. Bądź pierwszy!</div>;
+          return <div className="text-center text-gray-400 py-8 text-sm">{t('comments.noComments')}</div>;
      }
 
      return (

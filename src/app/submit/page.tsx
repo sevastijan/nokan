@@ -4,7 +4,7 @@ import Loader from '@/app/components/Loader';
 
 export default function SubmitPage() {
      return (
-          <Suspense fallback={<Loader text="Ładowanie..." />}>
+          <Suspense fallback={<Loader />}>
                <SubmitPageContent />
           </Suspense>
      );

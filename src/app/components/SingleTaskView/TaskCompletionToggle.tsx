@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
@@ -9,6 +10,7 @@ interface TaskCompletionToggleProps {
 }
 
 const TaskCompletionToggle = ({ completed, onToggle, disabled, disabledTooltip }: TaskCompletionToggleProps) => {
+     const { t } = useTranslation();
      return (
           <motion.button
                whileHover={disabled ? {} : { scale: 1.02 }}
@@ -27,7 +29,7 @@ const TaskCompletionToggle = ({ completed, onToggle, disabled, disabledTooltip }
                                    : 'bg-slate-700/40 border border-slate-600/50 hover:border-emerald-500/30 hover:bg-slate-700/60'
                     }
                `}
-               title={disabled ? (disabledTooltip || 'Ukończ najpierw wszystkie subtaski') : completed ? 'Oznacz jako niezakończone' : 'Oznacz jako zakończone'}
+               title={disabled ? (disabledTooltip || t('completion.completeSubtasksFirst')) : completed ? t('completion.markIncomplete') : t('completion.markComplete')}
           >
                <div
                     className={`
@@ -50,7 +52,7 @@ const TaskCompletionToggle = ({ completed, onToggle, disabled, disabledTooltip }
                          completed ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-300'
                     }`}
                >
-                    {completed ? 'Zakończone' : 'Do wykonania'}
+                    {completed ? t('completion.completed') : t('completion.todo')}
                </span>
           </motion.button>
      );

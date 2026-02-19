@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
 import BoardNotesEditor from './BoardNotesEditor';
@@ -14,6 +15,7 @@ interface BoardNotesModalProps {
 }
 
 export default function BoardNotesModal({ isOpen, onClose, boardId }: BoardNotesModalProps) {
+     const { t } = useTranslation();
      const modalRef = useRef<HTMLDivElement>(null);
 
      const { data: notes, isLoading } = useGetBoardNotesQuery(boardId, {
@@ -62,10 +64,10 @@ export default function BoardNotesModal({ isOpen, onClose, boardId }: BoardNotes
                     boardId,
                     content: { html: content },
                }).unwrap();
-               toast.success('Notatki zostały zapisane');
+               toast.success(t('common.save'));
           } catch (error) {
                console.error('Error saving notes:', error);
-               toast.error('Nie udało się zapisać notatek');
+               toast.error(t('errors.generic'));
           }
      };
 
@@ -89,8 +91,8 @@ export default function BoardNotesModal({ isOpen, onClose, boardId }: BoardNotes
                          >
                               {/* Header */}
                               <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800">
-                                   <h2 className="text-xl font-bold text-slate-100">Board Notes</h2>
-                                   <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg transition text-slate-400 hover:text-slate-200" aria-label="Close notes">
+                                   <h2 className="text-xl font-bold text-slate-100">{t('board.boardNotes')}</h2>
+                                   <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg transition text-slate-400 hover:text-slate-200" aria-label={t('board.closeNotes')}>
                                         <FiX className="w-6 h-6" />
                                    </button>
                               </div>
@@ -99,7 +101,7 @@ export default function BoardNotesModal({ isOpen, onClose, boardId }: BoardNotes
                               <div className="flex-1 overflow-hidden">
                                    {isLoading ? (
                                         <div className="flex items-center justify-center h-full">
-                                             <div className="text-slate-400">Ładowanie notatek...</div>
+                                             <div className="text-slate-400">{t('board.loadingNotes')}</div>
                                         </div>
                                    ) : (
                                         <BoardNotesEditor initialContent={notes?.content?.html || null} onSave={handleSave} isSaving={isSaving} />

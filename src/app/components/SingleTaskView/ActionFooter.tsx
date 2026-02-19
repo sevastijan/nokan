@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { FiTrash2, FiX, FiCheck, FiPlus } from 'react-icons/fi';
 import ConfirmDialog from './ConfirmDialog';
 import { ActionFooterProps } from '@/app/types/globalTypes';
 
 const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose, onDelete, task, tempTitle }: ActionFooterProps) => {
+     const { t } = useTranslation();
      const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
      const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
@@ -57,7 +59,7 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
                                                        transition-all duration-200"
                                         >
                                              <FiTrash2 className="w-4 h-4" />
-                                             <span className="hidden sm:inline">Usuń</span>
+                                             <span className="hidden sm:inline">{t('common.delete')}</span>
                                         </motion.button>
                                    )}
                               </div>
@@ -76,7 +78,7 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
                                                   transition-all duration-200"
                                    >
                                         <FiX className="w-4 h-4" />
-                                        <span>Anuluj</span>
+                                        <span>{t('common.cancel')}</span>
                                    </motion.button>
 
                                    <motion.button
@@ -104,17 +106,17 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
                                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                                        />
                                                   </svg>
-                                                  <span>Zapisywanie...</span>
+                                                  <span>{t('task.saving')}</span>
                                              </>
                                         ) : isNewTask ? (
                                              <>
                                                   <FiPlus className="w-4 h-4" />
-                                                  <span>Utwórz zadanie</span>
+                                                  <span>{t('task.createTask')}</span>
                                              </>
                                         ) : (
                                              <>
                                                   <FiCheck className="w-4 h-4" />
-                                                  <span>Zapisz zmiany</span>
+                                                  <span>{t('task.saveChanges')}</span>
                                              </>
                                         )}
                                    </motion.button>
@@ -125,10 +127,10 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
 
                <ConfirmDialog
                     isOpen={showDeleteConfirm}
-                    title="Usuń zadanie"
-                    message={`Czy na pewno chcesz usunąć "${task?.title ?? ''}"? Ta akcja jest nieodwracalna.`}
-                    confirmText="Usuń"
-                    cancelText="Anuluj"
+                    title={t('task.deleteTitle')}
+                    message={t('task.deleteConfirm', { title: task?.title ?? '' })}
+                    confirmText={t('common.delete')}
+                    cancelText={t('common.cancel')}
                     type="danger"
                     onConfirm={handleDeleteConfirm}
                     onCancel={handleDeleteCancel}
@@ -136,10 +138,10 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
 
                <ConfirmDialog
                     isOpen={showCloseConfirm}
-                    title="Niezapisane zmiany"
-                    message="Masz niezapisane zmiany. Czy na pewno chcesz zamknąć bez zapisywania?"
-                    confirmText="Odrzuć zmiany"
-                    cancelText="Kontynuuj edycję"
+                    title={t('task.unsavedChanges')}
+                    message={t('task.unsavedChangesMessage')}
+                    confirmText={t('task.discardChanges')}
+                    cancelText={t('task.continueEditing')}
                     type="warning"
                     onConfirm={handleCloseConfirm}
                     onCancel={handleCloseCancel}

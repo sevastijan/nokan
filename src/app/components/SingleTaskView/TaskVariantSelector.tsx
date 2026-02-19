@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { FaCheckSquare, FaLayerGroup, FaBug } from 'react-icons/fa';
 import { TaskType } from '@/app/types/globalTypes';
 
@@ -10,45 +11,46 @@ interface TaskVariantSelectorProps {
      large?: boolean;
 }
 
-const VARIANTS: {
-     value: TaskType;
-     label: string;
-     description: string;
-     icon: React.ReactNode;
-     iconLarge: React.ReactNode;
-     activeClasses: string;
-     activeBg: string;
-}[] = [
-     {
-          value: 'task',
-          label: 'Nowe zadanie',
-          description: 'Proste zadanie bez subtaskow',
-          icon: <FaCheckSquare className="w-4 h-4" />,
-          iconLarge: <FaCheckSquare className="w-8 h-8" />,
-          activeClasses: 'border-blue-500/60 bg-blue-500/15 text-blue-300',
-          activeBg: 'bg-blue-500/20',
-     },
-     {
-          value: 'story',
-          label: 'Story',
-          description: 'Zadanie z subtaskami',
-          icon: <FaLayerGroup className="w-4 h-4" />,
-          iconLarge: <FaLayerGroup className="w-8 h-8" />,
-          activeClasses: 'border-purple-500/60 bg-purple-500/15 text-purple-300',
-          activeBg: 'bg-purple-500/20',
-     },
-     {
-          value: 'bug',
-          label: 'Bug',
-          description: 'Zgloszenie bledu z linkiem i scenariuszem',
-          icon: <FaBug className="w-4 h-4" />,
-          iconLarge: <FaBug className="w-8 h-8" />,
-          activeClasses: 'border-red-500/60 bg-red-500/15 text-red-300',
-          activeBg: 'bg-red-500/20',
-     },
-];
-
 const TaskVariantSelector = ({ selectedType, onChange, large }: TaskVariantSelectorProps) => {
+     const { t } = useTranslation();
+
+     const VARIANTS: {
+          value: TaskType;
+          label: string;
+          description: string;
+          icon: React.ReactNode;
+          iconLarge: React.ReactNode;
+          activeClasses: string;
+          activeBg: string;
+     }[] = [
+          {
+               value: 'task',
+               label: t('taskVariant.newTask'),
+               description: t('taskVariant.newTaskDesc'),
+               icon: <FaCheckSquare className="w-4 h-4" />,
+               iconLarge: <FaCheckSquare className="w-8 h-8" />,
+               activeClasses: 'border-blue-500/60 bg-blue-500/15 text-blue-300',
+               activeBg: 'bg-blue-500/20',
+          },
+          {
+               value: 'story',
+               label: t('taskVariant.story'),
+               description: t('taskVariant.storyDesc'),
+               icon: <FaLayerGroup className="w-4 h-4" />,
+               iconLarge: <FaLayerGroup className="w-8 h-8" />,
+               activeClasses: 'border-purple-500/60 bg-purple-500/15 text-purple-300',
+               activeBg: 'bg-purple-500/20',
+          },
+          {
+               value: 'bug',
+               label: t('taskVariant.bug'),
+               description: t('taskVariant.bugDesc'),
+               icon: <FaBug className="w-4 h-4" />,
+               iconLarge: <FaBug className="w-8 h-8" />,
+               activeClasses: 'border-red-500/60 bg-red-500/15 text-red-300',
+               activeBg: 'bg-red-500/20',
+          },
+     ];
      if (large) {
           return (
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
@@ -100,7 +102,7 @@ const TaskVariantSelector = ({ selectedType, onChange, large }: TaskVariantSelec
           <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                     <div className="w-1 h-4 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full" />
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Typ zadania</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('taskVariant.taskType')}</h3>
                </div>
                <div className="grid grid-cols-3 gap-3">
                     {VARIANTS.map((variant) => {

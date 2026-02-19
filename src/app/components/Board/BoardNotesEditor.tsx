@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -64,6 +65,7 @@ interface ToolbarPluginProps {
 }
 
 function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
+     const { t } = useTranslation();
      const [editor] = useLexicalComposerContext();
      const [isBold, setIsBold] = useState(false);
      const [isItalic, setIsItalic] = useState(false);
@@ -219,11 +221,11 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                          }}
                          className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                         <option value="paragraph">Normal</option>
-                         <option value="h1">Heading 1</option>
-                         <option value="h2">Heading 2</option>
-                         <option value="h3">Heading 3</option>
-                         <option value="quote">Quote</option>
+                         <option value="paragraph">{t('board.normal')}</option>
+                         <option value="h1">{t('board.heading1')}</option>
+                         <option value="h2">{t('board.heading2')}</option>
+                         <option value="h3">{t('board.heading3')}</option>
+                         <option value="quote">{t('board.quote')}</option>
                     </select>
 
                     {/* Font size selector */}
@@ -231,7 +233,7 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                          value={fontSize}
                          onChange={(e) => handleFontSizeChange(e.target.value)}
                          className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
-                         title="Font Size"
+                         title={t('board.fontSize')}
                     >
                          <option value="12px">12px</option>
                          <option value="14px">14px</option>
@@ -341,7 +343,7 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                          className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded transition text-sm font-medium"
                     >
                          <FiSave className="w-4 h-4" />
-                         {isSaving ? 'Zapisywanie...' : 'Zapisz'}
+                         {isSaving ? t('common.saving') : t('common.save')}
                     </button>
                </div>
 
@@ -374,7 +376,7 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                               }}
                               className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded transition"
                          >
-                              Anuluj
+                              {t('common.cancel')}
                          </button>
                     </div>
                )}
@@ -417,6 +419,7 @@ interface BoardNotesEditorProps {
 }
 
 export default function BoardNotesEditor({ initialContent, onSave, isSaving }: BoardNotesEditorProps) {
+     const { t } = useTranslation();
      const [editorContent, setEditorContent] = useState<string>('');
 
      const handleEditorChange = useCallback((editorState: EditorState, editor: LexicalEditor) => {
@@ -437,7 +440,7 @@ export default function BoardNotesEditor({ initialContent, onSave, isSaving }: B
                     <div className="flex-1 overflow-y-auto relative bg-slate-900/50">
                          <RichTextPlugin
                               contentEditable={<ContentEditable className="outline-none p-4 min-h-full" style={{ caretColor: '#60a5fa' }} />}
-                              placeholder={<div className="absolute top-4 left-4 text-slate-500 pointer-events-none">Zacznij pisać swoje notatki...</div>}
+                              placeholder={<div className="absolute top-4 left-4 text-slate-500 pointer-events-none">{t('board.notesPlaceholder')}</div>}
                               ErrorBoundary={LexicalErrorBoundary}
                          />
                          <OnChangePlugin onChange={handleEditorChange} />

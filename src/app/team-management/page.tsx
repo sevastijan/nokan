@@ -4,9 +4,11 @@ import { useSession } from 'next-auth/react';
 import { useUserRole } from '../hooks/useUserRole';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import TeamManagement from '../components/TeamManagement/TeamManagement';
 
 const TeamManagementPage = () => {
+     const { t } = useTranslation();
      const { data: session, status } = useSession();
      const { hasManagementAccess, loading } = useUserRole();
      const router = useRouter();
@@ -26,7 +28,7 @@ const TeamManagementPage = () => {
      if (status === 'loading' || loading) {
           return (
                <div className="flex items-center justify-center min-h-screen">
-                    <div className="text-lg">Loading...</div>
+                    <div className="text-lg">{t('common.loading')}</div>
                </div>
           );
      }
@@ -34,7 +36,7 @@ const TeamManagementPage = () => {
      if (!session || !hasManagementAccess()) {
           return (
                <div className="flex items-center justify-center min-h-screen">
-                    <div className="text-lg text-red-600">Access Denied</div>
+                    <div className="text-lg text-red-600">{t('common.accessDenied')}</div>
                </div>
           );
      }

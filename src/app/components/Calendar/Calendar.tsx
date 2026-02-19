@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import SingleTaskView from '@/app/components/SingleTaskView/SingleTaskView';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import {
@@ -47,8 +48,6 @@ const BOARD_COLORS = [
      { bg: 'bg-teal-500/20', border: 'border-teal-500/40', dot: 'bg-teal-500', bar: 'from-teal-600/80 to-teal-500/60', text: 'text-teal-400' },
 ];
 
-const DAY_NAMES = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'];
-
 const MAX_VISIBLE_TASKS = 3;
 
 /* ──────────────────────────────────────────────
@@ -89,8 +88,11 @@ interface BoardPickerState {
    Component
    ────────────────────────────────────────────── */
 const Calendar = () => {
+     const { t } = useTranslation();
      const { currentUser, loading: userLoading, authStatus } = useCurrentUser();
      const userId = currentUser?.id;
+
+     const dayNames = [t('calendar.mon'), t('calendar.tue'), t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat'), t('calendar.sun')];
 
      /* ── Boards ────────────────────────────── */
      const { data: boards = [], isLoading: boardsLoading, isError: boardsError } = useGetUserBoardsQuery(userId ?? '', { skip: !userId });
@@ -369,14 +371,14 @@ const Calendar = () => {
 
      /* ── Loading / error states ────────────── */
      if (authStatus === 'loading' || userLoading || boardsLoading) {
-          return <Loader text="Ładowanie kalendarza..." />;
+          return <Loader text={t('calendar.loading')} />;
      }
      if (authStatus === 'unauthenticated' || !userId) {
           return (
                <div className="flex items-center justify-center min-h-[60vh]">
                     <div className="text-center">
                          <CalendarIcon className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                         <p className="text-slate-400 text-lg">Zaloguj się, aby zobaczyć kalendarz.</p>
+                         <p className="text-slate-400 text-lg">{t('calendar.signInRequired')}</p>
                     </div>
                </div>
           );
@@ -386,7 +388,7 @@ const Calendar = () => {
                <div className="flex items-center justify-center min-h-[60vh]">
                     <div className="text-center">
                          <CalendarIcon className="w-12 h-12 text-red-500/60 mx-auto mb-4" />
-                         <p className="text-red-400 text-lg">Nie udało się załadować tablic.</p>
+                         <p className="text-red-400 text-lg">{t('calendar.loadFailed')}</p>
                     </div>
                </div>
           );
@@ -396,8 +398,8 @@ const Calendar = () => {
                <div className="flex items-center justify-center min-h-[60vh]">
                     <div className="text-center">
                          <Layers className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                         <p className="text-slate-400 text-lg">Nie masz jeszcze żadnych tablic.</p>
-                         <p className="text-slate-500 text-sm mt-1">Utwórz tablicę, aby korzystać z kalendarza.</p>
+                         <p className="text-slate-400 text-lg">{t('calendar.noBoards')}</p>
+                         <p className="text-slate-500 text-sm mt-1">{t('calendar.createBoardHint')}</p>
                     </div>
                </div>
           );
@@ -424,7 +426,7 @@ const Calendar = () => {
                                    <button
                                         onClick={prevMonth}
                                         className="p-2 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
-                                        aria-label="Poprzedni miesiąc"
+                                        aria-label={t('calendar.prevMonth')}
                                    >
                                         <ChevronLeft className="w-5 h-5" />
                                    </button>
@@ -447,7 +449,7 @@ const Calendar = () => {
                                    <button
                                         onClick={nextMonth}
                                         className="p-2 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
-                                        aria-label="Następny miesiąc"
+                                        aria-label={t('calendar.nextMonth')}
                                    >
                                         <ChevronRight className="w-5 h-5" />
                                    </button>
@@ -456,7 +458,7 @@ const Calendar = () => {
                                         onClick={goToToday}
                                         className="ml-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 transition-colors"
                                    >
-                                        Dziś
+                                        {t('calendar.today')}
                                    </button>
                               </div>
                          </div>
@@ -472,7 +474,7 @@ const Calendar = () => {
                                                   : 'bg-transparent border-slate-600/50 text-slate-500 hover:text-slate-300 hover:border-slate-500'
                                         }`}
                                    >
-                                        Wszystkie
+                                        {t('calendar.allBoards')}
                                    </button>
                                    {boards.map((board) => {
                                         const color = boardColorMap.get(board.id) ?? BOARD_COLORS[0];
@@ -500,7 +502,7 @@ const Calendar = () => {
                     <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
                          {/* Day names header */}
                          <div className="grid grid-cols-7 border-b border-slate-700/50">
-                              {DAY_NAMES.map((d) => (
+                              {dayNames.map((d) => (
                                    <div key={d} className="py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                                         {d}
                                    </div>
@@ -624,7 +626,7 @@ const Calendar = () => {
                               transition={{ duration: 0.15 }}
                          >
                               <div className="px-3 py-2 border-b border-slate-700/50">
-                                   <p className="text-xs font-medium text-slate-400">Wybierz tablicę</p>
+                                   <p className="text-xs font-medium text-slate-400">{t('calendar.selectBoard')}</p>
                               </div>
                               <div className="py-1 max-h-60 overflow-y-auto">
                                    {boards

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Search, UserPlus, UserMinus, Users, UsersRound } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import TemplateSelector from "@/app/components/Board/TemplateSelector";
@@ -36,6 +37,7 @@ const BoardModal = ({
   templateRefreshTrigger?: number;
   currentUserId?: string;
 }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(initialTitle);
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
   const templateSelectorRef = useRef<{ refreshTemplates: () => void }>(null);
@@ -213,10 +215,10 @@ const BoardModal = ({
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-xl font-semibold">
                   {mode === "create"
-                    ? "Create new board"
+                    ? t('boardModal.createNew')
                     : mode === "edit"
-                    ? "Edit board"
-                    : "Delete board"}
+                    ? t('boardModal.edit')
+                    : t('boardModal.delete')}
                 </h2>
                 <button
                   onClick={onClose}
@@ -231,14 +233,14 @@ const BoardModal = ({
                 {(mode === "create" || mode === "edit") && (
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-slate-300">
-                      Board title
+                      {t('boardModal.boardTitle')}
                     </label>
                     <input
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-slate-500 transition-colors"
-                      placeholder="Enter title..."
+                      placeholder={t('boardModal.enterTitle')}
                     />
                   </div>
                 )}
@@ -258,7 +260,7 @@ const BoardModal = ({
                 {mode === "create" && currentUserId && (
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-slate-300">
-                      Members
+                      {t('boardModal.members')}
                     </label>
 
                     {/* Tabs */}
@@ -272,7 +274,7 @@ const BoardModal = ({
                         }`}
                       >
                         <Users size={14} />
-                        Users
+                        {t('boardModal.usersTab')}
                       </button>
                       <button
                         onClick={() => setMemberTab("teams")}
@@ -283,7 +285,7 @@ const BoardModal = ({
                         }`}
                       >
                         <UsersRound size={14} />
-                        Teams
+                        {t('boardModal.teamsTab')}
                         {selectedTeamIds.length > 0 && (
                           <span className="ml-1 text-xs bg-blue-600/30 text-blue-300 px-1.5 py-0.5 rounded-full">
                             {selectedTeamIds.length}
@@ -305,8 +307,8 @@ const BoardModal = ({
                         className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-slate-500 transition-colors"
                         placeholder={
                           memberTab === "users"
-                            ? "Search by name or email..."
-                            : "Search teams..."
+                            ? t('boardModal.searchUsers')
+                            : t('boardModal.searchTeams')
                         }
                       />
                     </div>
@@ -316,7 +318,7 @@ const BoardModal = ({
                       <div className="max-h-48 overflow-y-auto space-y-1 rounded-lg border border-slate-700/50 bg-slate-900/30 p-1">
                         {filteredUsers.length === 0 && (
                           <p className="text-slate-500 text-sm text-center py-3">
-                            No users found
+                            {t('boardModal.noUsersFound')}
                           </p>
                         )}
                         {filteredUsers
@@ -348,15 +350,15 @@ const BoardModal = ({
                                 {getUserAvatar(user)}
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-white truncate">
-                                    {user.custom_name || user.name || "Unknown"}
+                                    {user.custom_name || user.name || t('common.unknown')}
                                     {isCreator && (
                                       <span className="ml-2 text-xs text-blue-400 font-normal">
-                                        (Creator)
+                                        {t('boardModal.creator')}
                                       </span>
                                     )}
                                     {isFromTeam && !isCreator && (
                                       <span className="ml-2 text-xs text-emerald-400 font-normal">
-                                        (via team)
+                                        {t('boardModal.viaTeam')}
                                       </span>
                                     )}
                                   </div>
@@ -410,8 +412,8 @@ const BoardModal = ({
                         {filteredTeams.length === 0 && (
                           <p className="text-slate-500 text-sm text-center py-3">
                             {myTeams.length === 0
-                              ? "No teams available"
-                              : "No teams found"}
+                              ? t('boardModal.noTeamsAvailable')
+                              : t('boardModal.noTeamsFound')}
                           </p>
                         )}
                         {filteredTeams.map((team: Team) => {
@@ -474,8 +476,7 @@ const BoardModal = ({
                                     })}
                                   </div>
                                   <span className="text-xs text-slate-500 ml-1">
-                                    {memberCount} member
-                                    {memberCount !== 1 ? "s" : ""}
+                                    {memberCount} {t('boardModal.member', { count: memberCount })}
                                     {extraCount > 0 && ` (+${extraCount})`}
                                   </span>
                                 </div>
@@ -512,13 +513,11 @@ const BoardModal = ({
                     {/* Summary */}
                     {totalSelected > 0 && (
                       <p className="text-xs text-slate-500 mt-1.5">
-                        {totalSelected} member
-                        {totalSelected !== 1 ? "s" : ""} selected
+                        {totalSelected} {t('boardModal.member', { count: totalSelected })} {t('boardModal.selected')}
                         {selectedTeamIds.length > 0 && (
                           <span className="text-slate-600">
                             {" "}
-                            ({selectedTeamIds.length} team
-                            {selectedTeamIds.length !== 1 ? "s" : ""})
+                            ({selectedTeamIds.length} {t('boardModal.teamsTab').toLowerCase()})
                           </span>
                         )}
                       </p>
@@ -528,7 +527,7 @@ const BoardModal = ({
 
                 {mode === "delete" && (
                   <p className="text-red-400">
-                    Are you sure you want to delete this board?
+                    {t('boardModal.confirmDelete')}
                   </p>
                 )}
               </div>
@@ -539,14 +538,14 @@ const BoardModal = ({
                   onClick={onClose}
                   className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 border border-slate-700/50 transition-colors"
                 >
-                  Cancel
+                  {t('boardModal.cancel')}
                 </button>
                 {mode === "delete" && onDelete ? (
                   <button
                     onClick={handleDeleteClick}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 ) : (
                   <button
@@ -554,7 +553,7 @@ const BoardModal = ({
                     disabled={!title.trim()}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {mode === "create" ? "Create" : "Save"}
+                    {mode === "create" ? t('boardModal.create') : t('boardModal.save')}
                   </button>
                 )}
               </div>

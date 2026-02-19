@@ -4,6 +4,7 @@ import { useState, Fragment } from 'react';
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Search, Users, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useGetAllUsersQuery, useCreateDmChannelMutation, useCreateGroupChannelMutation } from '@/app/store/apiSlice';
 import { useChat } from '@/app/context/ChatContext';
@@ -18,6 +19,7 @@ interface CreateChannelModalProps {
 }
 
 const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalProps) => {
+	const { t } = useTranslation();
 	const { currentUser } = useCurrentUser();
 	const { selectChannel, openMiniChat } = useChat();
 	const router = useRouter();
@@ -124,7 +126,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 							{/* Header */}
 							<div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
 								<DialogTitle className="text-base font-semibold text-white">
-									Nowa rozmowa
+									{t('chat.newConversation')}
 								</DialogTitle>
 								<button
 									onClick={onClose}
@@ -143,7 +145,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 									}`}
 								>
 									<MessageCircle className="w-3.5 h-3.5" />
-									Wiadomość
+									{t('chat.message')}
 								</button>
 								<button
 									onClick={() => { setMode('group'); setSelectedUserIds([]); }}
@@ -152,7 +154,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 									}`}
 								>
 									<Users className="w-3.5 h-3.5" />
-									Kanał grupowy
+									{t('chat.groupChannel')}
 								</button>
 							</div>
 
@@ -161,14 +163,14 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 								<div className="px-5 pt-3 space-y-2">
 									<input
 										type="text"
-										placeholder="Nazwa kanału"
+										placeholder={t('chat.channelName')}
 										value={groupName}
 										onChange={(e) => setGroupName(e.target.value)}
 										className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
 									/>
 									<input
 										type="text"
-										placeholder="Opis (opcjonalnie)"
+										placeholder={t('chat.channelDescription')}
 										value={groupDescription}
 										onChange={(e) => setGroupDescription(e.target.value)}
 										className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
@@ -182,7 +184,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 									<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
 									<input
 										type="text"
-										placeholder="Szukaj użytkowników..."
+										placeholder={t('chat.searchUsers')}
 										value={search}
 										onChange={(e) => setSearch(e.target.value)}
 										className="w-full pl-9 pr-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
@@ -223,7 +225,7 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 									);
 								})}
 								{filteredUsers.length === 0 && (
-									<p className="text-center text-sm text-slate-500 py-4">Brak użytkowników</p>
+									<p className="text-center text-sm text-slate-500 py-4">{t('chat.noUsers')}</p>
 								)}
 							</div>
 
@@ -233,14 +235,14 @@ const CreateChannelModal = ({ onClose, initialMode = 'dm' }: CreateChannelModalP
 									onClick={onClose}
 									className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 transition cursor-pointer"
 								>
-									Anuluj
+									{t('common.cancel')}
 								</button>
 								<button
 									onClick={handleCreate}
 									disabled={!canCreate || isLoading}
 									className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
 								>
-									{isLoading ? 'Tworzenie...' : mode === 'dm' ? 'Rozpocznij rozmowę' : 'Utwórz kanał'}
+									{isLoading ? t('chat.creating') : mode === 'dm' ? t('chat.startConversation') : t('chat.createChannel')}
 								</button>
 							</div>
 						</DialogPanel>

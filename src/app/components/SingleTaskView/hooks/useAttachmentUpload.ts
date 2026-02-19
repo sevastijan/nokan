@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Attachment } from '@/app/types/globalTypes';
 
@@ -25,6 +26,7 @@ interface UseAttachmentUploadProps {
 }
 
 export const useAttachmentUpload = ({ uploadAttachmentMutation, onTaskUpdate }: UseAttachmentUploadProps) => {
+     const { t } = useTranslation();
      const [localFilePreviews, setLocalFilePreviews] = useState<LocalFilePreview[]>([]);
 
      const addFiles = useCallback((files: File[]) => {
@@ -33,7 +35,7 @@ export const useAttachmentUpload = ({ uploadAttachmentMutation, onTaskUpdate }: 
 
           files.forEach((file) => {
                if (file.size > 10 * 1024 * 1024) {
-                    toast.error(`Plik ${file.name} jest za duży (max 10MB)`);
+                    toast.error(t('attachments.fileTooLargeShort', { name: file.name }));
                     hasInvalidFiles = true;
                } else {
                     validFiles.push(file);
@@ -50,10 +52,10 @@ export const useAttachmentUpload = ({ uploadAttachmentMutation, onTaskUpdate }: 
                setLocalFilePreviews((prev) => [...prev, ...previews]);
 
                if (!hasInvalidFiles) {
-                    toast.success(`Dodano ${validFiles.length} ${validFiles.length === 1 ? 'plik' : 'plików'}`);
+                    toast.success(t('attachments.addedFiles', { count: validFiles.length }));
                }
           }
-     }, []);
+     }, [t]);
 
      const removeFile = useCallback((id: string) => {
           setLocalFilePreviews((prev) => {
@@ -63,14 +65,14 @@ export const useAttachmentUpload = ({ uploadAttachmentMutation, onTaskUpdate }: 
                }
                return prev.filter((f) => f.id !== id);
           });
-          toast.success('Plik usunięty');
-     }, []);
+          toast.success(t('attachments.fileRemoved'));
+     }, [t]);
 
      const uploadAllAttachments = useCallback(
           async (files: LocalFilePreview[], taskId: string): Promise<{ success: boolean; errors: number }> => {
                if (files.length === 0) return { success: true, errors: 0 };
 
-               toast.info('Przesyłanie załączników...');
+               toast.info(t('attachments.uploadingAttachments'));
                let errors = 0;
 
                for (const { file, previewUrl } of files) {
@@ -88,7 +90,7 @@ export const useAttachmentUpload = ({ uploadAttachmentMutation, onTaskUpdate }: 
 
                return { success: errors === 0, errors };
           },
-          [uploadAttachmentMutation, onTaskUpdate],
+          [uploadAttachmentMutation, onTaskUpdate, t],
      );
 
      const cleanupPreviews = useCallback(() => {

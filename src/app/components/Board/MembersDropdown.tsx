@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiUserPlus, FiX, FiUsers, FiSearch, FiCheck } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
@@ -22,6 +23,7 @@ const getDisplayData = (user: { name?: string | null; image?: string | null; cus
 });
 
 const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: MembersDropdownProps) => {
+     const { t } = useTranslation();
      const containerRef = useRef<HTMLDivElement>(null);
      const [searchQuery, setSearchQuery] = useState('');
 
@@ -51,10 +53,10 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
           async (userId: string) => {
                try {
                     await addMember({ boardId, userId }).unwrap();
-                    toast.success('Dodano użytkownika');
+                    toast.success(t('membersDropdown.userAdded'));
                     refetchMembers();
                } catch {
-                    toast.error('Nie udało się dodać');
+                    toast.error(t('membersDropdown.addFailed'));
                }
           },
           [addMember, boardId, refetchMembers],
@@ -65,10 +67,10 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                if (userId === currentUserId) return;
                try {
                     await removeMember({ boardId, userId }).unwrap();
-                    toast.success('Usunięto użytkownika');
+                    toast.success(t('membersDropdown.userRemoved'));
                     refetchMembers();
                } catch {
-                    toast.error('Nie udało się usunąć');
+                    toast.error(t('membersDropdown.removeFailed'));
                }
           },
           [removeMember, boardId, currentUserId, refetchMembers],
@@ -86,7 +88,7 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                     `}
                >
                     <FiUserPlus className="w-4 h-4" />
-                    <span className="hidden sm:inline font-medium">Członkowie</span>
+                    <span className="hidden sm:inline font-medium">{t('membersDropdown.boardMembers')}</span>
                     <span className="bg-slate-600 text-slate-300 text-xs px-1.5 py-0.5 rounded min-w-[18px] text-center">{boardMembers.length}</span>
                </button>
 
@@ -101,19 +103,19 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                          >
                               {/* Header */}
                               <div className="px-4 py-3 border-b border-slate-700">
-                                   <span className="text-sm font-medium text-slate-200">Członkowie tablicy</span>
+                                   <span className="text-sm font-medium text-slate-200">{t('membersDropdown.boardMembers')}</span>
                               </div>
 
                               {/* Current Members */}
                               <div className="p-3 border-b border-slate-700">
                                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">
-                                        Aktualni ({boardMembers.length})
+                                        {t('membersDropdown.current', { count: boardMembers.length })}
                                    </div>
 
                                    {boardMembers.length === 0 ? (
                                         <div className="text-center py-3 text-slate-500 text-sm">
                                              <FiUsers className="w-5 h-5 mx-auto mb-1 opacity-50" />
-                                             Brak członków
+                                             {t('membersDropdown.noMembers')}
                                         </div>
                                    ) : (
                                         <ul className="space-y-1 max-h-40 overflow-y-auto">
@@ -134,7 +136,7 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                                                                  <div className="min-w-0">
                                                                       <div className="text-sm text-slate-200 truncate flex items-center gap-1.5">
                                                                            {userDisplay.name}
-                                                                           {isCurrentUser && <span className="text-[10px] text-slate-500">(Ty)</span>}
+                                                                           {isCurrentUser && <span className="text-[10px] text-slate-500">{t('common.you')}</span>}
                                                                       </div>
                                                                       <div className="text-xs text-slate-500 truncate">{user.email}</div>
                                                                  </div>
@@ -144,7 +146,7 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                                                                  <button
                                                                       onClick={() => handleRemoveUser(user.id)}
                                                                       className="p-1.5 text-slate-500 hover:text-slate-300 rounded transition-colors"
-                                                                      title="Usuń"
+                                                                      title={t('membersDropdown.remove')}
                                                                  >
                                                                       <FiX className="w-4 h-4" />
                                                                  </button>
@@ -159,14 +161,14 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                               {/* Add New Members - inline list instead of nested dropdown */}
                               {availableToAdd.length > 0 && (
                                    <div className="p-3">
-                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">Dodaj nowych</div>
+                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">{t('membersDropdown.addNew')}</div>
 
                                         {/* Search input */}
                                         <div className="relative mb-2">
                                              <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                              <input
                                                   type="text"
-                                                  placeholder="Szukaj..."
+                                                  placeholder={t('membersDropdown.search')}
                                                   value={searchQuery}
                                                   onChange={(e) => setSearchQuery(e.target.value)}
                                                   className="w-full pl-8 pr-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-500"
@@ -176,7 +178,7 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                                         {/* User list */}
                                         <ul className="space-y-0.5 max-h-40 overflow-y-auto">
                                              {filteredUsers.length === 0 ? (
-                                                  <li className="text-center py-3 text-slate-500 text-sm">Brak wyników</li>
+                                                  <li className="text-center py-3 text-slate-500 text-sm">{t('membersDropdown.noResults')}</li>
                                              ) : (
                                                   filteredUsers.map((user) => {
                                                        const userDisplay = getDisplayData(user);

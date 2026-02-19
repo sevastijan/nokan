@@ -3,6 +3,7 @@
 import { Fragment } from 'react';
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Pin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Avatar from '@/app/components/Avatar/Avatar';
 import { useGetPinnedMessagesQuery, useUnpinMessageMutation } from '@/app/store/apiSlice';
 import { getUserDisplayName, getUserDisplayAvatar, formatMessageTime } from '../utils';
@@ -13,6 +14,7 @@ interface PinnedMessagesPanelProps {
 }
 
 const PinnedMessagesPanel = ({ channelId, onClose }: PinnedMessagesPanelProps) => {
+	const { t } = useTranslation();
 	const { data: pinnedMessages = [], isLoading } = useGetPinnedMessagesQuery(channelId);
 	const [unpinMessage] = useUnpinMessageMutation();
 
@@ -51,7 +53,7 @@ const PinnedMessagesPanel = ({ channelId, onClose }: PinnedMessagesPanelProps) =
 								<div className="flex items-center gap-2">
 									<Pin className="w-4 h-4 text-amber-400" />
 									<DialogTitle className="text-base font-semibold text-white">
-										Przypięte wiadomości
+										{t('chat.pinnedMessages')}
 									</DialogTitle>
 								</div>
 								<button
@@ -71,9 +73,9 @@ const PinnedMessagesPanel = ({ channelId, onClose }: PinnedMessagesPanelProps) =
 								) : pinnedMessages.length === 0 ? (
 									<div className="flex flex-col items-center justify-center py-12 text-center px-5">
 										<Pin className="w-8 h-8 text-slate-700 mb-3" />
-										<p className="text-sm text-slate-400">Brak przypiętych wiadomości</p>
+										<p className="text-sm text-slate-400">{t('chat.noPinnedMessages')}</p>
 										<p className="text-xs text-slate-600 mt-1">
-											Przypnij ważne wiadomości, aby mieć do nich szybki dostęp
+											{t('chat.pinHint')}
 										</p>
 									</div>
 								) : (
@@ -102,7 +104,7 @@ const PinnedMessagesPanel = ({ channelId, onClose }: PinnedMessagesPanelProps) =
 													<button
 														onClick={() => handleUnpin(msg.id)}
 														className="opacity-0 group-hover:opacity-100 p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer shrink-0"
-														title="Odepnij"
+														title={t('chat.unpin')}
 													>
 														<X className="w-3.5 h-3.5" />
 													</button>

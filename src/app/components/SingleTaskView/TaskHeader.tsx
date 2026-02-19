@@ -2,6 +2,7 @@
 
 import { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { FiLink2, FiX, FiSave } from 'react-icons/fi';
 import TaskCompletionToggle from './TaskCompletionToggle';
 
@@ -40,6 +41,7 @@ const TaskHeader = ({
      completionDisabled,
      completionDisabledTooltip,
 }: TaskHeaderProps) => {
+     const { t } = useTranslation();
      return (
           <div className="relative">
                {/* Gradient header background */}
@@ -57,7 +59,7 @@ const TaskHeader = ({
                                         className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg shadow-emerald-500/25"
                                    >
                                         <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                                        Nowe zadanie
+                                        {t('task.newTask')}
                                    </motion.span>
                               ) : taskId ? (
                                    <span className="inline-flex items-center gap-2 bg-slate-700/60 backdrop-blur-sm text-slate-300 text-xs font-mono px-3 py-1.5 rounded-lg border border-slate-600/50">
@@ -74,7 +76,7 @@ const TaskHeader = ({
                                         className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-lg"
                                    >
                                         <FiSave className="w-3.5 h-3.5 text-amber-400" />
-                                        <span className="text-xs text-amber-400 font-medium">Niezapisane zmiany</span>
+                                        <span className="text-xs text-amber-400 font-medium">{t('task.unsavedChanges')}</span>
                                         <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
                                    </motion.div>
                               )}
@@ -89,7 +91,7 @@ const TaskHeader = ({
                                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                         </svg>
-                                        <span className="text-xs">Zapisywanie...</span>
+                                        <span className="text-xs">{t('task.saving')}</span>
                                    </motion.div>
                               )}
                          </div>
@@ -99,7 +101,7 @@ const TaskHeader = ({
                                    <button
                                         onClick={onCopyLink}
                                         className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
-                                        title="Skopiuj link do zadania"
+                                        title={t('task.copyLink')}
                                    >
                                         <FiLink2 className="w-4 h-4" />
                                    </button>
@@ -107,7 +109,7 @@ const TaskHeader = ({
                               <button
                                    onClick={onClose}
                                    className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
-                                   title="Zamknij"
+                                   title={t('common.close')}
                               >
                                    <FiX className="w-5 h-5" />
                               </button>
@@ -120,7 +122,7 @@ const TaskHeader = ({
                               ref={titleInputRef}
                               type="text"
                               className="flex-1 bg-transparent text-xl md:text-2xl font-bold text-white placeholder-slate-500 focus:outline-none border-b-2 border-transparent focus:border-purple-500/50 pb-1 transition-colors duration-200"
-                              placeholder="Wpisz tytuł zadania..."
+                              placeholder={t('task.titlePlaceholder')}
                               value={title}
                               onChange={onTitleChange}
                               onKeyDown={onTitleKeyDown}

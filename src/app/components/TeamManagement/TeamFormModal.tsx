@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiX, FiUsers, FiSettings } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select, { StylesConfig } from 'react-select';
@@ -99,6 +100,7 @@ export default function TeamFormModal({
      selectedBoardIds,
      setSelectedBoardIds,
 }: TeamFormModalProps) {
+     const { t } = useTranslation();
      const modalRef = useRef<HTMLDivElement>(null);
 
      useEffect(() => {
@@ -175,8 +177,8 @@ export default function TeamFormModal({
                                                        <FiUsers className="w-5 h-5 text-white" />
                                                   </div>
                                                   <div>
-                                                       <h3 className="text-xl font-semibold text-white">{editingTeamId ? 'Edit Team' : 'Create New Team'}</h3>
-                                                       <p className="text-slate-400 text-sm">{editingTeamId ? 'Update team details and members' : 'Set up a new team for collaboration'}</p>
+                                                       <h3 className="text-xl font-semibold text-white">{editingTeamId ? t('teams.editTeam') : t('teams.createNewTeam')}</h3>
+                                                       <p className="text-slate-400 text-sm">{editingTeamId ? t('teams.updateTeamDetails') : t('teams.setupNewTeam')}</p>
                                                   </div>
                                              </div>
                                              <button onClick={onClose} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all">
@@ -191,7 +193,7 @@ export default function TeamFormModal({
                                         <div className="space-y-2">
                                              <label className="flex items-center gap-2 text-sm font-medium text-white">
                                                   <FiSettings className="w-4 h-4 text-purple-400" />
-                                                  Boards
+                                                  {t('teams.boardsTab')}
                                              </label>
                                              <Select<BoardOption, true>
                                                   isMulti
@@ -200,7 +202,7 @@ export default function TeamFormModal({
                                                   options={boardOptions}
                                                   value={selectedBoardOptions}
                                                   onChange={(opts) => setSelectedBoardIds(opts ? opts.map((o) => o.value) : [])}
-                                                  placeholder="Select boards..."
+                                                  placeholder={t('teams.selectBoards')}
                                                   styles={customSelectStyles}
                                                   menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
                                              />
@@ -210,11 +212,11 @@ export default function TeamFormModal({
                                         <div className="space-y-2">
                                              <label className="flex items-center gap-2 text-sm font-medium text-white">
                                                   <FiUsers className="w-4 h-4 text-blue-400" />
-                                                  Team Name
+                                                  {t('teams.teamName')}
                                              </label>
                                              <input
                                                   type="text"
-                                                  placeholder="Enter team name..."
+                                                  placeholder={t('teams.enterTeamName')}
                                                   value={editingTeamId ? editedTeamName : newTeamName}
                                                   onChange={handleNameChange}
                                                   className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
@@ -225,7 +227,7 @@ export default function TeamFormModal({
                                         <div className="space-y-2">
                                              <label className="flex items-center gap-2 text-sm font-medium text-white">
                                                   <FiUsers className="w-4 h-4 text-emerald-400" />
-                                                  Team Members
+                                                  {t('teams.teamMembers')}
                                              </label>
                                              <CustomSelect isMulti options={userOptions} value={editingTeamId ? editedTeamMembers : newTeamMembers} onChange={handleMembersChange} />
                                         </div>
@@ -234,7 +236,7 @@ export default function TeamFormModal({
                                    {/* Footer */}
                                    <div className="bg-slate-800/50 px-6 py-4 border-t border-slate-700/50 flex justify-end space-x-3">
                                         <button onClick={onClose} className="px-6 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-xl transition">
-                                             Cancel
+                                             {t('common.cancel')}
                                         </button>
                                         <button
                                              onClick={onSubmit}
@@ -244,14 +246,14 @@ export default function TeamFormModal({
                                              {isCreatingTeam ? (
                                                   <>
                                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                       {editingTeamId ? 'Updating...' : 'Creating...'}
+                                                       {editingTeamId ? t('teams.updating') : t('teams.creating')}
                                                   </>
                                              ) : editingTeamId ? (
-                                                  'Update Team'
+                                                  t('teams.updateTeam')
                                              ) : (
                                                   <>
                                                        <FiUsers className="w-4 h-4" />
-                                                       Create Team
+                                                       {t('teams.createTeam')}
                                                   </>
                                              )}
                                         </button>

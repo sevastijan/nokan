@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, useRef, useState, useMemo, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import AttachmentsList from './AttachmentsList';
 import { formatFileSize, getFileIcon } from '@/app/utils/helpers';
 import { Attachment } from '@/app/types/globalTypes';
@@ -43,6 +44,7 @@ const TaskAttachmentsSection = ({
      onAttachmentsUpdate,
      onUploadAttachment,
 }: TaskAttachmentsSectionProps) => {
+     const { t } = useTranslation();
      const fileInputRef = useRef<HTMLInputElement>(null);
      const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
      const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -84,7 +86,7 @@ const TaskAttachmentsSection = ({
           if (!isNewTask && taskId) {
                for (const file of newFiles) {
                     if (file.size > 10 * 1024 * 1024) {
-                         toast.error(`Plik ${file.name} jest za duży. Maksymalny rozmiar to 10MB.`);
+                         toast.error(t('attachments.fileTooLarge', { name: file.name }));
                          continue;
                     }
 
@@ -94,14 +96,14 @@ const TaskAttachmentsSection = ({
                     try {
                          const attachment = await onUploadAttachment(file);
                          if (attachment) {
-                              toast.success(`Przesłano: ${file.name}`);
+                              toast.success(t('attachments.uploaded', { name: file.name }));
                               await onAttachmentsUpdate();
                          } else {
-                              toast.error(`Nie udało się przesłać: ${file.name}`);
+                              toast.error(t('attachments.uploadFailed', { name: file.name }));
                          }
                     } catch (error) {
                          console.error('Upload failed:', error);
-                         toast.error(`Błąd podczas przesyłania: ${file.name}`);
+                         toast.error(t('attachments.uploadError', { name: file.name }));
                     } finally {
                          setUploadingFiles((prev) => {
                               const newSet = new Set(prev);
@@ -158,7 +160,7 @@ const TaskAttachmentsSection = ({
                                         d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
                                    />
                               </svg>
-                              Attachments ({totalAttachments})
+                              {t('attachments.title', { count: totalAttachments })}
                          </h3>
                          <button
                               type="button"
@@ -169,7 +171,7 @@ const TaskAttachmentsSection = ({
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                               </svg>
-                              {uploadingFiles.size > 0 ? 'Uploading...' : 'Add File'}
+                              {uploadingFiles.size > 0 ? t('attachments.uploading') : t('attachments.addFile')}
                          </button>
                     </div>
 
@@ -186,7 +188,7 @@ const TaskAttachmentsSection = ({
                                         </div>
                                         <div className="flex items-center gap-2">
                                              {lp.previewUrl && lp.file.type.startsWith('image/') && (
-                                                  <button type="button" onClick={() => handleLocalPreviewClick(lp)} className="text-blue-400 hover:text-blue-300 p-2" title="Podgląd">
+                                                  <button type="button" onClick={() => handleLocalPreviewClick(lp)} className="text-blue-400 hover:text-blue-300 p-2" title={t('common.preview')}>
                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                             <path
@@ -198,7 +200,7 @@ const TaskAttachmentsSection = ({
                                                        </svg>
                                                   </button>
                                              )}
-                                             <button type="button" onClick={() => onRemoveLocalFile(lp.id)} className="text-red-400 hover:text-red-300 p-2" title="Usuń">
+                                             <button type="button" onClick={() => onRemoveLocalFile(lp.id)} className="text-red-400 hover:text-red-300 p-2" title={t('common.delete')}>
                                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                        <path
                                                             strokeLinecap="round"
@@ -219,7 +221,7 @@ const TaskAttachmentsSection = ({
                                                   <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                                              </div>
                                              <div className="flex-1 min-w-0">
-                                                  <p className="text-sm font-medium text-slate-200">Przesyłanie...</p>
+                                                  <p className="text-sm font-medium text-slate-200">{t('attachments.uploading')}</p>
                                              </div>
                                         </div>
                                    </div>
@@ -255,8 +257,8 @@ const TaskAttachmentsSection = ({
                               <svg className="w-12 h-12 mx-auto mb-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                               </svg>
-                              <p className="text-slate-300 font-medium mb-1">No attachments yet</p>
-                              <p className="text-sm text-slate-500">Click &quot;Add File&quot; to upload your first attachment</p>
+                              <p className="text-slate-300 font-medium mb-1">{t('attachments.noAttachments')}</p>
+                              <p className="text-sm text-slate-500">{t('attachments.addFirstAttachment')}</p>
                          </div>
                     )}
                </div>

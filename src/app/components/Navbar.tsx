@@ -14,15 +14,11 @@ import { useChat } from '@/app/context/ChatContext';
 import { getUserDisplayName, getUserDisplayAvatar } from './Chat/utils';
 import OnlineIndicator from './Chat/OnlineIndicator';
 import CreateChannelModal from './Chat/ChannelList/CreateChannelModal';
-
-const roleConfig: Record<string, { label: string; classes: string }> = {
-     OWNER: { label: 'Owner', classes: 'bg-amber-500/15 text-amber-300 border-amber-400/25' },
-     PROJECT_MANAGER: { label: 'PM', classes: 'bg-blue-500/15 text-blue-300 border-blue-400/25' },
-     CLIENT: { label: 'Client', classes: 'bg-purple-500/15 text-purple-300 border-purple-400/25' },
-     MEMBER: { label: 'Member', classes: 'bg-slate-500/15 text-slate-300 border-slate-400/25' },
-};
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 const Navbar = () => {
+     const { t } = useTranslation();
      const { data: session } = useSession();
      const router = useRouter();
      const pathname = usePathname();
@@ -94,16 +90,23 @@ const Navbar = () => {
           setSidebarOpen(false);
      };
 
+     const roleConfig: Record<string, { label: string; classes: string }> = {
+          OWNER: { label: t('roles.OWNER'), classes: 'bg-amber-500/15 text-amber-300 border-amber-400/25' },
+          PROJECT_MANAGER: { label: t('roles.PROJECT_MANAGER'), classes: 'bg-blue-500/15 text-blue-300 border-blue-400/25' },
+          CLIENT: { label: t('roles.CLIENT'), classes: 'bg-purple-500/15 text-purple-300 border-purple-400/25' },
+          MEMBER: { label: t('roles.MEMBER'), classes: 'bg-slate-500/15 text-slate-300 border-slate-400/25' },
+     };
+
      const role = roleConfig[userRole ?? 'MEMBER'] ?? roleConfig.MEMBER;
 
      const nav = [
-          { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { href: '/calendar', label: 'Calendar', icon: Calendar },
-          { href: '/submissions', label: 'Submissions', icon: FileText },
+          { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+          { href: '/calendar', label: t('nav.calendar'), icon: Calendar },
+          { href: '/submissions', label: t('nav.submissions'), icon: FileText },
           ...(hasManagementAccess()
                ? [
-                      { href: '/users', label: 'Users', icon: UserCog },
-                      { href: '/team-management', label: 'Teams', icon: Users },
+                      { href: '/users', label: t('nav.users'), icon: UserCog },
+                      { href: '/team-management', label: t('nav.teams'), icon: Users },
                  ]
                : []),
      ];
@@ -153,7 +156,7 @@ const Navbar = () => {
                                    }`}
                               >
                                    <UserCog className="w-3.5 h-3.5" />
-                                   Profile
+                                   {t('nav.profile')}
                               </button>
                               <NotificationDropdown
                                    notifications={notifications}
@@ -200,20 +203,20 @@ const Navbar = () => {
 
                {/* ─── Chat channels (scrollable, fills remaining space) ─── */}
                <div className="flex-1 overflow-y-auto min-h-0 mt-2 px-3">
-                    {/* Kanały (groups) */}
+                    {/* Channels (groups) */}
                     <div className="mb-2">
                          <div className="flex items-center justify-between px-3 py-1.5">
-                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kanały</span>
+                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('nav.channels')}</span>
                               <button
                                    onClick={() => setCreateModalMode('group')}
                                    className="p-0.5 rounded text-slate-600 hover:text-slate-300 transition cursor-pointer"
-                                   title="Nowy kanał"
+                                   title={t('nav.newChannel')}
                               >
                                    <Plus className="w-3.5 h-3.5" />
                               </button>
                          </div>
                          {groupChannels.length === 0 ? (
-                              <p className="px-3 text-[11px] text-slate-600">Brak kanałów</p>
+                              <p className="px-3 text-[11px] text-slate-600">{t('nav.noChannels')}</p>
                          ) : (
                               <div className="space-y-0.5">
                                    {groupChannels.map((ch) => {
@@ -226,7 +229,7 @@ const Navbar = () => {
                                              >
                                                   <Hash className={`w-4 h-4 shrink-0 ${isUnread ? 'text-white' : 'text-slate-600 group-hover:text-slate-400'}`} />
                                                   <span className={`text-sm truncate ${isUnread ? 'font-semibold text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>
-                                                       {ch.name || 'Unnamed'}
+                                                       {ch.name || t('common.noName')}
                                                   </span>
                                                   {isUnread && (
                                                        <span className="ml-auto w-2 h-2 rounded-full bg-blue-500 shrink-0" />
@@ -238,20 +241,20 @@ const Navbar = () => {
                          )}
                     </div>
 
-                    {/* Wiadomości (DMs) */}
+                    {/* Messages (DMs) */}
                     <div className="mb-2">
                          <div className="flex items-center justify-between px-3 py-1.5">
-                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Wiadomości</span>
+                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('nav.messages')}</span>
                               <button
                                    onClick={() => setCreateModalMode('dm')}
                                    className="p-0.5 rounded text-slate-600 hover:text-slate-300 transition cursor-pointer"
-                                   title="Nowa wiadomość"
+                                   title={t('nav.newMessage')}
                               >
                                    <Plus className="w-3.5 h-3.5" />
                               </button>
                          </div>
                          {dmChannels.length === 0 ? (
-                              <p className="px-3 text-[11px] text-slate-600">Brak wiadomości</p>
+                              <p className="px-3 text-[11px] text-slate-600">{t('nav.noMessages')}</p>
                          ) : (
                               <div className="space-y-0.5">
                                    {dmChannels.map((ch) => {
@@ -285,16 +288,19 @@ const Navbar = () => {
                     </div>
                </div>
 
-               {/* ─── Sign out (pinned bottom) ─── */}
+               {/* ─── Language switcher + Sign out (pinned bottom) ─── */}
                {session.user && (
                     <div className="px-3 pb-4 pt-2 shrink-0">
                          <div className="mx-2 mb-3 border-t border-slate-800" />
+                         <div className="flex items-center justify-between px-3 mb-2">
+                              <LanguageSwitcher />
+                         </div>
                          <button
                               onClick={() => signOut({ callbackUrl: '/', redirect: true })}
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer"
                          >
                               <LogOut className="w-[18px] h-[18px]" />
-                              <span>Sign Out</span>
+                              <span>{t('nav.signOut')}</span>
                          </button>
                     </div>
                )}
@@ -307,7 +313,7 @@ const Navbar = () => {
                <button
                     onClick={() => setSidebarOpen(true)}
                     className="fixed right-4 top-3 z-50 md:hidden bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-xl p-2.5 shadow-lg hover:bg-slate-700/80 transition-all text-slate-300 hover:text-white cursor-pointer"
-                    aria-label="Open sidebar"
+                    aria-label={t('nav.openSidebar')}
                >
                     <Menu className="w-5 h-5" />
                </button>
@@ -345,7 +351,7 @@ const Navbar = () => {
                                    <button
                                         onClick={() => setSidebarOpen(false)}
                                         className="absolute right-3 top-4 z-50 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition cursor-pointer"
-                                        aria-label="Close sidebar"
+                                        aria-label={t('nav.closeSidebar')}
                                    >
                                         <X className="w-5 h-5" />
                                    </button>

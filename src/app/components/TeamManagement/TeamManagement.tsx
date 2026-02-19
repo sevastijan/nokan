@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus, Users, UserPlus, LayoutGrid } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DOMPurify from 'dompurify';
@@ -23,6 +24,7 @@ import {
 } from '@/app/store/apiSlice';
 
 const TeamManagement = () => {
+     const { t } = useTranslation();
      const { data: session, status } = useSession();
      const router = useRouter();
 
@@ -87,7 +89,7 @@ const TeamManagement = () => {
 
      const handleCreate = async () => {
           if (!newTeamName.trim() || modalBoardIds.length === 0) {
-               alert('Provide name and select at least one board.');
+               alert(t('teams.provideNameAndBoard'));
                return;
           }
           const created = await addTeam({
@@ -106,7 +108,7 @@ const TeamManagement = () => {
 
      const handleUpdate = async () => {
           if (!editingTeamId || !editedTeamName.trim() || modalBoardIds.length === 0) {
-               alert('Provide name and select at least one board.');
+               alert(t('teams.provideNameAndBoard'));
                return;
           }
           await updateTeam({
@@ -127,7 +129,7 @@ const TeamManagement = () => {
      const handleSubmit = editingTeamId ? handleUpdate : handleCreate;
 
      const handleDelete = async (id: string) => {
-          if (confirm('Delete this team?')) {
+          if (confirm(t('teams.deleteConfirm'))) {
                await deleteTeam(id).unwrap();
           }
      };
@@ -135,13 +137,13 @@ const TeamManagement = () => {
      const loadingOverall = loadingUser || loadingBoards || loadingTeams;
 
      if (loadingOverall) {
-          return <Loader text="Loading teams..." />;
+          return <Loader text={t('teams.loading')} />;
      }
 
      const stats = [
-          { label: 'Teams', value: teamsAll.length, icon: Users, color: 'blue' },
-          { label: 'Available Users', value: availableUsers.length, icon: UserPlus, color: 'emerald' },
-          { label: 'Boards', value: boards.length, icon: LayoutGrid, color: 'violet' },
+          { label: t('teams.teamsLabel'), value: teamsAll.length, icon: Users, color: 'blue' },
+          { label: t('teams.availableUsers'), value: availableUsers.length, icon: UserPlus, color: 'emerald' },
+          { label: t('teams.boardsLabel'), value: boards.length, icon: LayoutGrid, color: 'violet' },
      ];
 
      const iconColorMap: Record<string, string> = {
@@ -161,7 +163,7 @@ const TeamManagement = () => {
                          whileTap={{ scale: 0.95 }}
                     >
                          <ArrowLeft className="w-5 h-5" />
-                         Back to Dashboard
+                         {t('teams.backToDashboard')}
                     </motion.button>
 
                     {/* Header */}
@@ -172,8 +174,8 @@ const TeamManagement = () => {
                          transition={{ duration: 0.4 }}
                     >
                          <div>
-                              <h1 className="text-4xl font-bold text-white">Manage Teams</h1>
-                              <p className="text-slate-400 mt-1">Create and manage your teams and members</p>
+                              <h1 className="text-4xl font-bold text-white">{t('teams.manageTeams')}</h1>
+                              <p className="text-slate-400 mt-1">{t('teams.manageTeamsDesc')}</p>
                          </div>
                          <motion.button
                               onClick={openCreate}
@@ -181,7 +183,7 @@ const TeamManagement = () => {
                               whileTap={{ scale: 0.95 }}
                          >
                               <Plus className="w-5 h-5" />
-                              Create New Team
+                              {t('teams.createNewTeam')}
                          </motion.button>
                     </motion.div>
 
@@ -215,7 +217,7 @@ const TeamManagement = () => {
                          transition={{ duration: 0.4, delay: 0.2 }}
                     >
                          <TeamList teams={teamsAll} onEditTeam={openEdit} onDeleteTeam={handleDelete} availableUsers={availableUsers} />
-                         {(isAdding || isUpdating) && <p className="text-slate-400 mt-4">Saving…</p>}
+                         {(isAdding || isUpdating) && <p className="text-slate-400 mt-4">{t('teams.savingTeam')}</p>}
                     </motion.div>
                </div>
 

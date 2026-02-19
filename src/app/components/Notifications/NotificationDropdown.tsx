@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Check, CheckCheck, Trash2, ExternalLink, BellOff, AtSign, Inbox } from 'lucide-react';
@@ -25,21 +26,25 @@ interface NotificationDropdownProps {
      onNavigate: (boardId: string, taskId: string) => void;
 }
 
-const notificationTypeLabels: Record<string, { label: string; icon?: React.ReactNode }> = {
-     mention: { label: 'Wzmianka', icon: <AtSign className="w-3.5 h-3.5 text-blue-400 inline mr-1" /> },
-     task_assigned: { label: 'Przypisanie' },
-     task_unassigned: { label: 'Usunięcie z zadania' },
-     status_changed: { label: 'Zmiana statusu' },
-     priority_changed: { label: 'Zmiana priorytetu' },
-     new_comment: { label: 'Komentarz' },
-     due_date_changed: { label: 'Zmiana terminu' },
-     collaborator_added: { label: 'Współpracownik' },
-     collaborator_removed: { label: 'Usunięcie współpracownika' },
-     new_submission: { label: 'Nowe zgłoszenie', icon: <Inbox className="w-3.5 h-3.5 text-purple-400 inline mr-1" /> },
-};
-
 const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead, onDelete, onNavigate }: NotificationDropdownProps) => {
+     const { t } = useTranslation();
      const [showRead, setShowRead] = useState(false);
+
+     const notificationTypeLabels: Record<string, { label: string; icon?: React.ReactNode }> = useMemo(
+          () => ({
+               mention: { label: t('notifications.mention'), icon: <AtSign className="w-3.5 h-3.5 text-blue-400 inline mr-1" /> },
+               task_assigned: { label: t('notifications.taskAssigned') },
+               task_unassigned: { label: t('notifications.taskUnassigned') },
+               status_changed: { label: t('notifications.statusChanged') },
+               priority_changed: { label: t('notifications.priorityChanged') },
+               new_comment: { label: t('notifications.newComment') },
+               due_date_changed: { label: t('notifications.dueDateChanged') },
+               collaborator_added: { label: t('notifications.collaboratorAdded') },
+               collaborator_removed: { label: t('notifications.collaboratorRemoved') },
+               new_submission: { label: t('notifications.newSubmission'), icon: <Inbox className="w-3.5 h-3.5 text-purple-400 inline mr-1" /> },
+          }),
+          [t],
+     );
 
      const filteredNotifications = showRead ? notifications : notifications.filter((n) => !n.read);
      const unreadCount = notifications.filter((n) => !n.read).length;
@@ -69,16 +74,16 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                     <MenuItems className="absolute left-0 z-30 mt-3 w-96 max-w-[calc(100vw-2rem)] bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden">
                          {/* Header */}
                          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/60">
-                              <span className="font-semibold text-white text-sm">Notifications</span>
+                              <span className="font-semibold text-white text-sm">{t('notifications.title')}</span>
                               <div className="flex items-center gap-2">
                                    {unreadCount > 0 && (
                                         <button
                                              onClick={onMarkAllRead}
                                              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer transition-colors"
-                                             title="Mark all as read"
+                                             title={t('notifications.markAll')}
                                         >
                                              <CheckCheck className="w-3.5 h-3.5" />
-                                             <span>Mark all</span>
+                                             <span>{t('notifications.markAll')}</span>
                                         </button>
                                    )}
                                    <span className="w-px h-3.5 bg-slate-700" />
@@ -86,7 +91,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                                         onClick={() => setShowRead(!showRead)}
                                         className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer transition-colors"
                                    >
-                                        {showRead ? 'Hide read' : 'Show all'}
+                                        {showRead ? t('notifications.hideRead') : t('notifications.showAll')}
                                    </button>
                               </div>
                          </div>
@@ -96,7 +101,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                               {filteredNotifications.length === 0 ? (
                                    <div className="flex flex-col items-center justify-center py-10 px-4 text-slate-500">
                                         <BellOff className="w-8 h-8 mb-2 opacity-50" />
-                                        <span className="text-sm">{showRead ? 'No notifications' : 'No unread notifications'}</span>
+                                        <span className="text-sm">{showRead ? t('notifications.noNotifications') : t('notifications.noUnread')}</span>
                                    </div>
                               ) : (
                                    <AnimatePresence mode="popLayout">
@@ -127,7 +132,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                                                             <div className="flex items-center gap-2">
                                                                  <span className="font-medium text-sm text-white truncate">
                                                                       {notificationTypeLabels[n.type]?.icon}
-                                                                      {notificationTypeLabels[n.type]?.label || n.type || 'Notification'}
+                                                                      {notificationTypeLabels[n.type]?.label || n.type || t('notifications.title')}
                                                                  </span>
                                                                  {n.board_id && (
                                                                       <span className="flex-shrink-0 bg-slate-700/30 px-1.5 py-0.5 rounded text-[11px] text-slate-400 border border-slate-600/30">
@@ -146,7 +151,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                                                        <div className="flex-shrink-0 flex items-start gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             {!n.read && (
                                                                  <button
-                                                                      title="Mark as read"
+                                                                      title={t('notifications.markAsRead')}
                                                                       onClick={(e) => {
                                                                            e.stopPropagation();
                                                                            if (n.id) onMarkRead(n.id);
@@ -157,7 +162,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                                                                  </button>
                                                             )}
                                                             <button
-                                                                 title="Delete"
+                                                                 title={t('common.delete')}
                                                                  onClick={(e) => {
                                                                       e.stopPropagation();
                                                                       if (n.id) onDelete(n.id);

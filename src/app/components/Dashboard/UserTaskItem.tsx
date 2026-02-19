@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Calendar, Check } from 'lucide-react';
@@ -13,6 +14,7 @@ interface UserTaskItemProps {
 }
 
 export const UserTaskItem = ({ task, onToggleComplete }: UserTaskItemProps) => {
+     const { t } = useTranslation();
      const router = useRouter();
 
      const priorityStyle = task.priority_info ? getPriorityStyleConfig(task.priority_info.label) : null;
@@ -24,11 +26,11 @@ export const UserTaskItem = ({ task, onToggleComplete }: UserTaskItemProps) => {
           const now = new Date();
           const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-          if (diffDays === 0) return 'Dzisiaj';
-          if (diffDays === 1) return 'Jutro';
-          if (diffDays === -1) return 'Wczoraj';
-          if (diffDays < -1) return `${Math.abs(diffDays)} dni temu`;
-          if (diffDays <= 7) return `Za ${diffDays} dni`;
+          if (diffDays === 0) return t('common.today');
+          if (diffDays === 1) return t('common.tomorrow');
+          if (diffDays === -1) return t('common.yesterday');
+          if (diffDays < -1) return t('common.daysAgo', { count: Math.abs(diffDays) });
+          if (diffDays <= 7) return t('common.inDays', { count: diffDays });
 
           return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
      };
@@ -62,7 +64,7 @@ export const UserTaskItem = ({ task, onToggleComplete }: UserTaskItemProps) => {
                          className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 cursor-pointer ${
                               task.completed ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-slate-600 hover:border-slate-400 text-transparent hover:text-slate-500'
                          }`}
-                         aria-label={task.completed ? 'Oznacz jako nieukończone' : 'Oznacz jako ukończone'}
+                         aria-label={task.completed ? t('userTasks.markIncomplete') : t('userTasks.markComplete')}
                     >
                          <Check className="w-3 h-3" />
                     </button>

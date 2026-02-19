@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { Send, Paperclip } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import FileUploadPreview from './FileUploadPreview';
 
 interface MessageInputProps {
@@ -12,7 +13,9 @@ interface MessageInputProps {
 	onTyping?: () => void;
 }
 
-const MessageInput = ({ onSend, placeholder = 'Napisz wiadomość...', onTyping }: MessageInputProps) => {
+const MessageInput = ({ onSend, placeholder, onTyping }: MessageInputProps) => {
+	const { t } = useTranslation();
+	const resolvedPlaceholder = placeholder ?? t('chat.writeMessage');
 	const [content, setContent] = useState('');
 	const [stagedFiles, setStagedFiles] = useState<File[]>([]);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -71,7 +74,7 @@ const MessageInput = ({ onSend, placeholder = 'Napisz wiadomość...', onTyping 
 				<button
 					onClick={() => fileInputRef.current?.click()}
 					className="mb-0.5 p-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition cursor-pointer shrink-0"
-					title="Załącz plik"
+					title={t('chat.attachFile')}
 				>
 					<Paperclip className="w-[18px] h-[18px]" />
 				</button>
@@ -89,7 +92,7 @@ const MessageInput = ({ onSend, placeholder = 'Napisz wiadomość...', onTyping 
 						value={content}
 						onChange={(e) => { setContent(e.target.value); adjustHeight(); onTyping?.(); }}
 						onKeyDown={handleKeyDown}
-						placeholder={placeholder}
+						placeholder={resolvedPlaceholder}
 						rows={1}
 						className="w-full px-4 py-2.5 bg-slate-800/60 border border-slate-700/40 rounded-xl text-sm text-white placeholder-slate-500 resize-none focus:outline-none focus:border-blue-500/40 focus:bg-slate-800/80 transition-colors"
 					/>
@@ -103,7 +106,7 @@ const MessageInput = ({ onSend, placeholder = 'Napisz wiadomość...', onTyping 
 							? 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20'
 							: 'text-slate-600 cursor-not-allowed'
 					}`}
-					title="Wyślij"
+					title={t('chat.send')}
 				>
 					<Send className="w-[18px] h-[18px]" />
 				</button>

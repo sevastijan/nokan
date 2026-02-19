@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import Avatar from '../components/Avatar/Avatar';
 import Loader from '@/app/components/Loader';
@@ -42,28 +43,17 @@ const ToggleSwitch = ({ enabled, onChange, label, description }: ToggleSwitchPro
 
 /* ── Role config ───────────────────────────────────────────────── */
 
-const roleConfig: Record<string, { color: string; label: string }> = {
-     OWNER: {
-          color: 'bg-yellow-600/20 text-yellow-300 border-yellow-400/30',
-          label: 'Owner',
-     },
-     PROJECT_MANAGER: {
-          color: 'bg-blue-600/20 text-blue-300 border-blue-400/30',
-          label: 'Project Menager',
-     },
-     CLIENT: {
-          color: 'bg-emerald-600/20 text-emerald-300 border-emerald-400/30',
-          label: 'Klient',
-     },
-     MEMBER: {
-          color: 'bg-slate-600/20 text-slate-300 border-slate-400/30',
-          label: 'Członek',
-     },
+const roleColors: Record<string, string> = {
+     OWNER: 'bg-yellow-600/20 text-yellow-300 border-yellow-400/30',
+     PROJECT_MANAGER: 'bg-blue-600/20 text-blue-300 border-blue-400/30',
+     CLIENT: 'bg-emerald-600/20 text-emerald-300 border-emerald-400/30',
+     MEMBER: 'bg-slate-600/20 text-slate-300 border-slate-400/30',
 };
 
 /* ── Page ──────────────────────────────────────────────────────── */
 
 const ProfilePage = () => {
+     const { t } = useTranslation();
      const { displayAvatar, displayName, email, currentUser, session } = useDisplayUser();
      const { loading: userLoading, refetchUser } = useCurrentUser();
 
@@ -148,10 +138,10 @@ const ProfilePage = () => {
                     userId: currentUser.id,
                     preferences: { [key]: value },
                }).unwrap();
-               toast.success('Preferencje zapisane');
+               toast.success(t('profile.preferencesSaved'));
           } catch {
                setLocalPrefs(prevPrefs);
-               toast.error('Nie udało się zapisać preferencji');
+               toast.error(t('profile.preferencesSaveFailed'));
           }
      };
 
@@ -159,19 +149,19 @@ const ProfilePage = () => {
           if (enable) {
                const ok = await pushSubscribe();
                if (!ok) {
-                    toast.error('Nie udało się włączyć powiadomień push. Sprawdź uprawnienia przeglądarki.');
+                    toast.error(t('profile.pushEnableFailed'));
                     return;
                }
                localStorage.removeItem(PUSH_OPTED_OUT_KEY);
-               toast.success('Powiadomienia push włączone');
+               toast.success(t('profile.pushEnabled'));
           } else {
                const ok = await pushUnsubscribe();
                if (!ok) {
-                    toast.error('Nie udało się wyłączyć powiadomień push');
+                    toast.error(t('profile.pushDisableFailed'));
                     return;
                }
                localStorage.setItem(PUSH_OPTED_OUT_KEY, 'true');
-               toast.success('Powiadomienia push wyłączone');
+               toast.success(t('profile.pushDisabled'));
           }
      };
 
@@ -183,11 +173,11 @@ const ProfilePage = () => {
                     userId: currentUser.id,
                     updates: { custom_name: editedName.trim() },
                }).unwrap();
-               toast.success('Nazwa zaktualizowana');
+               toast.success(t('profile.nameUpdated'));
                setIsEditingName(false);
                refetchUser();
           } catch {
-               toast.error('Nie udało się zaktualizować nazwy');
+               toast.error(t('profile.nameUpdateFailed'));
           }
      };
 
@@ -218,7 +208,7 @@ const ProfilePage = () => {
                                    const compressedFile = new File([blob], file.name, { type: file.type });
                                    resolve(compressedFile);
                               } else {
-                                   reject(new Error('Kompresja nie powiodła się'));
+                                   reject(new Error(t('profile.compressionFailed')));
                               }
                          },
                          file.type,
@@ -236,12 +226,12 @@ const ProfilePage = () => {
           if (!file || !currentUser?.id) return;
 
           if (file.size > 5 * 1024 * 1024) {
-               toast.error('Plik jest za duży. Maksymalny rozmiar to 5MB');
+               toast.error(t('profile.fileTooLarge'));
                return;
           }
 
           if (!file.type.startsWith('image/')) {
-               toast.error('Plik musi być obrazem');
+               toast.error(t('profile.mustBeImage'));
                return;
           }
 
@@ -269,12 +259,12 @@ const ProfilePage = () => {
                     updates: { custom_image: data.publicUrl },
                }).unwrap();
 
-               toast.success('Avatar zaktualizowany');
+               toast.success(t('profile.avatarUpdated'));
                refetchUser();
           } catch (err: unknown) {
-               console.error('Błąd podczas uploadu avatara:', err);
+               console.error('Avatar upload error:', err);
 
-               let errorMessage = 'Nie udało się zaktualizować avatara';
+               let errorMessage = t('profile.avatarUploadFailed');
 
                if (err instanceof Error) {
                     errorMessage += `: ${err.message}`;
@@ -290,20 +280,21 @@ const ProfilePage = () => {
 
      // Role badge
      const getRoleBadge = () => {
-          const config = roleConfig[userRole ?? ''] ?? roleConfig.MEMBER;
-          return <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${config.color}`}>{config.label}</span>;
+          const color = roleColors[userRole ?? ''] ?? roleColors.MEMBER;
+          const roleKey = (userRole ?? 'MEMBER') as string;
+          return <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${color}`}>{t(`roles.${roleKey}`)}</span>;
      };
 
      /* ── Loading state ──────────────────────────────────────── */
 
      if (userLoading) {
-          return <Loader text="Ładowanie profilu..." />;
+          return <Loader text={t('profile.loadingProfile')} />;
      }
 
      if (!session?.user) {
           return (
                <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-                    <div className="text-slate-400">Zaloguj się, aby zobaczyć profil.</div>
+                    <div className="text-slate-400">{t('auth.signInRequired')}</div>
                </div>
           );
      }
@@ -340,7 +331,7 @@ const ProfilePage = () => {
                                                                  ) : (
                                                                       <div className="flex flex-col items-center gap-0.5">
                                                                            <Camera className="w-5 h-5 text-white drop-shadow-lg" />
-                                                                           <span className="text-[10px] text-white font-medium">Zmień</span>
+                                                                           <span className="text-[10px] text-white font-medium">{t('profile.change')}</span>
                                                                       </div>
                                                                  )}
                                                             </button>
@@ -358,7 +349,7 @@ const ProfilePage = () => {
                                                                       onChange={(e) => setEditedName(e.target.value)}
                                                                       onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
                                                                       className="flex-1 px-3 py-1.5 bg-slate-800/80 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                                                      placeholder="Twoja nazwa..."
+                                                                      placeholder={t('profile.yourName')}
                                                                       autoFocus
                                                                  />
                                                                  <button
@@ -405,7 +396,7 @@ const ProfilePage = () => {
                                              <div className="flex items-center justify-between mb-4">
                                                   <div className="flex items-center gap-2">
                                                        <LayoutDashboard className="w-4 h-4 text-blue-400" />
-                                                       <h2 className="text-lg font-semibold text-slate-200">Moje projekty</h2>
+                                                       <h2 className="text-lg font-semibold text-slate-200">{t('profile.myProjects')}</h2>
                                                   </div>
                                                   {boards.length > 0 && <span className="text-xs font-medium text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded-full">{boards.length}</span>}
                                              </div>
@@ -413,15 +404,15 @@ const ProfilePage = () => {
                                              {boardsLoading ? (
                                                   <div className="flex items-center gap-2 py-4">
                                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                                                       <span className="text-slate-400 text-sm">Ładowanie projektów...</span>
+                                                       <span className="text-slate-400 text-sm">{t('profile.loadingProjects')}</span>
                                                   </div>
                                              ) : boards.length === 0 ? (
                                                   <div className="flex flex-col items-center py-6 text-center">
                                                        <div className="w-12 h-12 bg-slate-700/50 rounded-xl flex items-center justify-center mb-3">
                                                             <Layers className="w-6 h-6 text-slate-500" />
                                                        </div>
-                                                       <p className="text-slate-500 text-sm">Brak projektów</p>
-                                                       <p className="text-slate-600 text-xs mt-1">Utwórz swój pierwszy projekt na dashboardzie</p>
+                                                       <p className="text-slate-500 text-sm">{t('profile.noProjects')}</p>
+                                                       <p className="text-slate-600 text-xs mt-1">{t('profile.createFirstOnDashboard')}</p>
                                                   </div>
                                              ) : (
                                                   <ul className="space-y-2">
@@ -460,8 +451,8 @@ const ProfilePage = () => {
                                                        <Settings2 className="w-5 h-5 text-white" />
                                                   </div>
                                                   <div className="min-w-0">
-                                                       <h1 className="text-xl font-bold text-white">Ustawienia tablicy</h1>
-                                                       <p className="text-slate-400 text-sm">Domyślne ustawienia widoku tablic</p>
+                                                       <h1 className="text-xl font-bold text-white">{t('profile.boardSettings')}</h1>
+                                                       <p className="text-slate-400 text-sm">{t('profile.boardSettingsDesc')}</p>
                                                   </div>
                                              </div>
 
@@ -469,10 +460,10 @@ const ProfilePage = () => {
                                                   enabled={showSubtasks}
                                                   onChange={(value) => {
                                                        setShowSubtasks(value);
-                                                       toast.success(value ? 'Subtaski będą domyślnie widoczne' : 'Subtaski będą domyślnie ukryte');
+                                                       toast.success(value ? t('profile.subtasksVisible') : t('profile.subtasksHidden'));
                                                   }}
-                                                  label="Pokaż subtaski na tablicach"
-                                                  description="Domyślnie wyświetlaj subtaski jako osobne karty na tablicach"
+                                                  label={t('profile.showSubtasks')}
+                                                  description={t('profile.showSubtasksDesc')}
                                              />
                                         </div>
 
@@ -484,8 +475,8 @@ const ProfilePage = () => {
                                                             <Smartphone className="w-5 h-5 text-white" />
                                                        </div>
                                                        <div className="min-w-0">
-                                                            <h1 className="text-xl font-bold text-white">Powiadomienia push</h1>
-                                                            <p className="text-slate-400 text-sm">Otrzymuj powiadomienia nawet gdy aplikacja jest zamknięta</p>
+                                                            <h1 className="text-xl font-bold text-white">{t('profile.pushNotifications')}</h1>
+                                                            <p className="text-slate-400 text-sm">{t('profile.pushNotificationsDesc')}</p>
                                                        </div>
                                                   </div>
 
@@ -494,12 +485,12 @@ const ProfilePage = () => {
                                                        <div className="flex-1 min-w-0">
                                                             <div className="text-white font-medium text-sm sm:text-base flex items-center gap-2">
                                                                  <BellRing className="w-4 h-4 text-emerald-400" />
-                                                                 Włącz powiadomienia push
+                                                                 {t('profile.enablePush')}
                                                             </div>
                                                             <div className="text-slate-400 text-xs sm:text-sm">
                                                                  {pushSubscribed
-                                                                      ? 'Powiadomienia push są aktywne na tym urządzeniu'
-                                                                      : 'Kliknij aby aktywować powiadomienia push'}
+                                                                      ? t('profile.pushActive')
+                                                                      : t('profile.clickToActivate')}
                                                             </div>
                                                        </div>
                                                        <button
@@ -519,21 +510,21 @@ const ProfilePage = () => {
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.push_enabled}
                                                                  onChange={(v) => handleToggle('push_enabled', v)}
-                                                                 label="Powiadomienia o zadaniach"
-                                                                 description="Przypisania, zmiany statusu, komentarze i inne zdarzenia"
+                                                                 label={t('profile.taskNotifications')}
+                                                                 description={t('profile.taskNotificationsDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.push_chat_enabled}
                                                                  onChange={(v) => handleToggle('push_chat_enabled', v)}
-                                                                 label="Powiadomienia o wiadomościach"
-                                                                 description="Nowe wiadomości na czacie"
+                                                                 label={t('profile.messageNotifications')}
+                                                                 description={t('profile.messageNotificationsDesc')}
                                                             />
                                                        </div>
                                                   )}
 
                                                   <div className="mt-4 p-4 bg-slate-700/30 rounded-xl border border-slate-700/30">
                                                        <p className="text-slate-400 text-xs sm:text-sm">
-                                                            Powiadomienia push działają nawet gdy przeglądarka jest zamknięta. Subskrypcja jest per urządzenie — włącz na każdym urządzeniu osobno.
+                                                            {t('profile.pushInfo')}
                                                        </p>
                                                   </div>
                                              </div>
@@ -547,8 +538,8 @@ const ProfilePage = () => {
                                                        <Bell className="w-5 h-5 text-white" />
                                                   </div>
                                                   <div className="min-w-0">
-                                                       <h1 className="text-xl font-bold text-white">Ustawienia powiadomień</h1>
-                                                       <p className="text-slate-400 text-sm">Zarządzaj powiadomieniami email</p>
+                                                       <h1 className="text-xl font-bold text-white">{t('profile.emailSettings')}</h1>
+                                                       <p className="text-slate-400 text-sm">{t('profile.emailSettingsDesc')}</p>
                                                   </div>
                                              </div>
 
@@ -556,75 +547,75 @@ const ProfilePage = () => {
                                              <div>
                                                   <div className="flex items-center gap-2 mb-4">
                                                        <Mail className="w-4 h-4 text-blue-400" />
-                                                       <h2 className="text-lg font-semibold text-slate-200">Powiadomienia email</h2>
+                                                       <h2 className="text-lg font-semibold text-slate-200">{t('profile.emailNotifications')}</h2>
                                                   </div>
 
                                                   {prefsLoading ? (
                                                        <div className="flex items-center gap-2 py-4">
                                                             <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                                                            <span className="text-slate-400 text-sm">Ładowanie preferencji...</span>
+                                                            <span className="text-slate-400 text-sm">{t('profile.loadingPreferences')}</span>
                                                        </div>
                                                   ) : (
                                                        <div className="space-y-1">
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_task_assigned}
                                                                  onChange={(v) => handleToggle('email_task_assigned', v)}
-                                                                 label="Przypisanie do zadania"
-                                                                 description="Otrzymuj email gdy zostaniesz przypisany do zadania"
+                                                                 label={t('profile.emailTaskAssigned')}
+                                                                 description={t('profile.emailTaskAssignedDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_task_unassigned}
                                                                  onChange={(v) => handleToggle('email_task_unassigned', v)}
-                                                                 label="Usunięcie z zadania"
-                                                                 description="Otrzymuj email gdy zostaniesz usunięty z zadania"
+                                                                 label={t('profile.emailTaskUnassigned')}
+                                                                 description={t('profile.emailTaskUnassignedDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_status_changed}
                                                                  onChange={(v) => handleToggle('email_status_changed', v)}
-                                                                 label="Zmiana statusu"
-                                                                 description="Otrzymuj email gdy zmieni się status Twojego zadania"
+                                                                 label={t('profile.emailStatusChanged')}
+                                                                 description={t('profile.emailStatusChangedDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_priority_changed}
                                                                  onChange={(v) => handleToggle('email_priority_changed', v)}
-                                                                 label="Zmiana priorytetu"
-                                                                 description="Otrzymuj email gdy zmieni się priorytet Twojego zadania"
+                                                                 label={t('profile.emailPriorityChanged')}
+                                                                 description={t('profile.emailPriorityChangedDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_new_comment}
                                                                  onChange={(v) => handleToggle('email_new_comment', v)}
-                                                                 label="Nowe komentarze"
-                                                                 description="Otrzymuj email gdy ktoś skomentuje Twoje zadanie"
+                                                                 label={t('profile.emailNewComment')}
+                                                                 description={t('profile.emailNewCommentDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_due_date_changed}
                                                                  onChange={(v) => handleToggle('email_due_date_changed', v)}
-                                                                 label="Zmiana terminu"
-                                                                 description="Otrzymuj email gdy zmieni się termin Twojego zadania"
+                                                                 label={t('profile.emailDueDateChanged')}
+                                                                 description={t('profile.emailDueDateChangedDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_collaborator_added}
                                                                  onChange={(v) => handleToggle('email_collaborator_added', v)}
-                                                                 label="Dodanie współpracownika"
-                                                                 description="Otrzymuj email gdy ktoś zostanie dodany jako współpracownik"
+                                                                 label={t('profile.emailCollaboratorAdded')}
+                                                                 description={t('profile.emailCollaboratorAddedDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_collaborator_removed}
                                                                  onChange={(v) => handleToggle('email_collaborator_removed', v)}
-                                                                 label="Usunięcie współpracownika"
-                                                                 description="Otrzymuj email gdy współpracownik zostanie usunięty"
+                                                                 label={t('profile.emailCollaboratorRemoved')}
+                                                                 description={t('profile.emailCollaboratorRemovedDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_mention}
                                                                  onChange={(v) => handleToggle('email_mention', v)}
-                                                                 label="Wzmianki"
-                                                                 description="Otrzymuj email gdy ktoś Cię wspomni w komentarzu"
+                                                                 label={t('profile.emailMentions')}
+                                                                 description={t('profile.emailMentionsDesc')}
                                                             />
                                                             <ToggleSwitch
                                                                  enabled={localPrefs.email_new_submission}
                                                                  onChange={(v) => handleToggle('email_new_submission', v)}
-                                                                 label="Nowe zgłoszenia"
-                                                                 description="Otrzymuj email gdy pojawi się nowe zgłoszenie klienta"
+                                                                 label={t('profile.emailNewSubmission')}
+                                                                 description={t('profile.emailNewSubmissionDesc')}
                                                             />
                                                        </div>
                                                   )}
@@ -633,8 +624,7 @@ const ProfilePage = () => {
                                              {/* Info */}
                                              <div className="mt-6 p-4 bg-slate-700/30 rounded-xl border border-slate-700/30">
                                                   <p className="text-slate-400 text-xs sm:text-sm">
-                                                       Powiadomienia email są wysyłane natychmiast po wystąpieniu zdarzenia. Niezależnie od tych ustawień, zawsze będziesz otrzymywać powiadomienia w
-                                                       aplikacji.
+                                                       {t('profile.emailInfo')}
                                                   </p>
                                              </div>
                                         </div>

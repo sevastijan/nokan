@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useGetClientSubmissionsQuery, useGetAllSubmissionsQuery, useUpdateSubmissionMutation, useDeleteSubmissionMutation } from '@/app/store/apiSlice';
 import { getSupabase } from '@/app/lib/supabase';
 import Loader from '@/app/components/Loader';
@@ -12,10 +13,10 @@ import { Plus, ChevronDown, Calendar, Pencil, Trash2, AlertTriangle, Inbox, Layo
 
 type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'CLIENT' | 'MEMBER' | null;
 
-const priorityConfig: Record<string, { label: string; color: string; bg: string; border: string; dot: string }> = {
-     low: { label: 'Niski', color: 'text-blue-300', bg: 'bg-blue-500/10', border: 'border-blue-500/20', dot: 'bg-blue-400' },
-     high: { label: 'Wysoki', color: 'text-amber-300', bg: 'bg-amber-500/10', border: 'border-amber-500/20', dot: 'bg-amber-400' },
-     urgent: { label: 'Pilny', color: 'text-red-300', bg: 'bg-red-500/10', border: 'border-red-500/20', dot: 'bg-red-400' },
+const priorityConfig: Record<string, { labelKey: string; color: string; bg: string; border: string; dot: string }> = {
+     low: { labelKey: 'submissions.priorityLow', color: 'text-blue-300', bg: 'bg-blue-500/10', border: 'border-blue-500/20', dot: 'bg-blue-400' },
+     high: { labelKey: 'submissions.priorityHigh', color: 'text-amber-300', bg: 'bg-amber-500/10', border: 'border-amber-500/20', dot: 'bg-amber-400' },
+     urgent: { labelKey: 'submissions.priorityUrgent', color: 'text-red-300', bg: 'bg-red-500/10', border: 'border-red-500/20', dot: 'bg-red-400' },
 };
 
 const allowedPriorities = ['low', 'high', 'urgent'] as const;
@@ -25,6 +26,7 @@ const isValidPriority = (value: string | undefined | null): value is Priority =>
 type SubmissionWithBoardTitle = ImportedClientSubmission & { board_title?: string };
 
 export default function SubmissionsPage() {
+     const { t } = useTranslation();
      const { data: session, status: authStatus } = useSession();
      const router = useRouter();
 
@@ -77,7 +79,7 @@ export default function SubmissionsPage() {
           const map: Record<string, { subs: SubmissionWithBoardTitle[]; hasUrgent: boolean }> = {};
 
           (submissions as SubmissionWithBoardTitle[]).forEach((sub) => {
-               const boardTitle = sub.board_title || sub.board_id || 'Nieznany board';
+               const boardTitle = sub.board_title || sub.board_id || t('common.unknown');
                if (!map[boardTitle]) map[boardTitle] = { subs: [], hasUrgent: false };
                map[boardTitle].subs.push(sub);
                if (sub.priority === 'urgent') map[boardTitle].hasUrgent = true;
@@ -88,12 +90,12 @@ export default function SubmissionsPage() {
                .map(([board, data]) => ({ board, ...data }));
 
           return sorted;
-     }, [submissions]);
+     }, [submissions, t]);
 
      const [expandedBoards, setExpandedBoards] = useState<Record<string, boolean>>({});
 
      if (authStatus === 'loading' || loadingUser || loadingSubmissions) {
-          return <Loader text="Ładowanie zgłoszeń..." />;
+          return <Loader text={t('submissions.loadingSubmissions')} />;
      }
 
      if (authStatus === 'unauthenticated') {
@@ -119,16 +121,16 @@ export default function SubmissionsPage() {
                await updateSubmission({ submissionId, taskId, data: editForm }).unwrap();
                setEditingId(null);
           } catch {
-               alert('Nie udało się zaktualizować zgłoszenia');
+               alert(t('submissions.submitFailed'));
           }
      };
 
      const handleDelete = async (submissionId: string, taskId: string) => {
-          if (!confirm('Czy na pewno chcesz usunąć to zgłoszenie?')) return;
+          if (!confirm(t('common.delete') + '?')) return;
           try {
                await deleteSubmission({ submissionId, taskId }).unwrap();
           } catch {
-               alert('Nie udało się usunąć zgłoszenia');
+               alert(t('submissions.submitFailed'));
           }
      };
 
@@ -141,15 +143,15 @@ export default function SubmissionsPage() {
                     <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
                          <div className="flex items-start justify-between">
                               <div>
-                                   <h1 className="text-3xl font-bold text-white mb-1">{isAdmin ? 'Wszystkie zgłoszenia' : 'Moje zgłoszenia'}</h1>
+                                   <h1 className="text-3xl font-bold text-white mb-1">{isAdmin ? t('submissions.allSubmissions') : t('submissions.mySubmissions')}</h1>
                                    <div className="flex items-center gap-3 mt-2">
                                         <span className="text-sm text-slate-400">
-                                             {submissions.length} {submissions.length === 1 ? 'zgłoszenie' : 'zgłoszeń'}
+                                             {submissions.length} {t('submissions.submission', { count: submissions.length })}
                                         </span>
                                         {urgentCount > 0 && (
                                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-xs font-medium">
                                                   <AlertTriangle className="w-3 h-3" />
-                                                  {urgentCount} pilnych
+                                                  {urgentCount} {t('submissions.urgent')}
                                              </span>
                                         )}
                                    </div>
@@ -162,7 +164,7 @@ export default function SubmissionsPage() {
                                         className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-blue-600/20 transition-colors cursor-pointer"
                                    >
                                         <Plus className="w-4 h-4" />
-                                        Nowe zgłoszenie
+                                        {t('submissions.newSubmission')}
                                    </motion.button>
                               )}
                          </div>
@@ -174,7 +176,7 @@ export default function SubmissionsPage() {
                               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-800/60 border border-slate-700/50 mb-4">
                                    <Inbox className="w-7 h-7 text-slate-500" />
                               </div>
-                              <p className="text-slate-400 text-base">{isAdmin ? 'Brak zgłoszeń w systemie' : 'Nie masz jeszcze żadnych zgłoszeń'}</p>
+                              <p className="text-slate-400 text-base">{isAdmin ? t('submissions.noSubmissions') : t('submissions.noMySubmissions')}</p>
                          </motion.div>
                     ) : (
                          <div className="space-y-4">
@@ -206,7 +208,7 @@ export default function SubmissionsPage() {
                                                        {group.hasUrgent && (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
                                                                  <AlertTriangle className="w-3 h-3" />
-                                                                 Pilne
+                                                                 {t('submissions.priorityUrgent')}
                                                             </span>
                                                        )}
                                                   </div>
@@ -274,14 +276,14 @@ export default function SubmissionsPage() {
                                                                                                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                                                                                                     >
                                                                                                          <Save className="w-3 h-3" />
-                                                                                                         Zapisz
+                                                                                                         {t('common.save')}
                                                                                                     </button>
                                                                                                     <button
                                                                                                          onClick={cancelEdit}
                                                                                                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-600/60 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                                                                                                     >
                                                                                                          <X className="w-3 h-3" />
-                                                                                                         Anuluj
+                                                                                                         {t('common.cancel')}
                                                                                                     </button>
                                                                                                </div>
                                                                                           </div>
@@ -300,7 +302,7 @@ export default function SubmissionsPage() {
                                                                                                                         startEdit(sub);
                                                                                                                    }}
                                                                                                                    className="p-1.5 rounded-md text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all cursor-pointer"
-                                                                                                                   title="Edytuj"
+                                                                                                                   title={t('common.edit')}
                                                                                                               >
                                                                                                                    <Pencil className="w-3.5 h-3.5" />
                                                                                                               </button>
@@ -310,7 +312,7 @@ export default function SubmissionsPage() {
                                                                                                                         handleDelete(sub.submission_id, sub.id);
                                                                                                                    }}
                                                                                                                    className="p-1.5 rounded-md text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-                                                                                                                   title="Usuń"
+                                                                                                                   title={t('common.delete')}
                                                                                                               >
                                                                                                                    <Trash2 className="w-3.5 h-3.5" />
                                                                                                               </button>
@@ -326,7 +328,7 @@ export default function SubmissionsPage() {
                                                                                                     {/* Priority badge */}
                                                                                                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-xs font-medium ${prio.bg} ${prio.border} ${prio.color}`}>
                                                                                                          <span className={`w-1.5 h-1.5 rounded-full ${prio.dot}`} />
-                                                                                                         {prio.label}
+                                                                                                         {t(prio.labelKey)}
                                                                                                     </span>
 
                                                                                                     {/* Status badge */}

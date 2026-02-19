@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaCheckSquare, FaLayerGroup, FaBug } from "react-icons/fa";
 import { TaskType } from "@/app/types/globalTypes";
@@ -13,30 +14,6 @@ interface TaskTypeSelectorProps {
   onDropdownToggle?: (isOpen: boolean) => void;
 }
 
-const TASK_TYPES: { value: TaskType; label: string; icon: React.ReactNode; description: string; color: string }[] = [
-  {
-    value: "task",
-    label: "Task",
-    icon: <FaCheckSquare className="w-4 h-4" />,
-    description: "A simple task without subtasks",
-    color: "blue",
-  },
-  {
-    value: "story",
-    label: "Story",
-    icon: <FaLayerGroup className="w-4 h-4" />,
-    description: "A task that can contain subtasks",
-    color: "purple",
-  },
-  {
-    value: "bug",
-    label: "Bug",
-    icon: <FaBug className="w-4 h-4" />,
-    description: "A bug report with URL and scenario",
-    color: "red",
-  },
-];
-
 const COLOR_MAP: Record<string, { border: string; ring: string; bg: string; bgActive: string; text: string; textActive: string }> = {
   blue: { border: "border-blue-500/50", ring: "ring-blue-500/50", bg: "bg-blue-500/20", bgActive: "bg-blue-500/15", text: "text-blue-400", textActive: "text-blue-300" },
   purple: { border: "border-purple-500/50", ring: "ring-purple-500/50", bg: "bg-purple-500/20", bgActive: "bg-purple-500/15", text: "text-purple-400", textActive: "text-purple-300" },
@@ -48,13 +25,39 @@ const TaskTypeSelector: React.FC<TaskTypeSelectorProps> = ({
   onChange,
   disabled = false,
 }) => {
+  const { t } = useTranslation();
+
+  const TASK_TYPES: { value: TaskType; label: string; icon: React.ReactNode; description: string; color: string }[] = [
+    {
+      value: "task",
+      label: t('taskVariant.newTask'),
+      icon: <FaCheckSquare className="w-4 h-4" />,
+      description: t('taskVariant.taskDesc'),
+      color: "blue",
+    },
+    {
+      value: "story",
+      label: t('taskVariant.story'),
+      icon: <FaLayerGroup className="w-4 h-4" />,
+      description: t('taskVariant.storyFullDesc'),
+      color: "purple",
+    },
+    {
+      value: "bug",
+      label: t('taskVariant.bug'),
+      icon: <FaBug className="w-4 h-4" />,
+      description: t('taskVariant.bugFullDesc'),
+      color: "red",
+    },
+  ];
+
   const dropdownId = useMemo(
     () => `task-type-selector-${Math.random().toString(36).substr(2, 9)}`,
     []
   );
   const { isOpen, toggle, close } = useDropdownManager(dropdownId);
 
-  const selectedOption = TASK_TYPES.find((t) => t.value === selectedType) || TASK_TYPES[0];
+  const selectedOption = TASK_TYPES.find((item) => item.value === selectedType) || TASK_TYPES[0];
 
   const handleSelect = (type: TaskType) => {
     onChange(type);

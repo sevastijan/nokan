@@ -1,6 +1,10 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 export default function OfflinePage() {
+     const { t } = useTranslation();
+
      return (
           <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-900">
                <div className="absolute inset-0 overflow-hidden">
@@ -27,9 +31,9 @@ export default function OfflinePage() {
                               />
                          </svg>
 
-                         <p className="text-lg font-medium text-slate-300">Brak połączenia</p>
+                         <p className="text-lg font-medium text-slate-300">{t('offline.noConnection')}</p>
                          <p className="max-w-sm text-sm text-slate-500">
-                              Sprawdź połączenie z internetem i spróbuj ponownie.
+                              {t('offline.checkConnection')}
                          </p>
                     </div>
 
@@ -37,7 +41,7 @@ export default function OfflinePage() {
                          onClick={() => window.location.reload()}
                          className="mt-4 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500"
                     >
-                         Spróbuj ponownie
+                         {t('offline.tryAgain')}
                     </button>
                </div>
           </div>

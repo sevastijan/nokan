@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, CheckSquare, Users } from 'lucide-react';
 
 interface DashboardStatsProps {
@@ -7,6 +10,8 @@ interface DashboardStatsProps {
 }
 
 export const DashboardStats = ({ totalBoards, totalTasks, totalMembers }: DashboardStatsProps) => {
+     const { t } = useTranslation();
+
      return (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
@@ -14,7 +19,7 @@ export const DashboardStats = ({ totalBoards, totalTasks, totalMembers }: Dashbo
                          <LayoutDashboard className="w-4.5 h-4.5 text-blue-400" />
                     </div>
                     <div>
-                         <p className="text-xs text-slate-400">Boards</p>
+                         <p className="text-xs text-slate-400">{t('dashboard.boards')}</p>
                          <p className="text-lg font-semibold text-white leading-tight">{totalBoards}</p>
                     </div>
                </div>
@@ -24,7 +29,7 @@ export const DashboardStats = ({ totalBoards, totalTasks, totalMembers }: Dashbo
                          <CheckSquare className="w-4.5 h-4.5 text-emerald-400" />
                     </div>
                     <div>
-                         <p className="text-xs text-slate-400">Tasks</p>
+                         <p className="text-xs text-slate-400">{t('dashboard.tasks')}</p>
                          <p className="text-lg font-semibold text-white leading-tight">{totalTasks}</p>
                     </div>
                </div>
@@ -34,7 +39,7 @@ export const DashboardStats = ({ totalBoards, totalTasks, totalMembers }: Dashbo
                          <Users className="w-4.5 h-4.5 text-violet-400" />
                     </div>
                     <div>
-                         <p className="text-xs text-slate-400">Members</p>
+                         <p className="text-xs text-slate-400">{t('dashboard.members')}</p>
                          <p className="text-lg font-semibold text-white leading-tight">{totalMembers}</p>
                     </div>
                </div>

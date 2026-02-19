@@ -2,11 +2,14 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { FiChevronDown, FiX, FiPlus, FiCheck } from 'react-icons/fi';
 import Avatar from '../Avatar/Avatar';
 import { UserSelectorProps } from '@/app/types/globalTypes';
 
-const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'Przypisani' }: UserSelectorProps) => {
+const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label }: UserSelectorProps) => {
+     const { t } = useTranslation();
+     const resolvedLabel = label ?? t('taskMeta.assigned');
      const [isOpen, setIsOpen] = useState(false);
      const selectRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +57,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
 
      return (
           <div className="relative w-full" ref={selectRef}>
-               {label && <span className="block text-sm font-medium text-slate-300 mb-2">{label}</span>}
+               {resolvedLabel && <span className="block text-sm font-medium text-slate-300 mb-2">{resolvedLabel}</span>}
 
                <div
                     role="button"
@@ -79,7 +82,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                          {selectedUsers.length === 0 ? (
                               <span className="text-slate-500 text-sm flex items-center gap-2">
                                    <FiPlus className="w-4 h-4" />
-                                   Wybierz osoby...
+                                   {t('taskMeta.selectPeople')}
                               </span>
                          ) : (
                               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -104,7 +107,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                                         {selectedUsers.length === 1 ? (
                                              <span className="text-sm text-slate-200 truncate">{getDisplayName(selectedUsers[0])}</span>
                                         ) : (
-                                             <span className="text-sm text-slate-300">{selectedUsers.length} osoby</span>
+                                             <span className="text-sm text-slate-300">{selectedUsers.length} {t('taskMeta.people')}</span>
                                         )}
                                    </div>
                               </div>
@@ -127,7 +130,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                               {/* Selected users section */}
                               {selectedUsers.length > 0 && (
                                    <div className="p-2 border-b border-slate-700/50">
-                                        <div className="text-xs text-slate-500 mb-2 px-1">Przypisani ({selectedUsers.length})</div>
+                                        <div className="text-xs text-slate-500 mb-2 px-1">{t('taskMeta.assigned')} ({selectedUsers.length})</div>
                                         <div className="flex flex-wrap gap-1">
                                              {selectedUsers.map((user) => (
                                                   <span
@@ -152,7 +155,7 @@ const UserSelector = ({ selectedUsers, availableUsers, onUsersChange, label = 'P
                               {/* Available users list */}
                               <ul className="max-h-48 overflow-auto" role="listbox">
                                    {availableUsers.length === 0 ? (
-                                        <li className="px-4 py-3 text-slate-500 text-sm text-center">Brak użytkowników</li>
+                                        <li className="px-4 py-3 text-slate-500 text-sm text-center">{t('taskMeta.noUsers')}</li>
                                    ) : (
                                         availableUsers.map((user) => {
                                              const selected = isSelected(user.id);

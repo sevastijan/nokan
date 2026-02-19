@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCreateSubmissionMutation, useGetPrioritiesQuery } from '@/app/store/apiSlice';
 import { useRouter } from 'next/navigation';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
@@ -22,6 +23,7 @@ const MIN_TITLE_LENGTH = 3;
 const MIN_DESCRIPTION_LENGTH = 10;
 
 export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormProps) => {
+     const { t } = useTranslation();
      const router = useRouter();
      const [createSubmission, { isLoading }] = useCreateSubmissionMutation();
      const { data: priorities = [], isLoading: loadingPriorities } = useGetPrioritiesQuery();
@@ -51,20 +53,20 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
 
           const trimmedTitle = formData.title.trim();
           if (!trimmedTitle) {
-               newErrors.title = 'Tytuł jest wymagany';
+               newErrors.title = t('submissions.titleRequired');
           } else if (trimmedTitle.length < MIN_TITLE_LENGTH) {
-               newErrors.title = `Tytuł musi mieć minimum ${MIN_TITLE_LENGTH} znaki`;
+               newErrors.title = t('submissions.titleMinLength');
           }
 
           const trimmedDesc = formData.description.trim();
           if (!trimmedDesc) {
-               newErrors.description = 'Opis jest wymagany';
+               newErrors.description = t('submissions.descriptionRequired');
           } else if (trimmedDesc.length < MIN_DESCRIPTION_LENGTH) {
-               newErrors.description = `Opis musi mieć minimum ${MIN_DESCRIPTION_LENGTH} znaków`;
+               newErrors.description = t('submissions.descriptionMinLength');
           }
 
           if (!formData.priorityId) {
-               newErrors.priority = 'Wybierz priorytet';
+               newErrors.priority = t('submissions.selectPriority');
           }
 
           setErrors(newErrors);
@@ -115,12 +117,12 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                     }
 
                     console.error('Failed to create submission:', error);
-                    alert('Nie udało się wysłać zgłoszenia. Spróbuj ponownie później.');
+                    alert(t('submissions.submitFailed'));
                     return;
                }
           }
 
-          alert(`Przekroczono limit prób (${MAX_TITLE_ATTEMPTS}). Zmień tytuł zgłoszenia.`);
+          alert(t('submissions.attemptLimit'));
      };
 
      const resetForm = () => {
@@ -160,13 +162,13 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
           <form onSubmit={handleSubmit} className="space-y-6">
                {titleAttempts > 0 && (
                     <div className="p-4 bg-amber-500/20 border border-amber-500/50 rounded-lg text-amber-200 text-sm">
-                         Tytuł &ldquo;{formData.title.trim()}&rdquo; już istnieje. Zostanie użyty: <strong>{generateTitleWithAttempt(formData.title.trim(), titleAttempts)}</strong>
+                         {t('submissions.titleExists', { title: formData.title.trim(), newTitle: generateTitleWithAttempt(formData.title.trim(), titleAttempts) })}
                     </div>
                )}
 
                <div>
                     <label htmlFor="submission-title" className="block text-sm font-medium text-slate-200 mb-2">
-                         Tytuł zgłoszenia *
+                         {t('submissions.submissionTitle')}
                     </label>
                     <input
                          id="submission-title"
@@ -177,7 +179,7 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                          className={`w-full px-4 py-2 bg-slate-800 border ${
                               errors.title ? 'border-red-500' : 'border-slate-700'
                          } rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed`}
-                         placeholder="Krótki opis problemu"
+                         placeholder={t('submissions.shortDescription')}
                          aria-invalid={!!errors.title}
                          aria-describedby={errors.title ? 'title-error' : undefined}
                     />
@@ -190,7 +192,7 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
 
                <div>
                     <label htmlFor="submission-description" className="block text-sm font-medium text-slate-200 mb-2">
-                         Szczegółowy opis *
+                         {t('submissions.detailedDescription')}
                     </label>
                     <textarea
                          id="submission-description"
@@ -201,7 +203,7 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                          className={`w-full px-4 py-2 bg-slate-800 border ${
                               errors.description ? 'border-red-500' : 'border-slate-700'
                          } rounded-lg text-white placeholder-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed`}
-                         placeholder="Opisz dokładnie problem..."
+                         placeholder={t('submissions.describeExactly')}
                          aria-invalid={!!errors.description}
                          aria-describedby={errors.description ? 'description-error' : undefined}
                     />
@@ -214,10 +216,10 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
 
                <div>
                     <label htmlFor="submission-priority" className="block text-sm font-medium text-slate-200 mb-2">
-                         Priorytet *
+                         {t('submissions.priorityLabel')}
                     </label>
                     {loadingPriorities ? (
-                         <div className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400">Ładowanie priorytetów...</div>
+                         <div className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400">{t('submissions.loadingPriorities')}</div>
                     ) : (
                          <select
                               id="submission-priority"
@@ -231,7 +233,7 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                               aria-describedby={errors.priority ? 'priority-error' : undefined}
                          >
                               <option value="" disabled>
-                                   -- Wybierz priorytet --
+                                   {t('submissions.selectPriorityPlaceholder')}
                               </option>
                               {priorities.map((priority) => (
                                    <option key={priority.id} value={priority.id}>
@@ -253,7 +255,7 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                          disabled={isFormDisabled}
                          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900"
                     >
-                         {isLoading ? 'Wysyłanie...' : 'Wyślij zgłoszenie'}
+                         {isLoading ? t('submissions.submitting') : t('submissions.submitForm')}
                     </button>
                     <button
                          type="button"
@@ -261,7 +263,7 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                          disabled={isLoading}
                          className="px-6 py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
                     >
-                         Anuluj
+                         {t('common.cancel')}
                     </button>
                </div>
           </form>

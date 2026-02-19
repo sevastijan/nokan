@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useChat } from '@/app/context/ChatContext';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import { useGetThreadMessagesQuery, useGetChannelMessagesQuery, useSendMessageMutation } from '@/app/store/apiSlice';
@@ -12,6 +13,7 @@ import { getUserDisplayName } from '../utils';
 import { useRealtimeMessages } from '@/app/hooks/chat/useRealtimeMessages';
 
 const ThreadPanel = () => {
+	const { t } = useTranslation();
 	const { threadParentId, selectedChannelId, closeThread } = useChat();
 	const { currentUser } = useCurrentUser();
 	const bottomRef = useRef<HTMLDivElement>(null);
@@ -66,9 +68,9 @@ const ThreadPanel = () => {
 				</button>
 				<div className="flex items-center gap-2">
 					<MessageSquare className="w-4 h-4 text-blue-400" />
-					<h3 className="text-sm font-semibold text-white">Wątek</h3>
+					<h3 className="text-sm font-semibold text-white">{t('chat.thread')}</h3>
 					<span className="text-xs text-slate-500">
-						{threadMessages.length} {threadMessages.length === 1 ? 'odpowiedź' : 'odpowiedzi'}
+						{threadMessages.length} {t('chat.reply', { count: threadMessages.length })}
 					</span>
 				</div>
 			</div>
@@ -95,8 +97,8 @@ const ThreadPanel = () => {
 				) : threadMessages.length === 0 ? (
 					<div className="flex flex-col items-center justify-center h-full text-center">
 						<MessageSquare className="w-8 h-8 text-slate-600 mb-2" />
-						<p className="text-sm text-slate-500">Brak odpowiedzi</p>
-						<p className="text-xs text-slate-600 mt-1">Rozpocznij dyskusję w wątku</p>
+						<p className="text-sm text-slate-500">{t('chat.noReplies')}</p>
+						<p className="text-xs text-slate-600 mt-1">{t('chat.startDiscussion')}</p>
 					</div>
 				) : (
 					<MessageList messages={threadMessages} currentUserId={currentUser?.id ?? ''} isThread onMessageUpdate={broadcastMessageUpdate} onReactionUpdate={broadcastReactionUpdate} />
@@ -108,7 +110,7 @@ const ThreadPanel = () => {
 				onSend={handleSend}
 				channelId={selectedChannelId}
 				currentUserId={currentUser?.id ?? ''}
-				placeholder="Odpowiedz w wątku..."
+				placeholder={t('chat.replyInThread')}
 			/>
 		</div>
 	);

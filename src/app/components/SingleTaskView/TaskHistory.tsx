@@ -1,29 +1,31 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiClock, FiChevronDown, FiChevronUp, FiRotateCcw } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
+import { enUS } from 'date-fns/locale/en-US';
 import { toast } from 'sonner';
 import { useGetTaskSnapshotsQuery, useRestoreTaskSnapshotMutation } from '@/app/store/apiSlice';
 import { Column, TaskSnapshot } from '@/app/types/globalTypes';
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 
-const FIELD_LABELS: Record<string, string> = {
-     title: 'Tytuł',
-     description: 'Opis',
-     column_id: 'Kolumna',
-     priority: 'Priorytet',
-     user_id: 'Przypisany',
-     status_id: 'Status',
-     start_date: 'Data rozpoczęcia',
-     end_date: 'Data zakończenia',
-     due_date: 'Termin',
-     completed: 'Ukończone',
-     type: 'Typ',
-     parent_id: 'Nadrzędne zadanie',
-     restored: 'Przywrócono',
+const FIELD_LABEL_KEYS: Record<string, string> = {
+     title: 'history.fieldTitle',
+     description: 'history.fieldDescription',
+     column_id: 'history.fieldColumn',
+     priority: 'history.fieldPriority',
+     user_id: 'history.fieldAssigned',
+     status_id: 'history.fieldStatus',
+     start_date: 'history.fieldStartDate',
+     end_date: 'history.fieldEndDate',
+     due_date: 'history.fieldDueDate',
+     completed: 'history.fieldCompleted',
+     type: 'history.fieldType',
+     parent_id: 'history.fieldParentTask',
+     restored: 'history.fieldRestored',
 };
 
 interface TaskHistoryProps {
@@ -32,10 +34,10 @@ interface TaskHistoryProps {
      onRestore?: () => void;
 }
 
-function formatFieldValue(field: string, value: unknown, columns?: Column[]): string {
+function formatFieldValue(field: string, value: unknown, columns: Column[] | undefined, t: (key: string) => string, lang: string): string {
      if (value === null || value === undefined) return '—';
 
-     if (field === 'completed') return value ? 'Tak' : 'Nie';
+     if (field === 'completed') return value ? t('common.yes') : t('common.no');
      if (field === 'type') return value === 'story' ? 'Story' : 'Task';
      if (field === 'column_id' && columns) {
           const col = columns.find((c) => c.id === value);
@@ -44,11 +46,11 @@ function formatFieldValue(field: string, value: unknown, columns?: Column[]): st
      if (field === 'description') {
           const str = String(value);
           if (str.length > 80) return str.substring(0, 80) + '...';
-          return str || '(pusty)';
+          return str || t('history.empty');
      }
      if (field.includes('date') && value) {
           try {
-               return new Date(String(value)).toLocaleDateString('pl-PL');
+               return new Date(String(value)).toLocaleDateString(lang === 'pl' ? 'pl-PL' : 'en-US');
           } catch {
                return String(value);
           }
@@ -66,6 +68,7 @@ function SnapshotEntry({
      columns?: Column[];
      onRestore: (snapshotId: string, version: number) => void;
 }) {
+     const { t, i18n } = useTranslation();
      const [expanded, setExpanded] = useState(false);
      const isRestoreEntry = snapshot.changed_fields.includes('restored');
 
@@ -73,18 +76,20 @@ function SnapshotEntry({
      const displayName = user?.custom_name || user?.name || 'System';
      const avatarUrl = user?.custom_image || user?.image;
 
+     const dateFnsLocale = i18n.language === 'pl' ? pl : enUS;
+
      const changeSummary = useMemo(() => {
-          if (isRestoreEntry) return 'Przywrócono poprzednią wersję';
-          return snapshot.changed_fields.map((f) => FIELD_LABELS[f] || f).join(', ');
-     }, [snapshot.changed_fields, isRestoreEntry]);
+          if (isRestoreEntry) return t('history.restoredVersion');
+          return snapshot.changed_fields.map((f) => FIELD_LABEL_KEYS[f] ? t(FIELD_LABEL_KEYS[f]) : f).join(', ');
+     }, [snapshot.changed_fields, isRestoreEntry, t]);
 
      const timeAgo = useMemo(() => {
           try {
-               return formatDistanceToNow(new Date(snapshot.created_at), { addSuffix: true, locale: pl });
+               return formatDistanceToNow(new Date(snapshot.created_at), { addSuffix: true, locale: dateFnsLocale });
           } catch {
                return snapshot.created_at;
           }
-     }, [snapshot.created_at]);
+     }, [snapshot.created_at, dateFnsLocale]);
 
      return (
           <div className="bg-slate-800/60 rounded-lg border border-slate-700/40 overflow-hidden">
@@ -111,7 +116,7 @@ function SnapshotEntry({
                                    <span className="text-amber-400">{changeSummary}</span>
                               ) : (
                                    <>
-                                        Zmieniono: <span className="text-slate-300">{changeSummary}</span>
+                                        {t('history.changed', { fields: '' })}<span className="text-slate-300">{changeSummary}</span>
                                    </>
                               )}
                          </p>
@@ -126,7 +131,7 @@ function SnapshotEntry({
                                    <button
                                         onClick={() => setExpanded(!expanded)}
                                         className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
-                                        title={expanded ? 'Zwiń' : 'Rozwiń szczegóły'}
+                                        title={expanded ? t('history.collapse') : t('history.expandDetails')}
                                    >
                                         {expanded ? <FiChevronUp className="w-3.5 h-3.5" /> : <FiChevronDown className="w-3.5 h-3.5" />}
                                    </button>
@@ -134,7 +139,7 @@ function SnapshotEntry({
                                    <button
                                         onClick={() => onRestore(snapshot.id, snapshot.version)}
                                         className="p-1 rounded hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 transition-colors"
-                                        title="Przywróć tę wersję"
+                                        title={t('history.restoreVersion')}
                                    >
                                         <FiRotateCcw className="w-3.5 h-3.5" />
                                    </button>
@@ -161,12 +166,12 @@ function SnapshotEntry({
                               <div className="px-3 pb-3 border-t border-slate-700/30 pt-2 space-y-1.5">
                                    {snapshot.changed_fields.map((field) => (
                                         <div key={field} className="flex items-start gap-2 text-xs">
-                                             <span className="text-slate-500 font-medium min-w-25">{FIELD_LABELS[field] || field}:</span>
+                                             <span className="text-slate-500 font-medium min-w-25">{FIELD_LABEL_KEYS[field] ? t(FIELD_LABEL_KEYS[field]) : field}:</span>
                                              <span className="text-slate-400">
-                                                  {formatFieldValue(field, snapshot.snapshot[field], columns)}
+                                                  {formatFieldValue(field, snapshot.snapshot[field], columns, t, i18n.language)}
                                              </span>
                                              <span className="text-slate-600 mx-1">&rarr;</span>
-                                             <span className="text-slate-300 italic">nowa wartość</span>
+                                             <span className="text-slate-300 italic">{t('history.newValue')}</span>
                                         </div>
                                    ))}
                               </div>
@@ -178,6 +183,7 @@ function SnapshotEntry({
 }
 
 export default function TaskHistory({ taskId, columns, onRestore }: TaskHistoryProps) {
+     const { t } = useTranslation();
      const { data: snapshots = [], isLoading } = useGetTaskSnapshotsQuery(taskId);
      const [restoreSnapshot] = useRestoreTaskSnapshotMutation();
      const { currentUser } = useCurrentUser();
@@ -204,14 +210,14 @@ export default function TaskHistory({ taskId, columns, onRestore }: TaskHistoryP
                     snapshotId: confirmRestore.id,
                     userId: currentUser?.id,
                }).unwrap();
-               toast.success(`Przywrócono wersję ${confirmRestore.version}`);
+               toast.success(t('history.restoredVersionNumber', { version: confirmRestore.version }));
                onRestore?.();
           } catch {
-               toast.error('Nie udało się przywrócić wersji');
+               toast.error(t('history.restoreFailed'));
           } finally {
                setConfirmRestore(null);
           }
-     }, [confirmRestore, restoreSnapshot, taskId, currentUser?.id, onRestore]);
+     }, [confirmRestore, restoreSnapshot, taskId, currentUser?.id, onRestore, t]);
 
      if (isLoading) {
           return (
@@ -231,7 +237,7 @@ export default function TaskHistory({ taskId, columns, onRestore }: TaskHistoryP
                {/* Section header */}
                <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                     <div className="w-1 h-4 bg-linear-to-b from-emerald-500 to-teal-500 rounded-full" />
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Historia zmian</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('history.title')}</h3>
                     <FiClock className="w-3.5 h-3.5 text-slate-500 ml-1" />
                     <span className="ml-auto text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">{snapshots.length}</span>
                </div>
@@ -249,7 +255,7 @@ export default function TaskHistory({ taskId, columns, onRestore }: TaskHistoryP
                          onClick={() => setShowAll(!showAll)}
                          className="mt-3 w-full text-center text-xs text-slate-400 hover:text-slate-200 transition-colors py-1.5 rounded-lg hover:bg-slate-700/30"
                     >
-                         {showAll ? 'Zwiń' : `Pokaż wszystkie (${snapshots.length})`}
+                         {showAll ? t('history.collapse') : t('history.showAll', { count: snapshots.length })}
                     </button>
                )}
 
@@ -270,22 +276,22 @@ export default function TaskHistory({ taskId, columns, onRestore }: TaskHistoryP
                                    exit={{ scale: 0.95, opacity: 0 }}
                                    onClick={(e) => e.stopPropagation()}
                               >
-                                   <h4 className="text-lg font-semibold text-white mb-2">Przywróć wersję</h4>
+                                   <h4 className="text-lg font-semibold text-white mb-2">{t('history.restoreTitle')}</h4>
                                    <p className="text-sm text-slate-400 mb-4">
-                                        Czy na pewno chcesz przywrócić wersję {confirmRestore.version}? Obecny stan zadania zostanie zapisany w historii.
+                                        {t('history.restoreConfirm', { version: confirmRestore.version })}
                                    </p>
                                    <div className="flex gap-3 justify-end">
                                         <button
                                              onClick={() => setConfirmRestore(null)}
                                              className="px-4 py-2 text-sm text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
                                         >
-                                             Anuluj
+                                             {t('common.cancel')}
                                         </button>
                                         <button
                                              onClick={confirmRestoreAction}
                                              className="px-4 py-2 text-sm text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors"
                                         >
-                                             Przywróć
+                                             {t('history.restore')}
                                         </button>
                                    </div>
                               </motion.div>

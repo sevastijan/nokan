@@ -1,6 +1,7 @@
 'use client';
 
 import { FiGrid, FiList } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 
 interface ViewModeToggleProps {
      viewMode: 'columns' | 'list';
@@ -8,6 +9,7 @@ interface ViewModeToggleProps {
 }
 
 const ViewModeToggle = ({ viewMode, onViewModeChange }: ViewModeToggleProps) => {
+     const { t } = useTranslation();
      return (
           <div className="flex bg-slate-800/50 rounded-lg p-0.5 border border-slate-700/50">
                <button
@@ -18,7 +20,7 @@ const ViewModeToggle = ({ viewMode, onViewModeChange }: ViewModeToggleProps) => 
                     `}
                >
                     <FiGrid className="w-4 h-4" />
-                    <span className="hidden sm:inline font-medium">Tablica</span>
+                    <span className="hidden sm:inline font-medium">{t('board.boardView')}</span>
                </button>
                <button
                     onClick={() => onViewModeChange('list')}
@@ -28,7 +30,7 @@ const ViewModeToggle = ({ viewMode, onViewModeChange }: ViewModeToggleProps) => 
                     `}
                >
                     <FiList className="w-4 h-4" />
-                    <span className="hidden sm:inline font-medium">Lista</span>
+                    <span className="hidden sm:inline font-medium">{t('board.listView')}</span>
                </button>
           </div>
      );

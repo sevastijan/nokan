@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { BoardTemplate } from '@/app/types/globalTypes';
@@ -8,6 +9,7 @@ import { getBoardTemplates, deleteBoardTemplate } from '@/app/lib/api';
 import { TemplateSelectorProps } from '@/app/types/globalTypes';
 
 const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSelectorProps>(({ selectedTemplate, onTemplateSelect, onCreateTemplate, disabled = false, refreshTrigger = 0 }, ref) => {
+     const { t } = useTranslation();
      const [isOpen, setIsOpen] = useState(false);
      const [templates, setTemplates] = useState<BoardTemplate[]>([]);
      const [loading, setLoading] = useState(true);
@@ -21,7 +23,7 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
                setTemplates(fetchedTemplates);
           } catch (err) {
                console.error('Error loading templates:', err);
-               setError('Could not load templates');
+               setError(t('templates.couldNotLoad'));
           } finally {
                setLoading(false);
           }
@@ -37,7 +39,7 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
 
      const handleDeleteTemplate = async (templateId: string, e: React.MouseEvent) => {
           e.stopPropagation();
-          if (!confirm('Are you sure you want to delete this template?')) return;
+          if (!confirm(t('templates.confirmDelete'))) return;
           try {
                await deleteBoardTemplate(templateId);
                await loadTemplates();
@@ -46,20 +48,20 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
                }
           } catch (err) {
                console.error('Error deleting template:', err);
-               setError('Failed to delete template');
+               setError(t('templates.deleteFailed'));
           }
      };
 
      return (
           <div className="relative">
-               <label className="block text-sm font-medium mb-1.5 text-slate-300">Board template</label>
+               <label className="block text-sm font-medium mb-1.5 text-slate-300">{t('templates.boardTemplate')}</label>
                <button
                     onClick={() => setIsOpen(!isOpen)}
                     disabled={disabled || loading}
                     className="w-full bg-slate-900/50 text-white border border-slate-700/50 rounded-lg p-3 text-sm flex items-center justify-between hover:bg-slate-800/60 transition-colors disabled:opacity-50"
                >
                     <div className="flex flex-col items-start">
-                         <span className="font-medium">{loading ? 'Loading...' : error ? 'Error' : selectedTemplate?.name || 'Select template'}</span>
+                         <span className="font-medium">{loading ? t('templates.loading') : error ? t('templates.error') : selectedTemplate?.name || t('templates.selectTemplate')}</span>
                          {selectedTemplate && !error && <span className="text-xs text-slate-400 mt-1">{selectedTemplate.description}</span>}
                     </div>
                     <ChevronDown size={16} className={`transform transition-transform text-slate-400 ${isOpen ? 'rotate-180' : ''}`} />
@@ -85,8 +87,8 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
                               >
                                    <Plus size={16} />
                                    <div>
-                                        <div className="font-medium">Create new template</div>
-                                        <div className="text-xs text-slate-500">Customize your own column layout</div>
+                                        <div className="font-medium">{t('templates.createNew')}</div>
+                                        <div className="text-xs text-slate-500">{t('templates.customizeLayout')}</div>
                                    </div>
                               </button>
 
@@ -104,10 +106,10 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
                                         <div className="flex-1">
                                              <div className="font-medium flex items-center gap-2">
                                                   {template.name}
-                                                  {!template.is_custom && <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">Default</span>}
+                                                  {!template.is_custom && <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">{t('templates.default')}</span>}
                                              </div>
                                              <div className="text-xs text-slate-400 mt-1">{template.description}</div>
-                                             <div className="text-xs text-slate-500 mt-1">Columns: {template.template_columns.map((c) => c.title).join(', ') || 'None'}</div>
+                                             <div className="text-xs text-slate-500 mt-1">{t('templates.columns', { columns: template.template_columns.map((c) => c.title).join(', ') || t('common.none') })}</div>
                                         </div>
                                         {template.is_custom && (
                                              <button onClick={(e) => handleDeleteTemplate(template.id, e)} className="ml-2 p-1 text-red-400 hover:text-red-300 hover:bg-red-600/20 rounded transition-colors">
@@ -116,7 +118,7 @@ const TemplateSelector = forwardRef<{ refreshTemplates: () => void }, TemplateSe
                                         )}
                                    </div>
                               ))}
-                              {templates.length === 0 && <div className="p-3 text-slate-500 text-center">No templates</div>}
+                              {templates.length === 0 && <div className="p-3 text-slate-500 text-center">{t('templates.noTemplates')}</div>}
                          </motion.div>
                     )}
                </AnimatePresence>

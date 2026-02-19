@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { LayoutDashboard, ListChecks } from 'lucide-react';
 
@@ -12,12 +13,14 @@ interface DashboardTabsProps {
      tasksCount: number;
 }
 
-const tabs: { id: DashboardTab; label: string; icon: typeof LayoutDashboard }[] = [
-     { id: 'boards', label: 'Projekty', icon: LayoutDashboard },
-     { id: 'tasks', label: 'Twoje Taski', icon: ListChecks },
-];
-
 export const DashboardTabs = ({ activeTab, onTabChange, boardsCount, tasksCount }: DashboardTabsProps) => {
+     const { t } = useTranslation();
+
+     const tabs: { id: DashboardTab; label: string; icon: typeof LayoutDashboard }[] = [
+          { id: 'boards', label: t('dashboard.projects'), icon: LayoutDashboard },
+          { id: 'tasks', label: t('dashboard.yourTasks'), icon: ListChecks },
+     ];
+
      const counts: Record<DashboardTab, number> = {
           boards: boardsCount,
           tasks: tasksCount,

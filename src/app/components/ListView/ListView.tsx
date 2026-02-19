@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiList, FiCalendar } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { Column as ColumnType } from '@/app/types/globalTypes';
@@ -31,6 +32,8 @@ const stripHtml = (html: string): string => {
 };
 
 const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
+     const { t } = useTranslation();
+
      const sortedTasks = useMemo(() => {
           const allTasks = columns.flatMap((column) =>
                column.tasks.map((task) => ({
@@ -60,7 +63,7 @@ const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
           if (task.collaborators && task.collaborators.length > 0) {
                return task.collaborators.map((c) => ({
                     id: c.id,
-                    name: c.custom_name || c.name || c.email || 'Użytkownik',
+                    name: c.custom_name || c.name || c.email || t('listView.defaultUser'),
                     image: c.custom_image || c.image || '',
                }));
           }
@@ -68,7 +71,7 @@ const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
                return [
                     {
                          id: task.assignee.id || 'assignee',
-                         name: task.assignee.name || 'Użytkownik',
+                         name: task.assignee.name || t('listView.defaultUser'),
                          image: task.assignee.image || '',
                     },
                ];
@@ -85,8 +88,8 @@ const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
                >
                     <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-12 text-center">
                          <FiList className="w-12 h-12 mx-auto mb-4 text-slate-600" />
-                         <p className="text-lg font-medium text-slate-300 mb-1">Brak zadań</p>
-                         <p className="text-sm text-slate-500">Utwórz pierwsze zadanie, aby zacząć</p>
+                         <p className="text-lg font-medium text-slate-300 mb-1">{t('listView.noTasks')}</p>
+                         <p className="text-sm text-slate-500">{t('listView.createFirstTask')}</p>
                     </div>
                </motion.div>
           );
@@ -96,11 +99,11 @@ const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="w-full max-w-5xl mx-auto">
                {/* Desktop Header */}
                <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    <div className="col-span-4">Zadanie</div>
-                    <div className="col-span-2">Kolumna</div>
-                    <div className="col-span-2">Priorytet</div>
-                    <div className="col-span-2">Przypisany</div>
-                    <div className="col-span-2">Data</div>
+                    <div className="col-span-4">{t('listView.task')}</div>
+                    <div className="col-span-2">{t('listView.column')}</div>
+                    <div className="col-span-2">{t('listView.priority')}</div>
+                    <div className="col-span-2">{t('listView.assigned')}</div>
+                    <div className="col-span-2">{t('listView.date')}</div>
                </div>
 
                {/* Tasks List */}

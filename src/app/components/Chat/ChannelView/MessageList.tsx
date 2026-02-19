@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { ChatMessage } from '@/app/store/endpoints/chatEndpoints';
 import MessageItem from './MessageItem';
 import { formatDateSeparator } from '../utils';
@@ -14,11 +15,13 @@ interface MessageListProps {
 }
 
 const MessageList = ({ messages, currentUserId, isThread = false, isAdmin = false, onMessageUpdate, onReactionUpdate }: MessageListProps) => {
+	const { t } = useTranslation();
+
 	if (messages.length === 0) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full text-center py-12">
-				<p className="text-sm text-slate-500">Brak wiadomości</p>
-				<p className="text-xs text-slate-600 mt-1">Napisz pierwszą wiadomość</p>
+				<p className="text-sm text-slate-500">{t('chat.noMessages')}</p>
+				<p className="text-xs text-slate-600 mt-1">{t('chat.writeFirst')}</p>
 			</div>
 		);
 	}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCheck, FiChevronDown, FiColumns } from 'react-icons/fi';
 import type { Column } from '@/app/types/globalTypes';
@@ -14,6 +15,7 @@ interface ColumnSelectorProps {
 }
 
 const ColumnSelector = ({ columns, value, onChange, label, disabled = false }: ColumnSelectorProps) => {
+     const { t } = useTranslation();
      const [open, setOpen] = useState(false);
      const ref = useRef<HTMLDivElement>(null);
 
@@ -42,7 +44,7 @@ const ColumnSelector = ({ columns, value, onChange, label, disabled = false }: C
                <div className="relative w-full">
                     {label && <span className="block text-sm font-medium text-slate-300 mb-2">{label}</span>}
                     <div className="w-full px-3 py-2.5 min-h-[46px] bg-slate-700/50 border border-slate-600/50 rounded-lg text-slate-500 text-sm flex items-center">
-                         {columns.length === 0 ? 'Brak kolumn' : 'Wyłączone'}
+                         {columns.length === 0 ? t('column.noColumns') : t('common.disabled')}
                     </div>
                </div>
           );

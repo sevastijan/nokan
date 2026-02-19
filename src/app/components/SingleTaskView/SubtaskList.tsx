@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPlus, FaLayerGroup } from 'react-icons/fa';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -18,6 +19,7 @@ interface SubtaskListProps {
 }
 
 const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen, onRefresh }: SubtaskListProps) => {
+     const { t } = useTranslation();
      const [isAddingNew, setIsAddingNew] = useState(false);
      const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
@@ -120,7 +122,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                          <FaLayerGroup className="w-4 h-4 text-purple-400" />
-                         <span className="text-sm font-medium text-slate-200">Subtasks</span>
+                         <span className="text-sm font-medium text-slate-200">{t('subtasks.title')}</span>
                          <span className="text-xs text-slate-400">
                               ({completedCount}/{totalCount})
                          </span>
@@ -170,7 +172,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                </DragDropContext>
 
                {/* Empty state */}
-               {subtasks.length === 0 && !isAddingNew && <div className="text-center py-4 text-slate-400 text-sm">No subtasks yet. Add one to break down this story.</div>}
+               {subtasks.length === 0 && !isAddingNew && <div className="text-center py-4 text-slate-400 text-sm">{t('subtasks.noSubtasks')}</div>}
 
                {/* Add subtask form */}
                <AnimatePresence>
@@ -182,7 +184,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                                         value={newSubtaskTitle}
                                         onChange={(e) => setNewSubtaskTitle(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder="Enter subtask title..."
+                                        placeholder={t('subtasks.enterTitle')}
                                         autoFocus
                                         disabled={isAdding}
                                         className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:opacity-50"
@@ -192,7 +194,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                                         disabled={!newSubtaskTitle.trim() || isAdding}
                                         className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors duration-150"
                                    >
-                                        {isAdding ? 'Adding...' : 'Add'}
+                                        {isAdding ? t('subtasks.adding') : t('common.add')}
                                    </button>
                                    <button
                                         onClick={() => {
@@ -202,7 +204,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                                         disabled={isAdding}
                                         className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-slate-200 text-sm font-medium rounded-lg transition-colors duration-150"
                                    >
-                                        Cancel
+                                        {t('common.cancel')}
                                    </button>
                               </div>
                          </motion.div>
@@ -214,7 +216,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                               className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-purple-400 hover:bg-slate-700/50 rounded-lg transition-colors duration-150"
                          >
                               <FaPlus className="w-3 h-3" />
-                              <span>Add subtask</span>
+                              <span>{t('subtasks.addSubtask')}</span>
                          </motion.button>
                     )}
                </AnimatePresence>

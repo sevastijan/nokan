@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface UseAutosaveProps {
@@ -8,6 +9,7 @@ interface UseAutosaveProps {
 }
 
 export const useAutosave = ({ callback, delay, shouldSave }: UseAutosaveProps) => {
+     const { t } = useTranslation();
      const timerRef = useRef<NodeJS.Timeout | null>(null);
      const [isAutoSaving, setIsAutoSaving] = useState(false);
 
@@ -28,10 +30,10 @@ export const useAutosave = ({ callback, delay, shouldSave }: UseAutosaveProps) =
                try {
                     setIsAutoSaving(true);
                     await callback();
-                    toast.success('Zapisano automatycznie');
+                    toast.success(t('task.autoSaved'));
                } catch (err) {
                     console.error('Autosave failed:', err);
-                    toast.error('Nie udało się automatycznie zapisać');
+                    toast.error(t('task.autoSaveFailed'));
                } finally {
                     setIsAutoSaving(false);
                     timerRef.current = null;
@@ -44,7 +46,7 @@ export const useAutosave = ({ callback, delay, shouldSave }: UseAutosaveProps) =
                     timerRef.current = null;
                }
           };
-     }, [shouldSave, callback, delay]);
+     }, [shouldSave, callback, delay, t]);
 
      return { isAutoSaving };
 };

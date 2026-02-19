@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Users, Hash, Pin, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useChat } from '@/app/context/ChatContext';
 import Avatar from '@/app/components/Avatar/Avatar';
 import { ChatChannel, ChatChannelMember } from '@/app/store/endpoints/chatEndpoints';
@@ -18,6 +19,7 @@ interface ChannelHeaderProps {
 }
 
 const ChannelHeader = ({ members, currentUserId, channel }: ChannelHeaderProps) => {
+	const { t } = useTranslation();
 	const { selectChannel } = useChat();
 	const router = useRouter();
 	const [showSettings, setShowSettings] = useState(false);
@@ -32,7 +34,7 @@ const ChannelHeader = ({ members, currentUserId, channel }: ChannelHeaderProps) 
 
 	const displayName = isDm
 		? getUserDisplayName(otherMember?.user)
-		: channel?.name || 'Kanał';
+		: channel?.name || t('chat.channel');
 
 	const displayAvatar = isDm ? getUserDisplayAvatar(otherMember?.user) : '';
 
@@ -72,7 +74,7 @@ const ChannelHeader = ({ members, currentUserId, channel }: ChannelHeaderProps) 
 						) : (
 							<>
 								<Users className="w-3 h-3 text-slate-600" />
-								<span className="text-xs text-slate-500">{members.length} {members.length === 1 ? 'osoba' : 'osób'}</span>
+								<span className="text-xs text-slate-500">{members.length} {t('chat.people', { count: members.length })}</span>
 							</>
 						)}
 					</div>
@@ -83,7 +85,7 @@ const ChannelHeader = ({ members, currentUserId, channel }: ChannelHeaderProps) 
 					<button
 						onClick={() => setShowPinned(true)}
 						className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition cursor-pointer"
-						title="Przypięte wiadomości"
+						title={t('chat.pinnedMessages')}
 					>
 						<Pin className="w-4 h-4" />
 						{pinnedMessages.length > 0 && (
@@ -96,7 +98,7 @@ const ChannelHeader = ({ members, currentUserId, channel }: ChannelHeaderProps) 
 						<button
 							onClick={() => setShowSettings(true)}
 							className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition cursor-pointer"
-							title="Ustawienia kanału"
+							title={t('chat.channelSettings')}
 						>
 							<Settings className="w-4 h-4" />
 						</button>

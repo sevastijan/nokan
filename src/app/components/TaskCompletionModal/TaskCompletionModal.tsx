@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCheck, FiX } from 'react-icons/fi';
 
@@ -11,6 +12,7 @@ interface TaskCompletionModalProps {
 }
 
 const TaskCompletionModal = ({ isOpen, onClose, onConfirm, taskTitle }: TaskCompletionModalProps) => {
+     const { t } = useTranslation();
      return (
           <AnimatePresence>
                {isOpen && (
@@ -37,11 +39,11 @@ const TaskCompletionModal = ({ isOpen, onClose, onConfirm, taskTitle }: TaskComp
                                              <FiCheck className="w-5 h-5 text-emerald-400" />
                                         </div>
                                         <div>
-                                             <h3 className="text-lg font-semibold text-white">Oznaczyć jako zakończone?</h3>
-                                             <p className="text-xs text-slate-500 mt-0.5">Przeniesiono do kolumny Done</p>
+                                             <h3 className="text-lg font-semibold text-white">{t('completion.markAsCompleted')}</h3>
+                                             <p className="text-xs text-slate-500 mt-0.5">{t('completion.movedToDone')}</p>
                                         </div>
                                    </div>
-                                   <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-700/60 transition-all duration-200 text-slate-500 hover:text-slate-300" aria-label="Zamknij">
+                                   <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-700/60 transition-all duration-200 text-slate-500 hover:text-slate-300" aria-label={t('common.close')}>
                                         <FiX className="w-5 h-5" />
                                    </button>
                               </div>
@@ -49,8 +51,8 @@ const TaskCompletionModal = ({ isOpen, onClose, onConfirm, taskTitle }: TaskComp
                               {/* Body */}
                               <div className="px-6 pb-5">
                                    <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/50">
-                                        <p className="text-sm text-slate-400 mb-1">Zadanie</p>
-                                        <p className="text-white font-medium truncate">{taskTitle || 'Zadanie bez tytułu'}</p>
+                                        <p className="text-sm text-slate-400 mb-1">{t('completion.taskLabel')}</p>
+                                        <p className="text-white font-medium truncate">{taskTitle || t('completion.untitledTask')}</p>
                                    </div>
                               </div>
 
@@ -60,13 +62,13 @@ const TaskCompletionModal = ({ isOpen, onClose, onConfirm, taskTitle }: TaskComp
                                         onClick={onClose}
                                         className="px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 rounded-xl transition-all duration-200"
                                    >
-                                        Zostaw bez zmian
+                                        {t('completion.leaveUnchanged')}
                                    </button>
                                    <button
                                         onClick={onConfirm}
                                         className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200"
                                    >
-                                        Oznacz jako zakończone
+                                        {t('completion.markComplete')}
                                    </button>
                               </div>
                          </motion.div>

@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface AddColumnPopupProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ const AddColumnPopup = ({
   setNewColumnTitle,
   isAddingColumn,
 }: AddColumnPopupProps) => {
+  const { t } = useTranslation();
   /**
    * Handle Enter key press to submit the form
    * @param e - Keyboard event from the input field
@@ -57,11 +59,11 @@ const AddColumnPopup = ({
             transition={{ duration: 0.2 }}
           >
             <h2 className="text-xl font-bold text-slate-100 mb-4">
-              Dodaj nową kolumnę
+              {t('column.addNewColumn')}
             </h2>
             <input
               type="text"
-              placeholder="Tytuł kolumny"
+              placeholder={t('column.columnTitle')}
               value={newColumnTitle}
               onChange={(e) => setNewColumnTitle(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -73,14 +75,14 @@ const AddColumnPopup = ({
                 onClick={onClose}
                 className="flex-1 px-4 py-2 bg-slate-700 text-slate-200 rounded hover:bg-slate-600 transition-colors cursor-pointer"
               >
-                Anuluj
+                {t('common.cancel')}
               </button>
               <button
                 onClick={onAddColumn}
                 disabled={isAddingColumn || !newColumnTitle.trim()}
                 className="flex-1 px-4 py-2 bg-slate-600 text-slate-100 rounded hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
-                {isAddingColumn ? "Dodawanie..." : "Dodaj kolumnę"}
+                {isAddingColumn ? t('column.adding') : t('column.addColumn')}
               </button>
             </div>
           </motion.div>

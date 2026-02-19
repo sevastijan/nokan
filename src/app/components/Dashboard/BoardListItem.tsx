@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import { MoreHorizontal, Pencil, Trash2, ClipboardList, Users } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 
@@ -16,6 +19,7 @@ interface BoardListItemProps {
 }
 
 export const BoardListItem = ({ board, onEdit, onDelete, onBoardClick }: BoardListItemProps) => {
+     const { t } = useTranslation();
      const taskCount = board._count?.tasks ?? 0;
      const memberCount = board._count?.teamMembers ?? 0;
 
@@ -43,7 +47,7 @@ export const BoardListItem = ({ board, onEdit, onDelete, onBoardClick }: BoardLi
                               <Menu.Button
                                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/60 transition cursor-pointer"
                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                   aria-label="Board actions"
+                                   aria-label={t('dashboard.boardActions')}
                               >
                                    <MoreHorizontal className="w-4.5 h-4.5" />
                               </Menu.Button>
@@ -68,7 +72,7 @@ export const BoardListItem = ({ board, onEdit, onDelete, onBoardClick }: BoardLi
                                                             onEdit();
                                                        }}
                                                   >
-                                                       <Pencil className="w-3.5 h-3.5" /> Edit
+                                                       <Pencil className="w-3.5 h-3.5" /> {t('common.edit')}
                                                   </button>
                                              )}
                                         </Menu.Item>
@@ -83,7 +87,7 @@ export const BoardListItem = ({ board, onEdit, onDelete, onBoardClick }: BoardLi
                                                             onDelete();
                                                        }}
                                                   >
-                                                       <Trash2 className="w-3.5 h-3.5" /> Delete
+                                                       <Trash2 className="w-3.5 h-3.5" /> {t('common.delete')}
                                                   </button>
                                              )}
                                         </Menu.Item>

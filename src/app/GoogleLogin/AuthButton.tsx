@@ -2,32 +2,24 @@
 
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import Loader from '../components/Loader';
 
-/**
- * Authentication button component that handles user sign-in and navigation to dashboard
- * @returns JSX element with conditional authentication UI
- */
 const AuthButton = () => {
+     const { t } = useTranslation();
      const { data: session, status } = useSession();
      const router = useRouter();
 
-     /**
-      * Handle Google sign-in process
-      */
      const handleSignIn = () => {
           signIn('google');
      };
 
-     /**
-      * Navigate to user dashboard
-      */
      const goToDashboard = () => {
           router.push('/dashboard');
      };
 
      if (status === 'loading') {
-          return <Loader text="Loading..." />;
+          return <Loader />;
      }
 
      return (
@@ -37,16 +29,16 @@ const AuthButton = () => {
                          onClick={handleSignIn}
                          className="bg-slate-700 hover:bg-slate-600 text-slate-100 px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer border border-slate-600"
                     >
-                         Sign in with Google
+                         {t('auth.signInWithGoogle')}
                     </button>
                ) : (
                     <div className="text-center space-y-4">
-                         <p className="text-xl text-slate-100">Welcome back, {session.user?.name}!</p>
+                         <p className="text-xl text-slate-100">{t('auth.welcomeBack', { name: session.user?.name })}</p>
                          <button
                               onClick={goToDashboard}
                               className="bg-slate-700 hover:bg-slate-600 text-slate-100 px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg cursor-pointer border border-slate-600"
                          >
-                              Go to Dashboard
+                              {t('auth.goToDashboard')}
                          </button>
                     </div>
                )}

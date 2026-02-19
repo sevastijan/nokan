@@ -2,6 +2,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Status, TaskDetail } from '@/app/types/globalTypes';
 
@@ -19,6 +20,7 @@ interface UseTaskStatusProps {
 }
 
 export const useTaskStatus = ({ isNewTask, currentTaskId, task, currentUserId, boardId, updateTask, updateTaskMutation, fetchTaskData }: UseTaskStatusProps) => {
+     const { t } = useTranslation();
      const handleStatusChange = useCallback(
           async (newStatusId: string) => {
                if (!task) return;
@@ -37,8 +39,8 @@ export const useTaskStatus = ({ isNewTask, currentTaskId, task, currentUserId, b
                          await fetchTaskData();
 
                          if (oldStatusId !== newStatusId) {
-                              const oldStatusLabel = task.statuses?.find((s: Status) => s.id === oldStatusId)?.label || 'Nieznany';
-                              const newStatusLabel = task.statuses?.find((s: Status) => s.id === newStatusId)?.label || 'Nieznany';
+                              const oldStatusLabel = task.statuses?.find((s: Status) => s.id === oldStatusId)?.label || t('status.unknown');
+                              const newStatusLabel = task.statuses?.find((s: Status) => s.id === newStatusId)?.label || t('status.unknown');
 
                               if (task.user_id && task.user_id !== currentUserId && boardId) {
                                    fetch('/api/notifications/email', {
@@ -72,11 +74,11 @@ export const useTaskStatus = ({ isNewTask, currentTaskId, task, currentUserId, b
                          }
                     } catch (error) {
                          console.error('Failed to save status:', error);
-                         toast.error('Nie udało się zapisać statusu');
+                         toast.error(t('status.saveFailed'));
                     }
                }
           },
-          [isNewTask, currentTaskId, task, currentUserId, boardId, updateTask, updateTaskMutation, fetchTaskData],
+          [isNewTask, currentTaskId, task, currentUserId, boardId, updateTask, updateTaskMutation, fetchTaskData, t],
      );
 
      return { handleStatusChange };

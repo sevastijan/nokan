@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { FiAlertTriangle, FiX, FiSave } from 'react-icons/fi';
 
 interface UnsavedChangesModalProps {
@@ -10,6 +11,7 @@ interface UnsavedChangesModalProps {
 }
 
 export const UnsavedChangesModal = ({ isOpen, onClose, onConfirmExit, onSaveAndExit, isSaving }: UnsavedChangesModalProps) => {
+     const { t } = useTranslation();
      if (!isOpen) return null;
 
      return (
@@ -34,9 +36,9 @@ export const UnsavedChangesModal = ({ isOpen, onClose, onConfirmExit, onSaveAndE
                                    <FiAlertTriangle className="w-6 h-6 text-amber-400" />
                               </div>
                               <div className="flex-1 min-w-0 pt-1">
-                                   <h3 className="text-lg font-semibold text-white mb-1">Niezapisane zmiany</h3>
+                                   <h3 className="text-lg font-semibold text-white mb-1">{t('task.unsavedChanges')}</h3>
                                    <p className="text-slate-400 text-sm leading-relaxed">
-                                        Masz niezapisane zmiany w zadaniu. Czy chcesz je zapisać przed zamknięciem?
+                                        {t('task.unsavedModalMessage')}
                                    </p>
                               </div>
                          </div>
@@ -48,7 +50,7 @@ export const UnsavedChangesModal = ({ isOpen, onClose, onConfirmExit, onSaveAndE
                                    className="flex items-center justify-center gap-2 px-4 py-2.5 text-slate-300 bg-slate-700/50 border border-slate-600/50 rounded-lg hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 text-sm font-medium"
                               >
                                    <FiX className="w-4 h-4" />
-                                   Wyjdź bez zapisu
+                                   {t('task.exitWithoutSaving')}
                               </motion.button>
                               <motion.button
                                    whileHover={{ scale: 1.02 }}
@@ -67,12 +69,12 @@ export const UnsavedChangesModal = ({ isOpen, onClose, onConfirmExit, onSaveAndE
                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                                   />
                                              </svg>
-                                             Zapisywanie...
+                                             {t('task.saving')}
                                         </>
                                    ) : (
                                         <>
                                              <FiSave className="w-4 h-4" />
-                                             Zapisz i wyjdź
+                                             {t('task.saveAndExit')}
                                         </>
                                    )}
                               </motion.button>

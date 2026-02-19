@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -25,12 +26,6 @@ import { DashboardTabs, DashboardTab } from '@/app/components/Dashboard/Dashboar
 import { UserTaskList } from '@/app/components/Dashboard/UserTaskList';
 import { Layers, ArrowRight, Sparkles } from 'lucide-react';
 
-function getTaskLabel(count: number) {
-     if (count === 1) return 'zadanie';
-     if (count >= 2 && count <= 4) return 'zadania';
-     return 'zadań';
-}
-
 const tabContentVariants = {
      enter: { opacity: 0, y: 8 },
      center: { opacity: 1, y: 0 },
@@ -38,6 +33,7 @@ const tabContentVariants = {
 };
 
 export default function DashboardPage() {
+     const { t } = useTranslation();
      const { data: session, status: authStatus } = useSession();
      const router = useRouter();
 
@@ -157,10 +153,10 @@ export default function DashboardPage() {
                     setModalOpen(false);
                } catch (error) {
                     console.error('Board operation failed:', error);
-                    alert(`Nie udało się ${modalMode === 'create' ? 'utworzyć' : 'zaktualizować'} projektu`);
+                    alert(modalMode === 'create' ? t('dashboard.failedToCreateProject') : t('dashboard.failedToUpdateProject'));
                }
           },
-          [currentUser, modalMode, selectedBoard, createBoardFromTemplate, addBoard, updateBoardTitle, refetchBoards],
+          [currentUser, modalMode, selectedBoard, createBoardFromTemplate, addBoard, updateBoardTitle, refetchBoards, t],
      );
 
      const handleDelete = useCallback(async () => {
@@ -172,9 +168,9 @@ export default function DashboardPage() {
                setModalOpen(false);
           } catch (error) {
                console.error('Delete board failed:', error);
-               alert('Nie udało się usunąć projektu');
+               alert(t('dashboard.failedToDeleteProject'));
           }
-     }, [selectedBoard, removeBoard, refetchBoards]);
+     }, [selectedBoard, removeBoard, refetchBoards, t]);
 
      const handleBoardClick = useCallback(
           (boardId: string) => {
@@ -230,7 +226,7 @@ export default function DashboardPage() {
      const hasActiveFilters = searchTerm || hasTasksOnly || hasMembersOnly || sortBy !== 'newest';
 
      if (isLoading) {
-          return <Loader text="Ładowanie..." />;
+          return <Loader text={t('common.loading')} />;
      }
 
      if (authStatus === 'unauthenticated') {
@@ -335,26 +331,26 @@ export default function DashboardPage() {
                                                             <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 border border-slate-700">
                                                                  <Layers className="w-10 h-10 text-slate-400" />
                                                             </div>
-                                                            <h3 className="text-2xl font-semibold text-white mb-2">{hasActiveFilters ? 'Nie znaleziono projektów' : 'Brak projektów'}</h3>
+                                                            <h3 className="text-2xl font-semibold text-white mb-2">{hasActiveFilters ? t('dashboard.noProjectsFound') : t('dashboard.noProjects')}</h3>
                                                             <p className="text-slate-400 text-center max-w-md mb-6">
-                                                                 {hasActiveFilters ? 'Spróbuj zmienić kryteria wyszukiwania lub wyczyść filtry' : 'Rozpocznij swoją przygodę tworząc pierwszy projekt'}
+                                                                 {hasActiveFilters ? t('dashboard.tryChangingSearch') : t('dashboard.startCreatingProject')}
                                                             </p>
                                                             {hasActiveFilters ? (
                                                                  <button
                                                                       onClick={handleClearFilters}
                                                                       className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl transition-all duration-200 border border-slate-700 hover:border-slate-600 cursor-pointer"
-                                                                      aria-label="Wyczyść wszystkie filtry"
+                                                                      aria-label={t('common.clearFilters')}
                                                                  >
-                                                                      Wyczyść filtry
+                                                                      {t('common.clearFilters')}
                                                                  </button>
                                                             ) : (
                                                                  <button
                                                                       onClick={openCreate}
                                                                       className="group px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer"
-                                                                      aria-label="Utwórz nowy projekt"
+                                                                      aria-label={t('dashboard.createFirstProject')}
                                                                  >
                                                                       <Sparkles className="w-5 h-5" />
-                                                                      Utwórz pierwszy projekt
+                                                                      {t('dashboard.createFirstProject')}
                                                                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                                                  </button>
                                                             )}
@@ -388,16 +384,16 @@ export default function DashboardPage() {
                                              <div>
                                                   <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
                                                        <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
-                                                       Projekty przypisane
+                                                       {t('dashboard.assignedProjects')}
                                                   </h2>
-                                                  <p className="text-slate-400 text-sm">Projekty udostępnione Ci przez administratora</p>
+                                                  <p className="text-slate-400 text-sm">{t('dashboard.projectsSharedByAdmin')}</p>
                                              </div>
                                              <button
                                                   onClick={() => router.push('/submissions')}
                                                   className="group px-5 py-2.5 bg-slate-800/80 hover:bg-slate-700/80 text-white text-sm font-medium rounded-xl transition-all duration-200 border border-slate-700/50 hover:border-slate-600/50 backdrop-blur-sm flex items-center gap-2 cursor-pointer w-fit"
-                                                  aria-label="Sprawdź wszystkie zgłoszenia"
+                                                  aria-label={t('dashboard.checkSubmissions')}
                                              >
-                                                  Sprawdź zgłoszenia
+                                                  {t('dashboard.checkSubmissions')}
                                                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                              </button>
                                         </div>
@@ -405,7 +401,6 @@ export default function DashboardPage() {
                                         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                              {assignedBoards.map((board) => {
                                                   const taskCount = board._count.tasks;
-                                                  const taskLabel = getTaskLabel(taskCount);
 
                                                   return (
                                                        <div
@@ -417,14 +412,14 @@ export default function DashboardPage() {
                                                             <div className="relative">
                                                                  <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 min-h-[3.5rem]">{board.title}</h3>
                                                                  <p className="text-sm text-slate-400 mb-5">
-                                                                      {taskCount} {taskLabel}
+                                                                      {taskCount} {t('dashboard.task', { count: taskCount })}
                                                                  </p>
                                                                  <button
                                                                       onClick={() => router.push(`/submit?boardId=${board.id}`)}
                                                                       className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 cursor-pointer group/button"
-                                                                      aria-label={`Dodaj zgłoszenie do projektu ${board.title}`}
+                                                                      aria-label={`${t('dashboard.addSubmission')} - ${board.title}`}
                                                                  >
-                                                                      Dodaj zgłoszenie
+                                                                      {t('dashboard.addSubmission')}
                                                                       <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
                                                                  </button>
                                                             </div>
@@ -457,6 +452,8 @@ export default function DashboardPage() {
 
 /* Task-specific stats shown on the tasks tab */
 function TaskStats({ active, completed, overdue }: { active: number; completed: number; overdue: number }) {
+     const { t } = useTranslation();
+
      return (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
@@ -467,7 +464,7 @@ function TaskStats({ active, completed, overdue }: { active: number; completed: 
                          </svg>
                     </div>
                     <div>
-                         <p className="text-xs text-slate-400">Aktywne</p>
+                         <p className="text-xs text-slate-400">{t('dashboard.active')}</p>
                          <p className="text-lg font-semibold text-white leading-tight">{active}</p>
                     </div>
                </div>
@@ -480,7 +477,7 @@ function TaskStats({ active, completed, overdue }: { active: number; completed: 
                          </svg>
                     </div>
                     <div>
-                         <p className="text-xs text-slate-400">Ukończone</p>
+                         <p className="text-xs text-slate-400">{t('dashboard.completed')}</p>
                          <p className="text-lg font-semibold text-white leading-tight">{completed}</p>
                     </div>
                </div>
@@ -493,7 +490,7 @@ function TaskStats({ active, completed, overdue }: { active: number; completed: 
                          </svg>
                     </div>
                     <div>
-                         <p className="text-xs text-slate-400">Po terminie</p>
+                         <p className="text-xs text-slate-400">{t('dashboard.overdue')}</p>
                          <p className="text-lg font-semibold text-white leading-tight">{overdue}</p>
                     </div>
                </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { FiLayers, FiMessageCircle, FiPaperclip } from 'react-icons/fi';
 
 import { useCurrentUser } from '@/app/hooks/useCurrentUser';
@@ -53,6 +54,7 @@ const SingleTaskView = ({
      statuses: propStatuses,
      onOpenTask,
 }: SingleTaskViewProps & { columns: Column[] }) => {
+     const { t } = useTranslation();
      const { currentUser } = useCurrentUser();
      const user = propCurrentUser || currentUser!;
 
@@ -219,7 +221,7 @@ const SingleTaskView = ({
           setShowUnsavedConfirm(false);
           const success = await saveExistingTask();
           if (success) {
-               toast.success('Zapisano i zamknięto');
+               toast.success(t('task.savedAndClosed'));
                animateOut();
           }
      }, [saveExistingTask, animateOut]);
@@ -264,23 +266,23 @@ const SingleTaskView = ({
 
      const handleSave = useCallback(async () => {
           if (!formData.tempTitle.trim()) {
-               toast.error('Tytuł jest wymagany');
+               toast.error(t('task.titleRequired'));
                return;
           }
           if (isNewTask && !formData.localColumnId) {
-               toast.error('Kolumna jest wymagana');
+               toast.error(t('task.columnRequired'));
                return;
           }
           if (task?.type === 'bug') {
                const url = formData.bugUrl.trim();
                if (!url) {
-                    toast.error('Link do buga jest wymagany');
+                    toast.error(t('task.bugLinkRequired'));
                     return;
                }
                try {
                     new URL(url);
                } catch {
-                    toast.error('Podaj prawidłowy URL');
+                    toast.error(t('task.invalidUrl'));
                     return;
                }
           }
@@ -290,9 +292,9 @@ const SingleTaskView = ({
 
           if (isNewTask && localFilePreviews.length > 0 && currentTaskId) {
                const { errors } = await uploadAllAttachments(localFilePreviews, currentTaskId);
-               toast.success(errors > 0 ? `Zadanie utworzone, ale ${errors} załącznik(ów) nie zostało przesłanych` : 'Zadanie utworzone wraz z załącznikami');
+               toast.success(errors > 0 ? t('task.createdWithErrors', { count: errors }) : t('task.createdWithAttachments'));
           } else {
-               toast.success(isNewTask ? 'Zadanie utworzone' : 'Zadanie zaktualizowane');
+               toast.success(isNewTask ? t('task.created') : t('task.updated'));
           }
 
           animateOut();
@@ -303,7 +305,7 @@ const SingleTaskView = ({
                await deleteTask();
                animateOut();
           } catch {
-               toast.error('Nie udało się usunąć zadania');
+               toast.error(t('task.deleteFailed'));
           }
      }, [deleteTask, animateOut]);
 
@@ -314,8 +316,8 @@ const SingleTaskView = ({
 
           navigator.clipboard
                .writeText(url)
-               .then(() => toast.success('Link do zadania skopiowany!'))
-               .catch(() => toast.error('Nie udało się skopiować linku'));
+               .then(() => toast.success(t('task.linkCopied')))
+               .catch(() => toast.error(t('task.linkCopyFailed')));
      }, [task?.id, boardId]);
 
      const handleTypeChange = useCallback(
@@ -328,10 +330,10 @@ const SingleTaskView = ({
                try {
                     await updateTaskType({ taskId: task.id, type: newType }).unwrap();
                     fetchTaskData();
-                    toast.success(newType === 'story' ? 'Zmieniono na Story' : 'Zmieniono na Task');
+                    toast.success(newType === 'story' ? t('task.changedToStory') : t('task.changedToTask'));
                } catch (error) {
                     const err = error as Error;
-                    toast.error(err.message || 'Nie udało się zmienić typu');
+                    toast.error(err.message || t('task.typeFailed'));
                }
           },
           [task?.id, updateTaskType, fetchTaskData, updateTask],
@@ -389,7 +391,7 @@ const SingleTaskView = ({
 
                // Detect new @mentions in description
                const mentionedIds = extractMentionedUserIds(value, teamMembers);
-               const currentUserName = user?.custom_name || user?.name || 'Ktoś';
+               const currentUserName = user?.custom_name || user?.name || t('common.unknown');
                const title = task?.title || formData.tempTitle || 'zadanie';
 
                for (const mentionedId of mentionedIds) {
@@ -403,7 +405,7 @@ const SingleTaskView = ({
                          type: 'mention',
                          task_id: task?.id,
                          board_id: boardId,
-                         message: `${currentUserName} wspomniał(a) Cię w opisie zadania "${title}"`,
+                         message: t('task.mentionInDescription', { name: currentUserName, title }),
                     });
 
                     if (boardId) {
@@ -436,7 +438,7 @@ const SingleTaskView = ({
      const handleCompletionToggle = useCallback(
           (completed: boolean) => {
                if (completed && hasIncompleteSubtasks) {
-                    toast.error(`Nie można zakończyć Story — ${incompleteSubtaskCount} subtask${incompleteSubtaskCount === 1 ? '' : 'ów'} nie jest ukończonych`);
+                    toast.error(t('task.cannotCompleteStory', { count: incompleteSubtaskCount }));
                     return;
                }
                updateTask({ completed });
@@ -550,8 +552,8 @@ const SingleTaskView = ({
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                    </svg>
                               </button>
-                              <h2 className="text-lg font-semibold text-slate-200 mb-2">Co chcesz utworzyc?</h2>
-                              <p className="text-sm text-slate-400 mb-8">Wybierz typ zadania, aby kontynuowac</p>
+                              <h2 className="text-lg font-semibold text-slate-200 mb-2">{t('task.chooseType')}</h2>
+                              <p className="text-sm text-slate-400 mb-8">{t('task.chooseTypeSubtitle')}</p>
                               <div className="w-full max-w-xl">
                                    <TaskVariantSelector selectedType={taskType} onChange={handleVariantChange} large />
                               </div>
@@ -579,7 +581,7 @@ const SingleTaskView = ({
                               completed={task?.completed || false}
                               onCompletionToggle={handleCompletionToggle}
                               completionDisabled={hasIncompleteSubtasks && !task?.completed}
-                              completionDisabledTooltip="Ukończ najpierw wszystkie subtaski"
+                              completionDisabledTooltip={t('completion.completeSubtasksFirst')}
                          />
 
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
@@ -611,13 +613,13 @@ const SingleTaskView = ({
                                              <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                                   <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                        <div className="w-1 h-4 bg-linear-to-b from-blue-500 to-cyan-500 rounded-full" />
-                                                       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Typ</h3>
+                                                       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('taskMeta.type')}</h3>
                                                   </div>
                                                   <TaskTypeSelector selectedType={taskType} onChange={handleTypeChange} disabled={!canChangeType} />
                                                   {!canChangeType && (
                                                        <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
                                                             <FiLayers className="w-3 h-3" />
-                                                            Usuń subtaski, aby zmienić typ
+                                                            {t('task.removeSubtasksToChangeType')}
                                                        </p>
                                                   )}
                                              </div>
@@ -657,7 +659,7 @@ const SingleTaskView = ({
                                    <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                         <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                              <div className="w-1 h-4 bg-linear-to-b from-pink-500 to-purple-500 rounded-full" />
-                                             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Opis</h3>
+                                             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.description')}</h3>
                                         </div>
                                         <TaskDescription
                                              value={formData.tempDescription}
@@ -673,7 +675,7 @@ const SingleTaskView = ({
                                         <div className="relative z-5 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                   <div className="w-1 h-4 bg-linear-to-b from-indigo-500 to-violet-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Subtaski</h3>
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.subtasks')}</h3>
                                                   <span className="ml-auto text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">{subtasks.length}</span>
                                              </div>
                                              <SubtaskList
@@ -695,11 +697,11 @@ const SingleTaskView = ({
                                         <div className="bg-slate-800/40 rounded-xl border border-indigo-500/20 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                   <div className="w-1 h-4 bg-linear-to-b from-indigo-500 to-violet-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Subtaski</h3>
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.subtasks')}</h3>
                                              </div>
                                              <div className="flex items-center gap-3 text-slate-500 py-3">
                                                   <FiLayers className="w-5 h-5 text-indigo-400/50" />
-                                                  <p className="text-sm">Subtaski beda dostepne po zapisaniu Story</p>
+                                                  <p className="text-sm">{t('task.subtasksAvailableAfterSave')}</p>
                                              </div>
                                         </div>
                                    )}
@@ -708,11 +710,11 @@ const SingleTaskView = ({
                                    <TaskDatesSection startDate={formData.startDate} endDate={formData.endDate} onDateChange={handleDateChange} />
 
                                    {/* Attachments Section */}
-                                   <Suspense fallback={<div className="text-slate-400 text-sm p-4">Ładowanie załączników...</div>}>
+                                   <Suspense fallback={<div className="text-slate-400 text-sm p-4">{t('task.loadingAttachments')}</div>}>
                                         <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                   <div className="w-1 h-4 bg-linear-to-b from-teal-500 to-green-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Załączniki</h3>
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.attachments')}</h3>
                                                   <FiPaperclip className="w-3.5 h-3.5 text-slate-500 ml-1" />
                                              </div>
                                              <TaskAttachmentsSection
@@ -737,13 +739,13 @@ const SingleTaskView = ({
                                         <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                   <div className="w-1 h-4 bg-linear-to-b from-amber-500 to-yellow-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Komentarze</h3>
+                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.comments')}</h3>
                                                   <FiMessageCircle className="w-3.5 h-3.5 text-slate-500 ml-1" />
                                                   {task.comments && task.comments.length > 0 && (
                                                        <span className="ml-auto text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">{task.comments.length}</span>
                                                   )}
                                              </div>
-                                             <Suspense fallback={<div className="animate-pulse text-slate-400">Ładowanie komentarzy...</div>}>
+                                             <Suspense fallback={<div className="animate-pulse text-slate-400">{t('task.loadingComments')}</div>}>
                                                   <CommentsSection
                                                        taskId={task.id}
                                                        comments={task.comments || []}

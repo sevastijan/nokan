@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import Button from '../Button/Button';
 import ColumnSelector from '@/app/components/ColumnSelector';
@@ -35,6 +36,7 @@ const RecurringTaskModal = ({
      onChangeColumn,
      columns,
 }: RecurringTaskModalProps) => {
+     const { t } = useTranslation();
      if (!isOpen) return null;
 
      return (
@@ -49,7 +51,7 @@ const RecurringTaskModal = ({
                     <div className="flex items-center justify-between mb-5">
                          <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                               <FaRedo className="text-purple-400" />
-                              Zadanie cykliczne
+                              {t('recurring.title')}
                          </h3>
                          <button onClick={onClose} className="text-slate-400 hover:text-white transition">
                               <FaTimes className="w-5 h-5" />
@@ -65,14 +67,14 @@ const RecurringTaskModal = ({
                               className="w-5 h-5 text-purple-500 rounded focus:ring-purple-500 cursor-pointer"
                          />
                          <label htmlFor="recurring-toggle" className="text-white font-medium cursor-pointer">
-                              Włącz powtarzanie zadania
+                              {t('recurring.enableRecurrence')}
                          </label>
                     </div>
 
                     {isRecurring && (
                          <div className="space-y-5">
                               <div>
-                                   <label className="block text-sm font-medium text-slate-300 mb-2">Powtarzaj co</label>
+                                   <label className="block text-sm font-medium text-slate-300 mb-2">{t('recurring.repeatEvery')}</label>
                                    <div className="flex gap-3">
                                         <input
                                              type="number"
@@ -86,16 +88,16 @@ const RecurringTaskModal = ({
                                              onChange={(e) => onChangeType(e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly')}
                                              className="flex-1 px-4 py-2 bg-slate-700 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                                         >
-                                             <option value="daily">dzień/dni</option>
-                                             <option value="weekly">tydzień/tygodni</option>
-                                             <option value="monthly">miesiąc/miesiące</option>
-                                             <option value="yearly">rok/lat</option>
+                                             <option value="daily">{t('recurring.day')}</option>
+                                             <option value="weekly">{t('recurring.week')}</option>
+                                             <option value="monthly">{t('recurring.month')}</option>
+                                             <option value="yearly">{t('recurring.year')}</option>
                                         </select>
                                    </div>
                               </div>
 
                               <div>
-                                   <label className="block text-sm font-medium text-slate-300 mb-2">Nowa instancja w kolumnie</label>
+                                   <label className="block text-sm font-medium text-slate-300 mb-2">{t('recurring.newInstanceColumn')}</label>
                                    <ColumnSelector columns={columns} value={recurrenceColumnId || currentColumnId || columns[0]?.id || ''} onChange={onChangeColumn} />
                               </div>
                          </div>
@@ -103,7 +105,7 @@ const RecurringTaskModal = ({
 
                     <div className="mt-6 flex justify-end">
                          <Button variant="primary" onClick={onClose}>
-                              Gotowe
+                              {t('recurring.done')}
                          </Button>
                     </div>
                </motion.div>

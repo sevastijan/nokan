@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 import { CommentFormProps } from '@/app/types/globalTypes';
 import { toast } from 'sonner';
 import Avatar from '../Avatar/Avatar';
@@ -31,6 +32,7 @@ const CommentForm = ({
      onCancelReply?: () => void;
      teamMembers: MentionUser[];
 }) => {
+     const { t } = useTranslation();
      const [newComment, setNewComment] = useState('');
      const [uploading, setUploading] = useState(false);
      const [showSuggestions, setShowSuggestions] = useState(false);
@@ -95,7 +97,7 @@ const CommentForm = ({
                     const file = item.getAsFile();
                     if (!file) continue;
                     if (file.size > 10 * 1024 * 1024) {
-                         toast.error('Obraz za duży (max 10MB)');
+                         toast.error(t('comments.imageTooLarge'));
                          return;
                     }
                     setUploading(true);
@@ -116,17 +118,17 @@ const CommentForm = ({
 
                          const { image } = await response.json();
 
-                         if (!image?.signedUrl) throw new Error('Nie udało się uzyskać URL obrazu');
+                         if (!image?.signedUrl) throw new Error(t('comments.imageUrlFailed'));
 
                          const markdown = `![${image.file_name}](${image.signedUrl})`;
                          const textarea = event.target as HTMLTextAreaElement;
                          const start = textarea.selectionStart;
                          setNewComment(newComment.substring(0, start) + markdown + newComment.substring(start));
 
-                         toast.success('Obraz wklejony');
+                         toast.success(t('comments.imagePasted'));
                     } catch (error) {
-                         console.error('Błąd wklejania obrazu:', error);
-                         toast.error('Nie udało się wkleić obrazu');
+                         console.error(t('comments.imagePasteError'), error);
+                         toast.error(t('comments.imagePasteFailed'));
                     } finally {
                          setUploading(false);
                     }
@@ -170,7 +172,7 @@ const CommentForm = ({
                     <div className="flex-1 relative">
                          {replyingTo && (
                               <div className="text-xs text-blue-400 mb-2 flex items-center justify-between">
-                                   <span>Odpowiedź dla {replyingTo.authorName}</span>
+                                   <span>{t('comments.replyTo', { name: replyingTo.authorName })}</span>
                                    <button onClick={onCancelReply} className="text-gray-400 hover:text-gray-200">
                                         <FaTimes />
                                    </button>
@@ -183,7 +185,7 @@ const CommentForm = ({
                                    onChange={handleChange}
                                    onKeyDown={handleKeyDown}
                                    onPaste={handlePaste}
-                                   placeholder={replyingTo ? 'Napisz odpowiedź...' : 'Dodaj komentarz... (@ aby oznaczyć)'}
+                                   placeholder={replyingTo ? t('comments.replyPlaceholder') : t('comments.addPlaceholder')}
                                    className="w-full min-h-20 p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                    disabled={uploading}
                               />
@@ -207,11 +209,11 @@ const CommentForm = ({
                                         })}
                                    </div>
                               )}
-                              {uploading && <div className="text-sm text-blue-400 mt-2">Wysyłanie obrazu...</div>}
+                              {uploading && <div className="text-sm text-blue-400 mt-2">{t('comments.uploadingImage')}</div>}
                               <div className="flex justify-between items-center mt-3">
-                                   <span className="text-xs text-gray-400">Wklejaj obrazy • @ aby oznaczyć</span>
+                                   <span className="text-xs text-gray-400">{t('comments.pasteAndMention')}</span>
                                    <Button type="submit" variant="primary" disabled={!newComment.trim() || uploading}>
-                                        {replyingTo ? 'Odpowiedz' : 'Skomentuj'}
+                                        {replyingTo ? t('comments.reply') : t('comments.comment')}
                                    </Button>
                               </div>
                          </form>

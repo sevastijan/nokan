@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMoreHorizontal, FiEdit, FiTrash2 } from "react-icons/fi";
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface BoardDropdownProps {
   onEdit: () => void;
@@ -14,6 +15,7 @@ interface BoardDropdownProps {
  * @returns JSX element containing the dropdown menu interface
  */
 const BoardDropdown = ({ onEdit, onDelete }: BoardDropdownProps) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +65,7 @@ const BoardDropdown = ({ onEdit, onDelete }: BoardDropdownProps) => {
               className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2 rounded-t-lg"
             >
               <FiEdit size={14} />
-              Edit
+              {t('common.edit')}
             </button>
             <button
               onClick={(e) => {
@@ -74,7 +76,7 @@ const BoardDropdown = ({ onEdit, onDelete }: BoardDropdownProps) => {
               className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 rounded-b-lg"
             >
               <FiTrash2 size={14} />
-              Delete
+              {t('common.delete')}
             </button>
           </motion.div>
         )}

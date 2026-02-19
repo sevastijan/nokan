@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useTypingIndicator } from '@/app/hooks/chat/useTypingIndicator';
 
 interface TypingIndicatorProps {
@@ -8,6 +9,7 @@ interface TypingIndicatorProps {
 }
 
 const TypingIndicator = ({ channelId, currentUserId }: TypingIndicatorProps) => {
+	const { t } = useTranslation();
 	const { typingUsers } = useTypingIndicator(channelId, currentUserId);
 
 	if (typingUsers.length === 0) return null;
@@ -23,7 +25,7 @@ const TypingIndicator = ({ channelId, currentUserId }: TypingIndicatorProps) => 
 					<span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
 				</div>
 				<span className="text-xs text-slate-500">
-					{names} {typingUsers.length === 1 ? 'pisze' : 'piszą'}...
+					{names} {t('chat.typing', { count: typingUsers.length })}
 				</span>
 			</div>
 		</div>

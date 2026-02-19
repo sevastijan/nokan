@@ -3,6 +3,7 @@
 import { useState, Fragment } from 'react';
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Search, Crown, UserMinus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Avatar from '@/app/components/Avatar/Avatar';
 import { ChatChannel, ChatChannelMember } from '@/app/store/endpoints/chatEndpoints';
 import {
@@ -22,6 +23,7 @@ interface ChannelSettingsModalProps {
 }
 
 const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: ChannelSettingsModalProps) => {
+	const { t } = useTranslation();
 	const currentMember = members.find((m) => m.user_id === currentUserId);
 	const isAdmin = currentMember?.role === 'admin';
 
@@ -87,7 +89,7 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 							{/* Header */}
 							<div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
 								<DialogTitle className="text-base font-semibold text-white">
-									Ustawienia kanału
+									{t('chat.channelSettings')}
 								</DialogTitle>
 								<button
 									onClick={onClose}
@@ -102,7 +104,7 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 								{isAdmin && (
 									<div className="px-5 pt-4 pb-3 border-b border-slate-800/60">
 										<label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-											Nazwa kanału
+											{t('chat.channelNameLabel')}
 										</label>
 										<div className="flex items-center gap-2 mt-2">
 											<input
@@ -110,14 +112,14 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 												value={channelName}
 												onChange={(e) => setChannelName(e.target.value)}
 												className="flex-1 px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
-												placeholder="Nazwa kanału"
+												placeholder={t('chat.channelName')}
 											/>
 											<button
 												onClick={handleRename}
 												disabled={renaming || !channelName.trim() || channelName.trim() === channel.name}
 												className="px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shrink-0"
 											>
-												{renaming ? '...' : 'Zapisz'}
+												{renaming ? '...' : t('common.save')}
 											</button>
 										</div>
 									</div>
@@ -126,7 +128,7 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 								{/* Members section */}
 								<div className="px-5 pt-4 pb-2">
 									<label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-										Członkowie ({members.length})
+										{t('chat.members', { count: members.length })}
 									</label>
 									<div className="mt-2 space-y-1">
 										{members.map((member) => {
@@ -143,21 +145,21 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 													<div className="flex-1 min-w-0">
 														<div className="flex items-center gap-1.5">
 															<p className="text-sm font-medium text-white truncate">{displayName}</p>
-															{isSelf && <span className="text-[10px] text-slate-500">(Ty)</span>}
+															{isSelf && <span className="text-[10px] text-slate-500">{t('common.you')}</span>}
 														</div>
 														<p className="text-xs text-slate-500 truncate">{member.user?.email}</p>
 													</div>
 													{member.role === 'admin' && (
 														<div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 shrink-0">
 															<Crown className="w-3 h-3 text-amber-400" />
-															<span className="text-[10px] font-medium text-amber-400">Admin</span>
+															<span className="text-[10px] font-medium text-amber-400">{t('chat.admin')}</span>
 														</div>
 													)}
 													{isAdmin && member.role !== 'admin' && !isSelf && (
 														<button
 															onClick={() => handleRemoveMember(member.user_id)}
 															className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer shrink-0"
-															title="Usuń z kanału"
+															title={t('chat.removeFromChannel')}
 														>
 															<UserMinus className="w-3.5 h-3.5" />
 														</button>
@@ -172,13 +174,13 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 								{isAdmin && (
 									<div className="px-5 pt-2 pb-4">
 										<label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-											Dodaj osoby
+											{t('chat.addPeople')}
 										</label>
 										<div className="relative mt-2">
 											<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
 											<input
 												type="text"
-												placeholder="Szukaj użytkowników..."
+												placeholder={t('chat.searchUsers')}
 												value={search}
 												onChange={(e) => setSearch(e.target.value)}
 												className="w-full pl-9 pr-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
@@ -201,12 +203,12 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 															<p className="text-sm font-medium text-white truncate">{displayName}</p>
 															<p className="text-xs text-slate-500 truncate">{user.email}</p>
 														</div>
-														<span className="text-xs text-blue-400 shrink-0">Dodaj</span>
+														<span className="text-xs text-blue-400 shrink-0">{t('common.add')}</span>
 													</button>
 												);
 											})}
 											{availableUsers.length === 0 && search.trim() && (
-												<p className="text-center text-xs text-slate-500 py-3">Brak wyników</p>
+												<p className="text-center text-xs text-slate-500 py-3">{t('common.noResults')}</p>
 											)}
 										</div>
 									</div>

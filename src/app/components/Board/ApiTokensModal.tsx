@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiX, FiCopy, FiTrash2, FiPlus, FiCheck, FiAlertTriangle } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -29,6 +30,7 @@ const defaultNewToken: NewTokenState = {
 };
 
 export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensModalProps) {
+    const { t } = useTranslation();
     const { data: tokens = [], isLoading, refetch } = useGetApiTokensQuery(boardId, { skip: !isOpen });
     const [createToken] = useCreateApiTokenMutation();
     const [revokeToken] = useRevokeApiTokenMutation();
@@ -42,7 +44,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
 
     const handleCreate = useCallback(async () => {
         if (!newToken.name.trim()) {
-            alert('Nazwa tokena jest wymagana');
+            alert(t('apiTokens.tokenNameRequired'));
             return;
         }
 
@@ -63,14 +65,14 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
             refetch();
         } catch (error) {
             console.error('Failed to create token:', error);
-            alert('Nie udało się utworzyć tokena');
+            alert(t('apiTokens.createFailed'));
         } finally {
             setIsCreating(false);
         }
     }, [boardId, createToken, newToken, refetch]);
 
     const handleRevoke = useCallback(async (tokenId: string) => {
-        if (!confirm('Czy na pewno chcesz unieważnić ten token? Ta operacja jest nieodwracalna.')) {
+        if (!confirm(t('apiTokens.revokeConfirm'))) {
             return;
         }
 
@@ -80,7 +82,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
             refetch();
         } catch (error) {
             console.error('Failed to revoke token:', error);
-            alert('Nie udało się unieważnić tokena');
+            alert(t('apiTokens.revokeFailed'));
         } finally {
             setRevoking(null);
         }
@@ -92,12 +94,12 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            alert('Nie udało się skopiować do schowka');
+            alert(t('apiTokens.copyFailed'));
         }
     }, []);
 
     const formatDate = (dateStr: string | null) => {
-        if (!dateStr) return 'Nigdy';
+        if (!dateStr) return t('apiTokens.never');
         return new Date(dateStr).toLocaleDateString('pl-PL', {
             day: '2-digit',
             month: '2-digit',
@@ -129,7 +131,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-slate-700">
-                            <h2 className="text-xl font-semibold">Integracje API</h2>
+                            <h2 className="text-xl font-semibold">{t('apiTokens.title')}</h2>
                             <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
@@ -147,14 +149,14 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                         <FiAlertTriangle className="text-amber-500 mt-0.5 flex-shrink-0" size={20} />
                                         <div className="flex-1">
                                             <p className="font-medium text-amber-500 mb-2">
-                                                Token utworzony! Zapisz go teraz - nie będzie widoczny później.
+                                                {t('apiTokens.tokenCreated')}
                                             </p>
                                             <div className="flex items-center gap-2 bg-slate-900 p-3 rounded font-mono text-sm break-all">
                                                 <span className="flex-1">{createdToken}</span>
                                                 <button
                                                     onClick={() => copyToClipboard(createdToken)}
                                                     className="p-2 hover:bg-slate-700 rounded transition-colors flex-shrink-0"
-                                                    title="Kopiuj"
+                                                    title={t('apiTokens.copy')}
                                                 >
                                                     {copied ? <FiCheck className="text-green-500" /> : <FiCopy />}
                                                 </button>
@@ -163,7 +165,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                 onClick={() => setCreatedToken(null)}
                                                 className="mt-3 text-sm text-slate-400 hover:text-white"
                                             >
-                                                Rozumiem, zamknij
+                                                {t('apiTokens.understood')}
                                             </button>
                                         </div>
                                     </div>
@@ -173,22 +175,22 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                             {/* Create form */}
                             {showCreateForm ? (
                                 <div className="mb-6 p-4 bg-slate-700/50 rounded-lg">
-                                    <h3 className="font-medium mb-4">Nowy token API</h3>
+                                    <h3 className="font-medium mb-4">{t('apiTokens.newToken')}</h3>
 
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm text-slate-400 mb-1">Nazwa</label>
+                                            <label className="block text-sm text-slate-400 mb-1">{t('apiTokens.name')}</label>
                                             <input
                                                 type="text"
                                                 value={newToken.name}
                                                 onChange={(e) => setNewToken({ ...newToken, name: e.target.value })}
-                                                placeholder="np. Integracja z CRM"
+                                                placeholder={t('apiTokens.namePlaceholder')}
                                                 className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm text-slate-400 mb-2">Uprawnienia</label>
+                                            <label className="block text-sm text-slate-400 mb-2">{t('apiTokens.permissions')}</label>
                                             <div className="flex flex-wrap gap-4">
                                                 {(['read', 'write', 'delete'] as const).map((perm) => (
                                                     <label key={perm} className="flex items-center gap-2 cursor-pointer">
@@ -206,7 +208,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                             }
                                                             className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500"
                                                         />
-                                                        <span className="capitalize">{perm}</span>
+                                                        <span className="capitalize">{perm === 'delete' ? t('apiTokens.deletePermission') : t(`apiTokens.${perm}`)}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -214,7 +216,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
 
                                         <div>
                                             <label className="block text-sm text-slate-400 mb-1">
-                                                Data wygaśnięcia (opcjonalne)
+                                                {t('apiTokens.expirationDate')}
                                             </label>
                                             <input
                                                 type="datetime-local"
@@ -231,7 +233,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                             disabled={isCreating}
                                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors"
                                         >
-                                            {isCreating ? 'Tworzenie...' : 'Utwórz token'}
+                                            {isCreating ? t('apiTokens.creating') : t('apiTokens.createToken')}
                                         </button>
                                         <button
                                             onClick={() => {
@@ -240,7 +242,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                             }}
                                             className="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition-colors"
                                         >
-                                            Anuluj
+                                            {t('common.cancel')}
                                         </button>
                                     </div>
                                 </div>
@@ -250,21 +252,21 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                     className="mb-6 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
                                 >
                                     <FiPlus />
-                                    Utwórz nowy token
+                                    {t('apiTokens.createToken')}
                                 </button>
                             )}
 
                             {/* Tokens list */}
                             <div>
                                 <h3 className="font-medium mb-4">
-                                    Aktywne tokeny ({activeTokens.length})
+                                    {t('apiTokens.currentTokens', { count: activeTokens.length })}
                                 </h3>
 
                                 {isLoading ? (
-                                    <div className="text-center py-8 text-slate-400">Ładowanie...</div>
+                                    <div className="text-center py-8 text-slate-400">{t('common.loading')}</div>
                                 ) : activeTokens.length === 0 ? (
                                     <div className="text-center py-8 text-slate-400">
-                                        Brak aktywnych tokenów. Utwórz pierwszy token aby rozpocząć integrację.
+                                        {t('apiTokens.noActiveTokens')}
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
@@ -276,7 +278,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="font-medium truncate">
-                                                            {token.name || 'API Token'}
+                                                            {token.name || t('apiTokens.apiToken')}
                                                         </div>
                                                         <div className="text-sm text-slate-400 font-mono mt-1">
                                                             {token.token_prefix}***
@@ -286,7 +288,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                         onClick={() => handleRevoke(token.id)}
                                                         disabled={revoking === token.id}
                                                         className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50"
-                                                        title="Unieważnij token"
+                                                        title={t('apiTokens.revokeToken')}
                                                     >
                                                         <FiTrash2 />
                                                     </button>
@@ -295,17 +297,17 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                 <div className="mt-3 flex flex-wrap gap-2">
                                                     {token.permissions.read && (
                                                         <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded">
-                                                            Read
+                                                            {t('apiTokens.read')}
                                                         </span>
                                                     )}
                                                     {token.permissions.write && (
                                                         <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">
-                                                            Write
+                                                            {t('apiTokens.write')}
                                                         </span>
                                                     )}
                                                     {token.permissions.delete && (
                                                         <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-400 rounded">
-                                                            Delete
+                                                            {t('apiTokens.deletePermission')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -325,23 +327,23 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
 
                             {/* API Documentation hint */}
                             <div className="mt-8 p-4 bg-slate-700/30 rounded-lg">
-                                <h4 className="font-medium mb-2">Jak używać API?</h4>
+                                <h4 className="font-medium mb-2">{t('apiTokens.howToUse')}</h4>
                                 <p className="text-sm text-slate-400 mb-3">
-                                    Użyj tokena w nagłówku Authorization:
+                                    {t('apiTokens.useTokenHeader')}
                                 </p>
                                 <code className="block bg-slate-900 p-3 rounded text-sm font-mono text-green-400">
-                                    Authorization: Bearer nkn_live_xxx...
+                                    {t('apiTokens.authExample')}
                                 </code>
                                 <p className="text-sm text-slate-400 mt-3">
-                                    Dostępne endpointy:
+                                    {t('apiTokens.endpoints')}
                                 </p>
                                 <ul className="text-sm text-slate-400 mt-2 space-y-1 list-disc list-inside">
-                                    <li>GET /api/public/board - informacje o boardzie</li>
-                                    <li>GET /api/public/tickets - lista ticketów</li>
-                                    <li>POST /api/public/tickets - utwórz ticket</li>
-                                    <li>PUT /api/public/tickets/[id] - aktualizuj ticket</li>
-                                    <li>POST /api/public/tickets/[id]/comments - dodaj komentarz</li>
-                                    <li>POST /api/public/tickets/[id]/attachments - dodaj załącznik</li>
+                                    <li>{t('apiTokens.endpointGetBoard')}</li>
+                                    <li>{t('apiTokens.endpointGetTickets')}</li>
+                                    <li>{t('apiTokens.endpointCreateTicket')}</li>
+                                    <li>{t('apiTokens.endpointUpdateTicket')}</li>
+                                    <li>{t('apiTokens.endpointAddComment')}</li>
+                                    <li>{t('apiTokens.endpointAddAttachment')}</li>
                                 </ul>
                             </div>
                         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import AddTaskForm from './TaskColumn/AddTaskForm';
 import Task from './Task';
@@ -44,6 +45,7 @@ const Column = ({
      onFilterByAssignee,
      activeFilterAssigneeId,
 }: ColumnProps) => {
+     const { t } = useTranslation();
      const [isEditingTitle, setIsEditingTitle] = useState(false);
      const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -104,7 +106,7 @@ const Column = ({
                               hover:bg-slate-700/50 focus:bg-slate-700/50
                               transition-colors
                          `}
-                         placeholder="Tytuł kolumny"
+                         placeholder={t('column.columnTitle')}
                     />
 
                     <div className="flex items-center gap-1.5">
@@ -143,7 +145,7 @@ const Column = ({
                          >
                               {localTasks.length === 0 && !snapshot.isDraggingOver && (
                                    <div className="flex flex-col items-center justify-center h-24 text-slate-500 text-sm">
-                                        <span>Brak zadań</span>
+                                        <span>{t('column.noTasks')}</span>
                                    </div>
                               )}
 

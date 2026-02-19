@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
 import { useUpdateTaskCollaboratorsMutation } from '@/app/store/apiSlice';
@@ -33,6 +34,7 @@ export const useTaskAssignees = ({
      selectedAssignees,
      setSelectedAssignees,
 }: UseTaskAssigneesProps) => {
+     const { t } = useTranslation();
      const [updateCollaboratorsMutation] = useUpdateTaskCollaboratorsMutation();
 
      const handleAssigneesChange = useCallback(
@@ -81,14 +83,14 @@ export const useTaskAssignees = ({
                               }
                          }
 
-                         toast.success('Przypisani zaktualizowani');
+                         toast.success(t('taskMeta.assigneesUpdated'));
                     } catch (error) {
                          console.error('Failed to update assignees:', error);
-                         toast.error('Nie udało się zaktualizować przypisanych');
+                         toast.error(t('taskMeta.assigneesUpdateFailed'));
                     }
                }
           },
-          [isNewTask, currentTaskId, boardId, currentUserId, currentUserName, taskTitle, fetchTaskData, updateTask, teamMembers, selectedAssignees, setSelectedAssignees, updateCollaboratorsMutation],
+          [isNewTask, currentTaskId, boardId, currentUserId, currentUserName, taskTitle, fetchTaskData, updateTask, teamMembers, selectedAssignees, setSelectedAssignees, updateCollaboratorsMutation, t],
      );
 
      return { handleAssigneesChange };

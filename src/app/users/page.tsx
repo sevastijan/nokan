@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
      useGetAllClientsQuery,
      useGetAllBoardsQuery,
@@ -18,6 +19,7 @@ import { ArrowLeft, X, Users, Search, ChevronRight, UserCheck, UserX, Check, Bri
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UsersManagementPage() {
+     const { t } = useTranslation();
      const { status: authStatus } = useSession();
      const router = useRouter();
      const { loading: roleLoading, hasManagementAccess } = useUserRole();
@@ -98,7 +100,7 @@ export default function UsersManagementPage() {
      const handleClearSearch = useCallback(() => setSearchTerm(''), []);
      const handleLoadMoreBoards = useCallback(() => setVisibleBoards((prev) => prev + 5), []);
 
-     if (authStatus === 'loading' || roleLoading || loadingAllUsers) return <Loader text="Ładowanie..." />;
+     if (authStatus === 'loading' || roleLoading || loadingAllUsers) return <Loader text={t('users.loading')} />;
      if (authStatus === 'unauthenticated' || !hasManagementAccess()) {
           router.push('/');
           return null;
@@ -120,7 +122,7 @@ export default function UsersManagementPage() {
                               className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors group"
                          >
                               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                              Powrót
+                              {t('users.back')}
                          </motion.button>
                          <motion.h1
                               initial={{ opacity: 0, x: -20 }}
@@ -128,10 +130,10 @@ export default function UsersManagementPage() {
                               transition={{ duration: 0.6, delay: 0.1 }}
                               className="text-5xl font-bold text-white mb-3"
                          >
-                              Zarządzanie użytkownikami
+                              {t('users.manageUsers')}
                          </motion.h1>
                          <motion.p initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="text-slate-400 text-lg">
-                              Przypisuj klientów do boardów oraz zarządzaj rolami
+                              {t('users.manageUsersDesc')}
                          </motion.p>
                     </motion.header>
 
@@ -139,7 +141,7 @@ export default function UsersManagementPage() {
                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                          <input
                               type="text"
-                              placeholder="Szukaj po nazwie lub emailu..."
+                              placeholder={t('users.searchByNameOrEmail')}
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
                               className="w-full pl-12 pr-12 py-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-lg"
@@ -169,7 +171,7 @@ export default function UsersManagementPage() {
                                              <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
                                                   <Users className="w-6 h-6 text-blue-400" />
                                              </motion.div>
-                                             Klienci
+                                             {t('users.clients')}
                                         </h2>
                                         <motion.span
                                              initial={{ scale: 0 }}
@@ -181,7 +183,7 @@ export default function UsersManagementPage() {
                                    </div>
                                    <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/50 pr-2 space-y-2">
                                         {filteredClients.length === 0 ? (
-                                             <p className="text-slate-400 text-center py-8">Brak klientów</p>
+                                             <p className="text-slate-400 text-center py-8">{t('users.noClients')}</p>
                                         ) : (
                                              filteredClients.map((client, i) => (
                                                   <motion.button
@@ -205,7 +207,7 @@ export default function UsersManagementPage() {
                                                             {client.name?.[0]?.toUpperCase() || '?'}
                                                        </div>
                                                        <div className="min-w-0 flex-1">
-                                                            <p className="font-semibold truncate">{client.name || 'Bez nazwy'}</p>
+                                                            <p className="font-semibold truncate">{client.name || t('common.noName')}</p>
                                                             <p className="text-sm opacity-75 truncate">{client.email}</p>
                                                        </div>
                                                        {selectedClientId === client.id && <ChevronRight className="w-5 h-5" />}
@@ -226,17 +228,17 @@ export default function UsersManagementPage() {
                                                             {selectedClient.name?.[0]?.toUpperCase() || '?'}
                                                        </div>
                                                        <div>
-                                                            <h3 className="text-xl font-bold text-white">{selectedClient.name || 'Bez nazwy'}</h3>
+                                                            <h3 className="text-xl font-bold text-white">{selectedClient.name || t('common.noName')}</h3>
                                                             <p className="text-slate-400">{selectedClient.email}</p>
                                                        </div>
                                                   </div>
                                                   <div className="flex gap-4 text-sm">
                                                        <div className="px-4 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                                                            <span className="text-slate-400">Przypisane: </span>
+                                                            <span className="text-slate-400">{t('users.assigned')} </span>
                                                             <span className="text-white font-semibold">{assignedBoardsCount}</span>
                                                        </div>
                                                        <div className="px-4 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                                                            <span className="text-slate-400">Wszystkie: </span>
+                                                            <span className="text-slate-400">{t('users.allBoards')} </span>
                                                             <span className="text-white font-semibold">{allBoards.length}</span>
                                                        </div>
                                                   </div>
@@ -246,7 +248,7 @@ export default function UsersManagementPage() {
                                              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                              <input
                                                   type="text"
-                                                  placeholder="Szukaj boardu..."
+                                                  placeholder={t('users.searchBoard')}
                                                   value={boardSearch}
                                                   onChange={(e) => setBoardSearch(e.target.value)}
                                                   className="w-full pl-11 pr-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -254,12 +256,12 @@ export default function UsersManagementPage() {
                                         </div>
                                         <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
                                              <Briefcase className="w-6 h-6 text-blue-400" />
-                                             Boardy klienta
+                                             {t('users.clientBoards')}
                                         </h2>
                                         {loadingAssignments ? (
-                                             <Loader text="Ładowanie..." />
+                                             <Loader text={t('users.loading')} />
                                         ) : boardsToShow.length === 0 ? (
-                                             <p className="text-slate-400 text-center py-12">Brak boardów</p>
+                                             <p className="text-slate-400 text-center py-12">{t('users.noBoards')}</p>
                                         ) : (
                                              <div className="space-y-3">
                                                   {boardsToShow.map((board, i) => (
@@ -280,7 +282,7 @@ export default function UsersManagementPage() {
                                                                       {board.isAssigned && (
                                                                            <span className="flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 rounded-lg text-xs border border-green-500/30">
                                                                                 <Check className="w-3 h-3" />
-                                                                                Przypisany
+                                                                                {t('users.isAssigned')}
                                                                            </span>
                                                                       )}
                                                                  </div>
@@ -297,7 +299,7 @@ export default function UsersManagementPage() {
                                                                       className="px-5 py-2.5 bg-gradient-to-r cursor-pointer from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
                                                                  >
                                                                       <UserX className="w-4 h-4" />
-                                                                      Odepnij
+                                                                      {t('users.unassign')}
                                                                  </motion.button>
                                                             ) : (
                                                                  <motion.button
@@ -307,7 +309,7 @@ export default function UsersManagementPage() {
                                                                       className="px-5 py-2.5 bg-blue-600 cursor-pointer hover:bg-blue-700 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
                                                                  >
                                                                       <UserCheck className="w-4 h-4" />
-                                                                      Przypisz
+                                                                      {t('users.assign')}
                                                                  </motion.button>
                                                             )}
                                                        </motion.div>
@@ -318,7 +320,7 @@ export default function UsersManagementPage() {
                                                             onClick={handleLoadMoreBoards}
                                                             className="w-full mt-4 px-6 py-3 bg-slate-700/50 cursor-pointer hover:bg-slate-700 text-slate-300 border border-slate-600 rounded-xl font-medium"
                                                        >
-                                                            Załaduj więcej ({filteredBoards.length - visibleBoards})
+                                                            {t('users.loadMore')} ({filteredBoards.length - visibleBoards})
                                                        </motion.button>
                                                   )}
                                              </div>
@@ -327,19 +329,19 @@ export default function UsersManagementPage() {
                               ) : (
                                    <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-20 text-center shadow-2xl">
                                         <motion.div className="text-7xl mb-4">👈</motion.div>
-                                        <p className="text-slate-400 text-lg">Wybierz klienta aby zarządzać boardami</p>
+                                        <p className="text-slate-400 text-lg">{t('users.selectClientToManage')}</p>
                                    </div>
                               )}
 
                               <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
                                    <h2 className="text-2xl font-semibold text-white mb-5 flex items-center gap-3">
                                         <Shield className="w-6 h-6 text-blue-400" />
-                                        Wszyscy użytkownicy
+                                        {t('users.allUsers')}
                                         <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm border border-blue-400/30">{filteredUsers.length}</span>
                                    </h2>
                                    <div className="max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/50 pr-2 space-y-3">
                                         {filteredUsers.length === 0 ? (
-                                             <p className="text-slate-400 text-center py-8">Brak użytkowników</p>
+                                             <p className="text-slate-400 text-center py-8">{t('users.noUsers')}</p>
                                         ) : (
                                              filteredUsers.map((user, i) => (
                                                   <motion.div
@@ -354,9 +356,9 @@ export default function UsersManagementPage() {
                                                                  {user.name?.[0]?.toUpperCase() || '?'}
                                                             </div>
                                                             <div>
-                                                                 <p className="font-medium text-white">{user.name || 'Bez nazwy'}</p>
+                                                                 <p className="font-medium text-white">{user.name || t('common.noName')}</p>
                                                                  <p className="text-sm text-slate-400">{user.email}</p>
-                                                                 <p className="text-xs text-slate-500 mt-1">Rola: {user.role || 'Brak'}</p>
+                                                                 <p className="text-xs text-slate-500 mt-1">{t('users.role')} {user.role ? t(`roles.${user.role}`) : t('users.noRole')}</p>
                                                             </div>
                                                        </div>
                                                        {user.role === 'CLIENT' ? (
@@ -366,7 +368,7 @@ export default function UsersManagementPage() {
                                                                  disabled={isProcessing}
                                                                  className="px-3 py-1 bg-gradient-to-r cursor-pointer from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white rounded-lg text-sm disabled:opacity-50 shadow-lg"
                                                             >
-                                                                 Odejmij CLIENT
+                                                                 {t('users.removeClient')}
                                                             </motion.button>
                                                        ) : (
                                                             <motion.button
@@ -375,7 +377,7 @@ export default function UsersManagementPage() {
                                                                  disabled={isProcessing}
                                                                  className="px-3 py-1 bg-gradient-to-r cursor-pointer from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-lg text-sm disabled:opacity-50 shadow-lg"
                                                             >
-                                                                 Nadaj CLIENT
+                                                                 {t('users.grantClient')}
                                                             </motion.button>
                                                        )}
                                                   </motion.div>

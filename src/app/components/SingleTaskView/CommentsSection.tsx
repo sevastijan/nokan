@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import CommentForm from './CommentForm';
 import CommentList from './CommentList';
 import { CommentsSectionProps } from '@/app/types/globalTypes';
@@ -16,6 +17,7 @@ interface CommentsSectionExtendedProps extends CommentsSectionProps {
 }
 
 const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComments, onImagePreview, teamMembers, boardId, boardName, taskTitle }: CommentsSectionExtendedProps) => {
+     const { t } = useTranslation();
      const [addNotification] = useAddNotificationMutation();
 
      const addComment = async (content: string, parentId?: string) => {
@@ -33,7 +35,7 @@ const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComment
 
                // Trigger mention notifications
                const mentionedIds = extractMentionedUserIds(content, teamMembers);
-               const currentUserName = currentUser.custom_name || currentUser.name || 'Ktoś';
+               const currentUserName = currentUser.custom_name || currentUser.name || t('common.unknown');
                const title = taskTitle || task?.title || 'zadanie';
 
                for (const mentionedId of mentionedIds) {
@@ -44,7 +46,7 @@ const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComment
                          type: 'mention',
                          task_id: taskId,
                          board_id: boardId,
-                         message: `${currentUserName} wspomniał(a) Cię w komentarzu do zadania "${title}"`,
+                         message: t('comments.mentionInComment', { name: currentUserName, title }),
                     });
 
                     if (boardId) {
@@ -64,10 +66,10 @@ const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComment
                }
 
                await onRefreshComments();
-               toast.success(parentId ? 'Odpowiedź dodana' : 'Komentarz dodany');
+               toast.success(parentId ? t('comments.replyAdded') : t('comments.added'));
           } catch (error) {
-               console.error('Błąd dodawania komentarza:', error);
-               toast.error('Nie udało się dodać komentarza');
+               console.error('Error adding comment:', error);
+               toast.error(t('comments.addFailed'));
           }
      };
 
@@ -76,10 +78,10 @@ const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComment
                const { error } = await supabase.from('task_comments').delete().eq('id', commentId);
                if (error) throw error;
                await onRefreshComments();
-               toast.success('Komentarz usunięty');
+               toast.success(t('comments.deleted'));
           } catch (error) {
-               console.error('Błąd usuwania:', error);
-               toast.error('Nie udało się usunąć komentarza');
+               console.error('Error deleting comment:', error);
+               toast.error(t('comments.deleteFailed'));
           }
      };
 

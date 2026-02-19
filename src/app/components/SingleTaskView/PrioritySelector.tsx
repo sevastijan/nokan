@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaFlag, FaPlus, FaEdit, FaTrash, FaCheck, FaTimes } from 'react-icons/fa';
 import { getPriorities, addPriority, updatePriority, deletePriority } from '@/app/lib/api';
 import { PrioritySelectorProps, Priority } from '@/app/types/globalTypes';
 import { useDropdownManager } from '@/app/hooks/useDropdownManager';
 
 const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priorities: externalPriorities }: PrioritySelectorProps) => {
+     const { t } = useTranslation();
      const dropdownId = useMemo(() => `priority-selector-${Math.random().toString(36).substr(2, 9)}`, []);
      const { isOpen, toggle, close } = useDropdownManager(dropdownId);
 
@@ -106,14 +108,14 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                handleCancel();
           } catch (err) {
                console.error('Error saving priority:', err);
-               alert('Error saving priority: ' + (err instanceof Error ? err.message : String(err)));
+               alert(t('priority.saveError') + (err instanceof Error ? err.message : String(err)));
           } finally {
                setOperationLoading(false);
           }
      };
 
      const handleDelete = async (id: string) => {
-          if (!confirm('Delete this priority?')) return;
+          if (!confirm(t('priority.deleteConfirm'))) return;
           setOperationLoading(true);
           try {
                await deletePriority(id);
@@ -125,9 +127,9 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                console.error('Error deleting priority:', err);
                const msg = err instanceof Error ? err.message : String(err);
                if (msg.includes('being used')) {
-                    alert('Cannot delete: priority is used by existing tasks.');
+                    alert(t('priority.cannotDelete'));
                } else {
-                    alert('Error deleting priority: ' + msg);
+                    alert(t('priority.deleteError') + msg);
                }
           } finally {
                setOperationLoading(false);
@@ -142,7 +144,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                          </svg>
-                         Ładowanie...
+                         {t('common.loading')}
                     </div>
                </div>
           );
@@ -169,7 +171,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                          ) : (
                               <>
                                    <FaFlag className="w-3.5 h-3.5 text-slate-500" />
-                                   <span className="text-slate-500 truncate text-sm">Wybierz priorytet...</span>
+                                   <span className="text-slate-500 truncate text-sm">{t('priority.selectPriority')}</span>
                               </>
                          )}
                     </div>
@@ -195,12 +197,12 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                    `}
                               >
                                    <FaTimes className="w-3.5 h-3.5 text-slate-400" />
-                                   <span className="text-slate-300 text-sm">Brak priorytetu</span>
+                                   <span className="text-slate-300 text-sm">{t('priority.noPriority')}</span>
                               </button>
 
                               <div className="h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent my-1" />
 
-                              {priorities.length === 0 && <div className="px-3 py-2 text-slate-400 text-sm text-center">No priorities available</div>}
+                              {priorities.length === 0 && <div className="px-3 py-2 text-slate-400 text-sm text-center">{t('priority.noPrioritiesAvailable')}</div>}
 
                               {priorities.map((p) => {
                                    const isSel = selectedObj?.id === p.id;
@@ -215,7 +217,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                                             value={formData.label}
                                                             onChange={(e) => setFormData((f) => ({ ...f, label: e.target.value }))}
                                                             className="w-full mb-2 px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-sm"
-                                                            placeholder="Name"
+                                                            placeholder={t('priority.name')}
                                                             disabled={operationLoading}
                                                        />
                                                        <div className="flex items-center gap-2 mb-2">
@@ -235,7 +237,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                                                  className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white text-xs rounded"
                                                             >
                                                                  <FaCheck className="w-3 h-3" />
-                                                                 Save
+                                                                 {t('priority.save')}
                                                             </button>
                                                             <button
                                                                  onClick={handleCancel}
@@ -243,7 +245,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                                                  className="flex items-center gap-1 px-2 py-1 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white text-xs rounded"
                                                             >
                                                                  <FaTimes className="w-3 h-3" />
-                                                                 Cancel
+                                                                 {t('priority.cancel')}
                                                             </button>
                                                        </div>
                                                   </div>
@@ -296,7 +298,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                              value={formData.label}
                                              onChange={(e) => setFormData((f) => ({ ...f, label: e.target.value }))}
                                              className="w-full mb-2 px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-sm"
-                                             placeholder="New priority name"
+                                             placeholder={t('priority.newPriorityName')}
                                              disabled={operationLoading}
                                         />
                                         <div className="flex items-center gap-2 mb-2">
@@ -316,7 +318,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                                   className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white text-xs rounded"
                                              >
                                                   <FaPlus className="w-3 h-3" />
-                                                  Add
+                                                  {t('common.add')}
                                              </button>
                                              <button
                                                   onClick={handleCancel}
@@ -324,7 +326,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                                   className="flex items-center gap-1 px-2 py-1 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white text-xs rounded"
                                              >
                                                   <FaTimes className="w-3 h-3" />
-                                                  Cancel
+                                                  {t('priority.cancel')}
                                              </button>
                                         </div>
                                    </div>
@@ -336,7 +338,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                         className="w-full flex items-center gap-2 px-3 py-2 text-left text-blue-400 hover:bg-slate-700 hover:text-blue-300 transition-colors duration-150"
                                    >
                                         <FaPlus className="w-4 h-4" />
-                                        <span className="text-sm">Add new priority</span>
+                                        <span className="text-sm">{t('priority.addNewPriority')}</span>
                                    </button>
                               )}
                          </motion.div>

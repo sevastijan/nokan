@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { FiArrowLeft, FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,6 +42,7 @@ const BoardHeader = ({
      showSubtasks,
      onShowSubtasksChange,
 }: ExtendedBoardHeaderProps) => {
+     const { t } = useTranslation();
      const router = useRouter();
 
      const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -96,7 +98,7 @@ const BoardHeader = ({
                          <button
                               onClick={handleBack}
                               className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-                              aria-label="Wróć do dashboardu"
+                              aria-label={t('board.backToDashboard')}
                          >
                               <FiArrowLeft className="w-4 h-4" />
                               <span className="hidden sm:inline text-sm font-medium">Dashboard</span>
@@ -107,7 +109,7 @@ const BoardHeader = ({
                                    type="text"
                                    className="w-full bg-transparent py-1 text-lg font-semibold text-slate-100 placeholder-slate-600
                                              focus:outline-none rounded transition-colors"
-                                   placeholder="Tytuł tablicy..."
+                                   placeholder={t('board.boardTitle')}
                                    value={boardTitle}
                                    onChange={onTitleChange}
                                    onBlur={onTitleBlur}
@@ -129,7 +131,7 @@ const BoardHeader = ({
                                                   border border-slate-700/50 hover:border-slate-600
                                                   focus:outline-none focus:border-slate-500 focus:bg-slate-800
                                                   transition-colors text-sm"
-                                        placeholder="Szukaj zadań..."
+                                        placeholder={t('board.searchTasks')}
                                         value={searchTerm}
                                         onChange={handleSearchInputChange}
                                    />
@@ -142,7 +144,7 @@ const BoardHeader = ({
                          </div>
 
                          {/* Search - Mobile */}
-                         <button className="sm:hidden p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors" onClick={handleSearchIconClick} aria-label="Szukaj">
+                         <button className="sm:hidden p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors" onClick={handleSearchIconClick} aria-label={t('common.search')}>
                               <FiSearch className="w-5 h-5" />
                          </button>
 
@@ -171,10 +173,10 @@ const BoardHeader = ({
                                    flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors relative
                                    ${showSubtasks ? 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}
                               `}
-                              title={showSubtasks ? 'Ukryj subtaski' : 'Pokaż subtaski'}
+                              title={showSubtasks ? t('board.hideSubtasks') : t('board.showSubtasks')}
                          >
                               <FiCornerDownRight className="w-4 h-4" />
-                              <span className="hidden sm:inline">Subtaski</span>
+                              <span className="hidden sm:inline">{t('board.subtasks')}</span>
                               {showSubtasks && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 absolute top-1.5 right-1.5" />}
                          </button>
 
@@ -187,7 +189,7 @@ const BoardHeader = ({
                               className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-sm font-medium rounded-lg transition-colors"
                          >
                               <FiFileText className="w-4 h-4" />
-                              <span className="hidden sm:inline">Notatki</span>
+                              <span className="hidden sm:inline">{t('board.notes')}</span>
                          </button>
 
                          {/* API Tokens */}
@@ -197,7 +199,7 @@ const BoardHeader = ({
                                    className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-sm font-medium rounded-lg transition-colors"
                               >
                                    <FiCode className="w-4 h-4" />
-                                   <span className="hidden sm:inline">API</span>
+                                   <span className="hidden sm:inline">{t('board.api')}</span>
                               </button>
                          )}
 
@@ -211,7 +213,7 @@ const BoardHeader = ({
                                         text-slate-900 text-sm font-medium rounded-lg transition-colors"
                          >
                               <FiPlus className="w-4 h-4" />
-                              <span className="hidden sm:inline">Dodaj kolumnę</span>
+                              <span className="hidden sm:inline">{t('board.addColumn')}</span>
                          </button>
                     </div>
                </div>
@@ -241,7 +243,7 @@ const BoardHeader = ({
                                              type="text"
                                              autoFocus
                                              className="flex-1 px-3 py-4 bg-transparent placeholder-slate-500 text-slate-100 focus:outline-none"
-                                             placeholder="Szukaj zadań..."
+                                             placeholder={t('board.searchTasks')}
                                              value={searchTerm}
                                              onChange={handleSearchInputChange}
                                         />

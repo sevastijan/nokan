@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import { Search, Plus, ClipboardList, Users, ArrowUpDown } from 'lucide-react';
 import { Popover, Transition } from '@headlessui/react';
 import Button from '@/app/components/Button/Button';
@@ -17,13 +20,6 @@ interface DashboardToolbarProps {
      onCreateClick: () => void;
 }
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-     { value: 'newest', label: 'Najnowsze' },
-     { value: 'name', label: 'Nazwa A-Z' },
-     { value: 'tasks', label: 'Najwięcej tasków' },
-     { value: 'members', label: 'Najwięcej członków' },
-];
-
 export const DashboardToolbar = ({
      searchTerm,
      onSearchChange,
@@ -35,16 +31,25 @@ export const DashboardToolbar = ({
      setSortBy,
      onCreateClick,
 }: DashboardToolbarProps) => {
+     const { t } = useTranslation();
+
+     const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+          { value: 'newest', label: t('dashboard.newest') },
+          { value: 'name', label: t('dashboard.nameAZ') },
+          { value: 'tasks', label: t('dashboard.mostTasks') },
+          { value: 'members', label: t('dashboard.mostMembers') },
+     ];
+
      return (
           <div className="flex flex-col gap-3">
                {/* Header row */}
                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                         <h2 className="text-2xl font-bold text-white">Twoje Projekty</h2>
-                         <p className="text-slate-400 text-sm">Zarządzaj i organizuj swoje projekty</p>
+                         <h2 className="text-2xl font-bold text-white">{t('dashboard.yourProjects')}</h2>
+                         <p className="text-slate-400 text-sm">{t('dashboard.manageProjects')}</p>
                     </div>
                     <Button variant="primary" size="md" icon={<Plus className="w-4 h-4" />} onClick={onCreateClick} className="w-full sm:w-auto">
-                         Nowy Projekt
+                         {t('dashboard.newProject')}
                     </Button>
                </div>
 
@@ -55,7 +60,7 @@ export const DashboardToolbar = ({
                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                          <input
                               type="text"
-                              placeholder="Szukaj projektów..."
+                              placeholder={t('dashboard.searchProjects')}
                               value={searchTerm}
                               onChange={(e) => onSearchChange(e.target.value)}
                               className="pl-9 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-200 w-full placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
@@ -72,7 +77,7 @@ export const DashboardToolbar = ({
                          }`}
                     >
                          <ClipboardList className="w-3.5 h-3.5" />
-                         Z taskami
+                         {t('dashboard.withTasks')}
                     </button>
 
                     {/* Quick filter: Has members */}
@@ -85,7 +90,7 @@ export const DashboardToolbar = ({
                          }`}
                     >
                          <Users className="w-3.5 h-3.5" />
-                         Z zespołem
+                         {t('dashboard.withTeam')}
                     </button>
 
                     {/* Sort dropdown */}
@@ -100,7 +105,7 @@ export const DashboardToolbar = ({
                                         }`}
                                    >
                                         <ArrowUpDown className="w-3.5 h-3.5" />
-                                        {SORT_OPTIONS.find((o) => o.value === sortBy)?.label || 'Sortuj'}
+                                        {SORT_OPTIONS.find((o) => o.value === sortBy)?.label || t('dashboard.sort')}
                                    </Popover.Button>
                                    <Transition
                                         show={open}

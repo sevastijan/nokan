@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 import { Users, Pencil, Trash2 } from 'lucide-react';
 import Avatar from '../Avatar/Avatar';
@@ -10,6 +11,8 @@ const getDisplayData = (user: { name?: string | null; image?: string | null; cus
 });
 
 const TeamListItem = ({ team, onEditTeam, onDeleteTeam, availableUsers }: TeamListItemProps) => {
+     const { t } = useTranslation();
+
      // All members of this team
      const teamMembers = availableUsers.filter((user) => team.users.some((member) => member.user_id === user.id));
 
@@ -33,11 +36,11 @@ const TeamListItem = ({ team, onEditTeam, onDeleteTeam, availableUsers }: TeamLi
                                    }}
                               />
                               <p className="text-slate-400 text-sm mt-1">
-                                   {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}
+                                   {teamMembers.length} {t('teams.member', { count: teamMembers.length })}
                               </p>
                               {creatorDisplay && (
                                    <span className="inline-flex items-center text-xs text-slate-500 bg-slate-700/40 px-2 py-0.5 rounded-md mt-1.5">
-                                        Created by {creatorDisplay.name}
+                                        {t('teams.createdBy')} {creatorDisplay.name}
                                    </span>
                               )}
                          </div>
@@ -46,7 +49,7 @@ const TeamListItem = ({ team, onEditTeam, onDeleteTeam, availableUsers }: TeamLi
 
                {/* Member list */}
                <div className="flex-1 mb-6">
-                    <p className="text-slate-400 text-sm font-medium mb-4">Team Members</p>
+                    <p className="text-slate-400 text-sm font-medium mb-4">{t('teams.teamMembers')}</p>
                     <div className="space-y-3">
                          {teamMembers.slice(0, 4).map((user) => {
                               const userDisplay = getDisplayData(user);
@@ -62,12 +65,12 @@ const TeamListItem = ({ team, onEditTeam, onDeleteTeam, availableUsers }: TeamLi
                          })}
                          {teamMembers.length > 4 && (
                               <div className="flex items-center justify-center bg-slate-700/30 rounded-xl px-4 py-3">
-                                   <span className="text-slate-400 text-sm font-medium">+{teamMembers.length - 4} more</span>
+                                   <span className="text-slate-400 text-sm font-medium">{t('teams.more', { count: teamMembers.length - 4 })}</span>
                               </div>
                          )}
                          {teamMembers.length === 0 && (
                               <div className="text-center py-4">
-                                   <p className="text-slate-500 text-sm">No members assigned</p>
+                                   <p className="text-slate-500 text-sm">{t('teams.noMembersAssigned')}</p>
                               </div>
                          )}
                     </div>
@@ -80,7 +83,7 @@ const TeamListItem = ({ team, onEditTeam, onDeleteTeam, availableUsers }: TeamLi
                          className="flex-1 bg-slate-700/50 hover:bg-slate-600/50 text-white font-medium px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-slate-600"
                     >
                          <Pencil className="w-4 h-4" />
-                         Edit Team
+                         {t('teams.editTeam')}
                     </button>
                     <button
                          onClick={() => onDeleteTeam(team.id)}

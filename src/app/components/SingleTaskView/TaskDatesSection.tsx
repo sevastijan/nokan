@@ -1,6 +1,7 @@
 'use client';
 
 import { FiCalendar, FiClock, FiArrowRight } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import { calculateDuration } from '@/app/utils/helpers';
 
 interface TaskDatesSectionProps {
@@ -10,6 +11,7 @@ interface TaskDatesSectionProps {
 }
 
 const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSectionProps) => {
+     const { t } = useTranslation();
      const duration = startDate && endDate ? calculateDuration(startDate, endDate) : null;
 
      return (
@@ -17,11 +19,11 @@ const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSection
                {/* Section Header */}
                <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-700/30">
                     <div className="w-1 h-4 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Terminy</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('taskDates.dates')}</h3>
                     {duration !== null && (
                          <span className="ml-auto flex items-center gap-1.5 text-xs bg-purple-500/10 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/20">
                               <FiClock className="w-3 h-3" />
-                              {duration} {duration === 1 ? 'dzień' : 'dni'}
+                              {duration} {t('common.day', { count: duration })}
                          </span>
                     )}
                </div>
@@ -32,7 +34,7 @@ const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSection
                     <div className="flex-1">
                          <label className="flex items-center gap-2 text-sm text-slate-300 mb-2">
                               <FiCalendar className="w-4 h-4 text-green-400" />
-                              <span>Data rozpoczęcia</span>
+                              <span>{t('taskDates.startDate')}</span>
                          </label>
                          <input
                               type="date"
@@ -58,7 +60,7 @@ const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSection
                     <div className="flex-1">
                          <label className="flex items-center gap-2 text-sm text-slate-300 mb-2">
                               <FiCalendar className="w-4 h-4 text-red-400" />
-                              <span>Termin wykonania</span>
+                              <span>{t('taskDates.dueDate')}</span>
                          </label>
                          <input
                               type="date"
