@@ -102,7 +102,7 @@ export default function TaskDescription({ value, onChange, taskId, onImageClick,
                               <RichTextPlugin
                                    contentEditable={<ContentEditable className="outline-none p-3 min-h-30" style={{ caretColor: '#a78bfa' }} data-lexical-editor />}
                                    placeholder={
-                                        <div className="absolute top-3 left-3 text-slate-400 pointer-events-none text-sm">Opisz zadanie...{!taskId && ' (zapisz zadanie aby dodawać obrazy)'}</div>
+                                        <div className="absolute top-3 left-3 text-slate-400 pointer-events-none text-sm">Opisz zadanie...</div>
                                    }
                                    ErrorBoundary={LexicalErrorBoundary}
                               />

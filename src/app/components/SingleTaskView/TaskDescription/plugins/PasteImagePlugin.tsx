@@ -26,11 +26,6 @@ export function PasteImagePlugin({ taskId, onUploadStart, onUploadEnd }: PasteIm
                          const file = item.getAsFile();
                          if (!file) continue;
 
-                         if (!taskId) {
-                              toast.error('Zapisz najpierw zadanie, aby wklejać obrazy');
-                              continue;
-                         }
-
                          onUploadStart();
 
                          try {

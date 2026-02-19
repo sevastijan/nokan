@@ -130,11 +130,6 @@ export function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }:
      };
 
      const handleImageUpload = async (file: File) => {
-          if (!taskId) {
-               toast.error('Zapisz najpierw zadanie, aby dodać obrazy');
-               return;
-          }
-
           onUploadStart();
 
           try {
@@ -223,9 +218,9 @@ export function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }:
 
                     <button
                          onClick={triggerImageUpload}
-                         disabled={!taskId || uploading}
-                         className={`p-1.5 rounded hover:bg-slate-700 transition ${!taskId || uploading ? 'opacity-50 cursor-not-allowed' : ''} text-slate-300`}
-                         title={taskId ? 'Insert Image' : 'Save task first to add images'}
+                         disabled={uploading}
+                         className={`p-1.5 rounded hover:bg-slate-700 transition ${uploading ? 'opacity-50 cursor-not-allowed' : ''} text-slate-300`}
+                         title="Insert Image"
                     >
                          <FiImage className="w-3.5 h-3.5" />
                     </button>

@@ -200,6 +200,9 @@ const SingleTaskView = ({
           handleNavigate: handleDescriptionImageNavigate,
      } = useTaskImages(formData.tempDescription);
 
+     const lightboxOpenRef = useRef(false);
+     lightboxOpenRef.current = descriptionLightboxOpen;
+
      const animateOut = useCallback(() => {
           setIsVisible(false);
      }, []);
@@ -492,12 +495,16 @@ const SingleTaskView = ({
           const onKeyDown = (e: KeyboardEvent) => {
                if (e.key === 'Escape') {
                     e.stopPropagation();
-                    requestClose();
+                    if (lightboxOpenRef.current) {
+                         handleDescriptionLightboxClose();
+                    } else {
+                         requestClose();
+                    }
                }
           };
           document.addEventListener('keydown', onKeyDown, { capture: true });
           return () => document.removeEventListener('keydown', onKeyDown, { capture: true });
-     }, [requestClose, openedSubtaskId]);
+     }, [requestClose, openedSubtaskId, handleDescriptionLightboxClose]);
 
      useOutsideClick([modalRef], requestClose, !openedSubtaskId);
 

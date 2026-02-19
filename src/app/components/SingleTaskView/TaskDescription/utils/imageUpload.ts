@@ -8,7 +8,7 @@ export interface ImageUploadResult {
      error?: string;
 }
 
-export const uploadImage = async (file: File, taskId: string): Promise<ImageUploadResult> => {
+export const uploadImage = async (file: File, taskId?: string): Promise<ImageUploadResult> => {
      if (file.size > 10 * 1024 * 1024) {
           return { success: false, error: 'Obraz za duży (max 10MB)' };
      }
@@ -16,7 +16,9 @@ export const uploadImage = async (file: File, taskId: string): Promise<ImageUplo
      try {
           const formData = new FormData();
           formData.append('file', file);
-          formData.append('taskId', taskId);
+          if (taskId) {
+               formData.append('taskId', taskId);
+          }
 
           const response = await fetch('/api/upload-task-image', {
                method: 'POST',
