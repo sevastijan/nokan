@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
      try {
           const session = await getServerSession(authOptions);
 
-          if (!session?.user?.id) {
+          if (!session?.user?.email) {
                return Response.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
                return Response.json({ error: uploadError.message }, { status: 500 });
           }
 
-          // Resolve internal user ID from google_id
-          const { data: userData } = await supabaseAdmin.from('users').select('id').eq('google_id', session.user.id).single();
+          // Resolve internal user ID from email
+          const { data: userData } = await supabaseAdmin.from('users').select('id').eq('email', session.user.email).single();
 
           if (!userData) {
                await supabaseAdmin.storage.from('attachments').remove([filePath]);

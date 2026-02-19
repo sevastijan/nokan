@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { getSupabase } from '@/app/lib/supabase';
+import { getSupabaseAdmin } from '@/app/lib/supabase';
 import { authOptions } from '@/app/lib/auth';
 
 const defaultPreferences = {
@@ -18,13 +18,20 @@ export async function GET() {
      try {
           const session = await getServerSession(authOptions);
 
-          if (!session?.user?.id) {
+          if (!session?.user?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
-          const supabase = getSupabase();
+          const supabase = getSupabaseAdmin();
 
-          const { data, error } = await supabase.from('notification_preferences').select('*').eq('user_id', session.user.id).single();
+          // Resolve internal user ID from email
+          const { data: user } = await supabase.from('users').select('id').eq('email', session.user.email).single();
+
+          if (!user) {
+               return NextResponse.json({ error: 'User not found' }, { status: 404 });
+          }
+
+          const { data, error } = await supabase.from('notification_preferences').select('*').eq('user_id', user.id).single();
 
           if (error && error.code !== 'PGRST116') {
                return NextResponse.json({ error: 'Database error' }, { status: 500 });
@@ -39,7 +46,7 @@ export async function GET() {
           const { data: newPrefs, error: insertError } = await supabase
                .from('notification_preferences')
                .insert({
-                    user_id: session.user.id,
+                    user_id: user.id,
                     ...defaultPreferences,
                })
                .select()
@@ -48,7 +55,7 @@ export async function GET() {
           if (insertError) {
                // Fallback: return defaults if insertion fails
                return NextResponse.json({
-                    user_id: session.user.id,
+                    user_id: user.id,
                     ...defaultPreferences,
                });
           }
@@ -67,7 +74,7 @@ export async function PUT(request: NextRequest) {
      try {
           const session = await getServerSession(authOptions);
 
-          if (!session?.user?.id) {
+          if (!session?.user?.email) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           }
 
@@ -85,13 +92,20 @@ export async function PUT(request: NextRequest) {
                return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
           }
 
-          const supabase = getSupabase();
+          const supabase = getSupabaseAdmin();
+
+          // Resolve internal user ID from email
+          const { data: user } = await supabase.from('users').select('id').eq('email', session.user.email).single();
+
+          if (!user) {
+               return NextResponse.json({ error: 'User not found' }, { status: 404 });
+          }
 
           const { data, error } = await supabase
                .from('notification_preferences')
                .upsert(
                     {
-                         user_id: session.user.id,
+                         user_id: user.id,
                          ...updates,
                          updated_at: new Date().toISOString(),
                     },

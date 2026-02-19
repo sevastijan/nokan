@@ -22,7 +22,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
       * @param session - Next-auth session object
       * @returns User object with all fields including custom_name and custom_image
       */
-     getCurrentUser: builder.query<User, { user?: { email?: string | null; name?: string | null; image?: string | null } }>({
+     getCurrentUser: builder.query<User, { user?: { id?: string; email?: string | null; name?: string | null; image?: string | null } }>({
           async queryFn(session) {
                try {
                     const email = session.user?.email?.trim();
@@ -52,6 +52,7 @@ export const userEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          .from('users')
                          .insert({
                               email,
+                              google_id: session.user?.id || null,
                               name: session.user?.name?.trim() || null,
                               image: session.user?.image?.trim() || null,
                          })

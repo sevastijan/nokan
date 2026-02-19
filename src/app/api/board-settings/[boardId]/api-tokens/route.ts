@@ -25,18 +25,18 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { boardId } = await params;
     const supabase = getSupabaseAdmin();
 
-    // Get user's internal ID from google_id
+    // Get user's internal ID from email from email
     const { data: userData } = await supabase
         .from('users')
         .select('id')
-        .eq('google_id', session.user.id)
+        .eq('email', session.user.email)
         .single();
 
     if (!userData) {
@@ -80,18 +80,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { boardId } = await params;
     const supabase = getSupabaseAdmin();
 
-    // Get user's internal ID
+    // Get user's internal ID from email
     const { data: userData } = await supabase
         .from('users')
         .select('id')
-        .eq('google_id', session.user.id)
+        .eq('email', session.user.email)
         .single();
 
     if (!userData) {
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -197,7 +197,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { data: userData } = await supabase
         .from('users')
         .select('id')
-        .eq('google_id', session.user.id)
+        .eq('email', session.user.email)
         .single();
 
     if (!userData) {
@@ -249,7 +249,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -267,7 +267,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { data: userData } = await supabase
         .from('users')
         .select('id')
-        .eq('google_id', session.user.id)
+        .eq('email', session.user.email)
         .single();
 
     if (!userData) {

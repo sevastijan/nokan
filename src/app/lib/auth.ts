@@ -2,20 +2,20 @@ import type { NextAuthOptions, Session } from 'next-auth';
 import type { User } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GoogleProvider from 'next-auth/providers/google';
-import { getSupabase } from '@/app/lib/supabase';
+import { getSupabaseAdmin } from '@/app/lib/supabase';
 
 export const authOptions: NextAuthOptions = {
      secret: process.env.NEXTAUTH_SECRET,
      providers: [
           GoogleProvider({
                clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-               clientSecret: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET!,
+               clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
           }),
      ],
      callbacks: {
           async signIn({ user }: { user: User }) {
                try {
-                    const supabase = getSupabase();
+                    const supabase = getSupabaseAdmin();
                     const { data: existingUser, error: selectError } = await supabase.from('users').select('*').eq('google_id', user.id).single();
 
                     if (selectError && selectError.code !== 'PGRST116') {

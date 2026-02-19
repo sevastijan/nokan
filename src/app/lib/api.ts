@@ -327,10 +327,11 @@ export async function fetchOrCreateUserFromSession(session: Session): Promise<Us
           if (existingUser) return existingUser;
 
           if (error?.code === 'PGRST116' || error?.message?.includes('No rows')) {
-               const { data: newUser, error: insertError } = await supabase
+               const { data: newUser, error: insertError } = await getSupabase()
                     .from('users')
                     .insert({
                          email,
+                         google_id: session.user.id || null,
                          name: session.user.name || 'Unknown User',
                          image: session.user.image || null,
                     })
