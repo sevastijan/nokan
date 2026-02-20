@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 import AuthButton from '../auth/AuthButton';
 import { InteractiveGridPattern } from '@/components/ui/interactive-grid-pattern';
 
@@ -19,17 +20,27 @@ export default function LandingPage() {
 			>
 				<div className="pointer-events-none flex flex-col min-h-screen">
 					{/* Top bar */}
-					<nav className="pointer-events-auto flex items-center justify-between px-8 md:px-12 py-6">
+					<motion.nav
+						initial={{ opacity: 0, y: -20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+						className="pointer-events-auto flex items-center justify-between px-8 md:px-12 py-6"
+					>
 						<span className="text-lg font-bold tracking-widest text-slate-100 uppercase">Nokan</span>
 						<span className="text-xs text-slate-600 tracking-wider uppercase hidden sm:block">{t('landing.openSource')}</span>
-					</nav>
+					</motion.nav>
 
 					{/* Main content */}
 					<main className="pointer-events-auto flex-1 flex items-center px-8 md:px-12 pb-12">
 						<div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
 
 							{/* Left - Hero */}
-							<div className="space-y-10">
+							<motion.div
+								initial={{ opacity: 0, x: -40 }}
+								animate={{ opacity: 1, x: 0 }}
+								transition={{ duration: 0.8, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+								className="space-y-10"
+							>
 								<div className="space-y-6">
 									<h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-slate-100 leading-[0.95] tracking-tight">
 										{t('landing.heroTitle1')}
@@ -50,7 +61,13 @@ export default function LandingPage() {
 										{ label: t('landing.featureTeam'), desc: t('landing.featureTeamDesc') },
 										{ label: t('landing.featureFast'), desc: t('landing.featureFastDesc') },
 									].map((f, i) => (
-										<div key={i} className="flex items-start gap-4 group">
+										<motion.div
+											key={i}
+											initial={{ opacity: 0, x: -20 }}
+											animate={{ opacity: 1, x: 0 }}
+											transition={{ duration: 0.5, delay: 0.4 + i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+											className="flex items-start gap-4 group"
+										>
 											<span className="text-xs font-mono text-slate-600 mt-1 shrink-0">0{i + 1}</span>
 											<div>
 												<span className="text-sm font-medium text-slate-200 group-hover:text-brand-400 transition-colors">
@@ -60,26 +77,49 @@ export default function LandingPage() {
 													- {f.desc}
 												</span>
 											</div>
-										</div>
+										</motion.div>
 									))}
 								</div>
-							</div>
+							</motion.div>
 
 							{/* Right - Auth card */}
-							<div className="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto">
-								<div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-8 shadow-2xl shadow-black/20">
-									<p className="text-xs uppercase tracking-widest text-slate-500 mb-6">{t('landing.getStarted')}</p>
-									<AuthButton />
+							<motion.div
+								initial={{ opacity: 0, y: 30, scale: 0.96 }}
+								animate={{ opacity: 1, y: 0, scale: 1 }}
+								transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+								className="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto"
+							>
+								<div className="relative group rounded-2xl">
+									{/* Ambient glow behind card */}
+									<div className="absolute -inset-8 rounded-3xl bg-brand-500/[0.07] blur-3xl group-hover:bg-brand-500/[0.12] transition-all duration-1000 pointer-events-none" />
+									<div className="relative bg-slate-900/80 backdrop-blur-2xl border border-slate-800/50 group-hover:border-slate-700/50 rounded-2xl p-8 shadow-2xl shadow-black/30 transition-colors duration-700">
+										<motion.p
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											transition={{ delay: 0.5, duration: 0.5 }}
+											className="relative text-[10px] uppercase tracking-[0.25em] text-slate-500 font-medium mb-7"
+										>
+											{t('landing.getStarted')}
+										</motion.p>
+										<div className="relative">
+											<AuthButton />
+										</div>
+									</div>
 								</div>
-							</div>
+							</motion.div>
 						</div>
 					</main>
 
 					{/* Footer */}
-					<footer className="pointer-events-auto px-8 md:px-12 py-6 flex items-center justify-between border-t border-slate-800/50">
+					<motion.footer
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						transition={{ delay: 0.8, duration: 0.5 }}
+						className="pointer-events-auto px-8 md:px-12 py-6 flex items-center justify-between border-t border-slate-800/50"
+					>
 						<span className="text-xs text-slate-600">&copy; {new Date().getFullYear()} Nokan</span>
 						<span className="text-xs text-slate-600">{t('landing.tagline').replace(/<\/?1>/g, '')}</span>
-					</footer>
+					</motion.footer>
 				</div>
 			</InteractiveGridPattern>
 		</div>
