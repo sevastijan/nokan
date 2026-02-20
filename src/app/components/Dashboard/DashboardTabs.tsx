@@ -27,7 +27,7 @@ export const DashboardTabs = ({ activeTab, onTabChange, boardsCount, tasksCount 
      };
 
      return (
-          <div className="flex items-center gap-1 bg-slate-800/40 border border-slate-700/50 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-slate-800/40 border border-slate-700/50 rounded-xl p-1 w-full sm:w-auto">
                {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
                     const Icon = tab.icon;
@@ -37,7 +37,7 @@ export const DashboardTabs = ({ activeTab, onTabChange, boardsCount, tasksCount 
                          <button
                               key={tab.id}
                               onClick={() => onTabChange(tab.id)}
-                              className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer ${
+                              className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer flex-1 sm:flex-initial ${
                                    isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                               }`}
                          >

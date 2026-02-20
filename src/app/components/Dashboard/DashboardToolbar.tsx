@@ -42,9 +42,9 @@ export const DashboardToolbar = ({
 
      return (
           <div className="flex flex-col gap-3">
-               {/* Header row */}
+               {/* Header + New Project */}
                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+                    <div className="hidden sm:block">
                          <h2 className="text-2xl font-bold text-white">{t('dashboard.yourProjects')}</h2>
                          <p className="text-slate-400 text-sm">{t('dashboard.manageProjects')}</p>
                     </div>
@@ -53,10 +53,10 @@ export const DashboardToolbar = ({
                     </Button>
                </div>
 
-               {/* Filters row */}
+               {/* Search + Filters row */}
                <div className="flex flex-wrap gap-2.5 items-center">
                     {/* Search */}
-                    <div className="relative flex-1 min-w-[200px] max-w-xs">
+                    <div className="relative w-full sm:flex-1 sm:min-w-[200px] sm:max-w-xs">
                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                          <input
                               type="text"

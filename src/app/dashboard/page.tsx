@@ -242,7 +242,7 @@ export default function DashboardPage() {
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800/40 via-transparent to-transparent pointer-events-none" />
 
                     <div className="relative">
-                         <section className="px-4 sm:px-6 lg:px-8 pt-8 pb-6">
+                         <section className="px-4 sm:px-6 lg:px-8 pt-14 md:pt-8 pb-6">
                               <div className="max-w-7xl mx-auto flex flex-col gap-6">
                                    {/* Tab bar */}
                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
