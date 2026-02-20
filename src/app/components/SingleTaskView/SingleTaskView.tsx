@@ -480,10 +480,20 @@ const SingleTaskView = ({
      }, [isNewTask, variantChosen]);
 
      useEffect(() => {
-          const originalOverflow = document.body.style.overflow;
-          document.body.style.overflow = 'hidden';
+          const scrollY = window.scrollY;
+          const body = document.body;
+          body.style.position = 'fixed';
+          body.style.top = `-${scrollY}px`;
+          body.style.left = '0';
+          body.style.right = '0';
+          body.style.overflow = 'hidden';
           return () => {
-               document.body.style.overflow = originalOverflow;
+               body.style.position = '';
+               body.style.top = '';
+               body.style.left = '';
+               body.style.right = '';
+               body.style.overflow = '';
+               window.scrollTo(0, scrollY);
           };
      }, []);
 
@@ -515,7 +525,7 @@ const SingleTaskView = ({
                {isVisible && (
                <motion.div
                     ref={overlayRef}
-                    className="fixed inset-0 bg-black/40 backdrop-blur-md flex justify-center items-center z-50 p-2 md:p-4"
+                    className="fixed inset-0 bg-black/40 backdrop-blur-md flex justify-center items-center z-50 p-0 md:p-4"
                     onClick={(e) => {
                          if (e.target === overlayRef.current && !openedSubtaskId) {
                               requestClose();
@@ -527,8 +537,8 @@ const SingleTaskView = ({
                >
                     <motion.div
                          ref={modalRef}
-                         className={`bg-linear-to-b from-slate-800 to-slate-850 rounded-2xl w-full max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50 overflow-hidden transition-[max-width] duration-300 ease-out ${
-                              isNewTask && !variantChosen ? 'max-w-sm sm:max-w-3xl' : 'max-w-lg md:max-w-3xl lg:max-w-6xl'
+                         className={`bg-linear-to-b from-slate-800 to-slate-850 rounded-none md:rounded-2xl w-full h-dvh md:h-auto md:max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border-0 md:border border-slate-700/50 overflow-hidden transition-[max-width] duration-300 ease-out ${
+                              isNewTask && !variantChosen ? 'max-w-sm sm:max-w-3xl' : 'md:max-w-3xl lg:max-w-6xl'
                          }`}
                          initial={{ scale: 0.9, opacity: 0, y: 30 }}
                          animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -593,7 +603,7 @@ const SingleTaskView = ({
 
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                               {/* Main Content Area */}
-                              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 text-white thin-scrollbar">
+                              <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-5 text-white thin-scrollbar">
                                    {/* Variant Selector - only shown for new tasks */}
                                    {isNewTask && (
                                         <TaskVariantSelector selectedType={taskType} onChange={handleVariantChange} />
@@ -617,7 +627,7 @@ const SingleTaskView = ({
                                    {/* Type Section (hidden for new tasks — variant selector above handles it) */}
                                    {!isNewTask && !task?.parent_id && (
                                         <div className="relative z-30">
-                                             <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                             <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
                                                   <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                        <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-cyan-500 rounded-full" />
                                                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('taskMeta.type')}</h3>
@@ -663,7 +673,7 @@ const SingleTaskView = ({
                                    )}
 
                                    {/* Description Section */}
-                                   <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                   <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
                                         <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                              <div className="w-1 h-4 bg-linear-to-b from-pink-500 to-brand-500 rounded-full" />
                                              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.description')}</h3>
@@ -679,7 +689,7 @@ const SingleTaskView = ({
 
                                    {/* Subtasks Section */}
                                    {isStory && task?.id && !isNewTask && (
-                                        <div className="relative z-5 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                        <div className="relative z-5 bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                   <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-brand-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.subtasks')}</h3>
@@ -701,7 +711,7 @@ const SingleTaskView = ({
 
                                    {/* Subtasks placeholder for new Story */}
                                    {isStory && isNewTask && (
-                                        <div className="bg-slate-800/40 rounded-xl border border-brand-500/20 p-4">
+                                        <div className="bg-slate-800/40 rounded-xl border border-brand-500/20 p-3 md:p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                   <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-brand-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.subtasks')}</h3>
@@ -718,7 +728,7 @@ const SingleTaskView = ({
 
                                    {/* Attachments Section */}
                                    <Suspense fallback={<div className="text-slate-400 text-sm p-4">{t('task.loadingAttachments')}</div>}>
-                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                   <div className="w-1 h-4 bg-linear-to-b from-teal-500 to-green-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.attachments')}</h3>
@@ -743,7 +753,7 @@ const SingleTaskView = ({
 
                                    {/* Comments Section */}
                                    {!isNewTask && task?.id && (
-                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
                                                   <div className="w-1 h-4 bg-linear-to-b from-amber-500 to-yellow-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.comments')}</h3>
@@ -771,26 +781,28 @@ const SingleTaskView = ({
                               </div>
 
                               {!isNewTask && task && (
-                                   <TaskMetadataSidebar
-                                        task={{
-                                             creator: task.creator ?? null,
-                                             created_at: task.created_at ?? null,
-                                             updated_at: task.updated_at ?? null,
-                                             start_date: task.start_date ?? null,
-                                             end_date: task.end_date ?? null,
-                                             is_recurring: task.is_recurring ?? false,
-                                             recurrence_interval: task.recurrence_interval ?? null,
-                                             recurrence_type: task.recurrence_type ?? null,
-                                             collaborators: task.collaborators ?? null,
-                                             type: task.type,
-                                             parent_id: task.parent_id,
-                                        }}
-                                        columns={columns}
-                                        selectedAssignees={task.collaborators ?? []}
-                                        localColumnId={formData.localColumnId}
-                                        onRecurringModalOpen={() => setShowRecurringModal(true)}
-                                        onOpenTask={onOpenTask}
-                                   />
+                                   <div className="hidden md:block">
+                                        <TaskMetadataSidebar
+                                             task={{
+                                                  creator: task.creator ?? null,
+                                                  created_at: task.created_at ?? null,
+                                                  updated_at: task.updated_at ?? null,
+                                                  start_date: task.start_date ?? null,
+                                                  end_date: task.end_date ?? null,
+                                                  is_recurring: task.is_recurring ?? false,
+                                                  recurrence_interval: task.recurrence_interval ?? null,
+                                                  recurrence_type: task.recurrence_type ?? null,
+                                                  collaborators: task.collaborators ?? null,
+                                                  type: task.type,
+                                                  parent_id: task.parent_id,
+                                             }}
+                                             columns={columns}
+                                             selectedAssignees={task.collaborators ?? []}
+                                             localColumnId={formData.localColumnId}
+                                             onRecurringModalOpen={() => setShowRecurringModal(true)}
+                                             onOpenTask={onOpenTask}
+                                        />
+                                   </div>
                               )}
                          </div>
 

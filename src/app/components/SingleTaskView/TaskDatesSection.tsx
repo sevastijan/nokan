@@ -15,7 +15,7 @@ const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSection
      const duration = startDate && endDate ? calculateDuration(startDate, endDate) : null;
 
      return (
-          <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
+          <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
                {/* Section Header */}
                <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-700/30">
                     <div className="w-1 h-4 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />

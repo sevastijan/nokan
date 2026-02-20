@@ -34,7 +34,7 @@ interface TaskPropertiesGridProps {
 
 const TaskPropertiesGrid = ({ selectedAssignees, availableUsers, onAssigneesChange, selectedPriority, onPriorityChange, columns, localColumnId, onColumnChange, hideAssignees }: TaskPropertiesGridProps) => {
      return (
-          <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4 space-y-4">
+          <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4 space-y-3 md:space-y-4">
                {/* Section Header */}
                <div className="flex items-center gap-2 pb-2 border-b border-slate-700/30">
                     <div className="w-1 h-4 bg-gradient-to-b from-brand-500 to-brand-500 rounded-full" />

@@ -529,7 +529,7 @@
           "markIncomplete": "Oznacz jako niezakończone",
           "markComplete": "Oznacz jako zakończone",
           "completed": "Zakończone",
-          "todo": "Do wykonania",
+          "todo": "Oznacz jako zakończone",
           "markAsCompleted": "Oznaczyć jako zakończone?",
           "movedToDone": "Przeniesiono do kolumny Done",
           "taskLabel": "Zadanie",

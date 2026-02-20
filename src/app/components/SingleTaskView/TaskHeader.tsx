@@ -48,9 +48,9 @@ const TaskHeader = ({
                <div className="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-800 to-slate-800/95" />
                <div className="absolute inset-0 bg-gradient-to-b from-brand-500/5 to-transparent" />
 
-               <div className="relative px-6 py-5 border-b border-slate-700/50">
+               <div className="relative px-4 py-3 md:px-6 md:py-5 border-b border-slate-700/50">
                     {/* Top row: Badge + Actions */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-2 md:mb-4">
                          <div className="flex items-center gap-3">
                               {isNewTask ? (
                                    <motion.span
@@ -73,10 +73,10 @@ const TaskHeader = ({
                                    <motion.div
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-lg"
+                                        className="flex items-center gap-1.5 md:gap-2 bg-amber-500/10 border border-amber-500/30 px-2 py-1 md:px-3 md:py-1.5 rounded-lg"
                                    >
                                         <FiSave className="w-3.5 h-3.5 text-amber-400" />
-                                        <span className="text-xs text-amber-400 font-medium">{t('task.unsavedChanges')}</span>
+                                        <span className="hidden sm:inline text-xs text-amber-400 font-medium">{t('task.unsavedChanges')}</span>
                                         <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
                                    </motion.div>
                               )}
@@ -97,6 +97,12 @@ const TaskHeader = ({
                          </div>
 
                          <div className="flex items-center gap-1">
+                              {/* Completion toggle — mobile only (in top bar) */}
+                              {!isNewTask && onCompletionToggle !== undefined && completed !== undefined && (
+                                   <div className="md:hidden">
+                                        <TaskCompletionToggle completed={completed} onToggle={onCompletionToggle} disabled={completionDisabled} disabledTooltip={completionDisabledTooltip} />
+                                   </div>
+                              )}
                               {!isNewTask && taskId && boardId && (
                                    <button
                                         onClick={onCopyLink}
@@ -117,19 +123,22 @@ const TaskHeader = ({
                     </div>
 
                     {/* Title input */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                          <input
                               ref={titleInputRef}
                               type="text"
-                              className="flex-1 bg-transparent text-xl md:text-2xl font-bold text-white placeholder-slate-500 focus:outline-none border-b-2 border-transparent focus:border-brand-500/50 pb-1 transition-colors duration-200"
+                              className="flex-1 min-w-0 bg-transparent text-lg md:text-2xl font-bold text-white placeholder-slate-500 focus:outline-none border-b-2 border-transparent focus:border-brand-500/50 pb-1 transition-colors duration-200"
                               placeholder={t('task.titlePlaceholder')}
                               value={title}
                               onChange={onTitleChange}
                               onKeyDown={onTitleKeyDown}
                          />
 
+                         {/* Completion toggle — desktop only (next to title) */}
                          {!isNewTask && onCompletionToggle !== undefined && completed !== undefined && (
-                              <TaskCompletionToggle completed={completed} onToggle={onCompletionToggle} disabled={completionDisabled} disabledTooltip={completionDisabledTooltip} />
+                              <div className="hidden md:block">
+                                   <TaskCompletionToggle completed={completed} onToggle={onCompletionToggle} disabled={completionDisabled} disabledTooltip={completionDisabledTooltip} />
+                              </div>
                          )}
                     </div>
                </div>

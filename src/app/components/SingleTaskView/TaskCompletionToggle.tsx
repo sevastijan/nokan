@@ -20,7 +20,7 @@ const TaskCompletionToggle = ({ completed, onToggle, disabled, disabledTooltip }
                     onToggle(!completed);
                }}
                className={`
-                    group flex items-center gap-2.5 px-4 py-2 rounded-xl transition-all duration-300
+                    group flex items-center gap-1.5 md:gap-2.5 px-2.5 py-1.5 md:px-4 md:py-2 rounded-xl transition-all duration-300 shrink-0
                     ${
                          disabled
                               ? 'bg-slate-700/30 border border-slate-600/30 opacity-60 cursor-not-allowed'
@@ -48,7 +48,7 @@ const TaskCompletionToggle = ({ completed, onToggle, disabled, disabledTooltip }
                     )}
                </div>
                <span
-                    className={`text-sm font-medium transition-colors duration-300 ${
+                    className={`text-xs md:text-sm font-medium transition-colors duration-300 whitespace-nowrap ${
                          completed ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-300'
                     }`}
                >

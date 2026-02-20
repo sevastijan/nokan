@@ -525,7 +525,7 @@
           "markIncomplete": "Mark as incomplete",
           "markComplete": "Mark as complete",
           "completed": "Completed",
-          "todo": "To do",
+          "todo": "Mark as done",
           "markAsCompleted": "Mark as completed?",
           "movedToDone": "Moved to Done column",
           "taskLabel": "Task",

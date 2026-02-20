@@ -42,8 +42,8 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
                     {/* Gradient separator */}
                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
 
-                    <div className="bg-gradient-to-t from-slate-900/50 to-slate-800/30 backdrop-blur-sm px-6 py-4">
-                         <div className="flex items-center justify-between gap-4">
+                    <div className="bg-gradient-to-t from-slate-900/50 to-slate-800/30 backdrop-blur-sm px-3 py-2.5 md:px-6 md:py-4">
+                         <div className="flex items-center justify-between gap-2 md:gap-4">
                               {/* Left side: Delete button */}
                               <div className="flex items-center">
                                    {!isNewTask && onDelete && (
@@ -52,7 +52,7 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
                                              whileTap={{ scale: 0.98 }}
                                              onClick={handleDeleteClick}
                                              disabled={isSaving}
-                                             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium
+                                             className="flex items-center gap-1.5 md:gap-2 px-2.5 py-2 md:px-4 md:py-2.5 rounded-lg text-sm font-medium
                                                        text-red-400 bg-red-500/10 border border-red-500/20
                                                        hover:bg-red-500/20 hover:border-red-500/30
                                                        disabled:opacity-50 disabled:cursor-not-allowed
@@ -65,20 +65,20 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
                               </div>
 
                               {/* Right side: Cancel + Save buttons */}
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 md:gap-3">
                                    <motion.button
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={handleCloseClick}
                                         disabled={isSaving}
-                                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium
+                                        className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg text-sm font-medium
                                                   text-slate-300 bg-slate-700/50 border border-slate-600/50
                                                   hover:bg-slate-700 hover:border-slate-500
                                                   disabled:opacity-50 disabled:cursor-not-allowed
                                                   transition-all duration-200"
                                    >
                                         <FiX className="w-4 h-4" />
-                                        <span>{t('common.cancel')}</span>
+                                        <span className="hidden sm:inline">{t('common.cancel')}</span>
                                    </motion.button>
 
                                    <motion.button
@@ -87,7 +87,7 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
                                         onClick={onSave}
                                         disabled={!canSave || isSaving}
                                         className={`
-                                             flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold
+                                             flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-2.5 rounded-lg text-sm font-semibold
                                              transition-all duration-200 shadow-lg
                                              ${
                                                   canSave && !isSaving
