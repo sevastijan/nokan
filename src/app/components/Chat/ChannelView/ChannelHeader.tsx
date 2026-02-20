@@ -59,8 +59,8 @@ const ChannelHeader = ({ members, currentUserId, channel }: ChannelHeaderProps) 
 						<Avatar src={displayAvatar} alt={displayName} size={36} className="ring-2 ring-slate-800 ring-offset-1 ring-offset-slate-950" />
 					</div>
 				) : (
-					<div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-600/20 to-purple-400/10 flex items-center justify-center border border-purple-500/20">
-						<Hash className="w-4 h-4 text-purple-400" />
+					<div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-600/20 to-brand-400/10 flex items-center justify-center border border-brand-500/20">
+						<Hash className="w-4 h-4 text-brand-400" />
 					</div>
 				)}
 

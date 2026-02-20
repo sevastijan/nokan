@@ -130,7 +130,7 @@ const AuthButton = () => {
 				<p className="text-sm text-slate-400">{t('auth.welcomeBack', { name: session.user?.name })}</p>
 				<button
 					onClick={() => router.push('/dashboard')}
-					className="w-full bg-purple-600 hover:bg-purple-500 text-white h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+					className="w-full bg-brand-600 hover:bg-brand-500 text-white h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer"
 				>
 					{t('auth.goToDashboard')}
 				</button>
@@ -138,7 +138,7 @@ const AuthButton = () => {
 		);
 	}
 
-	const inputClass = 'w-full bg-slate-800/50 border border-slate-700/50 text-slate-100 px-4 h-11 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/40 placeholder:text-slate-600 transition-all';
+	const inputClass = 'w-full bg-slate-800/50 border border-slate-700/50 text-slate-100 px-4 h-11 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/40 placeholder:text-slate-600 transition-all';
 
 	return (
 		<div className="space-y-5">
@@ -211,12 +211,12 @@ const AuthButton = () => {
 				<form onSubmit={handleLogin} className="space-y-3">
 					<input type="email" required placeholder={t('auth.emailPlaceholder')} value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className={inputClass} />
 					<input type="password" required placeholder={t('auth.passwordPlaceholder')} value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className={inputClass} />
-					<button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+					<button type="submit" disabled={loading} className="w-full bg-brand-600 hover:bg-brand-500 text-white h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
 						{loading ? t('auth.signingIn') : t('auth.signIn')}
 					</button>
 					<p className="text-center text-xs text-slate-600">
 						{t('auth.noAccount')}{' '}
-						<button type="button" onClick={() => switchTab('register')} className="text-purple-400 hover:text-purple-300 cursor-pointer">{t('auth.registerLink')}</button>
+						<button type="button" onClick={() => switchTab('register')} className="text-brand-400 hover:text-brand-300 cursor-pointer">{t('auth.registerLink')}</button>
 					</p>
 				</form>
 			)}
@@ -228,12 +228,12 @@ const AuthButton = () => {
 					<input type="email" required placeholder={t('auth.emailPlaceholder')} value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} className={inputClass} />
 					<input type="password" required minLength={8} placeholder={t('auth.passwordPlaceholder')} value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} className={inputClass} />
 					<input type="password" required minLength={8} placeholder={t('auth.confirmPasswordPlaceholder')} value={registerConfirm} onChange={(e) => setRegisterConfirm(e.target.value)} className={inputClass} />
-					<button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+					<button type="submit" disabled={loading} className="w-full bg-brand-600 hover:bg-brand-500 text-white h-11 rounded-lg text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
 						{loading ? t('auth.registering') : t('auth.createAccount')}
 					</button>
 					<p className="text-center text-xs text-slate-600">
 						{t('auth.alreadyHaveAccount')}{' '}
-						<button type="button" onClick={() => switchTab('login')} className="text-purple-400 hover:text-purple-300 cursor-pointer">{t('auth.signInLink')}</button>
+						<button type="button" onClick={() => switchTab('login')} className="text-brand-400 hover:text-brand-300 cursor-pointer">{t('auth.signInLink')}</button>
 					</p>
 				</form>
 			)}

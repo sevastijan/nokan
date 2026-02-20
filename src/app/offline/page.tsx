@@ -8,11 +8,11 @@ export default function OfflinePage() {
      return (
           <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-900">
                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/10 blur-3xl" />
+                    <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/10 blur-3xl" />
                </div>
 
                <div className="relative z-10 flex flex-col items-center gap-6 px-6 text-center">
-                    <h1 className="bg-gradient-to-r from-white via-purple-100 to-purple-300 bg-clip-text text-5xl font-black tracking-[0.2em] text-transparent">
+                    <h1 className="bg-gradient-to-r from-white via-brand-100 to-brand-300 bg-clip-text text-5xl font-black tracking-[0.2em] text-transparent">
                          NOKAN
                     </h1>
 
@@ -39,7 +39,7 @@ export default function OfflinePage() {
 
                     <button
                          onClick={() => window.location.reload()}
-                         className="mt-4 rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-500"
+                         className="mt-4 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-500"
                     >
                          {t('offline.tryAgain')}
                     </button>

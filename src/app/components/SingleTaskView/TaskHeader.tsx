@@ -46,7 +46,7 @@ const TaskHeader = ({
           <div className="relative">
                {/* Gradient header background */}
                <div className="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-800 to-slate-800/95" />
-               <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent" />
+               <div className="absolute inset-0 bg-gradient-to-b from-brand-500/5 to-transparent" />
 
                <div className="relative px-6 py-5 border-b border-slate-700/50">
                     {/* Top row: Badge + Actions */}
@@ -63,7 +63,7 @@ const TaskHeader = ({
                                    </motion.span>
                               ) : taskId ? (
                                    <span className="inline-flex items-center gap-2 bg-slate-700/60 backdrop-blur-sm text-slate-300 text-xs font-mono px-3 py-1.5 rounded-lg border border-slate-600/50">
-                                        <span className="w-2 h-2 rounded-full bg-purple-500" />
+                                        <span className="w-2 h-2 rounded-full bg-brand-500" />
                                         #{taskId.slice(-6).toUpperCase()}
                                    </span>
                               ) : null}
@@ -121,7 +121,7 @@ const TaskHeader = ({
                          <input
                               ref={titleInputRef}
                               type="text"
-                              className="flex-1 bg-transparent text-xl md:text-2xl font-bold text-white placeholder-slate-500 focus:outline-none border-b-2 border-transparent focus:border-purple-500/50 pb-1 transition-colors duration-200"
+                              className="flex-1 bg-transparent text-xl md:text-2xl font-bold text-white placeholder-slate-500 focus:outline-none border-b-2 border-transparent focus:border-brand-500/50 pb-1 transition-colors duration-200"
                               placeholder={t('task.titlePlaceholder')}
                               value={title}
                               onChange={onTitleChange}

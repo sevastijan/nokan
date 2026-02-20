@@ -185,7 +185,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                 value={newToken.name}
                                                 onChange={(e) => setNewToken({ ...newToken, name: e.target.value })}
                                                 placeholder={t('apiTokens.namePlaceholder')}
-                                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500"
+                                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500"
                                             />
                                         </div>
 
@@ -206,7 +206,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                                     },
                                                                 })
                                                             }
-                                                            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500"
+                                                            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-brand-500 focus:ring-brand-500"
                                                         />
                                                         <span className="capitalize">{perm === 'delete' ? t('apiTokens.deletePermission') : t(`apiTokens.${perm}`)}</span>
                                                     </label>
@@ -222,7 +222,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                 type="datetime-local"
                                                 value={newToken.expiresAt}
                                                 onChange={(e) => setNewToken({ ...newToken, expiresAt: e.target.value })}
-                                                className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500"
+                                                className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500"
                                             />
                                         </div>
                                     </div>
@@ -231,7 +231,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                         <button
                                             onClick={handleCreate}
                                             disabled={isCreating}
-                                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition-colors"
+                                            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 rounded-lg transition-colors"
                                         >
                                             {isCreating ? t('apiTokens.creating') : t('apiTokens.createToken')}
                                         </button>
@@ -249,7 +249,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                             ) : (
                                 <button
                                     onClick={() => setShowCreateForm(true)}
-                                    className="mb-6 flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                                    className="mb-6 flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
                                 >
                                     <FiPlus />
                                     {t('apiTokens.createToken')}
@@ -301,7 +301,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                                         </span>
                                                     )}
                                                     {token.permissions.write && (
-                                                        <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">
+                                                        <span className="px-2 py-0.5 text-xs bg-brand-500/20 text-brand-400 rounded">
                                                             {t('apiTokens.write')}
                                                         </span>
                                                     )}

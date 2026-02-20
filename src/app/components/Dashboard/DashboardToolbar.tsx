@@ -63,7 +63,7 @@ export const DashboardToolbar = ({
                               placeholder={t('dashboard.searchProjects')}
                               value={searchTerm}
                               onChange={(e) => onSearchChange(e.target.value)}
-                              className="pl-9 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-200 w-full placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+                              className="pl-9 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-200 w-full placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition"
                          />
                     </div>
 
@@ -72,7 +72,7 @@ export const DashboardToolbar = ({
                          onClick={() => setHasTasksOnly(!hasTasksOnly)}
                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all duration-200 cursor-pointer ${
                               hasTasksOnly
-                                   ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                   ? 'bg-brand-500/15 text-brand-300 border-brand-500/30'
                                    : 'bg-slate-800/40 text-slate-400 border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
                          }`}
                     >
@@ -85,7 +85,7 @@ export const DashboardToolbar = ({
                          onClick={() => setHasMembersOnly(!hasMembersOnly)}
                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all duration-200 cursor-pointer ${
                               hasMembersOnly
-                                   ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                   ? 'bg-brand-500/15 text-brand-300 border-brand-500/30'
                                    : 'bg-slate-800/40 text-slate-400 border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
                          }`}
                     >
@@ -100,7 +100,7 @@ export const DashboardToolbar = ({
                                    <Popover.Button
                                         className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all duration-200 cursor-pointer ${
                                              sortBy !== 'newest' || open
-                                                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                                  ? 'bg-brand-500/15 text-brand-300 border-brand-500/30'
                                                   : 'bg-slate-800/40 text-slate-400 border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
                                         }`}
                                    >
@@ -127,7 +127,7 @@ export const DashboardToolbar = ({
                                                        }}
                                                        className={`w-full text-left px-3 py-2 text-xs rounded-md transition ${
                                                             sortBy === option.value
-                                                                 ? 'bg-purple-500/15 text-purple-300'
+                                                                 ? 'bg-brand-500/15 text-brand-300'
                                                                  : 'text-slate-300 hover:bg-slate-700/40 hover:text-white'
                                                        }`}
                                                   >

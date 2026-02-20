@@ -92,8 +92,8 @@ const Navbar = () => {
 
      const roleConfig: Record<string, { label: string; classes: string }> = {
           OWNER: { label: t('roles.OWNER'), classes: 'bg-amber-500/15 text-amber-300 border-amber-400/25' },
-          PROJECT_MANAGER: { label: t('roles.PROJECT_MANAGER'), classes: 'bg-purple-500/15 text-purple-300 border-purple-400/25' },
-          CLIENT: { label: t('roles.CLIENT'), classes: 'bg-purple-500/15 text-purple-300 border-purple-400/25' },
+          PROJECT_MANAGER: { label: t('roles.PROJECT_MANAGER'), classes: 'bg-brand-500/15 text-brand-300 border-brand-400/25' },
+          CLIENT: { label: t('roles.CLIENT'), classes: 'bg-brand-500/15 text-brand-300 border-brand-400/25' },
           MEMBER: { label: t('roles.MEMBER'), classes: 'bg-slate-500/15 text-slate-300 border-slate-400/25' },
      };
 
@@ -124,7 +124,7 @@ const Navbar = () => {
                          }}
                          className="flex items-center gap-2.5 cursor-pointer group"
                     >
-                         <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-600/20 group-hover:bg-purple-500 transition-colors">
+                         <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center shadow-lg shadow-brand-600/20 group-hover:bg-brand-500 transition-colors">
                               <Home className="w-4 h-4 text-white" />
                          </div>
                          <span className="text-lg font-bold text-white tracking-tight">NOKAN</span>
@@ -151,7 +151,7 @@ const Navbar = () => {
                                    }}
                                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                                         isActive('/profile')
-                                             ? 'bg-purple-600/10 text-purple-300'
+                                             ? 'bg-brand-600/10 text-brand-300'
                                              : 'text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-800/70'
                                    }`}
                               >
@@ -185,11 +185,11 @@ const Navbar = () => {
                                    <Link key={href} href={href} onClick={() => setSidebarOpen(false)}>
                                         <div
                                              className={`relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                                                  active ? 'bg-purple-600/10 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                                                  active ? 'bg-brand-600/10 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                                              }`}
                                         >
-                                             {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-purple-500" />}
-                                             <Icon className={`w-[18px] h-[18px] ${active ? 'text-purple-400' : 'text-slate-500'}`} />
+                                             {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-brand-500" />}
+                                             <Icon className={`w-[18px] h-[18px] ${active ? 'text-brand-400' : 'text-slate-500'}`} />
                                              <span>{label}</span>
                                         </div>
                                    </Link>
@@ -232,7 +232,7 @@ const Navbar = () => {
                                                        {ch.name || t('common.noName')}
                                                   </span>
                                                   {isUnread && (
-                                                       <span className="ml-auto w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                                                       <span className="ml-auto w-2 h-2 rounded-full bg-brand-500 shrink-0" />
                                                   )}
                                              </button>
                                         );
@@ -278,7 +278,7 @@ const Navbar = () => {
                                                        {name}
                                                   </span>
                                                   {isUnread && (
-                                                       <span className="ml-auto w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                                                       <span className="ml-auto w-2 h-2 rounded-full bg-brand-500 shrink-0" />
                                                   )}
                                              </button>
                                         );

@@ -12,7 +12,7 @@ const BoardViewToggle = ({ viewMode, onViewChange }: BoardViewToggleProps) => {
         onClick={() => onViewChange("columns")}
         className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
           viewMode === "columns"
-            ? "bg-indigo-600 text-white shadow-sm"
+            ? "bg-brand-600 text-white shadow-sm"
             : "text-slate-300 hover:text-white hover:bg-slate-600/50"
         }`}
       >
@@ -23,7 +23,7 @@ const BoardViewToggle = ({ viewMode, onViewChange }: BoardViewToggleProps) => {
         onClick={() => onViewChange("list")}
         className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
           viewMode === "list"
-            ? "bg-indigo-600 text-white shadow-sm"
+            ? "bg-brand-600 text-white shadow-sm"
             : "text-slate-300 hover:text-white hover:bg-slate-600/50"
         }`}
       >

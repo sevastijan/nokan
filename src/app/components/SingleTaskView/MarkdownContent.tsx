@@ -34,9 +34,9 @@ const renderTextWithMentions = (text: string, keyPrefix: string) => {
           result.push(
                <span
                     key={`${keyPrefix}-mention-${match.index}`}
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 rounded-md bg-purple-500/20 text-purple-300 text-sm font-medium"
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 rounded-md bg-brand-500/20 text-brand-300 text-sm font-medium"
                >
-                    <span className="text-purple-400/70">@</span>
+                    <span className="text-brand-400/70">@</span>
                     {match[1]}
                </span>,
           );

@@ -32,7 +32,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
 
      const notificationTypeLabels: Record<string, { label: string; icon?: React.ReactNode }> = useMemo(
           () => ({
-               mention: { label: t('notifications.mention'), icon: <AtSign className="w-3.5 h-3.5 text-purple-400 inline mr-1" /> },
+               mention: { label: t('notifications.mention'), icon: <AtSign className="w-3.5 h-3.5 text-brand-400 inline mr-1" /> },
                task_assigned: { label: t('notifications.taskAssigned') },
                task_unassigned: { label: t('notifications.taskUnassigned') },
                status_changed: { label: t('notifications.statusChanged') },
@@ -41,7 +41,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                due_date_changed: { label: t('notifications.dueDateChanged') },
                collaborator_added: { label: t('notifications.collaboratorAdded') },
                collaborator_removed: { label: t('notifications.collaboratorRemoved') },
-               new_submission: { label: t('notifications.newSubmission'), icon: <Inbox className="w-3.5 h-3.5 text-purple-400 inline mr-1" /> },
+               new_submission: { label: t('notifications.newSubmission'), icon: <Inbox className="w-3.5 h-3.5 text-brand-400 inline mr-1" /> },
           }),
           [t],
      );
@@ -89,7 +89,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                                    <span className="w-px h-3.5 bg-slate-700" />
                                    <button
                                         onClick={() => setShowRead(!showRead)}
-                                        className="text-xs text-purple-400 hover:text-purple-300 cursor-pointer transition-colors"
+                                        className="text-xs text-brand-400 hover:text-brand-300 cursor-pointer transition-colors"
                                    >
                                         {showRead ? t('notifications.hideRead') : t('notifications.showAll')}
                                    </button>
@@ -124,7 +124,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                                                   >
                                                        {/* Unread indicator */}
                                                        <div className="flex-shrink-0 pt-1.5">
-                                                            <div className={`w-1.5 h-1.5 rounded-full ${n.read ? 'bg-transparent' : 'bg-purple-500'}`} />
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${n.read ? 'bg-transparent' : 'bg-brand-500'}`} />
                                                        </div>
 
                                                        {/* Content */}
@@ -139,7 +139,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                                                                            {getBoardName(n.board_id)}
                                                                       </span>
                                                                  )}
-                                                                 {n.task_id && <ExternalLink className="flex-shrink-0 w-3 h-3 text-purple-400/70" />}
+                                                                 {n.task_id && <ExternalLink className="flex-shrink-0 w-3 h-3 text-brand-400/70" />}
                                                             </div>
                                                             <p className="text-xs text-slate-400 mt-0.5 break-words line-clamp-2">{n.message}</p>
                                                             <span className="text-[10px] text-slate-500 mt-1 block">

@@ -46,11 +46,11 @@ export class MentionNode extends DecoratorNode<JSX.Element> {
      decorate(): JSX.Element {
           return (
                <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-purple-500/20 text-purple-300 text-sm font-medium select-none"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-brand-500/20 text-brand-300 text-sm font-medium select-none"
                     contentEditable={false}
                     data-mention={this.__name}
                >
-                    <span className="text-purple-400/70">@</span>
+                    <span className="text-brand-400/70">@</span>
                     {this.__name}
                </span>
           );

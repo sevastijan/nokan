@@ -144,7 +144,7 @@ export default function UsersManagementPage() {
                               placeholder={t('users.searchByNameOrEmail')}
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
-                              className="w-full pl-12 pr-12 py-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-lg"
+                              className="w-full pl-12 pr-12 py-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all shadow-lg"
                          />
                          <AnimatePresence>
                               {searchTerm && (
@@ -169,14 +169,14 @@ export default function UsersManagementPage() {
                                    <div className="flex items-center justify-between mb-6">
                                         <h2 className="text-xl font-semibold text-white flex items-center gap-3">
                                              <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                                                  <Users className="w-6 h-6 text-purple-400" />
+                                                  <Users className="w-6 h-6 text-brand-400" />
                                              </motion.div>
                                              {t('users.clients')}
                                         </h2>
                                         <motion.span
                                              initial={{ scale: 0 }}
                                              animate={{ scale: 1 }}
-                                             className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm border border-purple-400/30"
+                                             className="px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm border border-brand-400/30"
                                         >
                                              {filteredClients.length}
                                         </motion.span>
@@ -195,13 +195,13 @@ export default function UsersManagementPage() {
                                                        onClick={() => setSelectedClientId(client.id)}
                                                        className={`w-full text-left p-4 rounded-xl flex items-center cursor-pointer gap-3 border transition-all ${
                                                             selectedClientId === client.id
-                                                                 ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-500/30'
+                                                                 ? 'bg-brand-600 text-white border-brand-500 shadow-lg shadow-brand-500/30'
                                                                  : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/70 hover:border-slate-600 text-slate-200'
                                                        }`}
                                                   >
                                                        <div
                                                             className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-                                                                 selectedClientId === client.id ? 'bg-white/20' : 'bg-purple-600'
+                                                                 selectedClientId === client.id ? 'bg-white/20' : 'bg-brand-600'
                                                             }`}
                                                        >
                                                             {client.name?.[0]?.toUpperCase() || '?'}
@@ -224,7 +224,7 @@ export default function UsersManagementPage() {
                                         {selectedClient && (
                                              <div className="mb-6 p-5 bg-slate-800 rounded-xl border border-slate-700">
                                                   <div className="flex items-center gap-4 mb-3">
-                                                       <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+                                                       <div className="w-12 h-12 rounded-full bg-brand-600 flex items-center justify-center text-xl font-bold text-white shadow-lg">
                                                             {selectedClient.name?.[0]?.toUpperCase() || '?'}
                                                        </div>
                                                        <div>
@@ -251,11 +251,11 @@ export default function UsersManagementPage() {
                                                   placeholder={t('users.searchBoard')}
                                                   value={boardSearch}
                                                   onChange={(e) => setBoardSearch(e.target.value)}
-                                                  className="w-full pl-11 pr-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                                  className="w-full pl-11 pr-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all"
                                              />
                                         </div>
                                         <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-                                             <Briefcase className="w-6 h-6 text-purple-400" />
+                                             <Briefcase className="w-6 h-6 text-brand-400" />
                                              {t('users.clientBoards')}
                                         </h2>
                                         {loadingAssignments ? (
@@ -306,7 +306,7 @@ export default function UsersManagementPage() {
                                                                       whileTap={{ scale: 0.95 }}
                                                                       onClick={() => handleAssign(board.id)}
                                                                       disabled={isProcessing}
-                                                                      className="px-5 py-2.5 bg-purple-600 cursor-pointer hover:bg-purple-700 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
+                                                                      className="px-5 py-2.5 bg-brand-600 cursor-pointer hover:bg-brand-700 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg flex items-center gap-2"
                                                                  >
                                                                       <UserCheck className="w-4 h-4" />
                                                                       {t('users.assign')}
@@ -335,9 +335,9 @@ export default function UsersManagementPage() {
 
                               <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
                                    <h2 className="text-2xl font-semibold text-white mb-5 flex items-center gap-3">
-                                        <Shield className="w-6 h-6 text-purple-400" />
+                                        <Shield className="w-6 h-6 text-brand-400" />
                                         {t('users.allUsers')}
-                                        <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm border border-purple-400/30">{filteredUsers.length}</span>
+                                        <span className="px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm border border-brand-400/30">{filteredUsers.length}</span>
                                    </h2>
                                    <div className="max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/50 pr-2 space-y-3">
                                         {filteredUsers.length === 0 ? (
@@ -352,7 +352,7 @@ export default function UsersManagementPage() {
                                                        className="flex items-center justify-between cursor-pointer p-4 bg-slate-700/30 rounded-xl border border-slate-600/50 hover:border-slate-500 transition-all"
                                                   >
                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-cyan-500 flex items-center justify-center text-white font-bold">
                                                                  {user.name?.[0]?.toUpperCase() || '?'}
                                                             </div>
                                                             <div>

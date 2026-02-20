@@ -15,8 +15,8 @@ interface TaskTypeSelectorProps {
 }
 
 const COLOR_MAP: Record<string, { border: string; ring: string; bg: string; bgActive: string; text: string; textActive: string }> = {
-  blue: { border: "border-purple-500/50", ring: "ring-purple-500/50", bg: "bg-purple-500/20", bgActive: "bg-purple-500/15", text: "text-purple-400", textActive: "text-purple-300" },
-  purple: { border: "border-purple-500/50", ring: "ring-purple-500/50", bg: "bg-purple-500/20", bgActive: "bg-purple-500/15", text: "text-purple-400", textActive: "text-purple-300" },
+  blue: { border: "border-brand-500/50", ring: "ring-brand-500/50", bg: "bg-brand-500/20", bgActive: "bg-brand-500/15", text: "text-brand-400", textActive: "text-brand-300" },
+  purple: { border: "border-brand-500/50", ring: "ring-brand-500/50", bg: "bg-brand-500/20", bgActive: "bg-brand-500/15", text: "text-brand-400", textActive: "text-brand-300" },
   red: { border: "border-red-500/50", ring: "ring-red-500/50", bg: "bg-red-500/20", bgActive: "bg-red-500/15", text: "text-red-400", textActive: "text-red-300" },
 };
 

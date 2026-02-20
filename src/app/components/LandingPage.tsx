@@ -13,7 +13,7 @@ export default function LandingPage() {
 			<InteractiveGridPattern
 				className="absolute inset-0 bg-slate-950"
 				cellSize={54}
-				glowColor="rgba(168, 85, 247, 0.35)"
+				glowColor="rgba(0, 166, 139, 0.35)"
 				borderColor="rgba(71, 85, 105, 0.15)"
 				proximity={120}
 			>
@@ -34,7 +34,7 @@ export default function LandingPage() {
 									<h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-slate-100 leading-[0.95] tracking-tight">
 										{t('landing.heroTitle1')}
 										<br />
-										<span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-fuchsia-300">
+										<span className="text-transparent bg-clip-text bg-linear-to-r from-brand-400 to-brand-300">
 											{t('landing.heroTitle2')}
 										</span>
 									</h1>
@@ -53,7 +53,7 @@ export default function LandingPage() {
 										<div key={i} className="flex items-start gap-4 group">
 											<span className="text-xs font-mono text-slate-600 mt-1 shrink-0">0{i + 1}</span>
 											<div>
-												<span className="text-sm font-medium text-slate-200 group-hover:text-purple-400 transition-colors">
+												<span className="text-sm font-medium text-slate-200 group-hover:text-brand-400 transition-colors">
 													{f.label}
 												</span>
 												<span className="text-sm text-slate-500 ml-2">

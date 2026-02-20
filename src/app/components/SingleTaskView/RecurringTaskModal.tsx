@@ -50,7 +50,7 @@ const RecurringTaskModal = ({
                >
                     <div className="flex items-center justify-between mb-5">
                          <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                              <FaRedo className="text-purple-400" />
+                              <FaRedo className="text-brand-400" />
                               {t('recurring.title')}
                          </h3>
                          <button onClick={onClose} className="text-slate-400 hover:text-white transition">
@@ -64,7 +64,7 @@ const RecurringTaskModal = ({
                               id="recurring-toggle"
                               checked={isRecurring}
                               onChange={(e) => onToggleRecurring(e.target.checked)}
-                              className="w-5 h-5 text-purple-500 rounded focus:ring-purple-500 cursor-pointer"
+                              className="w-5 h-5 text-brand-500 rounded focus:ring-brand-500 cursor-pointer"
                          />
                          <label htmlFor="recurring-toggle" className="text-white font-medium cursor-pointer">
                               {t('recurring.enableRecurrence')}
@@ -81,12 +81,12 @@ const RecurringTaskModal = ({
                                              min="1"
                                              value={recurrenceInterval}
                                              onChange={(e) => onChangeInterval(parseInt(e.target.value) || 1)}
-                                             className="w-24 px-3 py-2 bg-slate-700 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                             className="w-24 px-3 py-2 bg-slate-700 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                                         />
                                         <select
                                              value={recurrenceType}
                                              onChange={(e) => onChangeType(e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly')}
-                                             className="flex-1 px-4 py-2 bg-slate-700 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                             className="flex-1 px-4 py-2 bg-slate-700 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                                         >
                                              <option value="daily">{t('recurring.day')}</option>
                                              <option value="weekly">{t('recurring.week')}</option>

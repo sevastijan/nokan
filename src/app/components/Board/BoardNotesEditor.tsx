@@ -28,7 +28,7 @@ const editorConfig = {
      namespace: 'BoardNotesEditor',
      theme: {
           root: 'border-none focus:outline-none text-slate-100',
-          link: 'text-purple-400 hover:text-purple-300 underline cursor-pointer',
+          link: 'text-brand-400 hover:text-brand-300 underline cursor-pointer',
           text: {
                bold: 'font-bold',
                italic: 'italic',
@@ -219,7 +219,7 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                               else if (value === 'h1' || value === 'h2' || value === 'h3') formatHeading(value);
                               else if (value === 'quote') formatQuote();
                          }}
-                         className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-purple-500"
+                         className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                          <option value="paragraph">{t('board.normal')}</option>
                          <option value="h1">{t('board.heading1')}</option>
@@ -232,7 +232,7 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                     <select
                          value={fontSize}
                          onChange={(e) => handleFontSizeChange(e.target.value)}
-                         className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-purple-500"
+                         className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-brand-500"
                          title={t('board.fontSize')}
                     >
                          <option value="12px">12px</option>
@@ -252,33 +252,33 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                     {/* Text formatting */}
                     <button
                          onClick={() => formatText('bold')}
-                         className={`p-2 rounded hover:bg-slate-700 transition ${isBold ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-2 rounded hover:bg-slate-700 transition ${isBold ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Bold (Ctrl+B)"
                     >
                          <FiBold className="w-4 h-4" />
                     </button>
                     <button
                          onClick={() => formatText('italic')}
-                         className={`p-2 rounded hover:bg-slate-700 transition ${isItalic ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-2 rounded hover:bg-slate-700 transition ${isItalic ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Italic (Ctrl+I)"
                     >
                          <FiItalic className="w-4 h-4" />
                     </button>
                     <button
                          onClick={() => formatText('underline')}
-                         className={`p-2 rounded hover:bg-slate-700 transition ${isUnderline ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-2 rounded hover:bg-slate-700 transition ${isUnderline ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Underline (Ctrl+U)"
                     >
                          <FiUnderline className="w-4 h-4" />
                     </button>
                     <button
                          onClick={() => formatText('strikethrough')}
-                         className={`p-2 rounded hover:bg-slate-700 transition ${isStrikethrough ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-2 rounded hover:bg-slate-700 transition ${isStrikethrough ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Strikethrough"
                     >
                          <span className="text-lg font-bold">S</span>
                     </button>
-                    <button onClick={() => formatText('code')} className={`p-2 rounded hover:bg-slate-700 transition ${isCode ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`} title="Code">
+                    <button onClick={() => formatText('code')} className={`p-2 rounded hover:bg-slate-700 transition ${isCode ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`} title="Code">
                          <FiCode className="w-4 h-4" />
                     </button>
 
@@ -287,7 +287,7 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                     {/* Link */}
                     <button
                          onClick={insertLink}
-                         className={`p-2 rounded hover:bg-slate-700 transition ${isLink ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-2 rounded hover:bg-slate-700 transition ${isLink ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title={isLink ? 'Remove Link' : 'Insert Link'}
                     >
                          <FiLink className="w-4 h-4" />
@@ -298,14 +298,14 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                     {/* Lists */}
                     <button
                          onClick={formatBulletList}
-                         className={`p-2 rounded hover:bg-slate-700 transition ${blockType === 'bullet' ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-2 rounded hover:bg-slate-700 transition ${blockType === 'bullet' ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Bullet List"
                     >
                          <FiList className="w-4 h-4" />
                     </button>
                     <button
                          onClick={formatNumberedList}
-                         className={`p-2 rounded hover:bg-slate-700 transition ${blockType === 'number' ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-2 rounded hover:bg-slate-700 transition ${blockType === 'number' ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Numbered List"
                     >
                          <span className="text-sm font-bold">1.</span>
@@ -340,7 +340,7 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                     <button
                          onClick={onSave}
                          disabled={isSaving}
-                         className="flex items-center gap-2 px-4 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded transition text-sm font-medium"
+                         className="flex items-center gap-2 px-4 py-1.5 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded transition text-sm font-medium"
                     >
                          <FiSave className="w-4 h-4" />
                          {isSaving ? t('common.saving') : t('common.save')}
@@ -363,10 +363,10 @@ function ToolbarPlugin({ onSave, isSaving }: ToolbarPluginProps) {
                                    }
                               }}
                               placeholder="https://example.com"
-                              className="flex-1 px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              className="flex-1 px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded focus:outline-none focus:ring-2 focus:ring-brand-500"
                               autoFocus
                          />
-                         <button onClick={confirmLink} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition">
+                         <button onClick={confirmLink} className="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm rounded transition">
                               OK
                          </button>
                          <button
@@ -439,7 +439,7 @@ export default function BoardNotesEditor({ initialContent, onSave, isSaving }: B
                     <ToolbarPlugin onSave={handleSave} isSaving={isSaving} />
                     <div className="flex-1 overflow-y-auto relative bg-slate-900/50">
                          <RichTextPlugin
-                              contentEditable={<ContentEditable className="outline-none p-4 min-h-full" style={{ caretColor: '#c084fc' }} />}
+                              contentEditable={<ContentEditable className="outline-none p-4 min-h-full" style={{ caretColor: '#33c4a8' }} />}
                               placeholder={<div className="absolute top-4 left-4 text-slate-500 pointer-events-none">{t('board.notesPlaceholder')}</div>}
                               ErrorBoundary={LexicalErrorBoundary}
                          />

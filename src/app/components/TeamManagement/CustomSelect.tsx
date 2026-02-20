@@ -64,8 +64,8 @@ const CustomSelect = ({ options, value, onChange, isMulti = false, onDropdownTog
                {/* outer toggle button */}
                <button
                     type="button"
-                    className={`relative w-full bg-slate-700/50 border border-slate-600 rounded-xl shadow-sm px-4 py-3 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 transition ${
-                         isOpen ? 'ring-2 ring-purple-500 border-transparent' : 'hover:border-slate-500'
+                    className={`relative w-full bg-slate-700/50 border border-slate-600 rounded-xl shadow-sm px-4 py-3 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
+                         isOpen ? 'ring-2 ring-brand-500 border-transparent' : 'hover:border-slate-500'
                     }`}
                     aria-haspopup="listbox"
                     aria-expanded={isOpen}
@@ -79,7 +79,7 @@ const CustomSelect = ({ options, value, onChange, isMulti = false, onDropdownTog
                                              selectedOptions.map((opt) => (
                                                   <motion.div
                                                        key={opt.value}
-                                                       className="flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-purple-600/20 border border-purple-500/30 rounded-lg px-2 py-1 text-sm"
+                                                       className="flex items-center gap-2 bg-gradient-to-r from-brand-600/20 to-brand-600/20 border border-brand-500/30 rounded-lg px-2 py-1 text-sm"
                                                        initial={{ opacity: 0, scale: 0.8 }}
                                                        animate={{ opacity: 1, scale: 1 }}
                                                        exit={{ opacity: 0, scale: 0.8 }}
@@ -136,7 +136,7 @@ const CustomSelect = ({ options, value, onChange, isMulti = false, onDropdownTog
                                                   <motion.li
                                                        key={opt.value}
                                                        className={`mx-2 rounded-lg cursor-pointer select-none transition-colors duration-200 ${
-                                                            selected ? 'bg-gradient-to-r from-purple-600/20 to-purple-600/20 border border-purple-500/30' : 'hover:bg-slate-700/50'
+                                                            selected ? 'bg-gradient-to-r from-brand-600/20 to-brand-600/20 border border-brand-500/30' : 'hover:bg-slate-700/50'
                                                        }`}
                                                        role="option"
                                                        onClick={() => handleOptionClick(opt.value)}
@@ -156,7 +156,7 @@ const CustomSelect = ({ options, value, onChange, isMulti = false, onDropdownTog
                                                                  <motion.div
                                                                       initial={{ scale: 0 }}
                                                                       animate={{ scale: 1 }}
-                                                                      className="flex items-center justify-center w-6 h-6 bg-gradient-to-r from-purple-600 to-purple-600 rounded-full"
+                                                                      className="flex items-center justify-center w-6 h-6 bg-gradient-to-r from-brand-600 to-brand-600 rounded-full"
                                                                  >
                                                                       <FiCheck className="w-3 h-3 text-white" />
                                                                  </motion.div>

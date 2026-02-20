@@ -75,7 +75,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                               placeholder={t('userTasks.searchTasks')}
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
-                              className="pl-9 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-200 w-full placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+                              className="pl-9 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-200 w-full placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition"
                          />
                     </div>
 
@@ -94,7 +94,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                                         onClick={() => setStatusFilter(status)}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
                                              isActive
-                                                  ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                                                  ? 'bg-brand-500/15 text-brand-300 border border-brand-500/30'
                                                   : 'bg-slate-800/40 text-slate-400 border border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
                                         }`}
                                    >
@@ -126,7 +126,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                                         onClick={() => setTypeFilter(type)}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
                                              isActive
-                                                  ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                                                  ? 'bg-brand-500/15 text-brand-300 border border-brand-500/30'
                                                   : 'bg-slate-800/40 text-slate-400 border border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
                                         }`}
                                    >
@@ -145,7 +145,7 @@ export const UserTaskList = ({ tasks, isLoading, onToggleComplete }: UserTaskLis
                                         <Popover.Button
                                              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border transition cursor-pointer ${
                                                   priorityFilter || open
-                                                       ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                                       ? 'bg-brand-500/15 text-brand-300 border-brand-500/30'
                                                        : 'bg-slate-800/40 text-slate-400 border-slate-700/30 hover:text-slate-200 hover:border-slate-600/50'
                                              }`}
                                         >

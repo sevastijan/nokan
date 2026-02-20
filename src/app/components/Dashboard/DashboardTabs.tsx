@@ -44,7 +44,7 @@ export const DashboardTabs = ({ activeTab, onTabChange, boardsCount, tasksCount 
                               {isActive && (
                                    <motion.div
                                         layoutId="tab-indicator"
-                                        className="absolute inset-0 bg-slate-700/80 border border-slate-600/50 rounded-lg shadow-lg shadow-purple-500/5"
+                                        className="absolute inset-0 bg-slate-700/80 border border-slate-600/50 rounded-lg shadow-lg shadow-brand-500/5"
                                         transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
                                    />
                               )}
@@ -54,7 +54,7 @@ export const DashboardTabs = ({ activeTab, onTabChange, boardsCount, tasksCount 
                                    {count > 0 && (
                                         <span
                                              className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                                  isActive ? 'bg-purple-500/20 text-purple-300' : 'bg-slate-700/60 text-slate-400'
+                                                  isActive ? 'bg-brand-500/20 text-brand-300' : 'bg-slate-700/60 text-slate-400'
                                              }`}
                                         >
                                              {count}

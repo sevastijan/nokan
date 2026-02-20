@@ -112,7 +112,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                          bg-slate-700/50 border rounded-lg text-white
                          transition-all duration-200
                          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500'}
-                         ${isOpen ? 'border-purple-500/50 ring-2 ring-purple-500/50 bg-slate-700/70' : 'border-slate-600/50'}
+                         ${isOpen ? 'border-brand-500/50 ring-2 ring-brand-500/50 bg-slate-700/70' : 'border-slate-600/50'}
                     `}
                >
                     <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -145,7 +145,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                         className={`
                                              group w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left
                                              transition-all duration-150
-                                             ${selectedStatusId === status.id ? 'bg-purple-500/15' : 'hover:bg-slate-700/50'}
+                                             ${selectedStatusId === status.id ? 'bg-brand-500/15' : 'hover:bg-slate-700/50'}
                                         `}
                                    >
                                         <div className="flex items-center gap-2.5">
@@ -177,7 +177,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                              onChange={(e) => setNewLabel(e.target.value)}
                                              onKeyDown={(e) => e.key === 'Enter' && handleAddStatus()}
                                              placeholder={t('status.statusName')}
-                                             className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                                             className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
                                              autoFocus
                                         />
                                         <div className="flex items-center gap-3">
@@ -193,7 +193,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                                         <div className="flex gap-2">
                                              <button
                                                   onClick={handleAddStatus}
-                                                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
+                                                  className="flex-1 px-3 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-lg transition-colors"
                                              >
                                                   {t('common.add')}
                                              </button>
@@ -211,7 +211,7 @@ const StatusSelector = ({ statuses: initialStatuses, selectedStatusId, onChange,
                               ) : (
                                    <button
                                         onClick={() => setIsAdding(true)}
-                                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-purple-400 hover:bg-slate-700/50 transition-all duration-150 border-t border-slate-700/30"
+                                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-brand-400 hover:bg-slate-700/50 transition-all duration-150 border-t border-slate-700/30"
                                    >
                                         <FaPlus className="w-3.5 h-3.5" />
                                         <span className="text-sm font-medium">{t('status.addNew')}</span>

@@ -27,8 +27,8 @@ const Loader = ({ text }: LoaderProps) => {
           <div className="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 select-none animate-[fadeIn_0.3s_ease-out]">
                {/* Ambient background glow */}
                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-purple-500/[0.03] blur-3xl" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-indigo-500/[0.05] blur-2xl animate-pulse" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-brand-500/[0.03] blur-3xl" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-brand-500/[0.05] blur-2xl animate-pulse" />
                </div>
 
                <div className="relative flex flex-col items-center gap-8">
@@ -51,8 +51,8 @@ const Loader = ({ text }: LoaderProps) => {
                               />
                               <defs>
                                    <linearGradient id="loader-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#9837FA" stopOpacity="1" />
-                                        <stop offset="100%" stopColor="#9837FA" stopOpacity="0" />
+                                        <stop offset="0%" stopColor="#00a68b" stopOpacity="1" />
+                                        <stop offset="100%" stopColor="#00a68b" stopOpacity="0" />
                                    </linearGradient>
                               </defs>
                          </svg>
@@ -75,15 +75,15 @@ const Loader = ({ text }: LoaderProps) => {
                               />
                               <defs>
                                    <linearGradient id="loader-gradient-inner" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#6366f1" stopOpacity="0.8" />
-                                        <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                                        <stop offset="0%" stopColor="#00a68b" stopOpacity="0.8" />
+                                        <stop offset="100%" stopColor="#00a68b" stopOpacity="0" />
                                    </linearGradient>
                               </defs>
                          </svg>
 
                          {/* Center dot pulse */}
                          <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-2 h-2 rounded-full bg-purple-400/80 animate-pulse" />
+                              <div className="w-2 h-2 rounded-full bg-brand-400/80 animate-pulse" />
                          </div>
                     </div>
 

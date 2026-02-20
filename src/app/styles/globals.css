@@ -89,6 +89,19 @@ button {
 }
 
 @theme inline {
+     /* Brand color scale – change #00a68b here to rebrand globally */
+     --color-brand-50: #f0fdf9;
+     --color-brand-100: #ccfbee;
+     --color-brand-200: #99f6de;
+     --color-brand-300: #5ceac6;
+     --color-brand-400: #2ad4ab;
+     --color-brand-500: #00a68b;
+     --color-brand-600: #008570;
+     --color-brand-700: #006b5a;
+     --color-brand-800: #055347;
+     --color-brand-900: #043d34;
+     --color-brand-950: #022520;
+
      --radius-sm: calc(var(--radius) - 4px);
      --radius-md: calc(var(--radius) - 2px);
      --radius-lg: var(--radius);

@@ -21,7 +21,7 @@ const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSection
                     <div className="w-1 h-4 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />
                     <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('taskDates.dates')}</h3>
                     {duration !== null && (
-                         <span className="ml-auto flex items-center gap-1.5 text-xs bg-purple-500/10 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/20">
+                         <span className="ml-auto flex items-center gap-1.5 text-xs bg-brand-500/10 text-brand-300 px-2.5 py-1 rounded-full border border-brand-500/20">
                               <FiClock className="w-3 h-3" />
                               {duration} {t('common.day', { count: duration })}
                          </span>
@@ -39,7 +39,7 @@ const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSection
                          <input
                               type="date"
                               className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white
-                                        focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50
+                                        focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50
                                         transition-all duration-200 hover:border-slate-500
                                         [&::-webkit-calendar-picker-indicator]:brightness-0
                                         [&::-webkit-calendar-picker-indicator]:invert
@@ -65,7 +65,7 @@ const TaskDatesSection = ({ startDate, endDate, onDateChange }: TaskDatesSection
                          <input
                               type="date"
                               className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white
-                                        focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50
+                                        focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50
                                         transition-all duration-200 hover:border-slate-500
                                         [&::-webkit-calendar-picker-indicator]:brightness-0
                                         [&::-webkit-calendar-picker-indicator]:invert

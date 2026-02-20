@@ -15,8 +15,8 @@ export const DashboardStats = ({ totalBoards, totalTasks, totalMembers }: Dashbo
      return (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-purple-500/15">
-                         <LayoutDashboard className="w-4.5 h-4.5 text-purple-400" />
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-brand-500/15">
+                         <LayoutDashboard className="w-4.5 h-4.5 text-brand-400" />
                     </div>
                     <div>
                          <p className="text-xs text-slate-400">{t('dashboard.boards')}</p>
@@ -35,8 +35,8 @@ export const DashboardStats = ({ totalBoards, totalTasks, totalMembers }: Dashbo
                </div>
 
                <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-violet-500/15">
-                         <Users className="w-4.5 h-4.5 text-violet-400" />
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-brand-500/15">
+                         <Users className="w-4.5 h-4.5 text-brand-400" />
                     </div>
                     <div>
                          <p className="text-xs text-slate-400">{t('dashboard.members')}</p>

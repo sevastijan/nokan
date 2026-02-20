@@ -132,7 +132,7 @@ const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
                                         <div className="col-span-4 flex items-center gap-3 min-w-0">
                                              <div
                                                   className={`w-2 h-2 rounded-full shrink-0 ${
-                                                       task.completed ? 'bg-green-500' : task.type === 'story' ? 'bg-purple-500' : 'bg-purple-500'
+                                                       task.completed ? 'bg-green-500' : task.type === 'story' ? 'bg-brand-500' : 'bg-brand-500'
                                                   }`}
                                              />
                                              <span className="text-slate-200 font-medium truncate">{task.title}</span>
@@ -196,7 +196,7 @@ const ListView = ({ columns, onOpenTaskDetail, priorities }: ListViewProps) => {
                                         <div className="flex items-start gap-3">
                                              <div
                                                   className={`w-2 h-2 rounded-full shrink-0 mt-2 ${
-                                                       task.completed ? 'bg-green-500' : task.type === 'story' ? 'bg-purple-500' : 'bg-purple-500'
+                                                       task.completed ? 'bg-green-500' : task.type === 'story' ? 'bg-brand-500' : 'bg-brand-500'
                                                   }`}
                                              />
                                              <div className="flex-1 min-w-0">

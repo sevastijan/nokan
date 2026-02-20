@@ -91,7 +91,7 @@ const ActionFooter = ({ isNewTask, hasUnsavedChanges, isSaving, onSave, onClose,
                                              transition-all duration-200 shadow-lg
                                              ${
                                                   canSave && !isSaving
-                                                       ? 'bg-gradient-to-r from-purple-600 to-purple-600 hover:from-purple-500 hover:to-purple-500 text-white shadow-purple-500/25 border border-purple-500/30'
+                                                       ? 'bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-500 hover:to-brand-500 text-white shadow-brand-500/25 border border-brand-500/30'
                                                        : 'bg-slate-700 text-slate-400 cursor-not-allowed border border-slate-600'
                                              }
                                         `}

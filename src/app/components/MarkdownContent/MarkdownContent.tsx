@@ -11,12 +11,12 @@ interface MarkdownContentProps {
 
 // Mention component - highlighted @username
 const Mention = ({ name }: { name: string }) => (
-     <span className="inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-800 ring-1 ring-inset ring-purple-700/10">@{name}</span>
+     <span className="inline-flex items-center rounded-md bg-brand-100 px-2 py-1 text-xs font-semibold text-brand-800 ring-1 ring-inset ring-brand-700/10">@{name}</span>
 );
 
 const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {
      return (
-          <div className="prose prose-sm max-w-none prose-invert prose-headings:text-gray-100 prose-p:text-gray-300 prose-a:text-purple-400 prose-a:underline hover:prose-a:text-purple-300 prose-strong:text-gray-100 prose-em:text-gray-200 prose-code:text-purple-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:p-0 prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400 prose-li:text-gray-300 prose-table:text-gray-300">
+          <div className="prose prose-sm max-w-none prose-invert prose-headings:text-gray-100 prose-p:text-gray-300 prose-a:text-brand-400 prose-a:underline hover:prose-a:text-brand-300 prose-strong:text-gray-100 prose-em:text-gray-200 prose-code:text-brand-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:p-0 prose-blockquote:border-l-brand-500 prose-blockquote:text-gray-400 prose-li:text-gray-300 prose-table:text-gray-300">
                <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkBreaks]}
                     components={{
@@ -37,7 +37,7 @@ const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {
 
                          // Links open in new tab
                          a: (props) => (
-                              <a href={props.href || '#'} target="_blank" rel="noopener noreferrer" className="text-purple-400 underline hover:text-purple-300 transition">
+                              <a href={props.href || '#'} target="_blank" rel="noopener noreferrer" className="text-brand-400 underline hover:text-brand-300 transition">
                                    {props.children}
                               </a>
                          ),
@@ -45,7 +45,7 @@ const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {
                          // Override text elements to inject mention highlighting
                          p: ({ children }) => <p className="mb-3">{renderWithMentions(children)}</p>,
                          li: ({ children }) => <li className="ml-6 mb-1">{renderWithMentions(children)}</li>,
-                         blockquote: ({ children }) => <blockquote className="border-l-4 border-purple-500 pl-4 italic my-4">{renderWithMentions(children)}</blockquote>,
+                         blockquote: ({ children }) => <blockquote className="border-l-4 border-brand-500 pl-4 italic my-4">{renderWithMentions(children)}</blockquote>,
                          h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-3">{renderWithMentions(children)}</h1>,
                          h2: ({ children }) => <h2 className="text-xl font-bold mt-5 mb-2">{renderWithMentions(children)}</h2>,
                          h3: ({ children }) => <h3 className="text-lg font-bold mt-4 mb-2">{renderWithMentions(children)}</h3>,

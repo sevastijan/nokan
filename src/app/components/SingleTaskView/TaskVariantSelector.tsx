@@ -29,8 +29,8 @@ const TaskVariantSelector = ({ selectedType, onChange, large }: TaskVariantSelec
                description: t('taskVariant.newTaskDesc'),
                icon: <FaCheckSquare className="w-4 h-4" />,
                iconLarge: <FaCheckSquare className="w-8 h-8" />,
-               activeClasses: 'border-purple-500/60 bg-purple-500/15 text-purple-300',
-               activeBg: 'bg-purple-500/20',
+               activeClasses: 'border-brand-500/60 bg-brand-500/15 text-brand-300',
+               activeBg: 'bg-brand-500/20',
           },
           {
                value: 'story',
@@ -38,8 +38,8 @@ const TaskVariantSelector = ({ selectedType, onChange, large }: TaskVariantSelec
                description: t('taskVariant.storyDesc'),
                icon: <FaLayerGroup className="w-4 h-4" />,
                iconLarge: <FaLayerGroup className="w-8 h-8" />,
-               activeClasses: 'border-purple-500/60 bg-purple-500/15 text-purple-300',
-               activeBg: 'bg-purple-500/20',
+               activeClasses: 'border-brand-500/60 bg-brand-500/15 text-brand-300',
+               activeBg: 'bg-brand-500/20',
           },
           {
                value: 'bug',
@@ -73,7 +73,7 @@ const TaskVariantSelector = ({ selectedType, onChange, large }: TaskVariantSelec
                                         p-5 sm:p-8 rounded-2xl border-2 outline-none
                                         sm:h-52
                                         transition-colors duration-200
-                                        focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 focus-visible:ring-purple-500
+                                        focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 focus-visible:ring-brand-500
                                         ${isActive
                                              ? `${variant.activeClasses} shadow-lg`
                                              : 'border-slate-700/50 bg-slate-800/30 text-slate-400 hover:border-slate-600 hover:bg-slate-700/30'

@@ -201,7 +201,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                               {isSubtask ? (
                                    <FiCornerDownRight className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
                               ) : isStory ? (
-                                   <FaLayerGroup className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                                   <FaLayerGroup className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
                               ) : (
                                    <FiCheckSquare className={`w-4 h-4 shrink-0 mt-0.5 ${isCompleted ? 'text-green-500' : 'text-slate-500'}`} />
                               )}
@@ -279,7 +279,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                                             size={24}
                                                             className={`
                                                                  transition-all duration-150
-                                                                 ${assignee.id === activeFilterAssigneeId ? 'ring-2 ring-purple-500' : 'border border-slate-700'}
+                                                                 ${assignee.id === activeFilterAssigneeId ? 'ring-2 ring-brand-500' : 'border border-slate-700'}
                                                             `}
                                                        />
                                                   </button>
@@ -295,7 +295,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                                             w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center
                                                             text-[10px] text-slate-300 font-medium
                                                             focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
-                                                            ${isFilteredByAnyAssignee ? 'ring-2 ring-purple-500' : 'border border-slate-600'}
+                                                            ${isFilteredByAnyAssignee ? 'ring-2 ring-brand-500' : 'border border-slate-600'}
                                                        `}
                                                        title="Filtruj przypisanych"
                                                   >

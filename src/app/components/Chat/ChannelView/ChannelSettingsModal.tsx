@@ -111,13 +111,13 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 												type="text"
 												value={channelName}
 												onChange={(e) => setChannelName(e.target.value)}
-												className="flex-1 px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+												className="flex-1 px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50"
 												placeholder={t('chat.channelName')}
 											/>
 											<button
 												onClick={handleRename}
 												disabled={renaming || !channelName.trim() || channelName.trim() === channel.name}
-												className="px-3 py-2 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shrink-0"
+												className="px-3 py-2 rounded-lg text-sm font-medium bg-brand-600 text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shrink-0"
 											>
 												{renaming ? '...' : t('common.save')}
 											</button>
@@ -183,7 +183,7 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 												placeholder={t('chat.searchUsers')}
 												value={search}
 												onChange={(e) => setSearch(e.target.value)}
-												className="w-full pl-9 pr-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+												className="w-full pl-9 pr-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50"
 											/>
 										</div>
 										<div className="mt-2 max-h-40 overflow-y-auto space-y-1">
@@ -203,7 +203,7 @@ const ChannelSettingsModal = ({ channel, members, currentUserId, onClose }: Chan
 															<p className="text-sm font-medium text-white truncate">{displayName}</p>
 															<p className="text-xs text-slate-500 truncate">{user.email}</p>
 														</div>
-														<span className="text-xs text-purple-400 shrink-0">{t('common.add')}</span>
+														<span className="text-xs text-brand-400 shrink-0">{t('common.add')}</span>
 													</button>
 												);
 											})}

@@ -14,11 +14,11 @@ const customSelectStyles: StylesConfig<BoardOption, true> = {
      control: (base, state) => ({
           ...base,
           backgroundColor: '#1e293b',
-          borderColor: state.isFocused ? '#8b5cf6' : '#475569',
+          borderColor: state.isFocused ? '#00a68b' : '#475569',
           borderRadius: '12px',
           minHeight: '48px',
-          boxShadow: state.isFocused ? '0 0 0 1px #8b5cf6' : 'none',
-          '&:hover': { borderColor: '#8b5cf6' },
+          boxShadow: state.isFocused ? '0 0 0 1px #00a68b' : 'none',
+          '&:hover': { borderColor: '#00a68b' },
      }),
      placeholder: (base) => ({
           ...base,
@@ -170,10 +170,10 @@ export default function TeamFormModal({
                                    transition={{ duration: 0.25 }}
                               >
                                    {/* Header */}
-                                   <div className="bg-gradient-to-r from-purple-600/20 to-purple-600/20 px-6 py-4 border-b border-slate-700/50">
+                                   <div className="bg-gradient-to-r from-brand-600/20 to-brand-600/20 px-6 py-4 border-b border-slate-700/50">
                                         <div className="flex items-center justify-between">
                                              <div className="flex items-center space-x-3">
-                                                  <div className="p-2 bg-gradient-to-r from-purple-600 to-purple-600 rounded-xl">
+                                                  <div className="p-2 bg-gradient-to-r from-brand-600 to-brand-600 rounded-xl">
                                                        <FiUsers className="w-5 h-5 text-white" />
                                                   </div>
                                                   <div>
@@ -192,7 +192,7 @@ export default function TeamFormModal({
                                         {/* Boards */}
                                         <div className="space-y-2">
                                              <label className="flex items-center gap-2 text-sm font-medium text-white">
-                                                  <FiSettings className="w-4 h-4 text-purple-400" />
+                                                  <FiSettings className="w-4 h-4 text-brand-400" />
                                                   {t('teams.boardsTab')}
                                              </label>
                                              <Select<BoardOption, true>
@@ -211,7 +211,7 @@ export default function TeamFormModal({
                                         {/* Team Name */}
                                         <div className="space-y-2">
                                              <label className="flex items-center gap-2 text-sm font-medium text-white">
-                                                  <FiUsers className="w-4 h-4 text-purple-400" />
+                                                  <FiUsers className="w-4 h-4 text-brand-400" />
                                                   {t('teams.teamName')}
                                              </label>
                                              <input
@@ -219,7 +219,7 @@ export default function TeamFormModal({
                                                   placeholder={t('teams.enterTeamName')}
                                                   value={editingTeamId ? editedTeamName : newTeamName}
                                                   onChange={handleNameChange}
-                                                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                                                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
                                              />
                                         </div>
 
@@ -241,7 +241,7 @@ export default function TeamFormModal({
                                         <button
                                              onClick={onSubmit}
                                              disabled={disableSubmit}
-                                             className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-purple-600 hover:from-purple-700 hover:to-purple-700 text-white font-medium rounded-xl flex items-center gap-2 disabled:opacity-50"
+                                             className="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-700 hover:to-brand-700 text-white font-medium rounded-xl flex items-center gap-2 disabled:opacity-50"
                                         >
                                              {isCreatingTeam ? (
                                                   <>

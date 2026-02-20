@@ -39,7 +39,7 @@ import type { User } from '@/app/types/globalTypes';
    ────────────────────────────────────────────── */
 const BOARD_COLORS = [
      { bg: 'bg-blue-500/20', border: 'border-blue-500/40', dot: 'bg-blue-500', bar: 'from-blue-600/80 to-blue-500/60', text: 'text-blue-400' },
-     { bg: 'bg-violet-500/20', border: 'border-violet-500/40', dot: 'bg-violet-500', bar: 'from-violet-600/80 to-violet-500/60', text: 'text-violet-400' },
+     { bg: 'bg-brand-500/20', border: 'border-brand-500/40', dot: 'bg-brand-500', bar: 'from-brand-600/80 to-brand-500/60', text: 'text-brand-400' },
      { bg: 'bg-emerald-500/20', border: 'border-emerald-500/40', dot: 'bg-emerald-500', bar: 'from-emerald-600/80 to-emerald-500/60', text: 'text-emerald-400' },
      { bg: 'bg-amber-500/20', border: 'border-amber-500/40', dot: 'bg-amber-500', bar: 'from-amber-600/80 to-amber-500/60', text: 'text-amber-400' },
      { bg: 'bg-rose-500/20', border: 'border-rose-500/40', dot: 'bg-rose-500', bar: 'from-rose-600/80 to-rose-500/60', text: 'text-rose-400' },
@@ -456,7 +456,7 @@ const Calendar = () => {
 
                                    <button
                                         onClick={goToToday}
-                                        className="ml-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30 transition-colors"
+                                        className="ml-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-brand-600/20 text-brand-400 hover:bg-brand-600/30 border border-brand-500/30 transition-colors"
                                    >
                                         {t('calendar.today')}
                                    </button>
@@ -533,14 +533,14 @@ const Calendar = () => {
                                                             key={day.toISOString()}
                                                             className={`relative border-b border-r border-slate-700/30 p-1.5 cursor-pointer group transition-colors ${
                                                                  inMonth ? 'bg-slate-800/40 hover:bg-slate-700/40' : 'bg-slate-800/20'
-                                                            } ${isToday ? 'ring-1 ring-inset ring-purple-500/50' : ''}`}
+                                                            } ${isToday ? 'ring-1 ring-inset ring-brand-500/50' : ''}`}
                                                             onClick={(e) => handleDateClick(day, e)}
                                                        >
                                                             <div className="flex items-center justify-between">
                                                                  <span
                                                                       className={`inline-flex items-center justify-center text-xs font-medium w-6 h-6 rounded-full ${
                                                                            isToday
-                                                                                ? 'bg-purple-600 text-white'
+                                                                                ? 'bg-brand-600 text-white'
                                                                                 : inMonth
                                                                                   ? 'text-slate-300'
                                                                                   : 'text-slate-600'

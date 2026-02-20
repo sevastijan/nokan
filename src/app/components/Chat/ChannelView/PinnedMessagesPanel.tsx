@@ -68,7 +68,7 @@ const PinnedMessagesPanel = ({ channelId, onClose }: PinnedMessagesPanelProps) =
 							<div className="overflow-y-auto flex-1 py-2">
 								{isLoading ? (
 									<div className="flex items-center justify-center py-12">
-										<div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+										<div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
 									</div>
 								) : pinnedMessages.length === 0 ? (
 									<div className="flex flex-col items-center justify-center py-12 text-center px-5">

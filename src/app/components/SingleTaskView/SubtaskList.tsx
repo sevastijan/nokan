@@ -121,7 +121,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                {/* Header with progress */}
                <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                         <FaLayerGroup className="w-4 h-4 text-purple-400" />
+                         <FaLayerGroup className="w-4 h-4 text-brand-400" />
                          <span className="text-sm font-medium text-slate-200">{t('subtasks.title')}</span>
                          <span className="text-xs text-slate-400">
                               ({completedCount}/{totalCount})
@@ -134,7 +134,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                {totalCount > 0 && (
                     <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mb-3">
                          <motion.div
-                              className="h-full bg-linear-to-r from-purple-500 to-green-500 rounded-full"
+                              className="h-full bg-linear-to-r from-brand-500 to-green-500 rounded-full"
                               initial={{ width: 0 }}
                               animate={{ width: `${progressPercent}%` }}
                               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -187,12 +187,12 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                                         placeholder={t('subtasks.enterTitle')}
                                         autoFocus
                                         disabled={isAdding}
-                                        className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:opacity-50"
+                                        className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm placeholder:text-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
                                    />
                                    <button
                                         onClick={handleAddSubtask}
                                         disabled={!newSubtaskTitle.trim() || isAdding}
-                                        className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors duration-150"
+                                        className="px-3 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-600/50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors duration-150"
                                    >
                                         {isAdding ? t('subtasks.adding') : t('common.add')}
                                    </button>
@@ -213,7 +213,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               onClick={() => setIsAddingNew(true)}
-                              className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-purple-400 hover:bg-slate-700/50 rounded-lg transition-colors duration-150"
+                              className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-brand-400 hover:bg-slate-700/50 rounded-lg transition-colors duration-150"
                          >
                               <FaPlus className="w-3 h-3" />
                               <span>{t('subtasks.addSubtask')}</span>

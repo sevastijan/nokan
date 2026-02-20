@@ -37,7 +37,7 @@ const TaskPropertiesGrid = ({ selectedAssignees, availableUsers, onAssigneesChan
           <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4 space-y-4">
                {/* Section Header */}
                <div className="flex items-center gap-2 pb-2 border-b border-slate-700/30">
-                    <div className="w-1 h-4 bg-gradient-to-b from-purple-500 to-purple-500 rounded-full" />
+                    <div className="w-1 h-4 bg-gradient-to-b from-brand-500 to-brand-500 rounded-full" />
                     <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Właściwości</h3>
                </div>
 
@@ -47,7 +47,7 @@ const TaskPropertiesGrid = ({ selectedAssignees, availableUsers, onAssigneesChan
                     {!hideAssignees && (
                          <div className="md:col-span-1">
                               <div className="flex items-center gap-2 mb-2">
-                                   <FiUsers className="w-3.5 h-3.5 text-purple-400" />
+                                   <FiUsers className="w-3.5 h-3.5 text-brand-400" />
                                    <span className="text-xs text-slate-400">Przypisani</span>
                               </div>
                               <UserSelector selectedUsers={selectedAssignees} availableUsers={availableUsers} onUsersChange={onAssigneesChange} label="" />

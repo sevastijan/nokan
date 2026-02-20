@@ -174,7 +174,7 @@ export function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }:
                               else if (value === 'h1' || value === 'h2' || value === 'h3') formatHeading(value as 'h1' | 'h2' | 'h3');
                               else if (value === 'quote') formatQuote();
                          }}
-                         className="px-2 py-1 bg-slate-700 text-slate-200 text-xs rounded hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-purple-500"
+                         className="px-2 py-1 bg-slate-700 text-slate-200 text-xs rounded hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                          <option value="paragraph">Normal</option>
                          <option value="h1">Heading 1</option>
@@ -185,24 +185,24 @@ export function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }:
 
                     <div className="w-px h-5 bg-slate-700 mx-1" />
 
-                    <button onClick={() => formatText('bold')} className={`p-1.5 rounded hover:bg-slate-700 transition ${isBold ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`} title="Bold">
+                    <button onClick={() => formatText('bold')} className={`p-1.5 rounded hover:bg-slate-700 transition ${isBold ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`} title="Bold">
                          <FiBold className="w-3.5 h-3.5" />
                     </button>
                     <button
                          onClick={() => formatText('italic')}
-                         className={`p-1.5 rounded hover:bg-slate-700 transition ${isItalic ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-1.5 rounded hover:bg-slate-700 transition ${isItalic ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Italic"
                     >
                          <FiItalic className="w-3.5 h-3.5" />
                     </button>
                     <button
                          onClick={() => formatText('underline')}
-                         className={`p-1.5 rounded hover:bg-slate-700 transition ${isUnderline ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-1.5 rounded hover:bg-slate-700 transition ${isUnderline ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Underline"
                     >
                          <FiUnderline className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => formatText('code')} className={`p-1.5 rounded hover:bg-slate-700 transition ${isCode ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`} title="Code">
+                    <button onClick={() => formatText('code')} className={`p-1.5 rounded hover:bg-slate-700 transition ${isCode ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`} title="Code">
                          <FiCode className="w-3.5 h-3.5" />
                     </button>
 
@@ -210,7 +210,7 @@ export function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }:
 
                     <button
                          onClick={insertLink}
-                         className={`p-1.5 rounded hover:bg-slate-700 transition ${isLink ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-1.5 rounded hover:bg-slate-700 transition ${isLink ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title={isLink ? 'Remove Link' : 'Insert Link'}
                     >
                          <FiLink className="w-3.5 h-3.5" />
@@ -229,14 +229,14 @@ export function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }:
 
                     <button
                          onClick={formatBulletList}
-                         className={`p-1.5 rounded hover:bg-slate-700 transition ${blockType === 'bullet' ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-1.5 rounded hover:bg-slate-700 transition ${blockType === 'bullet' ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Bullet List"
                     >
                          <FiList className="w-3.5 h-3.5" />
                     </button>
                     <button
                          onClick={formatNumberedList}
-                         className={`p-1.5 rounded hover:bg-slate-700 transition ${blockType === 'number' ? 'bg-slate-700 text-purple-400' : 'text-slate-300'}`}
+                         className={`p-1.5 rounded hover:bg-slate-700 transition ${blockType === 'number' ? 'bg-slate-700 text-brand-400' : 'text-slate-300'}`}
                          title="Numbered List"
                     >
                          <span className="text-xs font-bold">1.</span>
@@ -268,10 +268,10 @@ export function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }:
                                    }
                               }}
                               placeholder="example.com lub https://example.com"
-                              className="flex-1 px-2 py-1 bg-slate-700 text-slate-200 text-xs rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              className="flex-1 px-2 py-1 bg-slate-700 text-slate-200 text-xs rounded focus:outline-none focus:ring-2 focus:ring-brand-500"
                               autoFocus
                          />
-                         <button onClick={confirmLink} className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition">
+                         <button onClick={confirmLink} className="px-2 py-1 bg-brand-600 hover:bg-brand-700 text-white text-xs rounded transition">
                               OK
                          </button>
                          <button

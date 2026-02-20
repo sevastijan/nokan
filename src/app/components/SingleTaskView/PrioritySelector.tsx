@@ -159,7 +159,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                          w-full flex items-center justify-between px-3 py-2 min-h-[46px]
                          bg-slate-700/50 border rounded-lg text-slate-200
                          transition-all duration-200
-                         ${isOpen ? 'border-purple-500/50 ring-2 ring-purple-500/50 bg-slate-700/70' : 'border-slate-600/50 hover:border-slate-500'}
+                         ${isOpen ? 'border-brand-500/50 ring-2 ring-brand-500/50 bg-slate-700/70' : 'border-slate-600/50 hover:border-slate-500'}
                     `}
                >
                     <div className="flex items-center gap-2.5 truncate">
@@ -257,7 +257,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                                             className={`
                           w-full flex items-center gap-2 px-3 py-2 text-left 
                           hover:bg-slate-700 transition-colors duration-150
-                          ${isSel ? 'bg-purple-600/30' : ''}
+                          ${isSel ? 'bg-brand-600/30' : ''}
                         `}
                                                        >
                                                             <FaFlag className="w-4 h-4" style={{ color: p.color }} />
@@ -270,7 +270,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                                                       handleStartEdit(p);
                                                                  }}
                                                                  disabled={operationLoading}
-                                                                 className="p-1 text-purple-400 hover:text-purple-300 disabled:opacity-50"
+                                                                 className="p-1 text-brand-400 hover:text-brand-300 disabled:opacity-50"
                                                             >
                                                                  <FaEdit className="w-3 h-3" />
                                                             </button>
@@ -335,7 +335,7 @@ const PrioritySelector = ({ selectedPriority, onChange, onDropdownToggle, priori
                                         type="button"
                                         onClick={handleStartAdd}
                                         disabled={operationLoading}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-purple-400 hover:bg-slate-700 hover:text-purple-300 transition-colors duration-150"
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-brand-400 hover:bg-slate-700 hover:text-brand-300 transition-colors duration-150"
                                    >
                                         <FaPlus className="w-4 h-4" />
                                         <span className="text-sm">{t('priority.addNewPriority')}</span>

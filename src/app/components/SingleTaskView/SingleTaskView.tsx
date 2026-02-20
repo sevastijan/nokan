@@ -619,7 +619,7 @@ const SingleTaskView = ({
                                         <div className="relative z-30">
                                              <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                                   <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                       <div className="w-1 h-4 bg-linear-to-b from-purple-500 to-cyan-500 rounded-full" />
+                                                       <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-cyan-500 rounded-full" />
                                                        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('taskMeta.type')}</h3>
                                                   </div>
                                                   <TaskTypeSelector selectedType={taskType} onChange={handleTypeChange} disabled={!canChangeType} />
@@ -665,7 +665,7 @@ const SingleTaskView = ({
                                    {/* Description Section */}
                                    <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                         <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                             <div className="w-1 h-4 bg-linear-to-b from-pink-500 to-purple-500 rounded-full" />
+                                             <div className="w-1 h-4 bg-linear-to-b from-pink-500 to-brand-500 rounded-full" />
                                              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.description')}</h3>
                                         </div>
                                         <TaskDescription
@@ -681,9 +681,9 @@ const SingleTaskView = ({
                                    {isStory && task?.id && !isNewTask && (
                                         <div className="relative z-5 bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-linear-to-b from-indigo-500 to-violet-500 rounded-full" />
+                                                  <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-brand-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.subtasks')}</h3>
-                                                  <span className="ml-auto text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">{subtasks.length}</span>
+                                                  <span className="ml-auto text-xs bg-brand-500/20 text-brand-300 px-2 py-0.5 rounded-full">{subtasks.length}</span>
                                              </div>
                                              <SubtaskList
                                                   storyId={task.id}
@@ -701,13 +701,13 @@ const SingleTaskView = ({
 
                                    {/* Subtasks placeholder for new Story */}
                                    {isStory && isNewTask && (
-                                        <div className="bg-slate-800/40 rounded-xl border border-indigo-500/20 p-4">
+                                        <div className="bg-slate-800/40 rounded-xl border border-brand-500/20 p-4">
                                              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-linear-to-b from-indigo-500 to-violet-500 rounded-full" />
+                                                  <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-brand-500 rounded-full" />
                                                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.subtasks')}</h3>
                                              </div>
                                              <div className="flex items-center gap-3 text-slate-500 py-3">
-                                                  <FiLayers className="w-5 h-5 text-indigo-400/50" />
+                                                  <FiLayers className="w-5 h-5 text-brand-400/50" />
                                                   <p className="text-sm">{t('task.subtasksAvailableAfterSave')}</p>
                                              </div>
                                         </div>

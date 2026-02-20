@@ -61,7 +61,7 @@ const ColumnSelector = ({ columns, value, onChange, label, disabled = false }: C
                          w-full flex items-center justify-between px-3 py-2 min-h-[46px]
                          bg-slate-700/50 border rounded-lg text-slate-200
                          transition-all duration-200
-                         ${open ? 'border-purple-500/50 ring-2 ring-purple-500/50 bg-slate-700/70' : 'border-slate-600/50 hover:border-slate-500'}
+                         ${open ? 'border-brand-500/50 ring-2 ring-brand-500/50 bg-slate-700/70' : 'border-slate-600/50 hover:border-slate-500'}
                     `}
                     onClick={() => setOpen((v) => !v)}
                >
@@ -93,7 +93,7 @@ const ColumnSelector = ({ columns, value, onChange, label, disabled = false }: C
                                                   className={`
                                                        w-full flex items-center px-3 py-2.5 text-left gap-2.5
                                                        transition-all duration-150
-                                                       ${isSelected ? 'bg-purple-500/15' : 'hover:bg-slate-700/50'}
+                                                       ${isSelected ? 'bg-brand-500/15' : 'hover:bg-slate-700/50'}
                                                   `}
                                                   onClick={() => {
                                                        onChange(col.id);
@@ -102,11 +102,11 @@ const ColumnSelector = ({ columns, value, onChange, label, disabled = false }: C
                                                   role="option"
                                                   aria-selected={isSelected}
                                              >
-                                                  <FiColumns className={`w-4 h-4 ${isSelected ? 'text-purple-400' : 'text-slate-400'}`} />
+                                                  <FiColumns className={`w-4 h-4 ${isSelected ? 'text-brand-400' : 'text-slate-400'}`} />
                                                   <span className={`flex-1 truncate text-sm font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>
                                                        {col.title}
                                                   </span>
-                                                  {isSelected && <FiCheck className="w-4 h-4 text-purple-400 stroke-[3]" />}
+                                                  {isSelected && <FiCheck className="w-4 h-4 text-brand-400 stroke-[3]" />}
                                              </button>
                                         </li>
                                    );

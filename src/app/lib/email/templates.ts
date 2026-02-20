@@ -13,7 +13,7 @@ const baseStyles = `
     background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   }
   .header {
-    background: linear-gradient(135deg, #9837FA 0%, #7c2dd4 100%);
+    background: linear-gradient(135deg, #00a68b 0%, #008570 100%);
     padding: 32px 24px;
     text-align: center;
   }
@@ -64,12 +64,12 @@ const baseStyles = `
   }
   .badge-blue {
     background: rgba(59, 130, 246, 0.2);
-    color: #c084fc;
+    color: #33c4a8;
     border: 1px solid rgba(59, 130, 246, 0.3);
   }
   .badge-purple {
     background: rgba(59, 130, 246, 0.2);
-    color: #c084fc;
+    color: #33c4a8;
     border: 1px solid rgba(59, 130, 246, 0.3);
   }
   .badge-green {
@@ -89,7 +89,7 @@ const baseStyles = `
   }
   .button {
     display: inline-block;
-    background: linear-gradient(135deg, #9837FA 0%, #7c2dd4 100%);
+    background: linear-gradient(135deg, #00a68b 0%, #008570 100%);
     color: white !important;
     padding: 14px 32px;
     text-decoration: none;
@@ -119,7 +119,7 @@ const baseStyles = `
   .comment-box {
     background: rgba(15, 23, 42, 0.5);
     border-left: 4px solid;
-    border-image: linear-gradient(180deg, #9837FA, #7c2dd4) 1;
+    border-image: linear-gradient(180deg, #00a68b, #008570) 1;
     padding: 16px 20px;
     margin: 16px 0;
     border-radius: 0 12px 12px 0;
@@ -135,7 +135,7 @@ const baseStyles = `
     background: #0f172a;
   }
   .footer a {
-    color: #c084fc;
+    color: #33c4a8;
     text-decoration: none;
   }
   .divider {
@@ -146,7 +146,7 @@ const baseStyles = `
   .logo {
     font-weight: 800;
     font-size: 20px;
-    background: linear-gradient(135deg, #c084fc, #9837FA);
+    background: linear-gradient(135deg, #33c4a8, #00a68b);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -319,7 +319,7 @@ export function taskPriorityChangedTemplate(
      taskUrl: string
 ): string {
      return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #9837FA 0%, #7c2dd4 100%);">
+    <div class="header" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">
       <div class="icon">🎯</div>
       <h1>Zmiana priorytetu zadania</h1>
     </div>
@@ -334,7 +334,7 @@ export function taskPriorityChangedTemplate(
         </div>
       </div>
       <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #9837FA 0%, #7c2dd4 100%);">🔗 Zobacz zadanie</a>
+        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">🔗 Zobacz zadanie</a>
       </div>
     </div>
   `);
@@ -347,7 +347,7 @@ export function collaboratorAddedTemplate(
      adderName?: string
 ): string {
      return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);">
+    <div class="header" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">
       <div class="icon">👥</div>
       <h1>Dodano Cię jako współpracownika</h1>
     </div>
@@ -364,7 +364,7 @@ export function collaboratorAddedTemplate(
         </p>
       </div>
       <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);">👥 Zobacz zadanie</a>
+        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">👥 Zobacz zadanie</a>
       </div>
     </div>
   `);
@@ -412,7 +412,7 @@ export function newSubmissionTemplate(
           : '';
 
      return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+    <div class="header" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">
       <div class="icon">📩</div>
       <h1>Nowe zgłoszenie od klienta</h1>
     </div>
@@ -427,7 +427,7 @@ export function newSubmissionTemplate(
         ${descriptionHtml}
       </div>
       <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">🔗 Zobacz zgłoszenie</a>
+        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">🔗 Zobacz zgłoszenie</a>
       </div>
     </div>
   `);

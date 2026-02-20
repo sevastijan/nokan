@@ -135,7 +135,7 @@ const MessageItem = ({ message, currentUserId, isGrouped = false, isThreadParent
 							value={editContent}
 							onChange={(e) => setEditContent(e.target.value)}
 							onKeyDown={handleEditKeyDown}
-							className="w-full px-3 py-2 bg-slate-800 border border-purple-500/30 rounded-lg text-sm text-white resize-none focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+							className="w-full px-3 py-2 bg-slate-800 border border-brand-500/30 rounded-lg text-sm text-white resize-none focus:outline-none focus:ring-1 focus:ring-brand-500/50"
 							rows={2}
 							autoFocus
 						/>
@@ -171,7 +171,7 @@ const MessageItem = ({ message, currentUserId, isGrouped = false, isThreadParent
 						{!isThreadParent && !message.parent_id && (message.reply_count ?? 0) > 0 && (
 							<button
 								onClick={() => openThread(message.id)}
-								className="flex items-center gap-1 mt-1.5 px-2 py-1 rounded-md text-xs text-purple-400 hover:bg-purple-600/10 transition cursor-pointer"
+								className="flex items-center gap-1 mt-1.5 px-2 py-1 rounded-md text-xs text-brand-400 hover:bg-brand-600/10 transition cursor-pointer"
 							>
 								<MessageSquare className="w-3 h-3" />
 								{message.reply_count} {message.reply_count === 1 ? 'odpowiedź' : 'odpowiedzi'}

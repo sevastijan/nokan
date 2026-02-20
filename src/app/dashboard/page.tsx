@@ -349,7 +349,7 @@ export default function DashboardPage() {
                                                             ) : (
                                                                  <button
                                                                       onClick={openCreate}
-                                                                      className="group px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-purple-500/25 cursor-pointer"
+                                                                      className="group px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-brand-500/25 cursor-pointer"
                                                                       aria-label={t('dashboard.createFirstProject')}
                                                                  >
                                                                       <Sparkles className="w-5 h-5" />
@@ -386,7 +386,7 @@ export default function DashboardPage() {
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                                              <div>
                                                   <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                                                       <div className="w-1.5 h-6 bg-purple-500 rounded-full" />
+                                                       <div className="w-1.5 h-6 bg-brand-500 rounded-full" />
                                                        {t('dashboard.assignedProjects')}
                                                   </h2>
                                                   <p className="text-slate-400 text-sm">{t('dashboard.projectsSharedByAdmin')}</p>
@@ -419,7 +419,7 @@ export default function DashboardPage() {
                                                                  </p>
                                                                  <button
                                                                       onClick={() => router.push(`/submit?boardId=${board.id}`)}
-                                                                      className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 cursor-pointer group/button"
+                                                                      className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer group/button"
                                                                       aria-label={`${t('dashboard.addSubmission')} - ${board.title}`}
                                                                  >
                                                                       {t('dashboard.addSubmission')}
@@ -473,8 +473,8 @@ function TaskStats({ active, completed, overdue }: { active: number; completed: 
                </div>
 
                <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-violet-500/15">
-                         <svg className="w-4.5 h-4.5 text-violet-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-brand-500/15">
+                         <svg className="w-4.5 h-4.5 text-brand-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                               <polyline points="22 4 12 14.01 9 11.01" />
                          </svg>

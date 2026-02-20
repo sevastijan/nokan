@@ -20,7 +20,7 @@ const FileUploadPreview = ({ files, onRemove }: FileUploadPreviewProps) => {
 						className="relative flex items-center gap-2 px-3 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg max-w-[200px]"
 					>
 						{isImage ? (
-							<ImageIcon className="w-4 h-4 text-purple-400 shrink-0" />
+							<ImageIcon className="w-4 h-4 text-brand-400 shrink-0" />
 						) : (
 							<FileIcon className="w-4 h-4 text-slate-400 shrink-0" />
 						)}

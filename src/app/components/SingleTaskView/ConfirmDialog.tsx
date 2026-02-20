@@ -28,10 +28,10 @@ const ConfirmDialog = ({ isOpen, title, message, confirmText = 'OK', cancelText 
                default:
                     return {
                          Icon: FiInfo,
-                         iconBg: 'bg-purple-500/15',
-                         iconColor: 'text-purple-400',
-                         buttonBg: 'bg-purple-600 hover:bg-purple-500',
-                         borderColor: 'border-purple-500/30',
+                         iconBg: 'bg-brand-500/15',
+                         iconColor: 'text-brand-400',
+                         buttonBg: 'bg-brand-600 hover:bg-brand-500',
+                         borderColor: 'border-brand-500/30',
                     };
           }
      };
