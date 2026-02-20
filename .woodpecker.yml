@@ -103,6 +103,7 @@ steps:
       - echo "Running new nokan-taskboard container..."
       - |
         docker run -d --name nokan-taskboard \
+          --restart unless-stopped \
           --network traefik-network \
           -e NEXT_PUBLIC_SUPABASE_URL="$${NEXT_PUBLIC_SUPABASE_URL}" \
           -e NEXT_PUBLIC_SUPABASE_ANON_KEY="$${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
