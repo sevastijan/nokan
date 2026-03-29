@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
-import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle, Star, GripVertical } from 'lucide-react';
+import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle, Star, GripVertical, Briefcase } from 'lucide-react';
 import Avatar from '../components/Avatar/Avatar';
 import NotificationDropdown from './Notifications/NotificationDropdown';
 import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery, useGetUserChannelsQuery, useGetFavoriteBoardsQuery, useReorderFavoriteBoardsMutation, useGetBoardAvatarsQuery } from '@/app/store/apiSlice';
@@ -216,6 +216,9 @@ const Navbar = () => {
                       { href: '/users', label: t('nav.users'), icon: UserCog },
                       { href: '/team-management', label: t('nav.teams'), icon: Users },
                  ]
+               : []),
+          ...(userRole === 'OWNER'
+               ? [{ href: '/crm', label: 'CRM', icon: Briefcase }]
                : []),
      ];
 
