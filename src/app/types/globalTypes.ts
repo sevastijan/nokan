@@ -31,6 +31,7 @@ export interface Priority {
      id: string;
      label: string;
      color: string;
+     order_index?: number;
 }
 
 export interface BoardClient {
@@ -643,6 +644,7 @@ export interface ClientSubmission {
      submission_id: string;
      client_name?: string;
      client_email?: string;
+     task_id?: string | null;
 
      status?: Status | null;
 }

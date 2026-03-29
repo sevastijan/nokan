@@ -252,8 +252,8 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                    status_id: t.status_id || null,
                                    type: t.type ?? 'task',
                                    parent_id: t.parent_id ?? null,
-                                   is_recurring: (t as Record<string, unknown>).is_recurring as boolean | undefined,
-                                   comment_count: Array.isArray((t as Record<string, unknown>).comments) ? ((t as Record<string, unknown>).comments as unknown[]).length : 0,
+                                   is_recurring: (t as unknown as Record<string, unknown>).is_recurring as boolean | undefined,
+                                   comment_count: Array.isArray((t as unknown as Record<string, unknown>).comments) ? ((t as unknown as Record<string, unknown>).comments as unknown[]).length : 0,
                               };
                          });
 
