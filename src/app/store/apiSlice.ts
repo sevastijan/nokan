@@ -214,5 +214,6 @@ export const {
      useCreateCrmActivityMutation,
      useDeleteCrmActivityMutation,
      useLinkCrmDealToBoardMutation,
+     useSetCrmDealContactsMutation,
      useGetCrmExchangeRatesQuery,
 } = apiSlice;

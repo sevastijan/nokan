@@ -855,6 +855,14 @@
                "won": "Won",
                "lost": "Lost"
           },
+          "stageDescriptions": {
+               "lead": "New contacts and initial interest",
+               "qualification": "Verifying client needs and budget",
+               "proposal": "Preparing and sending an offer",
+               "negotiation": "Agreeing on terms and price",
+               "won": "Closed successfully — client acquired",
+               "lost": "Closed without success"
+          },
           "activityTypes": {
                "email": "Email",
                "call": "Call",

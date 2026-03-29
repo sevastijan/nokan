@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
-import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle, Star, GripVertical, Briefcase } from 'lucide-react';
+import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle, Star, GripVertical, Briefcase, ChevronDown, GitBranch, Building2 } from 'lucide-react';
 import Avatar from '../components/Avatar/Avatar';
 import NotificationDropdown from './Notifications/NotificationDropdown';
 import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery, useGetUserChannelsQuery, useGetFavoriteBoardsQuery, useReorderFavoriteBoardsMutation, useGetBoardAvatarsQuery } from '@/app/store/apiSlice';
@@ -149,6 +149,7 @@ const Navbar = () => {
      const dmChannels = channels.filter((ch) => ch.type === 'dm');
 
      const [sidebarOpen, setSidebarOpen] = useState(false);
+     const [crmExpanded, setCrmExpanded] = useState(false);
      const [createModalMode, setCreateModalMode] = useState<'dm' | 'group' | null>(null);
 
      useEffect(() => {
@@ -160,6 +161,10 @@ const Navbar = () => {
                html.style.paddingRight = '';
           };
      }, [sidebarOpen]);
+
+     useEffect(() => {
+          if (pathname.startsWith('/crm')) setCrmExpanded(true);
+     }, [pathname]);
 
      if (!session?.user) return <></>;
 
@@ -217,9 +222,6 @@ const Navbar = () => {
                       { href: '/team-management', label: t('nav.teams'), icon: Users },
                  ]
                : []),
-          ...(userRole === 'OWNER'
-               ? [{ href: '/crm', label: 'CRM', icon: Briefcase }]
-               : []),
      ];
 
      const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
@@ -273,6 +275,47 @@ const Navbar = () => {
                          })}
                     </div>
                </nav>
+
+               {/* ─── CRM (OWNER only) ─── */}
+               {userRole === 'OWNER' && (
+                    <div className="px-3 mt-1 shrink-0">
+                         <button
+                              onClick={() => setCrmExpanded(!crmExpanded)}
+                              className={`w-full relative flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                                   pathname.startsWith('/crm') ? 'bg-brand-600/10 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                              }`}
+                         >
+                              <div className="flex items-center gap-3">
+                                   {pathname.startsWith('/crm') && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-brand-500" />}
+                                   <Briefcase className={`w-[18px] h-[18px] ${pathname.startsWith('/crm') ? 'text-brand-400' : 'text-slate-500'}`} />
+                                   <span>CRM</span>
+                              </div>
+                              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${crmExpanded ? 'rotate-180' : ''}`} />
+                         </button>
+                         {crmExpanded && (
+                              <div className="mt-0.5 ml-4 space-y-0.5">
+                                   {[
+                                        { href: '/crm/pipeline', label: 'Pipeline', icon: GitBranch },
+                                        { href: '/crm/companies', label: t('crm.companies'), icon: Building2 },
+                                   ].map(({ href, label, icon: Icon }) => {
+                                        const active = isActive(href);
+                                        return (
+                                             <Link key={href} href={href} onClick={() => setSidebarOpen(false)}>
+                                                  <div
+                                                       className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                                                            active ? 'bg-brand-600/10 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                                                       }`}
+                                                  >
+                                                       <Icon className={`w-4 h-4 ${active ? 'text-brand-400' : 'text-slate-500'}`} />
+                                                       <span>{label}</span>
+                                                  </div>
+                                             </Link>
+                                        );
+                                   })}
+                              </div>
+                         )}
+                    </div>
+               )}
 
                {/* ─── Pinned Boards ─── */}
                {favoriteBoards.length > 0 && (

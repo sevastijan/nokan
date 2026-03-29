@@ -16,15 +16,6 @@ const formatDate = (dateStr: string): string => {
   });
 };
 
-/** Extract the raw color value (e.g. "slate-500") from the Tailwind class */
-const STAGE_BORDER_COLORS: Record<string, string> = {
-  lead: '#64748b',
-  qualification: '#3b82f6',
-  proposal: '#f59e0b',
-  negotiation: '#a855f7',
-  won: '#10b981',
-  lost: '#ef4444',
-};
 
 interface DealCardProps {
   deal: CrmDeal;
@@ -38,8 +29,6 @@ const DealCard = ({ deal, isDragOverlay }: DealCardProps) => {
     router.push(`/crm/deals/${deal.id}`);
   };
 
-  const borderColor = STAGE_BORDER_COLORS[deal.stage] ?? '#64748b';
-
   return (
     <motion.div
       layout={!isDragOverlay}
@@ -47,7 +36,6 @@ const DealCard = ({ deal, isDragOverlay }: DealCardProps) => {
       transition={{ duration: 0.15 }}
       onClick={handleClick}
       className="relative bg-slate-800 rounded-lg px-3 py-2.5 cursor-pointer border border-slate-700/50 hover:shadow-lg hover:shadow-black/20 transition-shadow group"
-      style={{ borderLeftWidth: '3px', borderLeftColor: borderColor }}
     >
       {/* Probability badge */}
       <div className="absolute top-2 right-2">
@@ -71,7 +59,7 @@ const DealCard = ({ deal, isDragOverlay }: DealCardProps) => {
       {/* Value & Date row */}
       <div className="flex items-center justify-between mt-2 gap-2">
         <span className="text-xs font-medium text-brand-400">
-          {formatValue(deal.value)} {deal.currency}
+          {formatValue(deal.value)}{deal.value_max > deal.value ? ` – ${formatValue(deal.value_max)}` : ''} {deal.currency}
         </span>
         {deal.expected_close_date && (
           <span className="text-[10px] text-slate-500">

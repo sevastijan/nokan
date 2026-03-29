@@ -860,6 +860,14 @@
                "won": "Wygrana",
                "lost": "Przegrana"
           },
+          "stageDescriptions": {
+               "lead": "Nowe kontakty i wstępne zainteresowanie",
+               "qualification": "Weryfikacja potrzeb i budżetu klienta",
+               "proposal": "Przygotowanie i wysłanie oferty",
+               "negotiation": "Uzgadnianie warunków i ceny",
+               "won": "Zamknięte sukcesem — klient pozyskany",
+               "lost": "Zamknięte bez sukcesu"
+          },
           "activityTypes": {
                "email": "Email",
                "call": "Rozmowa",

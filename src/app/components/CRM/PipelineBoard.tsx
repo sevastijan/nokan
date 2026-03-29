@@ -95,8 +95,8 @@ const DroppableColumn = ({ stage, isOver, children }: DroppableColumnProps) => {
     <div
       ref={setNodeRef}
       data-stage={stage}
-      className={`flex-1 rounded-b-lg border border-slate-700/50 border-t-0 p-2 space-y-2 transition-colors min-h-[120px] ${
-        isOver ? 'bg-slate-700/20' : 'bg-slate-800/30'
+      className={`flex-1 p-2 space-y-2 transition-colors min-h-[120px] ${
+        isOver ? 'bg-slate-700/20' : 'bg-transparent'
       }`}
     >
       {children}
@@ -282,26 +282,23 @@ const PipelineBoard = () => {
             return (
               <div
                 key={stage}
-                className="flex-shrink-0 w-[280px] flex flex-col"
+                className="flex-shrink-0 w-[280px] flex flex-col border border-slate-700/50 rounded-lg overflow-hidden"
               >
                 {/* Column header */}
-                <div
-                  className="rounded-t-lg px-3 py-2.5 bg-slate-800/60 border border-slate-700/50 border-b-0"
-                  style={{ borderTopWidth: '3px', borderTopColor: STAGE_HEADER_COLORS[stage] }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white">
-                        {STAGE_LABELS[stage]}
-                      </span>
-                      <span className="text-xs font-medium text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded">
-                        {stageDeals.length}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                <div className="flex items-center gap-2 px-3 py-3 bg-slate-800/60 border-b border-slate-700/50">
+                  <div
+                    className="w-3 h-3 rounded-full shrink-0"
+                    style={{ backgroundColor: STAGE_HEADER_COLORS[stage] }}
+                  />
+                  <span className="text-sm font-semibold text-white">
+                    {STAGE_LABELS[stage]}
+                  </span>
+                  <span className="text-xs font-medium text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded">
+                    {stageDeals.length}
+                  </span>
+                  <span className="ml-auto text-xs text-slate-500">
                     {formatValue(stageTotals[stage])} PLN
-                  </p>
+                  </span>
                 </div>
 
                 {/* Column body — droppable */}

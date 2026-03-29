@@ -7,6 +7,7 @@ import {
   CrmDealPartner,
   CrmActivity,
   CrmExchangeRate,
+  CrmDealContact,
   CrmDealStage,
   STAGE_PROBABILITY,
 } from '@/app/types/crmTypes';
@@ -320,6 +321,31 @@ export const crmEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, strin
 
         if (error) throw error;
 
+        // Fetch deal contacts separately (table may not exist yet)
+        let dealContactsMap: Record<string, CrmDealContact[]> = {};
+        try {
+          const dealIds = (data ?? []).map((d: Record<string, unknown>) => d.id as string);
+          if (dealIds.length > 0) {
+            const { data: dcData } = await getSupabase()
+              .from('crm_deal_contacts')
+              .select('id, deal_id, contact_id, contact:crm_contacts(id, first_name, last_name, email, position)')
+              .in('deal_id', dealIds);
+            if (dcData) {
+              for (const dc of dcData) {
+                const row = dc as Record<string, unknown>;
+                const dealId = row.deal_id as string;
+                if (!dealContactsMap[dealId]) dealContactsMap[dealId] = [];
+                dealContactsMap[dealId].push({
+                  ...row,
+                  contact: unwrapJoin(row.contact as Record<string, unknown> | Record<string, unknown>[] | null),
+                } as unknown as CrmDealContact);
+              }
+            }
+          }
+        } catch {
+          // crm_deal_contacts table may not exist yet — skip gracefully
+        }
+
         const deals: CrmDeal[] = (data ?? []).map((row: Record<string, unknown>) => {
           const company = unwrapJoin(row.company as Record<string, unknown> | Record<string, unknown>[] | null);
           const contact = unwrapJoin(row.contact as Record<string, unknown> | Record<string, unknown>[] | null);
@@ -329,6 +355,7 @@ export const crmEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, strin
             ...(row as unknown as CrmDeal),
             company: company as CrmDeal['company'],
             contact: contact as CrmDeal['contact'],
+            contacts: dealContactsMap[(row.id as string)] ?? [],
             board_id: (dealBoard?.board_id as string) ?? null,
             deal_board: undefined,
           };
@@ -373,10 +400,31 @@ export const crmEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, strin
         const contact = unwrapJoin(row.contact as Record<string, unknown> | Record<string, unknown>[] | null);
         const dealBoard = unwrapJoin(row.deal_board as Record<string, unknown> | Record<string, unknown>[] | null);
 
+        // Fetch deal contacts separately (table may not exist yet)
+        let contacts: CrmDealContact[] = [];
+        try {
+          const { data: dcData } = await getSupabase()
+            .from('crm_deal_contacts')
+            .select('id, deal_id, contact_id, contact:crm_contacts(id, first_name, last_name, email, phone, position)')
+            .eq('deal_id', dealId);
+          if (dcData) {
+            contacts = dcData.map((dc) => {
+              const dcRow = dc as Record<string, unknown>;
+              return {
+                ...dcRow,
+                contact: unwrapJoin(dcRow.contact as Record<string, unknown> | Record<string, unknown>[] | null),
+              } as unknown as CrmDealContact;
+            });
+          }
+        } catch {
+          // crm_deal_contacts table may not exist yet
+        }
+
         const deal: CrmDeal = {
           ...(row as unknown as CrmDeal),
           company: company as CrmDeal['company'],
           contact: contact as CrmDeal['contact'],
+          contacts,
           board_id: (dealBoard?.board_id as string) ?? null,
         };
 
@@ -696,6 +744,41 @@ export const crmEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, strin
     },
     invalidatesTags: (_result, _error, { deal_id }) => [
       { type: 'CrmDeal', id: deal_id },
+      { type: 'CrmDeal', id: 'LIST' },
+    ],
+  }),
+
+  // ---------------------------------------------------------------------------
+  // Deal Contacts (many-to-many)
+  // ---------------------------------------------------------------------------
+
+  setCrmDealContacts: builder.mutation<CrmDealContact[], { dealId: string; contactIds: string[] }>({
+    async queryFn({ dealId, contactIds }) {
+      try {
+        // Remove all existing
+        await getSupabase().from('crm_deal_contacts').delete().eq('deal_id', dealId);
+        // Insert new
+        if (contactIds.length > 0) {
+          const rows = contactIds.map((contact_id) => ({ deal_id: dealId, contact_id }));
+          const { error } = await getSupabase().from('crm_deal_contacts').insert(rows);
+          if (error) throw error;
+        }
+        const { data } = await getSupabase()
+          .from('crm_deal_contacts')
+          .select('id, deal_id, contact_id, contact:crm_contacts(id, first_name, last_name, email, position)')
+          .eq('deal_id', dealId);
+        const mapped = (data ?? []).map((dc: Record<string, unknown>) => ({
+          ...dc,
+          contact: unwrapJoin(dc.contact as Record<string, unknown> | Record<string, unknown>[] | null),
+        }));
+        return { data: mapped as CrmDealContact[] };
+      } catch (err) {
+        console.error('[crmEndpoints.setCrmDealContacts] error:', err);
+        return { error: { status: 'CUSTOM_ERROR' as const, error: getErrorMessage(err) } };
+      }
+    },
+    invalidatesTags: (_r, _e, { dealId }) => [
+      { type: 'CrmDeal', id: dealId },
       { type: 'CrmDeal', id: 'LIST' },
     ],
   }),

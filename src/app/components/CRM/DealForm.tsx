@@ -15,7 +15,7 @@ import {
   useGetCurrentUserQuery,
 } from '@/app/store/apiSlice';
 import type { CrmDeal, CrmDealStage, CrmCurrency } from '@/app/types/crmTypes';
-import { STAGE_ORDER, STAGE_LABELS } from '@/app/types/crmTypes';
+import { STAGE_ORDER, STAGE_LABELS, DEAL_SOURCE_PRESETS } from '@/app/types/crmTypes';
 
 interface DealFormProps {
   isOpen: boolean;
@@ -49,6 +49,9 @@ const DealForm = ({ isOpen, onClose, deal, defaultCompanyId }: DealFormProps) =>
   const [currency, setCurrency] = useState<CrmCurrency>('PLN');
   const [expectedCloseDate, setExpectedCloseDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [source, setSource] = useState('');
+  const [showSourceDropdown, setShowSourceDropdown] = useState(false);
+  const sourceRef = useRef<HTMLDivElement>(null);
 
   // Company search dropdown state
   const [companySearch, setCompanySearch] = useState('');
@@ -85,10 +88,24 @@ const DealForm = ({ isOpen, onClose, deal, defaultCompanyId }: DealFormProps) =>
       setCurrency(deal?.currency ?? 'PLN');
       setExpectedCloseDate(deal?.expected_close_date ?? '');
       setNotes(deal?.notes ?? '');
+      setSource(deal?.source ?? '');
       setCompanySearch('');
       setShowCompanyDropdown(false);
+      setShowSourceDropdown(false);
     }
   }, [isOpen, deal, defaultCompanyId]);
+
+  // Close source dropdown on outside click
+  useEffect(() => {
+    if (!showSourceDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (sourceRef.current && !sourceRef.current.contains(e.target as Node)) {
+        setShowSourceDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showSourceDropdown]);
 
   // Close company dropdown on outside click
   useEffect(() => {
@@ -123,6 +140,7 @@ const DealForm = ({ isOpen, onClose, deal, defaultCompanyId }: DealFormProps) =>
         probability: 0, // auto-set by backend based on stage
         expected_close_date: expectedCloseDate || null,
         notes: notes.trim() || null,
+        source: source.trim() || null,
       };
 
       if (isEdit && deal) {
@@ -370,6 +388,38 @@ const DealForm = ({ isOpen, onClose, deal, defaultCompanyId }: DealFormProps) =>
                     className={`${inputClasses} resize-none`}
                     placeholder={t('crm.notes')}
                   />
+                </div>
+
+                {/* Source */}
+                <div ref={sourceRef} className="relative">
+                  <label className="block text-sm font-medium mb-1.5 text-slate-300">
+                    Źródło
+                  </label>
+                  <input
+                    type="text"
+                    value={source}
+                    onChange={(e) => setSource(e.target.value)}
+                    onFocus={() => setShowSourceDropdown(true)}
+                    className={inputClasses}
+                    placeholder="Wpisz lub wybierz źródło..."
+                  />
+                  {showSourceDropdown && (
+                    <div className="absolute z-20 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      {DEAL_SOURCE_PRESETS.filter((s) => s.toLowerCase().includes(source.toLowerCase())).map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            setSource(preset);
+                            setShowSourceDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer */}

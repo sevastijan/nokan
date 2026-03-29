@@ -49,6 +49,13 @@ export interface CrmContact {
   company?: CrmCompany | null;
 }
 
+export interface CrmDealContact {
+  id: string;
+  deal_id: string;
+  contact_id: string;
+  contact?: CrmContact | null;
+}
+
 export interface CrmDeal {
   id: string;
   title: string;
@@ -61,13 +68,26 @@ export interface CrmDeal {
   probability: number;
   expected_close_date?: string | null;
   notes?: string | null;
+  source?: string | null;
   created_by?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   company?: CrmCompany | null;
   contact?: CrmContact | null;
+  contacts?: CrmDealContact[];
   board_id?: string | null;
 }
+
+export const DEAL_SOURCE_PRESETS = [
+  'Polecenie',
+  'Strona www',
+  'Social media',
+  'Cold call',
+  'Email',
+  'Networking / event',
+  'Reklama',
+  'Inne',
+];
 
 export interface CrmDealPartner {
   id: string;
