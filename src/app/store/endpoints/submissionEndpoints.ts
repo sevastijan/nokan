@@ -52,6 +52,7 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                          created_at: task.created_at,
                          updated_at: task.updated_at,
                          submission_id: submission.id,
+                         task_id: task.id,
                          status: null,
                     };
 
@@ -191,6 +192,7 @@ export const submissionEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
                          created_at: task.created_at,
                          updated_at: task.updated_at,
                          submission_id: submission.id,
+                         task_id: task.id,
                          status: null,
                     };
                     return { data: result };

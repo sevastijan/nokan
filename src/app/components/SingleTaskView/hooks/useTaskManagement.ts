@@ -366,7 +366,7 @@ export const useTaskManagement = ({
           }
      }, [currentTaskId, task, updateTaskMutation, onTaskUpdate, addNotification, boardData, currentUser, priorities, teamMembers]);
 
-     const saveNewTask = useCallback(async (): Promise<boolean> => {
+     const saveNewTask = useCallback(async (): Promise<string | false> => {
           if (!task || !columnId) return false;
           const isBug = task.type === 'bug';
           const payload: Partial<TaskDetail> & { column_id: string } = {
@@ -443,7 +443,7 @@ export const useTaskManagement = ({
                     created_at: result.created_at ?? undefined,
                     updated_at: result.updated_at ?? undefined,
                });
-               return true;
+               return result.id;
           } catch (err) {
                console.error('Failed to create task:', err);
                setError('Failed to create task');

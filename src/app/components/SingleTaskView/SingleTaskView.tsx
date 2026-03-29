@@ -288,11 +288,12 @@ const SingleTaskView = ({
                setBugFieldsError(false);
           }
 
-          const success = isNewTask ? await saveNewTask() : await saveExistingTask();
-          if (!success) return;
+          const result = isNewTask ? await saveNewTask() : await saveExistingTask();
+          if (!result) return;
 
-          if (isNewTask && localFilePreviews.length > 0 && currentTaskId) {
-               const { errors } = await uploadAllAttachments(localFilePreviews, currentTaskId);
+          const newTaskId = typeof result === 'string' ? result : currentTaskId;
+          if (isNewTask && localFilePreviews.length > 0 && newTaskId) {
+               const { errors } = await uploadAllAttachments(localFilePreviews, newTaskId);
                toast.success(errors > 0 ? t('task.createdWithErrors', { count: errors }) : t('task.createdWithAttachments'));
           } else {
                toast.success(isNewTask ? t('task.created') : t('task.updated'));
