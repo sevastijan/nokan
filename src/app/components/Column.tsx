@@ -65,7 +65,7 @@ const Column = ({
           setColumnColor(color);
           localStorage.setItem(colorKey, color);
           // Update column object so it propagates
-          if (column) (column as Record<string, unknown>).color = color;
+          if (column) (column as unknown as Record<string, unknown>).color = color;
           setShowColorPicker(false);
      }, [colorKey, column]);
 
