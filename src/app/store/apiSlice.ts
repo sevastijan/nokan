@@ -18,6 +18,7 @@ import { collaboratorEndpoints } from './endpoints/collaboratorEndpoints';
 import { apiTokenEndpoints } from './endpoints/apiTokenEndpoints';
 import { taskSnapshotEndpoints } from './endpoints/taskSnapshotEndpoints';
 import { chatEndpoints } from './endpoints/chatEndpoints';
+import { crmEndpoints } from './endpoints/crmEndpoints';
 
 /**
  * UserRole type in your application.
@@ -60,6 +61,12 @@ export const apiSlice = createApi({
           'ChatChannelList',
           'ChatMessages',
           'ChatMembers',
+          'CrmCompany',
+          'CrmContact',
+          'CrmDeal',
+          'CrmDealPartner',
+          'CrmActivity',
+          'CrmExchangeRate',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -76,6 +83,7 @@ export const apiSlice = createApi({
           ...apiTokenEndpoints(builder),
           ...taskSnapshotEndpoints(builder),
           ...chatEndpoints(builder),
+          ...crmEndpoints(builder),
      }),
 });
 
@@ -184,4 +192,27 @@ export const {
      usePinMessageMutation,
      useUnpinMessageMutation,
      useGetPinnedMessagesQuery,
+     // CRM hooks
+     useGetCrmCompaniesQuery,
+     useGetCrmCompanyByIdQuery,
+     useCreateCrmCompanyMutation,
+     useUpdateCrmCompanyMutation,
+     useDeleteCrmCompanyMutation,
+     useGetCrmContactsByCompanyQuery,
+     useCreateCrmContactMutation,
+     useUpdateCrmContactMutation,
+     useDeleteCrmContactMutation,
+     useGetCrmDealsQuery,
+     useGetCrmDealByIdQuery,
+     useCreateCrmDealMutation,
+     useUpdateCrmDealMutation,
+     useDeleteCrmDealMutation,
+     useGetCrmDealPartnersQuery,
+     useAddCrmDealPartnerMutation,
+     useRemoveCrmDealPartnerMutation,
+     useGetCrmActivitiesQuery,
+     useCreateCrmActivityMutation,
+     useDeleteCrmActivityMutation,
+     useLinkCrmDealToBoardMutation,
+     useGetCrmExchangeRatesQuery,
 } = apiSlice;
