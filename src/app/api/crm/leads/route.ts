@@ -48,7 +48,7 @@ async function validateApiKey(request: NextRequest): Promise<boolean> {
   return !!data;
 }
 
-async function notifyOwners(supabase: ReturnType<typeof getServiceSupabase>, dealTitle: string, companyName: string, contactName: string) {
+async function notifyOwners(supabase: ReturnType<typeof getServiceSupabase>, lead: LeadPayload, contactName: string) {
   try {
     const { data: owners } = await supabase
       .from('users')
@@ -57,12 +57,14 @@ async function notifyOwners(supabase: ReturnType<typeof getServiceSupabase>, dea
 
     if (!owners || owners.length === 0) return;
 
+    const { newCrmLeadTemplate } = await import('@/app/lib/email/templates');
+
     for (const owner of owners) {
       // In-app notification
       await supabase.from('notifications').insert({
         user_id: owner.id,
         type: 'new_submission',
-        message: `Nowy lead: ${dealTitle} od ${contactName} (${companyName || 'brak firmy'})`,
+        message: `Nowy lead: ${lead.title} od ${contactName} (${lead.company_name || 'brak firmy'})`,
         read: false,
       });
 
@@ -71,23 +73,24 @@ async function notifyOwners(supabase: ReturnType<typeof getServiceSupabase>, dea
         try {
           const { Resend } = await import('resend');
           const resend = new Resend(process.env.RESEND_API_KEY);
+          const html = newCrmLeadTemplate(
+            lead.title,
+            contactName,
+            'https://nokan.nkdlab.space/crm/pipeline',
+            lead.company_name,
+            lead.email,
+            lead.phone,
+            lead.source,
+            lead.value,
+            lead.value_max,
+            lead.currency,
+            lead.notes,
+          );
           await resend.emails.send({
             from: process.env.EMAIL_FROM || 'noreply@example.com',
             to: owner.email,
-            subject: `Nowy lead CRM: ${dealTitle}`,
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #0f172a;">Nowy lead w CRM</h2>
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr><td style="padding: 8px 0; color: #64748b;">Deal</td><td style="padding: 8px 0; font-weight: 600;">${dealTitle}</td></tr>
-                  <tr><td style="padding: 8px 0; color: #64748b;">Kontakt</td><td style="padding: 8px 0;">${contactName}</td></tr>
-                  ${companyName ? `<tr><td style="padding: 8px 0; color: #64748b;">Firma</td><td style="padding: 8px 0;">${companyName}</td></tr>` : ''}
-                </table>
-                <p style="margin-top: 24px;">
-                  <a href="https://nokan.nkdlab.space/crm/pipeline" style="background: #00a68b; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;">Otwórz Pipeline</a>
-                </p>
-              </div>
-            `,
+            subject: `Nowy lead CRM: ${lead.title}`,
+            html,
           });
         } catch {
           // Email is best-effort
@@ -189,7 +192,7 @@ export async function POST(request: NextRequest) {
 
     // 5. Notify owners
     const contactName = `${body.first_name} ${body.last_name}`;
-    await notifyOwners(supabase, body.title, body.company_name || '', contactName);
+    await notifyOwners(supabase, body, contactName);
 
     return NextResponse.json({
       success: true,

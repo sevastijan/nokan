@@ -299,6 +299,44 @@ export function newSubmissionTemplate(
   `);
 }
 
+export function newCrmLeadTemplate(
+     dealTitle: string,
+     contactName: string,
+     pipelineUrl: string,
+     companyName?: string,
+     email?: string,
+     phone?: string,
+     source?: string,
+     value?: number,
+     valueMax?: number,
+     currency?: string,
+     notes?: string
+): string {
+     const c = '#f59e0b';
+     const formatValue = (v: number) => new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(v);
+     const valueStr = value && value > 0
+          ? (valueMax && valueMax > value ? `${formatValue(value)} – ${formatValue(valueMax)} ${currency || 'PLN'}` : `${formatValue(value)} ${currency || 'PLN'}`)
+          : null;
+
+     let detailRows = '';
+     if (companyName) detailRows += `<tr><td style="padding: 4px 0; color: #a1a1aa; font-size: 13px; width: 100px;">Firma</td><td style="padding: 4px 0; font-size: 13px; color: #3f3f46;">${companyName}</td></tr>`;
+     if (email) detailRows += `<tr><td style="padding: 4px 0; color: #a1a1aa; font-size: 13px;">Email</td><td style="padding: 4px 0; font-size: 13px; color: #3f3f46;"><a href="mailto:${email}" style="color: #00a68b; text-decoration: none;">${email}</a></td></tr>`;
+     if (phone) detailRows += `<tr><td style="padding: 4px 0; color: #a1a1aa; font-size: 13px;">Telefon</td><td style="padding: 4px 0; font-size: 13px; color: #3f3f46;">${phone}</td></tr>`;
+     if (source) detailRows += `<tr><td style="padding: 4px 0; color: #a1a1aa; font-size: 13px;">Źródło</td><td style="padding: 4px 0; font-size: 13px; color: #3f3f46;">${source}</td></tr>`;
+     if (valueStr) detailRows += `<tr><td style="padding: 4px 0; color: #a1a1aa; font-size: 13px;">Wartość</td><td style="padding: 4px 0; font-size: 13px; font-weight: 600; color: #09090b;">${valueStr}</td></tr>`;
+
+     return wrapHtml(c, `
+    <p class="action-text">Nowy lead w CRM</p>
+    <p class="task-link">${taskDot(c)}${dealTitle}</p>
+    <p class="context">Kontakt: ${contactName}</p>
+    <div class="detail-box">
+      <table style="width: 100%; border-collapse: collapse;">${detailRows}</table>
+    </div>
+    ${notes ? `<div class="quote">${notes}</div>` : ''}
+    ${colorBtn(pipelineUrl, 'Otwórz Pipeline')}
+  `);
+}
+
 export function mentionTemplate(
      taskTitle: string,
      boardName: string,
