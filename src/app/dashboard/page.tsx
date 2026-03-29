@@ -15,6 +15,9 @@ import {
      useCreateBoardFromTemplateMutation,
      useGetUserTasksQuery,
      useUpdateTaskCompletionMutation,
+     useGetFavoriteBoardsQuery,
+     useToggleBoardFavoriteMutation,
+     useGetBoardAvatarsQuery,
 } from '@/app/store/apiSlice';
 import Loader from '@/app/components/Loader';
 import BoardModal from '@/app/components/Board/BoardModal';
@@ -25,6 +28,8 @@ import { DashboardStats } from '@/app/components/Dashboard/DashboardStats';
 import { DashboardTabs, DashboardTab } from '@/app/components/Dashboard/DashboardTabs';
 import { UserTaskList } from '@/app/components/Dashboard/UserTaskList';
 import { Layers, ArrowRight, Sparkles } from 'lucide-react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
 const tabContentVariants = {
      enter: { opacity: 0, y: 8 },
@@ -60,6 +65,41 @@ export default function DashboardPage() {
           skip: !currentUser?.id,
      });
 
+     const { data: favoriteBoards = [] } = useGetFavoriteBoardsQuery(currentUser?.id || '', {
+          skip: !currentUser?.id,
+     });
+     const [toggleFavorite] = useToggleBoardFavoriteMutation();
+     const favoriteIds = useMemo(() => new Set(favoriteBoards.map((b) => b.id)), [favoriteBoards]);
+
+     const boardIds = useMemo(() => myBoards.map((b) => b.id), [myBoards]);
+     const { data: boardAvatars = {} } = useGetBoardAvatarsQuery(boardIds, { skip: boardIds.length === 0 });
+
+     // Custom board order (persisted in localStorage)
+     const [customOrder, setCustomOrder] = useState<string[] | null>(null);
+     const orderKey = currentUser?.id ? `board-order-${currentUser.id}` : null;
+
+     useEffect(() => {
+          if (orderKey) {
+               try {
+                    const saved = localStorage.getItem(orderKey);
+                    if (saved) {
+                         setCustomOrder(JSON.parse(saved));
+                         setSortBy('custom');
+                    }
+               } catch { /* ignore */ }
+          }
+     }, [orderKey]);
+
+     const saveOrder = useCallback((ids: string[]) => {
+          setCustomOrder(ids);
+          if (orderKey) {
+               localStorage.setItem(orderKey, JSON.stringify(ids));
+               localStorage.setItem('board-order-last', '1');
+          }
+     }, [orderKey]);
+
+     const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
      const [updateTaskCompletion] = useUpdateTaskCompletionMutation();
      const [addBoard] = useAddBoardMutation();
      const [updateBoardTitle] = useUpdateBoardTitleMutation();
@@ -76,7 +116,7 @@ export default function DashboardPage() {
      const [searchTerm, setSearchTerm] = useState('');
      const [hasTasksOnly, setHasTasksOnly] = useState(false);
      const [hasMembersOnly, setHasMembersOnly] = useState(false);
-     const [sortBy, setSortBy] = useState<'name' | 'tasks' | 'members' | 'newest'>('newest');
+     const [sortBy, setSortBy] = useState<'name' | 'tasks' | 'members' | 'newest' | 'custom'>('newest');
 
      useEffect(() => {
           if (authStatus === 'unauthenticated') {
@@ -201,6 +241,13 @@ export default function DashboardPage() {
 
           return [...filtered].sort((a, b) => {
                switch (sortBy) {
+                    case 'custom':
+                         if (customOrder) {
+                              const ai = customOrder.indexOf(a.id);
+                              const bi = customOrder.indexOf(b.id);
+                              return (ai === -1 ? 9999 : ai) - (bi === -1 ? 9999 : bi);
+                         }
+                         return 0;
                     case 'name':
                          return (a.title || '').localeCompare(b.title || '', 'pl');
                     case 'tasks':
@@ -212,7 +259,20 @@ export default function DashboardPage() {
                          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
                }
           });
-     }, [myBoards, searchTerm, hasTasksOnly, hasMembersOnly, sortBy]);
+     }, [myBoards, searchTerm, hasTasksOnly, hasMembersOnly, sortBy, customOrder]);
+
+     const handleBoardDragEnd = useCallback((event: DragEndEvent) => {
+          const { active, over } = event;
+          if (!over || active.id === over.id) return;
+          // Use current customOrder or derive from current filteredBoards
+          const currentIds = customOrder ?? filteredBoards.map((b) => b.id);
+          const oldIndex = currentIds.indexOf(active.id as string);
+          const newIndex = currentIds.indexOf(over.id as string);
+          if (oldIndex === -1 || newIndex === -1) return;
+          const newIds = arrayMove(currentIds, oldIndex, newIndex);
+          saveOrder(newIds);
+          if (sortBy !== 'custom') setSortBy('custom');
+     }, [customOrder, filteredBoards, saveOrder, sortBy]);
 
      const handleClearFilters = useCallback(() => {
           setHasTasksOnly(false);
@@ -223,7 +283,7 @@ export default function DashboardPage() {
 
      const dataLoading = loadingUser || loadingMyBoards || loadingAssignedBoards;
      const hasAssignedBoards = isClient && assignedBoards.length > 0;
-     const hasActiveFilters = searchTerm || hasTasksOnly || hasMembersOnly || sortBy !== 'newest';
+     const hasActiveFilters = searchTerm || hasTasksOnly || hasMembersOnly || (sortBy !== 'newest' && sortBy !== 'custom');
 
      // Full-screen cover hides the Navbar immediately while data loads.
      // The inner <Loader> has a 150ms appear-delay; the outer div ensures
@@ -242,7 +302,7 @@ export default function DashboardPage() {
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800/40 via-transparent to-transparent pointer-events-none" />
 
                     <div className="relative">
-                         <section className="px-4 sm:px-6 lg:px-8 pt-14 md:pt-8 pb-6">
+                         <section className="px-4 sm:px-6 lg:px-8 pt-14 md:pt-8 pb-12">
                               <div className="max-w-7xl mx-auto flex flex-col gap-6">
                                    {/* Tab bar */}
                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -250,7 +310,7 @@ export default function DashboardPage() {
                                              activeTab={activeTab}
                                              onTabChange={setActiveTab}
                                              boardsCount={myBoards.length}
-                                             tasksCount={userTasks.length}
+                                             tasksCount={userTasks.filter((t) => !t.completed).length}
                                         />
                                    </div>
 
@@ -270,43 +330,6 @@ export default function DashboardPage() {
                                         />
                                    )}
 
-                                   {/* Stats */}
-                                   <AnimatePresence mode="wait">
-                                        {activeTab === 'boards' ? (
-                                             <motion.div
-                                                  key="board-stats"
-                                                  initial={{ opacity: 0 }}
-                                                  animate={{ opacity: 1 }}
-                                                  exit={{ opacity: 0 }}
-                                                  transition={{ duration: 0.15 }}
-                                             >
-                                                  <DashboardStats
-                                                       totalBoards={boardStats.totalBoards}
-                                                       totalTasks={boardStats.totalTasks}
-                                                       totalMembers={boardStats.totalMembers}
-                                                  />
-                                             </motion.div>
-                                        ) : (
-                                             <motion.div
-                                                  key="task-stats"
-                                                  initial={{ opacity: 0 }}
-                                                  animate={{ opacity: 1 }}
-                                                  exit={{ opacity: 0 }}
-                                                  transition={{ duration: 0.15 }}
-                                             >
-                                                  <TaskStats
-                                                       active={taskStats.active}
-                                                       completed={taskStats.completed}
-                                                       overdue={taskStats.overdue}
-                                                  />
-                                             </motion.div>
-                                        )}
-                                   </AnimatePresence>
-                              </div>
-                         </section>
-
-                         <section className="px-4 sm:px-6 lg:px-8 pb-12">
-                              <div className="max-w-7xl mx-auto">
                                    <AnimatePresence mode="wait">
                                         {activeTab === 'boards' ? (
                                              <motion.div
@@ -318,17 +341,25 @@ export default function DashboardPage() {
                                                   transition={{ duration: 0.2 }}
                                              >
                                                   {filteredBoards.length > 0 ? (
-                                                       <div className="flex flex-col gap-3">
-                                                            {filteredBoards.map((board) => (
-                                                                 <BoardListItem
-                                                                      key={board.id}
-                                                                      board={board}
-                                                                      onEdit={() => openEdit(board.id, board.title)}
-                                                                      onDelete={() => openDelete(board.id)}
-                                                                      onBoardClick={() => handleBoardClick(board.id)}
-                                                                 />
-                                                            ))}
-                                                       </div>
+                                                       <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleBoardDragEnd}>
+                                                            <SortableContext items={filteredBoards.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+                                                                 <div className="flex flex-col">
+                                                                      {filteredBoards.map((board) => (
+                                                                           <BoardListItem
+                                                                                key={board.id}
+                                                                                board={board}
+                                                                                avatarUrl={boardAvatars[board.id] || null}
+                                                                                isFavorite={favoriteIds.has(board.id)}
+                                                                                sortable
+                                                                                onToggleFavorite={() => currentUser?.id && toggleFavorite({ boardId: board.id, userId: currentUser.id })}
+                                                                                onEdit={() => openEdit(board.id, board.title)}
+                                                                                onDelete={() => openDelete(board.id)}
+                                                                                onBoardClick={() => handleBoardClick(board.id)}
+                                                                           />
+                                                                      ))}
+                                                                 </div>
+                                                            </SortableContext>
+                                                       </DndContext>
                                                   ) : (
                                                        <div className="flex flex-col items-center justify-center py-20 px-4">
                                                             <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 border border-slate-700">
@@ -379,6 +410,7 @@ export default function DashboardPage() {
                                    </AnimatePresence>
                               </div>
                          </section>
+
 
                          {hasAssignedBoards && (
                               <section className="px-4 sm:px-6 lg:px-8 pb-20 border-t border-slate-800/50 pt-12">

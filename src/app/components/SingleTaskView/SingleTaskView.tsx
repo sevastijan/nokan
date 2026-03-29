@@ -37,6 +37,7 @@ import SubtaskList from './SubtaskList';
 import Lightbox from '@/app/components/Lightbox/Lightbox';
 import { SingleTaskViewProps, Column, TaskType, User } from '@/app/types/globalTypes';
 import TaskHistory from './TaskHistory';
+import ActivityFeed from './ActivityFeed';
 import TaskViewSkeleton from './TaskViewSkeleton';
 import { useGetSubtasksQuery, useUpdateTaskTypeMutation } from '@/app/store/apiSlice';
 
@@ -69,7 +70,8 @@ const SingleTaskView = ({
      const [showRecurringModal, setShowRecurringModal] = useState(false);
      const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
      const [isVisible, setIsVisible] = useState(true);
-     const [variantChosen, setVariantChosen] = useState(mode !== 'add');
+     const [variantChosen, setVariantChosen] = useState(true);
+     const [bugFieldsError, setBugFieldsError] = useState(false);
 
      const {
           task,
@@ -276,18 +278,14 @@ const SingleTaskView = ({
                toast.error(t('task.columnRequired'));
                return;
           }
-          if (task?.type === 'bug') {
+          if (taskType === 'bug') {
                const url = formData.bugUrl.trim();
                if (!url) {
                     toast.error(t('task.bugLinkRequired'));
+                    setBugFieldsError(true);
                     return;
                }
-               try {
-                    new URL(url);
-               } catch {
-                    toast.error(t('task.invalidUrl'));
-                    return;
-               }
+               setBugFieldsError(false);
           }
 
           const success = isNewTask ? await saveNewTask() : await saveExistingTask();
@@ -537,7 +535,7 @@ const SingleTaskView = ({
                >
                     <motion.div
                          ref={modalRef}
-                         className={`bg-linear-to-b from-slate-800 to-slate-850 rounded-none md:rounded-2xl w-full h-dvh md:h-auto md:max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border-0 md:border border-slate-700/50 overflow-hidden transition-[max-width] duration-300 ease-out ${
+                         className={`bg-slate-900 rounded-none md:rounded-2xl w-full h-dvh md:h-auto md:max-h-[95vh] flex flex-col shadow-2xl shadow-black/40 border-0 md:border border-slate-700/50 overflow-hidden transition-[max-width] duration-300 ease-out ${
                               isNewTask && !variantChosen ? 'max-w-sm sm:max-w-3xl' : 'md:max-w-3xl lg:max-w-6xl'
                          }`}
                          initial={{ scale: 0.9, opacity: 0, y: 30 }}
@@ -599,85 +597,72 @@ const SingleTaskView = ({
                               onCompletionToggle={handleCompletionToggle}
                               completionDisabled={hasIncompleteSubtasks && !task?.completed}
                               completionDisabledTooltip={t('completion.completeSubtasksFirst')}
+                              taskType={taskType}
+                              onTypeChange={!isNewTask && !task?.parent_id ? handleTypeChange : undefined}
+                              canChangeType={canChangeType}
+                              isSubtask={!!task?.parent_id}
                          />
 
                          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                               {/* Main Content Area */}
-                              <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-5 text-white thin-scrollbar">
-                                   {/* Variant Selector - only shown for new tasks */}
+                              <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-6 text-white thin-scrollbar">
+                                   {/* Variant Selector - new tasks only */}
                                    {isNewTask && (
                                         <TaskVariantSelector selectedType={taskType} onChange={handleVariantChange} />
                                    )}
 
-                                   {/* Properties Section - highest z-index for dropdowns */}
-                                   <div className="relative z-40">
-                                        <TaskPropertiesGrid
-                                             selectedAssignees={formData.selectedAssignees}
-                                             availableUsers={availableUsers}
-                                             onAssigneesChange={handleAssigneesChange}
-                                             selectedPriority={task?.priority ?? null}
-                                             onPriorityChange={handlePriorityChange}
-                                             columns={columns}
-                                             localColumnId={formData.localColumnId}
-                                             onColumnChange={handleColumnChange}
-                                             hideAssignees={isNewTask && isBug}
-                                        />
-                                   </div>
-
-                                   {/* Type Section (hidden for new tasks — variant selector above handles it) */}
-                                   {!isNewTask && !task?.parent_id && (
-                                        <div className="relative z-30">
-                                             <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
-                                                  <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                       <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-cyan-500 rounded-full" />
-                                                       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('taskMeta.type')}</h3>
-                                                  </div>
-                                                  <TaskTypeSelector selectedType={taskType} onChange={handleTypeChange} disabled={!canChangeType} />
-                                                  {!canChangeType && (
-                                                       <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
-                                                            <FiLayers className="w-3 h-3" />
-                                                            {t('task.removeSubtasksToChangeType')}
-                                                       </p>
-                                                  )}
-                                             </div>
+                                   {/* Sidebar - mobile only */}
+                                   {!isNewTask && task && (
+                                        <div className="md:hidden">
+                                             <TaskMetadataSidebar
+                                                  task={{
+                                                       creator: task.creator ?? null,
+                                                       created_at: task.created_at ?? null,
+                                                       updated_at: task.updated_at ?? null,
+                                                       start_date: task.start_date ?? null,
+                                                       end_date: task.end_date ?? null,
+                                                       is_recurring: task.is_recurring ?? false,
+                                                       recurrence_interval: task.recurrence_interval ?? null,
+                                                       recurrence_type: task.recurrence_type ?? null,
+                                                       collaborators: task.collaborators ?? null,
+                                                       type: task.type,
+                                                       parent_id: task.parent_id,
+                                                  }}
+                                                  columns={columns}
+                                                  selectedAssignees={task.collaborators ?? []}
+                                                  localColumnId={formData.localColumnId}
+                                                  onRecurringModalOpen={() => setShowRecurringModal(true)}
+                                                  onOpenTask={onOpenTask}
+                                                  availableUsers={availableUsers}
+                                                  formAssignees={formData.selectedAssignees}
+                                                  onAssigneesChange={handleAssigneesChange}
+                                                  selectedPriority={task?.priority ?? null}
+                                                  onPriorityChange={handlePriorityChange}
+                                                  onColumnChange={handleColumnChange}
+                                                  startDate={formData.startDate}
+                                                  endDate={formData.endDate}
+                                                  onDateChange={handleDateChange}
+                                                  completed={task?.completed || false}
+                                                  onCompletionToggle={handleCompletionToggle}
+                                             />
                                         </div>
                                    )}
 
-                                   {/* Status Section — commented out (unused) */}
-                                   {/* {task?.statuses && task.statuses.length > 0 && (
-                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-4">
-                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-linear-to-b from-yellow-500 to-orange-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</h3>
-                                             </div>
-                                             <StatusSelector
-                                                  statuses={task.statuses}
-                                                  selectedStatusId={task.status_id || null}
-                                                  onChange={handleStatusChange}
-                                                  onStatusesChange={(newStatuses) => updateTask({ statuses: newStatuses })}
-                                                  boardId={boardId}
-                                                  disabled={false}
-                                                  label=""
-                                             />
-                                        </div>
-                                   )} */}
-
-                                   {/* Bug Fields Section — before description for bug type */}
+                                   {/* Bug Fields */}
                                    {isBug && (
                                         <BugFields
                                              bugUrl={formData.bugUrl}
                                              bugScenario={formData.bugScenario}
-                                             onBugUrlChange={handleBugUrlChange}
+                                             onBugUrlChange={(v) => { handleBugUrlChange(v); setBugFieldsError(false); }}
                                              onBugScenarioChange={handleBugScenarioChange}
+                                             hasError={bugFieldsError}
                                         />
                                    )}
 
-                                   {/* Description Section */}
-                                   <div className="relative z-10 bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
-                                        <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                             <div className="w-1 h-4 bg-linear-to-b from-pink-500 to-brand-500 rounded-full" />
-                                             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.description')}</h3>
-                                        </div>
+                                   {/* Description / Scenario */}
+                                   <div>
+                                        <p className="text-xs text-slate-400 mb-0.5">{isBug ? 'Scenariusz' : t('task.description')}</p>
+                                        {isBug && <p className="text-[11px] text-slate-500 mb-2">Im dokładniej opiszesz problem, tym szybciej go naprawimy. Opisz kroki, które prowadzą do błędu.</p>}
                                         <TaskDescription
                                              value={formData.tempDescription}
                                              onChange={handleDescriptionChange}
@@ -687,96 +672,61 @@ const SingleTaskView = ({
                                         />
                                    </div>
 
-                                   {/* Subtasks Section */}
+                                   {/* Subtasks (Story only) */}
                                    {isStory && task?.id && !isNewTask && (
-                                        <div className="relative z-5 bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
-                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-brand-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.subtasks')}</h3>
-                                                  <span className="ml-auto text-xs bg-brand-500/20 text-brand-300 px-2 py-0.5 rounded-full">{subtasks.length}</span>
-                                             </div>
+                                        <div>
                                              <SubtaskList
                                                   storyId={task.id}
                                                   boardId={boardId!}
                                                   columnId={task.column_id || formData.localColumnId || ''}
                                                   subtasks={subtasks}
                                                   onSubtaskOpen={setOpenedSubtaskId}
-                                                  onRefresh={() => {
-                                                       refetchSubtasks();
-                                                       fetchTaskData();
-                                                  }}
+                                                  onRefresh={() => { refetchSubtasks(); fetchTaskData(); }}
                                              />
                                         </div>
                                    )}
 
                                    {/* Subtasks placeholder for new Story */}
                                    {isStory && isNewTask && (
-                                        <div className="bg-slate-800/40 rounded-xl border border-brand-500/20 p-3 md:p-4">
-                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-linear-to-b from-brand-500 to-brand-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.subtasks')}</h3>
-                                             </div>
-                                             <div className="flex items-center gap-3 text-slate-500 py-3">
-                                                  <FiLayers className="w-5 h-5 text-brand-400/50" />
-                                                  <p className="text-sm">{t('task.subtasksAvailableAfterSave')}</p>
-                                             </div>
+                                        <div className="text-sm text-slate-500 flex items-center gap-2 py-3">
+                                             <FiLayers className="w-4 h-4 text-brand-400/50" />
+                                             {t('task.subtasksAvailableAfterSave')}
                                         </div>
                                    )}
 
-                                   {/* Dates Section */}
-                                   <TaskDatesSection startDate={formData.startDate} endDate={formData.endDate} onDateChange={handleDateChange} />
 
-                                   {/* Attachments Section */}
-                                   <Suspense fallback={<div className="text-slate-400 text-sm p-4">{t('task.loadingAttachments')}</div>}>
-                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
-                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-linear-to-b from-teal-500 to-green-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.attachments')}</h3>
-                                                  <FiPaperclip className="w-3.5 h-3.5 text-slate-500 ml-1" />
-                                             </div>
-                                             <TaskAttachmentsSection
-                                                  isNewTask={isNewTask}
-                                                  taskId={task?.id}
-                                                  attachments={task?.attachments || []}
-                                                  localFilePreviews={localFilePreviews}
-                                                  onAddFiles={addFiles}
-                                                  onRemoveLocalFile={removeFile}
-                                                  currentUser={user}
-                                                  onTaskUpdate={fetchTaskData}
-                                                  onAttachmentsUpdate={fetchTaskData}
-                                                  onUploadAttachment={uploadAttachment}
-                                             />
-                                        </div>
+                                   {/* Attachments */}
+                                   <Suspense fallback={<div className="text-slate-400 text-sm">{t('task.loadingAttachments')}</div>}>
+                                        <TaskAttachmentsSection
+                                             isNewTask={isNewTask}
+                                             taskId={task?.id}
+                                             attachments={task?.attachments || []}
+                                             localFilePreviews={localFilePreviews}
+                                             onAddFiles={addFiles}
+                                             onRemoveLocalFile={removeFile}
+                                             currentUser={user}
+                                             onTaskUpdate={fetchTaskData}
+                                             onAttachmentsUpdate={fetchTaskData}
+                                             onUploadAttachment={uploadAttachment}
+                                        />
                                    </Suspense>
 
-                                   {!isNewTask && task?.id && <TaskHistory taskId={task.id} columns={columns} onRestore={fetchTaskData} />}
-
-                                   {/* Comments Section */}
+                                   {/* Activity Feed (Comments + History) */}
                                    {!isNewTask && task?.id && (
-                                        <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 p-3 md:p-4">
-                                             <div className="flex items-center gap-2 pb-2 mb-3 border-b border-slate-700/30">
-                                                  <div className="w-1 h-4 bg-linear-to-b from-amber-500 to-yellow-500 rounded-full" />
-                                                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('task.comments')}</h3>
-                                                  <FiMessageCircle className="w-3.5 h-3.5 text-slate-500 ml-1" />
-                                                  {task.comments && task.comments.length > 0 && (
-                                                       <span className="ml-auto text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">{task.comments.length}</span>
-                                                  )}
-                                             </div>
-                                             <Suspense fallback={<div className="animate-pulse text-slate-400">{t('task.loadingComments')}</div>}>
-                                                  <CommentsSection
-                                                       taskId={task.id}
-                                                       comments={task.comments || []}
-                                                       currentUser={user}
-                                                       task={task}
-                                                       onRefreshComments={fetchTaskData}
-                                                       onImagePreview={setPreviewImageUrl}
-                                                       teamMembers={teamMembers}
-                                                       boardId={boardId}
-                                                       boardName={boardData?.title}
-                                                       taskTitle={task.title ?? undefined}
-                                                  />
-                                             </Suspense>
-                                        </div>
+                                        <ActivityFeed
+                                             taskId={task.id}
+                                             comments={task.comments || []}
+                                             currentUser={user}
+                                             task={task}
+                                             columns={columns}
+                                             teamMembers={teamMembers}
+                                             boardId={boardId}
+                                             boardName={boardData?.title}
+                                             taskTitle={task.title ?? undefined}
+                                             onRefreshComments={fetchTaskData}
+                                             onImagePreview={setPreviewImageUrl}
+                                             onRestore={fetchTaskData}
+                                        />
                                    )}
                               </div>
 
@@ -801,6 +751,19 @@ const SingleTaskView = ({
                                              localColumnId={formData.localColumnId}
                                              onRecurringModalOpen={() => setShowRecurringModal(true)}
                                              onOpenTask={onOpenTask}
+                                             onTypeChange={!task.parent_id ? handleTypeChange : undefined}
+                                             canChangeType={canChangeType}
+                                             availableUsers={availableUsers}
+                                             formAssignees={formData.selectedAssignees}
+                                             onAssigneesChange={handleAssigneesChange}
+                                             selectedPriority={task?.priority ?? null}
+                                             onPriorityChange={handlePriorityChange}
+                                             onColumnChange={handleColumnChange}
+                                             startDate={formData.startDate}
+                                             endDate={formData.endDate}
+                                             onDateChange={handleDateChange}
+                                             completed={task?.completed || false}
+                                             onCompletionToggle={handleCompletionToggle}
                                         />
                                    </div>
                               )}
@@ -822,14 +785,20 @@ const SingleTaskView = ({
                                    isOpen={showRecurringModal}
                                    onClose={() => setShowRecurringModal(false)}
                                    isRecurring={task?.is_recurring || false}
-                                   onToggleRecurring={(value) => updateTask({ is_recurring: value })}
+                                   onToggleRecurring={(value) => {
+                                        const changes = value
+                                             ? { is_recurring: true, recurrence_interval: task?.recurrence_interval || 1, recurrence_type: task?.recurrence_type || 'weekly' }
+                                             : { is_recurring: false, recurrence_interval: null, recurrence_type: null };
+                                        updateTask(changes);
+                                        if (currentTaskId) updateTaskMutation({ taskId: currentTaskId, data: changes, userId: user?.id });
+                                   }}
                                    recurrenceInterval={task?.recurrence_interval ?? 1}
-                                   onChangeInterval={(value) => updateTask({ recurrence_interval: value })}
+                                   onChangeInterval={(value) => { updateTask({ recurrence_interval: value }); if (currentTaskId) updateTaskMutation({ taskId: currentTaskId, data: { recurrence_interval: value }, userId: user?.id }); }}
                                    recurrenceType={task?.recurrence_type || 'weekly'}
-                                   onChangeType={(value) => updateTask({ recurrence_type: value })}
+                                   onChangeType={(value) => { updateTask({ recurrence_type: value }); if (currentTaskId) updateTaskMutation({ taskId: currentTaskId, data: { recurrence_type: value }, userId: user?.id }); }}
                                    recurrenceColumnId={task?.recurrence_column_id}
                                    currentColumnId={task?.column_id ?? undefined}
-                                   onChangeColumn={(colId) => updateTask({ recurrence_column_id: colId })}
+                                   onChangeColumn={(colId) => { updateTask({ recurrence_column_id: colId }); if (currentTaskId) updateTaskMutation({ taskId: currentTaskId, data: { recurrence_column_id: colId }, userId: user?.id }); }}
                                    columns={columns}
                               />
                          )}

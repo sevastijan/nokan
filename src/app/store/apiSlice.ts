@@ -144,6 +144,10 @@ export const {
      useUpdateUserMutation,
      useGetBoardNotesQuery,
      useSaveBoardNotesMutation,
+     useGetFavoriteBoardsQuery,
+     useGetBoardAvatarsQuery,
+     useToggleBoardFavoriteMutation,
+     useReorderFavoriteBoardsMutation,
      // Subtask hooks
      useGetSubtasksQuery,
      useAddSubtaskMutation,

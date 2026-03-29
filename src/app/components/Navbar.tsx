@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
-import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle } from 'lucide-react';
+import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle, Star, GripVertical } from 'lucide-react';
 import Avatar from '../components/Avatar/Avatar';
 import NotificationDropdown from './Notifications/NotificationDropdown';
-import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery, useGetUserChannelsQuery } from '@/app/store/apiSlice';
+import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery, useGetUserChannelsQuery, useGetFavoriteBoardsQuery, useReorderFavoriteBoardsMutation, useGetBoardAvatarsQuery } from '@/app/store/apiSlice';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useDisplayUser } from '../hooks/useDisplayUser';
 import { useChat } from '@/app/context/ChatContext';
 import { getUserDisplayName, getUserDisplayAvatar } from './Chat/utils';
@@ -16,6 +19,64 @@ import OnlineIndicator from './Chat/OnlineIndicator';
 import CreateChannelModal from './Chat/ChannelList/CreateChannelModal';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+
+function getBoardInitials(title: string): string {
+     const words = title.trim().split(/\s+/);
+     if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+     return title.slice(0, 2).toUpperCase();
+}
+
+const SortableBoardItem = ({ board, active, avatarUrl, onNavigate }: { board: { id: string; title: string }; active: boolean; avatarUrl?: string | null; onNavigate: () => void }) => {
+     const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: board.id });
+     const router = useRouter();
+     const style = {
+          transform: CSS.Translate.toString(transform),
+          transition,
+          opacity: isDragging ? 0.5 : 1,
+          zIndex: isDragging ? 10 : undefined,
+     };
+
+     return (
+          <div
+               ref={setNodeRef}
+               style={style}
+               className="group/fav"
+               onClick={() => {
+                    if (!isDragging) {
+                         router.push(`/board/${board.id}`);
+                         onNavigate();
+                    }
+               }}
+          >
+               <div
+                    className={`relative flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                         active ? 'bg-brand-600/10 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                    }`}
+               >
+                    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-brand-500" />}
+                    {/* Avatar */}
+                    {avatarUrl ? (
+                         <img src={avatarUrl} alt="" className="w-5 h-5 rounded shrink-0 object-cover" />
+                    ) : (
+                         <div className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center shrink-0">
+                              <span className="text-[8px] font-semibold text-slate-400">{getBoardInitials(board.title)}</span>
+                         </div>
+                    )}
+                    <span className="truncate flex-1">{board.title}</span>
+                    {/* Drag handle - right side */}
+                    <div
+                         ref={setActivatorNodeRef}
+                         className="shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover/fav:opacity-100 transition-opacity touch-none"
+                         {...attributes}
+                         {...listeners}
+                         onClick={(e) => e.stopPropagation()}
+                    >
+                         <GripVertical className="w-3 h-3 text-slate-600" />
+                    </div>
+               </div>
+          </div>
+     );
+};
 
 const Navbar = () => {
      const { t } = useTranslation();
@@ -42,6 +103,43 @@ const Navbar = () => {
           skip: !currentUser?.id,
      });
 
+     const { data: favBoardsFromApi = [] } = useGetFavoriteBoardsQuery(currentUser?.id ?? '', {
+          skip: !currentUser?.id,
+     });
+     const [reorderFavorites] = useReorderFavoriteBoardsMutation();
+     const isDraggingRef = useRef(false);
+     const favIds = useMemo(() => favBoardsFromApi.map((b) => b.id).join(','), [favBoardsFromApi]);
+     const [localFavBoards, setLocalFavBoards] = useState(favBoardsFromApi);
+     const localFavIdsRef = useRef('');
+
+     if (favIds !== localFavIdsRef.current && !isDraggingRef.current) {
+          localFavIdsRef.current = favIds;
+          setLocalFavBoards(favBoardsFromApi);
+     }
+
+     const favoriteBoards = localFavBoards;
+     const stableFavBoardIds = useMemo(() => localFavBoards.map((b) => b.id), [localFavBoards]);
+     const avatarQueryArg = useMemo(() => stableFavBoardIds, [stableFavBoardIds.join(',')]);
+     const { data: sidebarBoardAvatars = {} } = useGetBoardAvatarsQuery(avatarQueryArg, { skip: stableFavBoardIds.length === 0 });
+
+     const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+     const handleFavoriteDragEnd = useCallback((event: DragEndEvent) => {
+          isDraggingRef.current = false;
+          const { active, over } = event;
+          if (!over || active.id === over.id || !currentUser?.id) return;
+          const oldIndex = localFavBoards.findIndex((b) => b.id === active.id);
+          const newIndex = localFavBoards.findIndex((b) => b.id === over.id);
+          if (oldIndex === -1 || newIndex === -1) return;
+          const newOrder = arrayMove(localFavBoards, oldIndex, newIndex);
+          setLocalFavBoards(newOrder);
+          reorderFavorites({ userId: currentUser.id, boardIds: newOrder.map((b) => b.id) });
+     }, [localFavBoards, currentUser?.id, reorderFavorites]);
+
+     const handleFavoriteDragStart = useCallback(() => {
+          isDraggingRef.current = true;
+     }, []);
+
      const { data: channels = [] } = useGetUserChannelsQuery(currentUser?.id ?? '', {
           skip: !currentUser?.id,
           pollingInterval: 10000,
@@ -52,6 +150,16 @@ const Navbar = () => {
 
      const [sidebarOpen, setSidebarOpen] = useState(false);
      const [createModalMode, setCreateModalMode] = useState<'dm' | 'group' | null>(null);
+
+     useEffect(() => {
+          if (!sidebarOpen) return;
+          const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+          const html = document.documentElement;
+          html.style.paddingRight = `${scrollbarWidth}px`;
+          return () => {
+               html.style.paddingRight = '';
+          };
+     }, [sidebarOpen]);
 
      if (!session?.user) return <></>;
 
@@ -115,69 +223,34 @@ const Navbar = () => {
 
      const renderSidebarContent = () => (
           <div className="flex flex-col h-full">
-               {/* ─── Top: Logo ─── */}
-               <div className="px-5 py-5 shrink-0">
+               {/* ─── Top: Logo + Notifications ─── */}
+               <div className="px-4 py-4 flex items-center justify-between shrink-0">
                     <button
                          onClick={() => {
                               router.push('/');
                               setSidebarOpen(false);
                          }}
-                         className="flex items-center gap-2.5 cursor-pointer group"
+                         className="cursor-pointer"
                     >
-                         <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center shadow-lg shadow-brand-600/20 group-hover:bg-brand-500 transition-colors">
-                              <Home className="w-4 h-4 text-white" />
-                         </div>
-                         <span className="text-lg font-bold text-white tracking-tight">NOKAN</span>
+                         <img src="/logo.svg" alt="Nokan" className="w-7 h-7" />
                     </button>
+                    <div className="hidden md:block">
+                         <NotificationDropdown
+                              notifications={notifications}
+                              boards={boards}
+                              onMarkRead={handleMarkAsRead}
+                              onMarkAllRead={handleMarkAllAsRead}
+                              onDelete={handleDelete}
+                              onNavigate={(boardId, taskId) => {
+                                   router.push(`/board/${boardId}?task=${taskId}`);
+                                   setSidebarOpen(false);
+                              }}
+                         />
+                    </div>
                </div>
 
-               {/* ─── User profile ─── */}
-               {session.user && (
-                    <div className="px-4 mb-4 shrink-0">
-                         <div className="flex items-center gap-3 px-3 py-3">
-                              <Avatar src={displayAvatar} priority={true} alt="User avatar" size={36} className="ring-2 ring-slate-700/50 ring-offset-1 ring-offset-slate-900" />
-                              <div className="flex-1 min-w-0">
-                                   <p className="text-sm font-semibold text-white truncate">{displayName}</p>
-                                   {!roleLoading && (
-                                        <span className={`inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium border ${role.classes}`}>{role.label}</span>
-                                   )}
-                              </div>
-                         </div>
-                         <div className="flex items-center gap-1.5 px-2 mt-1">
-                              <button
-                                   onClick={() => {
-                                        router.push('/profile');
-                                        setSidebarOpen(false);
-                                   }}
-                                   className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                                        isActive('/profile')
-                                             ? 'bg-brand-600/10 text-brand-300'
-                                             : 'text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-800/70'
-                                   }`}
-                              >
-                                   <UserCog className="w-3.5 h-3.5" />
-                                   {t('nav.profile')}
-                              </button>
-                              <NotificationDropdown
-                                   notifications={notifications}
-                                   boards={boards}
-                                   onMarkRead={handleMarkAsRead}
-                                   onMarkAllRead={handleMarkAllAsRead}
-                                   onDelete={handleDelete}
-                                   onNavigate={(boardId, taskId) => {
-                                        router.push(`/board/${boardId}?task=${taskId}`);
-                                        setSidebarOpen(false);
-                                   }}
-                              />
-                         </div>
-                    </div>
-               )}
-
-               {/* ─── Divider ─── */}
-               <div className="mx-5 border-t border-slate-800 shrink-0" />
-
                {/* ─── Navigation links ─── */}
-               <nav className="px-3 mt-3 shrink-0">
+               <nav className="px-3 shrink-0">
                     <div className="space-y-0.5">
                          {nav.map(({ href, label, icon: Icon }) => {
                               const active = isActive(href);
@@ -197,6 +270,33 @@ const Navbar = () => {
                          })}
                     </div>
                </nav>
+
+               {/* ─── Pinned Boards ─── */}
+               {favoriteBoards.length > 0 && (
+                    <>
+                         <div className="mx-5 mt-3 border-t border-slate-800 shrink-0" />
+                         <div className="px-3 mt-2 shrink-0">
+                              <div className="flex items-center px-3 py-1.5">
+                                   <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Projekty</span>
+                              </div>
+                              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragStart={handleFavoriteDragStart} onDragEnd={handleFavoriteDragEnd}>
+                                   <SortableContext items={favoriteBoards.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+                                        <div className="space-y-0.5">
+                                             {favoriteBoards.map((board) => (
+                                                  <SortableBoardItem
+                                                       key={board.id}
+                                                       board={board}
+                                                       active={pathname === `/board/${board.id}`}
+                                                       avatarUrl={sidebarBoardAvatars[board.id] || null}
+                                                       onNavigate={() => setSidebarOpen(false)}
+                                                  />
+                                             ))}
+                                        </div>
+                                   </SortableContext>
+                              </DndContext>
+                         </div>
+                    </>
+               )}
 
                {/* ─── Divider ─── */}
                <div className="mx-5 mt-3 border-t border-slate-800 shrink-0" />
@@ -288,20 +388,41 @@ const Navbar = () => {
                     </div>
                </div>
 
-               {/* ─── Language switcher + Sign out (pinned bottom) ─── */}
+               {/* ─── Bottom: Profile + Settings ─── */}
                {session.user && (
-                    <div className="px-3 pb-4 pt-2 shrink-0">
+                    <div className="px-3 pb-4 pt-2 shrink-0 mt-auto">
                          <div className="mx-2 mb-3 border-t border-slate-800" />
-                         <div className="flex items-center justify-between px-3 mb-2">
-                              <LanguageSwitcher />
-                         </div>
+
+                         {/* User profile row */}
                          <button
-                              onClick={() => signOut({ callbackUrl: '/', redirect: true })}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer"
+                              onClick={() => {
+                                   router.push('/profile');
+                                   setSidebarOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer ${
+                                   isActive('/profile') ? 'bg-brand-600/10' : 'hover:bg-slate-800/50'
+                              }`}
                          >
-                              <LogOut className="w-[18px] h-[18px]" />
-                              <span>{t('nav.signOut')}</span>
+                              <Avatar src={displayAvatar} priority={true} alt="User avatar" size={28} />
+                              <div className="flex-1 min-w-0 text-left">
+                                   <p className="text-sm font-medium text-slate-200 truncate">{displayName}</p>
+                              </div>
+                              {!roleLoading && (
+                                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium border ${role.classes}`}>{role.label}</span>
+                              )}
                          </button>
+
+                         {/* Language + Logout */}
+                         <div className="flex items-center justify-between px-3 mt-2">
+                              <LanguageSwitcher />
+                              <button
+                                   onClick={() => signOut({ callbackUrl: '/', redirect: true })}
+                                   className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer"
+                                   title={t('nav.signOut')}
+                              >
+                                   <LogOut className="w-4 h-4" />
+                              </button>
+                         </div>
                     </div>
                )}
           </div>
@@ -309,14 +430,35 @@ const Navbar = () => {
 
      return (
           <>
-               {/* Mobile hamburger */}
-               <button
-                    onClick={() => setSidebarOpen(true)}
-                    className="fixed right-4 top-3 z-50 md:hidden bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-xl p-2.5 shadow-lg hover:bg-slate-700/80 transition-all text-slate-300 hover:text-white cursor-pointer"
-                    aria-label={t('nav.openSidebar')}
-               >
-                    <Menu className="w-5 h-5" />
-               </button>
+               {/* Mobile top bar */}
+               <div className="fixed top-0 left-0 right-0 z-50 md:hidden flex items-center justify-between px-4 py-2.5 bg-[#0b1120] border-b border-slate-800/50">
+                    <button
+                         onClick={() => { router.push('/'); setSidebarOpen(false); }}
+                         className="cursor-pointer"
+                    >
+                         <img src="/logo.svg" alt="Nokan" className="w-6 h-6" />
+                    </button>
+                    <div className="flex items-center gap-1">
+                         <NotificationDropdown
+                              notifications={notifications}
+                              boards={boards}
+                              onMarkRead={handleMarkAsRead}
+                              onMarkAllRead={handleMarkAllAsRead}
+                              onDelete={handleDelete}
+                              onNavigate={(boardId, taskId) => {
+                                   router.push(`/board/${boardId}?task=${taskId}`);
+                                   setSidebarOpen(false);
+                              }}
+                         />
+                         <button
+                              onClick={() => setSidebarOpen(true)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-white transition cursor-pointer"
+                              aria-label={t('nav.openSidebar')}
+                         >
+                              <Menu className="w-5 h-5" />
+                         </button>
+                    </div>
+               </div>
 
                {/* Desktop sidebar */}
                <nav className="hidden md:flex fixed top-0 left-0 h-full w-60 bg-slate-900 border-r border-slate-800/80 flex-col z-30">

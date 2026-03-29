@@ -169,7 +169,7 @@ export async function deleteBoardTemplate(templateId: string) {
 }
 
 export const getPriorities = async (): Promise<{ id: string; label: string; color: string }[]> => {
-     const { data, error } = await getSupabase().from('priorities').select('id, label, color').order('id');
+     const { data, error } = await getSupabase().from('priorities').select('id, label, color, order_index').order('order_index', { ascending: true });
 
      if (error) {
           throw new Error(error.message);

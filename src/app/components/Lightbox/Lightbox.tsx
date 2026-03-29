@@ -229,7 +229,7 @@ const Lightbox = ({ images, currentIndex, isOpen, onClose, onNavigate }: Lightbo
                                         aria-current={idx === imageIndex ? 'true' : 'false'}
                                    >
                                         <div className="relative w-full h-full">
-                                             <Image src={img.src} alt={img.alt || `Thumbnail ${idx + 1}`} fill className="object-cover" draggable={false} sizes="80px" />
+                                             <img src={img.src} alt={img.alt || `Thumbnail ${idx + 1}`} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
                                         </div>
                                    </button>
                               ))}

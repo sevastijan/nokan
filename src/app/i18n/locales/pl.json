@@ -429,6 +429,7 @@
           "newPriorityName": "Nowa nazwa priorytetu",
           "addNewPriority": "Dodaj nowy priorytet",
           "low": "Niski",
+          "normal": "Normalny",
           "medium": "Średni",
           "high": "Wysoki",
           "urgent": "Pilny"

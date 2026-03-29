@@ -172,6 +172,7 @@ export interface Task {
      parent_id?: string | null;
      bug_url?: string | null;
      bug_scenario?: string | null;
+     comment_count?: number;
 }
 
 export interface TaskDetail {
@@ -235,6 +236,7 @@ export interface Column {
      title: string;
      order: number;
      tasks: Task[];
+     color?: string;
 }
 
 export interface Board {

@@ -8,7 +8,7 @@ import { MentionNode } from '../nodes/MentionNode';
 export const editorConfig = {
      namespace: 'TaskDescriptionEditor',
      theme: {
-          root: 'p-3 border-none focus:outline-none min-h-[120px] max-h-[400px] overflow-y-auto text-slate-100',
+          root: 'border-none focus:outline-none overflow-y-auto text-slate-200 text-sm',
           link: 'text-brand-400 hover:text-brand-300 underline cursor-pointer',
           text: {
                bold: 'font-bold',

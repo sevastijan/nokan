@@ -52,7 +52,7 @@ const ClientLayout = ({ children }: ClientLayoutProps) => {
 			<ChatProvider>
 				<PWASplashScreen />
 				{loggedIn && <Navbar />}
-				<main className={`main-content min-h-screen ${loggedIn ? 'md:ml-60' : ''}`}>
+				<main className={`main-content min-h-screen ${loggedIn ? 'pt-11 md:pt-0 md:ml-60' : ''}`}>
 					{children}
 				</main>
 				{loggedIn && <MiniChatContainer />}

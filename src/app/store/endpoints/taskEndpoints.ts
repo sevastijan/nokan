@@ -777,7 +777,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                }
           },
           invalidatesTags: (_result, _error, { taskId, data }) => {
-               const tags: Array<{ type: string; id: string }> = [{ type: 'Task', id: taskId }];
+               const tags: Array<{ type: string; id: string }> = [{ type: 'Task', id: taskId }, { type: 'TaskSnapshot', id: taskId }];
 
                if (data.column_id) {
                     tags.push({ type: 'Column', id: data.column_id });

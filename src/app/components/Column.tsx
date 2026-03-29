@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import AddTaskForm from './TaskColumn/AddTaskForm';
@@ -47,7 +47,36 @@ const Column = ({
 }: ColumnProps) => {
      const { t } = useTranslation();
      const [isEditingTitle, setIsEditingTitle] = useState(false);
+     const [showColorPicker, setShowColorPicker] = useState(false);
      const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+     const colorPickerRef = useRef<HTMLDivElement>(null);
+
+     const COLUMN_COLORS = ['#6366f1', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#64748b'];
+
+     const colorKey = `col-color-${column.id}`;
+     const [columnColor, setColumnColor] = useState<string>(() => {
+          if (typeof window !== 'undefined') {
+               return localStorage.getItem(colorKey) || '';
+          }
+          return '';
+     });
+
+     const handleColorChange = useCallback((color: string) => {
+          setColumnColor(color);
+          localStorage.setItem(colorKey, color);
+          // Update column object so it propagates
+          if (column) (column as Record<string, unknown>).color = color;
+          setShowColorPicker(false);
+     }, [colorKey, column]);
+
+     useEffect(() => {
+          if (!showColorPicker) return;
+          const handler = (e: MouseEvent) => {
+               if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) setShowColorPicker(false);
+          };
+          const timer = setTimeout(() => document.addEventListener('mousedown', handler, true), 0);
+          return () => { clearTimeout(timer); document.removeEventListener('mousedown', handler, true); };
+     }, [showColorPicker]);
 
      const handleTitleFocus = useCallback(() => setIsEditingTitle(true), []);
 
@@ -92,6 +121,28 @@ const Column = ({
                          {...dragHandleProps}
                     >
                          <FaGripVertical size={14} />
+                    </div>
+
+                    {/* Color indicator */}
+                    <div className="relative" ref={colorPickerRef}>
+                         <button
+                              onClick={() => setShowColorPicker((p) => !p)}
+                              className="w-3 h-3 rounded-full shrink-0 cursor-pointer hover:ring-2 hover:ring-slate-500 transition"
+                              style={{ backgroundColor: columnColor || COLUMN_COLORS[column.order % COLUMN_COLORS.length] }}
+                              title={t('column.changeColor', 'Zmień kolor statusu')}
+                         />
+                         {showColorPicker && (
+                              <div className="absolute top-6 left-0 z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-2 flex flex-wrap gap-1.5 w-[120px]">
+                                   {COLUMN_COLORS.map((c) => (
+                                        <button
+                                             key={c}
+                                             onClick={() => handleColorChange(c)}
+                                             className={`w-5 h-5 rounded-full cursor-pointer transition hover:scale-110 ${c === columnColor ? 'ring-2 ring-white ring-offset-1 ring-offset-slate-800' : ''}`}
+                                             style={{ backgroundColor: c }}
+                                        />
+                                   ))}
+                              </div>
+                         )}
                     </div>
 
                     <input

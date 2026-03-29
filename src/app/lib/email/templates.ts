@@ -1,159 +1,118 @@
+const LOGO_BASE64 = 'data:image/webp;base64,UklGRh4EAABXRUJQVlA4WAoAAAAQAAAAgwAAgwAAQUxQSCwDAAANkAQAjCFJtT7btm3btu27n23btm3btm3bdmO6kkry3YsIB27bRpIrLzLneq7mDyq0u5G1UNpEn+6c3PuGm1KXyJTo1/3zO+6bUM3BznERkuUsuL7fE07KPzaSUiowceZS1ztewiraIncEJ2fTTm328tHw/B4RSo1cPfAvSonW+6Zw7b5h0RwuWu4dwr9vhuqoeqU2yOxjM3lohTZH1bKtEOoHSDL98AIG8lsBiNLy6iGwElaB5J53iEG5GPZedgWrhR0GUp6aSV0vhaXJ9/Im+L+A2aefnUor8DtUdylUaaBxppylLAMWgQNlgE5OEeEXMOPkTDovgyeK/9hDmmlIITg3hexsiEQxXyrgG4e5hsnnZtLU2mlOM0H+QVwGaiPJVmwTp4HEHCEwT4ybK4bNF6PmjEGLJ9DuQby5MMmEVynuY+L1SUYsAQOWAdpSQFoOKEsCYVmALQ2g5cHTf/0Mc3+UTkxqP9MxR/p39FTk9dZj5fFjnA4lO1z1VY1uSuooM+bOnuP3HqdIVqiccylMFiiili+WO0l89V+V8dePQJ9PH7/7NHGyfDn4iMBvxkxxznT/zpH7A5sFCX1el6p5RHjZ+8LG6CJ1qK13ilNtlyUXqCO9dDnuNlyYVJ576JM8q7o4mThDsjyvukgWR7tbaaBIcjcrDxxRFs+xrlYmHDLcxUqFRYixzE3NXgd7WsnQVJ+dmntj6GMi26sqFrzd20onnsN2bzIHX9tHmISxzcK2PZqGo+32aB6WpoBhe6SBl+32KISvYeHaZ5+NiKrT0sMvEqq3EYKgOtCP7rm9rDkdXD4GJ72dHFr3db88VBunZYBeI1g7SsG0v7/1BpNSbSpw4zaw1lWB3ZAh5j4j8JtVeQqo/HIYrL1/igO0fSz9t/ymCqjEvNntRutPsmaGM6GQl5UmZ9Lq3E6Ebgydq9PCddasxoJq4zPpgjRGpVx+cJK3Bt1wT60MNlbq4/2ZPWmKTDl58bBCHp9te0bz+8ca2bpG8dG3hRMNNKQXzRvEUS/vnNh9iVejGzajWLFMSSKoE7PXGkl5bfaiZ0o3mJxizZ4L9z6pUGuGAlZQOCDMAAAAsAoAnQEqhACEAD6dTqNNJaSjIiJ6qACwE4lpbt0B6BOeaOz1m3INnl4vZBs8vF6M0oyBETGWDDOFUEL8FuMl3MhJpu1vJOl2C3wr/2f4MdbJS0g2eYYeyDZ5eL2EAAD++2UACCiCERuOZb5nDyv/6/kHmy7x2rvIVPxEg+NF5tPnT5aurxXyrHrUifAV8omzoNSyTLJNNMvIwXRk2vjUxf+VKb6CbUYrS2DLizHEMvXcAkrtgQa3VM9MoCInYlAY5BTu0+QHguAAAAAA';
+
 const baseStyles = `
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    line-height: 1.6;
-    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.5;
+    color: #1a1a1a;
     margin: 0;
     padding: 0;
-    background-color: #0f172a;
+    background-color: #f4f4f5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrapper {
+    padding: 40px 20px;
   }
   .container {
-    max-width: 600px;
+    max-width: 480px;
     margin: 0 auto;
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e4e4e7;
   }
-  .header {
-    background: linear-gradient(135deg, #00a68b 0%, #008570 100%);
-    padding: 32px 24px;
-    text-align: center;
+  .logo-area {
+    padding: 24px 32px 0 32px;
   }
-  .header h1 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-    color: white;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  .body {
+    padding: 20px 32px 28px 32px;
   }
-  .header .icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-  }
-  .content {
-    padding: 32px 24px;
-    background: #1e293b;
-  }
-  .card {
-    background: linear-gradient(145deg, #334155 0%, #1e293b 100%);
-    border: 1px solid #475569;
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-  }
-  .task-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #f1f5f9;
-    margin: 0 0 12px 0;
-  }
-  .meta {
-    color: #94a3b8;
+  .action-text {
     font-size: 14px;
-    margin: 8px 0;
+    color: #3f3f46;
+    margin: 0 0 16px 0;
+    line-height: 1.5;
   }
-  .meta strong {
-    color: #e2e8f0;
+  .action-text strong {
+    color: #09090b;
   }
-  .badge {
+  .task-link {
+    font-size: 15px;
+    font-weight: 600;
+    color: #09090b;
+    margin: 0 0 4px 0;
+    line-height: 1.4;
+  }
+  .context {
+    font-size: 13px;
+    color: #a1a1aa;
+    margin: 0;
+  }
+  .detail-box {
+    margin: 16px 0 0 0;
+    padding: 12px 16px;
+    background: #fafafa;
+    border-radius: 8px;
+  }
+  .status-pill {
     display: inline-block;
-    padding: 4px 12px;
-    border-radius: 9999px;
+    padding: 2px 8px;
+    border-radius: 4px;
     font-size: 12px;
     font-weight: 600;
-    margin-right: 8px;
   }
-  .badge-blue {
-    background: rgba(59, 130, 246, 0.2);
-    color: #33c4a8;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+  .pill-muted {
+    background: #f4f4f5;
+    color: #71717a;
   }
-  .badge-purple {
-    background: rgba(59, 130, 246, 0.2);
-    color: #33c4a8;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+  .pill-green {
+    background: #ecfdf5;
+    color: #059669;
   }
-  .badge-green {
-    background: rgba(34, 197, 94, 0.2);
-    color: #4ade80;
-    border: 1px solid rgba(34, 197, 94, 0.3);
+  .pill-red {
+    background: #fef2f2;
+    color: #dc2626;
   }
-  .badge-yellow {
-    background: rgba(234, 179, 8, 0.2);
-    color: #facc15;
-    border: 1px solid rgba(234, 179, 8, 0.3);
+  .arrow {
+    color: #a1a1aa;
+    margin: 0 6px;
+    font-size: 12px;
   }
-  .badge-red {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+  .quote {
+    margin: 12px 0 0 0;
+    padding: 10px 14px;
+    background: #fafafa;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #3f3f46;
+    line-height: 1.5;
   }
-  .button {
+  .btn {
     display: inline-block;
-    background: linear-gradient(135deg, #00a68b 0%, #008570 100%);
-    color: white !important;
-    padding: 14px 32px;
+    color: #ffffff !important;
+    padding: 10px 20px;
     text-decoration: none;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    text-align: center;
-    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
-    transition: all 0.2s;
-  }
-  .button:hover {
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
-  }
-  .status-change {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
-    background: rgba(15, 23, 42, 0.5);
-    border-radius: 12px;
-    margin: 16px 0;
-  }
-  .status-arrow {
-    color: #64748b;
-    font-size: 20px;
-  }
-  .comment-box {
-    background: rgba(15, 23, 42, 0.5);
-    border-left: 4px solid;
-    border-image: linear-gradient(180deg, #00a68b, #008570) 1;
-    padding: 16px 20px;
-    margin: 16px 0;
-    border-radius: 0 12px 12px 0;
-    color: #cbd5e1;
-    font-style: italic;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 13px;
+    margin-top: 20px;
   }
   .footer {
-    color: #64748b;
-    font-size: 12px;
-    padding: 24px;
-    text-align: center;
-    border-top: 1px solid #334155;
-    background: #0f172a;
+    padding: 20px 32px;
+  }
+  .footer p {
+    font-size: 11px;
+    color: #a1a1aa;
+    margin: 0;
+    line-height: 1.6;
   }
   .footer a {
-    color: #33c4a8;
-    text-decoration: none;
-  }
-  .divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #475569, transparent);
-    margin: 24px 0;
-  }
-  .logo {
-    font-weight: 800;
-    font-size: 20px;
-    background: linear-gradient(135deg, #33c4a8, #00a68b);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #71717a;
+    text-decoration: underline;
   }
 `;
 
-const wrapHtml = (content: string) => `
+const wrapHtml = (accentColor: string, content: string) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -162,17 +121,31 @@ const wrapHtml = (content: string) => `
   <style>${baseStyles}</style>
 </head>
 <body>
-  <div class="container">
-    ${content}
-    <div class="footer">
-      <p class="logo">NOKAN</p>
-      <p style="margin: 12px 0 0 0;">Ta wiadomość została wygenerowana automatycznie.</p>
-      <p style="margin: 8px 0 0 0;">Możesz zarządzać <a href="#">preferencjami powiadomień</a> w ustawieniach.</p>
+  <div class="wrapper">
+    <div class="container">
+      <div class="logo-area">
+        <img src="${LOGO_BASE64}" alt="Nokan" width="28" height="28" style="display: block;" />
+      </div>
+      <div class="body" data-accent="${accentColor}">
+        ${content}
+      </div>
+      <div class="footer">
+        <p>Otrzymujesz tę wiadomość, ponieważ jesteś uczestnikiem tego zadania. <a href="#">Zarządzaj powiadomieniami</a></p>
+        <p style="margin-top: 12px; font-size: 10px; color: #d4d4d8; line-height: 1.5;">Ta wiadomość jest poufna i przeznaczona wyłącznie dla adresata. Jeśli otrzymałeś/aś ją omyłkowo, prosimy o niezwłoczne usunięcie. Zabronione jest kopiowanie lub ujawnianie treści osobom trzecim. Prosimy o niedrukowanie &mdash; dbajmy o środowisko.</p>
+      </div>
     </div>
   </div>
 </body>
 </html>
 `;
+
+function colorBtn(taskUrl: string, label: string): string {
+     return `<a href="${taskUrl}" class="btn" style="background: #09090b;">${label}</a>`;
+}
+
+function taskDot(color: string): string {
+     return `<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; margin-right: 8px; position: relative; top: -1px; vertical-align: middle;"></span>`;
+}
 
 export function taskAssignedTemplate(
      taskTitle: string,
@@ -180,24 +153,13 @@ export function taskAssignedTemplate(
      taskUrl: string,
      assignerName?: string
 ): string {
-     return wrapHtml(`
-    <div class="header">
-      <div class="icon">📋</div>
-      <h1>Przypisano Ci nowe zadanie</h1>
-    </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <p class="meta">
-          <span class="badge badge-blue">${boardName}</span>
-          ${assignerName ? `<span class="badge badge-purple">od ${assignerName}</span>` : ''}
-        </p>
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button">🔗 Zobacz zadanie</a>
-      </div>
-    </div>
+     const c = '#00a68b';
+     const actor = assignerName ? `<strong>${assignerName}</strong> przypisał(a) Ci zadanie` : 'Przypisano Ci zadanie';
+     return wrapHtml(c, `
+    <p class="action-text">${actor}</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <p class="context">${boardName}</p>
+    ${colorBtn(taskUrl, 'Zobacz zadanie')}
   `);
 }
 
@@ -207,27 +169,13 @@ export function taskUnassignedTemplate(
      taskUrl: string,
      unassignerName?: string
 ): string {
-     return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);">
-      <div class="icon">👋</div>
-      <h1>Usunięto Cię z zadania</h1>
-    </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <p class="meta">
-          <span class="badge badge-blue">${boardName}</span>
-          ${unassignerName ? `<span class="badge badge-red">przez ${unassignerName}</span>` : ''}
-        </p>
-        <p class="meta" style="margin-top: 16px;">
-          Nie jesteś już przypisany/a do tego zadania. Możesz nadal śledzić jego postęp na tablicy.
-        </p>
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);">📋 Zobacz zadanie</a>
-      </div>
-    </div>
+     const c = '#71717a';
+     const actor = unassignerName ? `<strong>${unassignerName}</strong> usunął/ęła Cię z zadania` : 'Usunięto Cię z zadania';
+     return wrapHtml(c, `
+    <p class="action-text">${actor}</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <p class="context">${boardName}</p>
+    ${colorBtn(taskUrl, 'Zobacz zadanie')}
   `);
 }
 
@@ -237,78 +185,16 @@ export function taskStatusChangedTemplate(
      newStatus: string,
      taskUrl: string
 ): string {
-     return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #22c55e 0%, #14b8a6 100%);">
-      <div class="icon">🔄</div>
-      <h1>Zmiana statusu zadania</h1>
+     const c = '#22c55e';
+     return wrapHtml(c, `
+    <p class="action-text">Zmieniono status zadania</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <div class="detail-box">
+      <span class="status-pill pill-muted">${oldStatus}</span>
+      <span class="arrow">&rarr;</span>
+      <span class="status-pill pill-green">${newStatus}</span>
     </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <div class="status-change">
-          <span class="badge badge-yellow">${oldStatus}</span>
-          <span class="status-arrow">→</span>
-          <span class="badge badge-green">${newStatus}</span>
-        </div>
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #22c55e 0%, #14b8a6 100%);">🔗 Zobacz zadanie</a>
-      </div>
-    </div>
-  `);
-}
-
-export function taskCommentedTemplate(
-     taskTitle: string,
-     commenterName: string,
-     commentPreview: string,
-     taskUrl: string
-): string {
-     return wrapHtml(`
-    <div class="header">
-      <div class="icon">💬</div>
-      <h1>Nowy komentarz</h1>
-    </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <p class="meta"><span class="badge badge-purple">${commenterName}</span> dodał/a komentarz:</p>
-        <div class="comment-box">
-          "${commentPreview}"
-        </div>
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button">💬 Zobacz komentarz</a>
-      </div>
-    </div>
-  `);
-}
-
-export function taskDueDateChangedTemplate(
-     taskTitle: string,
-     newDueDate: string,
-     taskUrl: string
-): string {
-     return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);">
-      <div class="icon">📅</div>
-      <h1>Zmiana terminu zadania</h1>
-    </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <p class="meta">Nowy termin:</p>
-        <p style="font-size: 24px; font-weight: 700; color: #fbbf24; margin: 16px 0;">
-          📆 ${newDueDate}
-        </p>
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);">🔗 Zobacz zadanie</a>
-      </div>
-    </div>
+    ${colorBtn(taskUrl, 'Zobacz zadanie')}
   `);
 }
 
@@ -318,25 +204,48 @@ export function taskPriorityChangedTemplate(
      newPriority: string,
      taskUrl: string
 ): string {
-     return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">
-      <div class="icon">🎯</div>
-      <h1>Zmiana priorytetu zadania</h1>
+     const c = '#f59e0b';
+     return wrapHtml(c, `
+    <p class="action-text">Zmieniono priorytet zadania</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <div class="detail-box">
+      <span class="status-pill pill-muted">${oldPriority}</span>
+      <span class="arrow">&rarr;</span>
+      <span class="status-pill pill-red">${newPriority}</span>
     </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <div class="status-change">
-          <span class="badge badge-yellow">${oldPriority}</span>
-          <span class="status-arrow">→</span>
-          <span class="badge badge-purple">${newPriority}</span>
-        </div>
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">🔗 Zobacz zadanie</a>
-      </div>
+    ${colorBtn(taskUrl, 'Zobacz zadanie')}
+  `);
+}
+
+export function taskCommentedTemplate(
+     taskTitle: string,
+     commenterName: string,
+     commentPreview: string,
+     taskUrl: string
+): string {
+     const c = '#3b82f6';
+     return wrapHtml(c, `
+    <p class="action-text"><strong>${commenterName}</strong> skomentował(a) zadanie</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <div class="quote">${commentPreview}</div>
+    ${colorBtn(taskUrl, 'Zobacz komentarz')}
+  `);
+}
+
+export function taskDueDateChangedTemplate(
+     taskTitle: string,
+     newDueDate: string,
+     taskUrl: string
+): string {
+     const c = '#f59e0b';
+     return wrapHtml(c, `
+    <p class="action-text">Zmieniono termin zadania</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <div class="detail-box">
+      <span style="font-size: 13px; color: #71717a;">Nowy termin:</span>
+      <strong style="font-size: 13px; color: #09090b; margin-left: 8px;">${newDueDate}</strong>
     </div>
+    ${colorBtn(taskUrl, 'Zobacz zadanie')}
   `);
 }
 
@@ -346,27 +255,13 @@ export function collaboratorAddedTemplate(
      taskUrl: string,
      adderName?: string
 ): string {
-     return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">
-      <div class="icon">👥</div>
-      <h1>Dodano Cię jako współpracownika</h1>
-    </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <p class="meta">
-          <span class="badge badge-blue">${boardName}</span>
-          ${adderName ? `<span class="badge badge-purple">przez ${adderName}</span>` : ''}
-        </p>
-        <p class="meta" style="margin-top: 16px;">
-          Zostałeś/aś dodany/a jako współpracownik do tego zadania. Będziesz otrzymywać powiadomienia o zmianach.
-        </p>
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">👥 Zobacz zadanie</a>
-      </div>
-    </div>
+     const c = '#00a68b';
+     const actor = adderName ? `<strong>${adderName}</strong> dodał(a) Cię jako współpracownika` : 'Dodano Cię jako współpracownika';
+     return wrapHtml(c, `
+    <p class="action-text">${actor}</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <p class="context">${boardName}</p>
+    ${colorBtn(taskUrl, 'Zobacz zadanie')}
   `);
 }
 
@@ -376,27 +271,13 @@ export function collaboratorRemovedTemplate(
      taskUrl: string,
      removerName?: string
 ): string {
-     return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
-      <div class="icon">👤</div>
-      <h1>Usunięto Cię ze współpracowników</h1>
-    </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <p class="meta">
-          <span class="badge badge-blue">${boardName}</span>
-          ${removerName ? `<span class="badge badge-yellow">przez ${removerName}</span>` : ''}
-        </p>
-        <p class="meta" style="margin-top: 16px;">
-          Nie jesteś już współpracownikiem tego zadania. Możesz nadal śledzić jego postęp na tablicy.
-        </p>
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">📋 Zobacz zadanie</a>
-      </div>
-    </div>
+     const c = '#71717a';
+     const actor = removerName ? `<strong>${removerName}</strong> usunął/ęła Cię ze współpracowników` : 'Usunięto Cię ze współpracowników';
+     return wrapHtml(c, `
+    <p class="action-text">${actor}</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <p class="context">${boardName}</p>
+    ${colorBtn(taskUrl, 'Zobacz zadanie')}
   `);
 }
 
@@ -407,29 +288,14 @@ export function newSubmissionTemplate(
      clientName?: string,
      descriptionPreview?: string
 ): string {
-     const descriptionHtml = descriptionPreview
-          ? `<div class="comment-box">"${descriptionPreview}"</div>`
-          : '';
-
-     return wrapHtml(`
-    <div class="header" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">
-      <div class="icon">📩</div>
-      <h1>Nowe zgłoszenie od klienta</h1>
-    </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <p class="meta">
-          <span class="badge badge-blue">${boardName}</span>
-          ${clientName ? `<span class="badge badge-purple">od ${clientName}</span>` : ''}
-        </p>
-        ${descriptionHtml}
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button" style="background: linear-gradient(135deg, #00a68b 0%, #008570 100%);">🔗 Zobacz zgłoszenie</a>
-      </div>
-    </div>
+     const c = '#00a68b';
+     const actor = clientName ? `<strong>${clientName}</strong> przesłał(a) nowe zgłoszenie` : 'Nowe zgłoszenie';
+     return wrapHtml(c, `
+    <p class="action-text">${actor}</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <p class="context">${boardName}</p>
+    ${descriptionPreview ? `<div class="quote">${descriptionPreview}</div>` : ''}
+    ${colorBtn(taskUrl, 'Zobacz zgłoszenie')}
   `);
 }
 
@@ -440,28 +306,13 @@ export function mentionTemplate(
      mentionerName?: string,
      context?: string
 ): string {
-     const contextText = context
-          ? `<div class="comment-box">"${context}"</div>`
-          : '<p class="meta" style="margin-top: 16px;">w opisie zadania</p>';
-
-     return wrapHtml(`
-    <div class="header">
-      <div class="icon">📣</div>
-      <h1>Wspomniano Cię w zadaniu</h1>
-    </div>
-    <div class="content">
-      <div class="card">
-        <p class="task-title">${taskTitle}</p>
-        <div class="divider"></div>
-        <p class="meta">
-          <span class="badge badge-blue">${boardName}</span>
-          ${mentionerName ? `<span class="badge badge-purple">przez ${mentionerName}</span>` : ''}
-        </p>
-        ${contextText}
-      </div>
-      <div style="text-align: center;">
-        <a href="${taskUrl}" class="button">🔗 Zobacz zadanie</a>
-      </div>
-    </div>
+     const c = '#3b82f6';
+     const actor = mentionerName ? `<strong>${mentionerName}</strong> wspomniał(a) o Tobie` : 'Wspomniano o Tobie';
+     return wrapHtml(c, `
+    <p class="action-text">${actor}</p>
+    <p class="task-link">${taskDot(c)}${taskTitle}</p>
+    <p class="context">${boardName}</p>
+    ${context ? `<div class="quote">${context}</div>` : ''}
+    ${colorBtn(taskUrl, 'Zobacz zadanie')}
   `);
 }

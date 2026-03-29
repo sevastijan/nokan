@@ -217,7 +217,10 @@ export function MentionPlugin({ teamMembers }: MentionPluginProps) {
      if (!showDropdown || filteredMembers.length === 0 || !position) return null;
 
      return createPortal(
-          <div className="fixed z-100 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-48 overflow-y-auto w-56" style={{ top: position.top, left: position.left }}>
+          <div className="fixed z-[999] bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto w-56" style={{ top: position.top, left: position.left }}
+               data-ignore-outside-click
+               onMouseDown={(e) => e.stopPropagation()}
+          >
                {filteredMembers.map((user, i) => {
                     const userDisplay = getDisplayData(user);
                     return (
@@ -226,6 +229,7 @@ export function MentionPlugin({ teamMembers }: MentionPluginProps) {
                               className={`px-3 py-2 hover:bg-slate-700 cursor-pointer flex items-center gap-2 text-sm ${i === selectedIndex ? 'bg-slate-700' : ''}`}
                               onMouseDown={(e) => {
                                    e.preventDefault();
+                                   e.stopPropagation();
                                    insertMention(user);
                               }}
                          >

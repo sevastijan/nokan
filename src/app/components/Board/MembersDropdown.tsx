@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiUserPlus, FiX, FiUsers, FiSearch, FiCheck } from 'react-icons/fi';
+import { FiUserPlus, FiX, FiUsers, FiSearch, FiCheck, FiLoader } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import Avatar from '@/app/components/Avatar/Avatar';
@@ -26,6 +26,8 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
      const { t } = useTranslation();
      const containerRef = useRef<HTMLDivElement>(null);
      const [searchQuery, setSearchQuery] = useState('');
+     const [pendingAdd, setPendingAdd] = useState<Set<string>>(new Set());
+     const [pendingRemove, setPendingRemove] = useState<Set<string>>(new Set());
 
      const { data: allUsers = [] } = useGetAllUsersQuery();
      const { data: boardMembers = [], refetch: refetchMembers } = useGetBoardMembersQuery(boardId);
@@ -51,45 +53,61 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
 
      const handleAddUser = useCallback(
           async (userId: string) => {
+               if (pendingAdd.has(userId)) return;
+               setPendingAdd((prev) => new Set(prev).add(userId));
                try {
                     await addMember({ boardId, userId }).unwrap();
+                    await refetchMembers();
                     toast.success(t('membersDropdown.userAdded'));
-                    refetchMembers();
                } catch {
                     toast.error(t('membersDropdown.addFailed'));
+               } finally {
+                    setPendingAdd((prev) => {
+                         const next = new Set(prev);
+                         next.delete(userId);
+                         return next;
+                    });
                }
           },
-          [addMember, boardId, refetchMembers],
+          [addMember, boardId, refetchMembers, pendingAdd, t],
      );
 
      const handleRemoveUser = useCallback(
           async (userId: string) => {
-               if (userId === currentUserId) return;
+               if (userId === currentUserId || pendingRemove.has(userId)) return;
+               setPendingRemove((prev) => new Set(prev).add(userId));
                try {
                     await removeMember({ boardId, userId }).unwrap();
+                    await refetchMembers();
                     toast.success(t('membersDropdown.userRemoved'));
-                    refetchMembers();
                } catch {
                     toast.error(t('membersDropdown.removeFailed'));
+               } finally {
+                    setPendingRemove((prev) => {
+                         const next = new Set(prev);
+                         next.delete(userId);
+                         return next;
+                    });
                }
           },
-          [removeMember, boardId, currentUserId, refetchMembers],
+          [removeMember, boardId, currentUserId, refetchMembers, pendingRemove, t],
      );
-
-     const isMember = useCallback((userId: string) => boardMembers.some((m) => m.id === userId), [boardMembers]);
 
      return (
           <div className="relative" ref={containerRef}>
                <button
                     onClick={onToggle}
-                    className={`
-                         flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors
-                         ${isOpen ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}
-                    `}
+                    className={`relative p-1.5 rounded-md transition-colors ${
+                         isOpen ? 'bg-slate-700 text-slate-100' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                    }`}
+                    title={t('membersDropdown.boardMembers')}
                >
-                    <FiUserPlus className="w-4 h-4" />
-                    <span className="hidden sm:inline font-medium">{t('membersDropdown.boardMembers')}</span>
-                    <span className="bg-slate-600 text-slate-300 text-xs px-1.5 py-0.5 rounded min-w-[18px] text-center">{boardMembers.length}</span>
+                    <FiUsers className="w-4 h-4" />
+                    {boardMembers.length > 0 && (
+                         <span className="absolute -top-1 -right-1 bg-slate-600 text-slate-200 text-[9px] font-medium min-w-[14px] h-[14px] flex items-center justify-center rounded-full">
+                              {boardMembers.length}
+                         </span>
+                    )}
                </button>
 
                <AnimatePresence>
@@ -99,7 +117,7 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -8 }}
                               transition={{ duration: 0.15 }}
-                              className="absolute right-0 mt-2 w-80 bg-slate-800 rounded-xl shadow-xl border border-slate-700 z-50"
+                              className="fixed sm:absolute right-2 sm:right-0 mt-2 w-[calc(100vw-16px)] sm:w-80 max-w-80 bg-slate-800 rounded-xl shadow-xl border border-slate-700 z-50"
                          >
                               {/* Header */}
                               <div className="px-4 py-3 border-b border-slate-700">
@@ -122,14 +140,14 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                                              {boardMembers.map((user) => {
                                                   const userDisplay = getDisplayData(user);
                                                   const isCurrentUser = user.id === currentUserId;
+                                                  const isRemoving = pendingRemove.has(user.id);
 
                                                   return (
                                                        <li
                                                             key={user.id}
-                                                            className={`
-                                                                 flex items-center justify-between p-2 rounded-lg
-                                                                 ${isCurrentUser ? 'bg-slate-700/30' : 'hover:bg-slate-700/30'}
-                                                            `}
+                                                            className={`flex items-center justify-between p-2 rounded-lg ${
+                                                                 isRemoving ? 'opacity-40' : isCurrentUser ? 'bg-slate-700/30' : 'hover:bg-slate-700/30'
+                                                            }`}
                                                        >
                                                             <div className="flex items-center gap-2.5 min-w-0">
                                                                  <Avatar src={userDisplay.image || ''} alt={userDisplay.name} size={28} />
@@ -145,10 +163,15 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                                                             {!isCurrentUser && (
                                                                  <button
                                                                       onClick={() => handleRemoveUser(user.id)}
-                                                                      className="p-1.5 text-slate-500 hover:text-slate-300 rounded transition-colors"
+                                                                      disabled={isRemoving}
+                                                                      className="p-1.5 text-slate-500 hover:text-red-400 rounded transition-colors disabled:pointer-events-none"
                                                                       title={t('membersDropdown.remove')}
                                                                  >
-                                                                      <FiX className="w-4 h-4" />
+                                                                      {isRemoving ? (
+                                                                           <FiLoader className="w-4 h-4 animate-spin" />
+                                                                      ) : (
+                                                                           <FiX className="w-4 h-4" />
+                                                                      )}
                                                                  </button>
                                                             )}
                                                        </li>
@@ -158,12 +181,11 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                                    )}
                               </div>
 
-                              {/* Add New Members - inline list instead of nested dropdown */}
+                              {/* Add New Members */}
                               {availableToAdd.length > 0 && (
                                    <div className="p-3">
                                         <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 px-1">{t('membersDropdown.addNew')}</div>
 
-                                        {/* Search input */}
                                         <div className="relative mb-2">
                                              <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                              <input
@@ -175,30 +197,28 @@ const MembersDropdown = ({ boardId, currentUserId, isOpen, onToggle, onClose }: 
                                              />
                                         </div>
 
-                                        {/* User list */}
                                         <ul className="space-y-0.5 max-h-40 overflow-y-auto">
                                              {filteredUsers.length === 0 ? (
                                                   <li className="text-center py-3 text-slate-500 text-sm">{t('membersDropdown.noResults')}</li>
                                              ) : (
                                                   filteredUsers.map((user) => {
                                                        const userDisplay = getDisplayData(user);
-                                                       const member = isMember(user.id);
+                                                       const isAdding = pendingAdd.has(user.id);
 
                                                        return (
                                                             <li
                                                                  key={user.id}
-                                                                 onClick={() => !member && handleAddUser(user.id)}
-                                                                 className={`
-                                                                      flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors
-                                                                      ${member ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-700/50'}
-                                                                 `}
+                                                                 onClick={() => !isAdding && handleAddUser(user.id)}
+                                                                 className={`flex items-center gap-2.5 p-2 rounded-lg transition-colors ${
+                                                                      isAdding ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:bg-slate-700/50'
+                                                                 }`}
                                                             >
                                                                  <Avatar src={userDisplay.image || ''} alt={userDisplay.name} size={28} />
                                                                  <div className="min-w-0 flex-1">
                                                                       <div className="text-sm text-slate-200 truncate">{userDisplay.name}</div>
                                                                       <div className="text-xs text-slate-500 truncate">{user.email}</div>
                                                                  </div>
-                                                                 {member && <FiCheck className="w-4 h-4 text-green-500" />}
+                                                                 {isAdding && <FiLoader className="w-4 h-4 text-slate-400 animate-spin" />}
                                                             </li>
                                                        );
                                                   })

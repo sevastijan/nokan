@@ -3,10 +3,13 @@
 import { useState, useRef, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
-import { FiArrowLeft, FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight, FiMoreHorizontal, FiChevronLeft } from 'react-icons/fi';
+import { Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, Transition } from '@headlessui/react';
 import { BoardHeaderProps } from '@/app/types/globalTypes';
 import { useHasManagementAccess } from '@/app/hooks/useHasManagementAccess';
+import { useGetBoardAvatarsQuery } from '@/app/store/apiSlice';
 import FilterDropdown from './FilterDropdown';
 import ViewModeToggle from './ViewModeToggle';
 import MembersDropdown from './MembersDropdown';
@@ -52,212 +55,265 @@ const BoardHeader = ({
      const searchInputRef = useRef<HTMLInputElement>(null);
 
      const hasManagementAccess = useHasManagementAccess();
+     const avatarInputRef = useRef<HTMLInputElement>(null);
+     const [avatarUploading, setAvatarUploading] = useState(false);
+     const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
 
-     const handleBack = useCallback(() => router.push('/dashboard'), [router]);
+     const { data: boardAvatars = {} } = useGetBoardAvatarsQuery([boardId], { skip: !boardId });
+     const avatarUrl = localAvatarUrl || boardAvatars[boardId] || null;
 
-     const handleSearchIconClick = useCallback(() => {
-          setShowMobileSearch((p) => !p);
-     }, []);
-
-     const handleSearchInputChange = useCallback(
-          (e: ChangeEvent<HTMLInputElement>) => {
-               onSearchChange(e.target.value);
-          },
-          [onSearchChange],
-     );
-
-     const handleTitleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
-          if (e.key === 'Enter') {
-               (e.target as HTMLInputElement).blur();
+     const handleAvatarUpload = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
+          const file = e.target.files?.[0];
+          if (!file || !boardId) return;
+          setAvatarUploading(true);
+          try {
+               const previewUrl = URL.createObjectURL(file);
+               setLocalAvatarUrl(previewUrl);
+               const formData = new FormData();
+               formData.append('file', file);
+               formData.append('boardId', boardId);
+               const res = await fetch('/api/upload-board-avatar', { method: 'POST', body: formData });
+               if (res.ok) {
+                    const data = await res.json();
+                    setLocalAvatarUrl(data.url + '?t=' + Date.now());
+               }
+          } catch (err) {
+               console.error('Avatar upload failed:', err);
+               setLocalAvatarUrl(null);
+          } finally {
+               setAvatarUploading(false);
+               if (avatarInputRef.current) avatarInputRef.current.value = '';
           }
-     }, []);
+     }, [boardId]);
 
-     const handleFilterToggle = useCallback(() => {
-          setFilterOpen((p) => !p);
-          setMembersOpen(false);
-     }, []);
+     const getInitials = (title: string) => {
+          const words = title.trim().split(/\s+/);
+          if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+          return title.slice(0, 2).toUpperCase();
+     };
 
+     const handleSearchIconClick = useCallback(() => setShowMobileSearch((p) => !p), []);
+     const handleSearchInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => onSearchChange(e.target.value), [onSearchChange]);
+     const handleTitleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }, []);
+     const handleFilterToggle = useCallback(() => { setFilterOpen((p) => !p); setMembersOpen(false); }, []);
      const handleFilterClose = useCallback(() => setFilterOpen(false), []);
-
-     const handleMembersToggle = useCallback(() => {
-          setMembersOpen((p) => !p);
-          setFilterOpen(false);
-     }, []);
-
+     const handleMembersToggle = useCallback(() => { setMembersOpen((p) => !p); setFilterOpen(false); }, []);
      const handleMembersClose = useCallback(() => setMembersOpen(false), []);
-
      const handleCloseMobileSearch = useCallback(() => setShowMobileSearch(false), []);
 
      const hasActiveFilters = useMemo(() => filterPriority !== null || filterAssignee !== null || filterType !== 'all', [filterPriority, filterAssignee, filterType]);
 
      return (
-          <header className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-md border-b border-slate-800">
-               <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-                    {/* Top Row: Back button + Title */}
-                    <div className="flex items-center gap-3 mb-4">
+          <header className="sticky top-11 md:top-0 z-20 bg-slate-900/95 backdrop-blur-md border-b border-slate-800">
+               {/* Breadcrumb */}
+               <div className="w-full px-4 sm:px-6 lg:px-8 pt-4 md:pt-2 pb-0.5">
+                    <nav className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                         <button onClick={() => router.push('/dashboard')} className="hover:text-slate-300 transition-colors cursor-pointer">
+                              Dashboard
+                         </button>
+                         <span className="text-slate-700">/</span>
+                         <span className="text-slate-400 truncate max-w-[200px]">{boardTitle || 'Board'}</span>
+                    </nav>
+               </div>
+
+               <div className="w-full px-4 sm:px-6 lg:px-8 py-2">
+                    {/* Main row: Title + Actions */}
+                    <div className="flex items-center gap-2 sm:gap-3 min-h-[36px]">
+                         <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+
+                         {/* Board Avatar */}
                          <button
-                              onClick={handleBack}
-                              className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-                              aria-label={t('board.backToDashboard')}
+                              onClick={() => avatarInputRef.current?.click()}
+                              className="shrink-0 relative group/avatar cursor-pointer"
+                              title="Zmień awatar projektu"
                          >
-                              <FiArrowLeft className="w-4 h-4" />
-                              <span className="hidden sm:inline text-sm font-medium">Dashboard</span>
-                         </button>
-
-                         <div className="flex-1 min-w-0">
-                              <input
-                                   type="text"
-                                   className="w-full bg-transparent py-1 text-lg font-semibold text-slate-100 placeholder-slate-600
-                                             focus:outline-none rounded transition-colors"
-                                   placeholder={t('board.boardTitle')}
-                                   value={boardTitle}
-                                   onChange={onTitleChange}
-                                   onBlur={onTitleBlur}
-                                   onKeyDown={handleTitleKeyDown}
-                              />
-                         </div>
-                    </div>
-
-                    {/* Bottom Row: Actions */}
-                    <div className="flex flex-wrap items-center gap-2">
-                         {/* Search - Desktop */}
-                         <div className="flex-1 min-w-[180px] max-w-xs hidden sm:block">
-                              <div className="relative">
-                                   <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
-                                   <input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        className="w-full py-2 pl-9 pr-8 bg-slate-800/50 placeholder-slate-500 text-slate-200 rounded-lg
-                                                  border border-slate-700/50 hover:border-slate-600
-                                                  focus:outline-none focus:border-slate-500 focus:bg-slate-800
-                                                  transition-colors text-sm"
-                                        placeholder={t('board.searchTasks')}
-                                        value={searchTerm}
-                                        onChange={handleSearchInputChange}
-                                   />
-                                   {searchTerm && (
-                                        <button onClick={() => onSearchChange('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
-                                             <FiX className="w-3.5 h-3.5" />
-                                        </button>
-                                   )}
+                              {avatarUrl ? (
+                                   <img src={avatarUrl} alt="" className="w-7 h-7 rounded-md object-cover" />
+                              ) : (
+                                   <div className="w-7 h-7 rounded-md bg-slate-800 border border-slate-700 flex items-center justify-center">
+                                        <span className="text-[9px] font-bold text-slate-400">{getInitials(boardTitle)}</span>
+                                   </div>
+                              )}
+                              <div className="absolute inset-0 rounded-md bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                                   <Camera className="w-3 h-3 text-white" />
                               </div>
-                         </div>
-
-                         {/* Search - Mobile */}
-                         <button className="sm:hidden p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors" onClick={handleSearchIconClick} aria-label={t('common.search')}>
-                              <FiSearch className="w-5 h-5" />
+                              {avatarUploading && (
+                                   <div className="absolute inset-0 rounded-md bg-black/60 flex items-center justify-center">
+                                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                   </div>
+                              )}
                          </button>
 
-                         {/* Filter Dropdown */}
-                         <FilterDropdown
-                              isOpen={filterOpen}
-                              onToggle={handleFilterToggle}
-                              onClose={handleFilterClose}
-                              priorities={priorities}
-                              filterPriority={filterPriority}
-                              onFilterPriorityChange={onFilterPriorityChange}
-                              assignees={assignees}
-                              filterAssignee={filterAssignee}
-                              onFilterAssigneeChange={onFilterAssigneeChange}
-                              filterType={filterType ?? 'all'}
-                              onFilterTypeChange={onFilterTypeChange}
+                         {/* Board Title */}
+                         <input
+                              type="text"
+                              className="min-w-0 flex-1 bg-transparent text-sm sm:text-base font-semibold text-slate-100 placeholder-slate-600 focus:outline-none"
+                              placeholder={t('board.boardTitle')}
+                              value={boardTitle}
+                              onChange={onTitleChange}
+                              onBlur={onTitleBlur}
+                              onKeyDown={handleTitleKeyDown}
                          />
 
-                         {/* View Mode Toggle */}
-                         <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
-
-                         {/* Subtask Toggle */}
-                         <button
-                              onClick={() => onShowSubtasksChange?.(!showSubtasks)}
-                              className={`
-                                   flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors relative
-                                   ${showSubtasks ? 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}
-                              `}
-                              title={showSubtasks ? t('board.hideSubtasks') : t('board.showSubtasks')}
-                         >
-                              <FiCornerDownRight className="w-4 h-4" />
-                              <span className="hidden sm:inline">{t('board.subtasks')}</span>
-                              {showSubtasks && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 absolute top-1.5 right-1.5" />}
-                         </button>
-
-                         {/* Divider */}
-                         <div className="hidden sm:block w-px h-5 bg-slate-700/50 mx-1" />
-
-                         {/* Notes */}
-                         <button
-                              onClick={onOpenNotes}
-                              className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-sm font-medium rounded-lg transition-colors"
-                         >
-                              <FiFileText className="w-4 h-4" />
-                              <span className="hidden sm:inline">{t('board.notes')}</span>
-                         </button>
-
-                         {/* API Tokens */}
-                         {hasManagementAccess && onOpenApiTokens && (
+                         {/* Right side actions */}
+                         <div className="flex items-center gap-0.5 shrink-0">
+                              {/* Search toggle - always visible */}
                               <button
-                                   onClick={onOpenApiTokens}
-                                   className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-sm font-medium rounded-lg transition-colors"
+                                   className={`p-1.5 rounded-md transition-colors ${
+                                        searchTerm ? 'text-brand-400 bg-brand-500/10' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                                   }`}
+                                   onClick={handleSearchIconClick}
+                                   title={t('common.search')}
                               >
-                                   <FiCode className="w-4 h-4" />
-                                   <span className="hidden sm:inline">{t('board.api')}</span>
+                                   <FiSearch className="w-4 h-4" />
                               </button>
-                         )}
 
-                         {/* Members Dropdown */}
-                         {hasManagementAccess && <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />}
+                              {/* Filter - always visible */}
+                              <FilterDropdown
+                                   isOpen={filterOpen}
+                                   onToggle={handleFilterToggle}
+                                   onClose={handleFilterClose}
+                                   priorities={priorities}
+                                   filterPriority={filterPriority}
+                                   onFilterPriorityChange={onFilterPriorityChange}
+                                   assignees={assignees}
+                                   filterAssignee={filterAssignee}
+                                   onFilterAssigneeChange={onFilterAssigneeChange}
+                                   filterType={filterType ?? 'all'}
+                                   onFilterTypeChange={onFilterTypeChange}
+                              />
 
-                         {/* Add Column */}
-                         <button
-                              onClick={onAddColumn}
-                              className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-white
-                                        text-slate-900 text-sm font-medium rounded-lg transition-colors"
-                         >
-                              <FiPlus className="w-4 h-4" />
-                              <span className="hidden sm:inline">{t('board.addColumn')}</span>
-                         </button>
+                              {/* View Mode - always visible */}
+                              <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
+
+                              {/* Desktop-only actions */}
+                              <div className="hidden md:flex items-center gap-0.5">
+                                   <button
+                                        onClick={() => onShowSubtasksChange?.(!showSubtasks)}
+                                        className={`p-1.5 rounded-md transition-colors relative ${
+                                             showSubtasks ? 'text-orange-400 bg-orange-500/10' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                                        }`}
+                                        title={showSubtasks ? t('board.hideSubtasks') : t('board.showSubtasks')}
+                                   >
+                                        <FiCornerDownRight className="w-4 h-4" />
+                                   </button>
+
+                                   <button onClick={onOpenNotes} className="p-1.5 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors" title={t('board.notes')}>
+                                        <FiFileText className="w-4 h-4" />
+                                   </button>
+
+                                   {hasManagementAccess && onOpenApiTokens && (
+                                        <button onClick={onOpenApiTokens} className="p-1.5 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors" title={t('board.api')}>
+                                             <FiCode className="w-4 h-4" />
+                                        </button>
+                                   )}
+
+                                   {hasManagementAccess && <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />}
+
+                              </div>
+
+                              {/* Mobile overflow menu */}
+                              <Menu as="div" className="relative md:hidden">
+                                   <Menu.Button className="p-1.5 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors">
+                                        <FiMoreHorizontal className="w-4 h-4" />
+                                   </Menu.Button>
+                                   <Transition
+                                        enter="transition ease-out duration-100"
+                                        enterFrom="opacity-0 scale-95"
+                                        enterTo="opacity-100 scale-100"
+                                        leave="transition ease-in duration-75"
+                                        leaveFrom="opacity-100 scale-100"
+                                        leaveTo="opacity-0 scale-95"
+                                   >
+                                        <Menu.Items className="absolute right-0 mt-1 w-48 bg-slate-800 border border-slate-700/50 rounded-lg shadow-xl z-30 py-1 focus:outline-none">
+                                             <Menu.Item>
+                                                  {({ active }) => (
+                                                       <button
+                                                            onClick={() => onShowSubtasksChange?.(!showSubtasks)}
+                                                            className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${
+                                                                 active ? 'bg-slate-700/50 text-white' : showSubtasks ? 'text-orange-400' : 'text-slate-300'
+                                                            }`}
+                                                       >
+                                                            <FiCornerDownRight className="w-4 h-4" />
+                                                            {showSubtasks ? t('board.hideSubtasks') : t('board.showSubtasks')}
+                                                       </button>
+                                                  )}
+                                             </Menu.Item>
+                                             <Menu.Item>
+                                                  {({ active }) => (
+                                                       <button
+                                                            onClick={onOpenNotes}
+                                                            className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${active ? 'bg-slate-700/50 text-white' : 'text-slate-300'}`}
+                                                       >
+                                                            <FiFileText className="w-4 h-4" />
+                                                            {t('board.notes')}
+                                                       </button>
+                                                  )}
+                                             </Menu.Item>
+                                             {hasManagementAccess && onOpenApiTokens && (
+                                                  <Menu.Item>
+                                                       {({ active }) => (
+                                                            <button
+                                                                 onClick={onOpenApiTokens}
+                                                                 className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${active ? 'bg-slate-700/50 text-white' : 'text-slate-300'}`}
+                                                            >
+                                                                 <FiCode className="w-4 h-4" />
+                                                                 {t('board.api')}
+                                                            </button>
+                                                       )}
+                                                  </Menu.Item>
+                                             )}
+                                        </Menu.Items>
+                                   </Transition>
+                              </Menu>
+
+                              {/* Divider + Add Column */}
+                              <div className="w-px h-4 bg-slate-800 mx-1" />
+                              <button
+                                   onClick={onAddColumn}
+                                   className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5"
+                              >
+                                   <FiPlus className="w-3.5 h-3.5" />
+                                   <span className="hidden sm:inline">{t('board.addColumn')}</span>
+                              </button>
+                         </div>
                     </div>
                </div>
 
-               {/* Mobile Search Overlay */}
+               {/* Search overlay */}
                <AnimatePresence>
                     {showMobileSearch && (
                          <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
                               transition={{ duration: 0.15 }}
-                              className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex items-start p-4 pt-20"
-                              onClick={handleCloseMobileSearch}
+                              className="overflow-hidden border-t border-slate-800"
                          >
-                              <motion.div
-                                   initial={{ opacity: 0, y: -10 }}
-                                   animate={{ opacity: 1, y: 0 }}
-                                   exit={{ opacity: 0, y: -10 }}
-                                   transition={{ duration: 0.15 }}
-                                   className="w-full max-w-md mx-auto"
-                                   onClick={(e) => e.stopPropagation()}
-                              >
-                                   <div className="flex items-center bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                                        <FiSearch className="ml-4 text-slate-500 w-5 h-5 shrink-0" />
+                              <div className="px-4 sm:px-6 lg:px-8 py-2.5">
+                                   <div className="relative">
+                                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
                                         <input
                                              type="text"
                                              autoFocus
-                                             className="flex-1 px-3 py-4 bg-transparent placeholder-slate-500 text-slate-100 focus:outline-none"
+                                             className="w-full py-2 pl-10 pr-8 bg-slate-800/60 placeholder-slate-500 text-slate-200 rounded-lg border border-slate-700/50 focus:outline-none focus:border-slate-600 text-sm"
                                              placeholder={t('board.searchTasks')}
                                              value={searchTerm}
                                              onChange={handleSearchInputChange}
                                         />
-                                        <button className="p-4 text-slate-500 hover:text-slate-300 transition-colors" onClick={handleCloseMobileSearch}>
-                                             <FiX className="w-5 h-5" />
+                                        <button
+                                             onClick={() => { onSearchChange(''); handleCloseMobileSearch(); }}
+                                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                                        >
+                                             <FiX className="w-3.5 h-3.5" />
                                         </button>
                                    </div>
-                              </motion.div>
+                              </div>
                          </motion.div>
                     )}
                </AnimatePresence>
 
-               {/* Subtle active filters indicator */}
-               {hasActiveFilters && <div className="absolute bottom-0 left-0 right-0 h-px bg-slate-600" />}
+               {hasActiveFilters && <div className="absolute bottom-0 left-0 right-0 h-px bg-brand-500/50" />}
           </header>
      );
 };

@@ -184,7 +184,8 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
            id,
            user_id,
            user:users!task_collaborators_user_id_fkey(id, name, email, image, custom_name, custom_image)
-         )
+         ),
+         comments:task_comments(id)
        )
      `,
                          )
@@ -251,6 +252,8 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                                    status_id: t.status_id || null,
                                    type: t.type ?? 'task',
                                    parent_id: t.parent_id ?? null,
+                                   is_recurring: (t as Record<string, unknown>).is_recurring as boolean | undefined,
+                                   comment_count: Array.isArray((t as Record<string, unknown>).comments) ? ((t as Record<string, unknown>).comments as unknown[]).length : 0,
                               };
                          });
 
@@ -368,6 +371,8 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                          uniqueBoards.map(async (b) => {
                               const { count: taskCountRaw } = await getSupabase().from('tasks').select('id', { count: 'exact', head: true }).eq('board_id', b.id);
                               const taskCount = taskCountRaw ?? 0;
+                              const { count: completedCountRaw } = await getSupabase().from('tasks').select('id', { count: 'exact', head: true }).eq('board_id', b.id).eq('completed', true);
+                              const completedTasks = completedCountRaw ?? 0;
 
                               const { data: boardTeamsRaw = [] } = await getSupabase().from('teams').select('id').eq('board_id', b.id);
                               const bTeamIds = (boardTeamsRaw as { id: string }[]).map((t) => t.id);
@@ -380,7 +385,7 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
 
                               return {
                                    ...b,
-                                   _count: { tasks: taskCount, teamMembers: memberCount },
+                                   _count: { tasks: taskCount, teamMembers: memberCount, completedTasks },
                               };
                          }),
                     );
@@ -649,6 +654,127 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
                }
           },
           providesTags: (result) => (result ? [{ type: 'Board', id: 'LIST' }, ...result.map(({ id }) => ({ type: 'Board' as const, id }))] : [{ type: 'Board', id: 'LIST' }]),
+     }),
+
+     getFavoriteBoards: builder.query<BoardWithCounts[], string>({
+          async queryFn(userId) {
+               try {
+                    const { data: favs, error: favsErr } = await getSupabase()
+                         .from('board_favorites')
+                         .select('board_id')
+                         .eq('user_id', userId)
+                         .order('created_at', { ascending: true });
+                    if (favsErr) throw favsErr;
+                    if (!favs || favs.length === 0) return { data: [] };
+
+                    const boardIds = favs.map((f) => f.board_id);
+                    const { data: boards, error: bErr } = await getSupabase()
+                         .from('boards')
+                         .select('id, title, user_id, created_at, updated_at')
+                         .in('id', boardIds);
+                    if (bErr) throw bErr;
+                    if (!boards || boards.length === 0) return { data: [] };
+
+                    // Preserve favorites order
+                    const boardMap = new Map(boards.map((b) => [b.id, b]));
+                    const orderedBoards = boardIds.map((id) => boardMap.get(id)).filter(Boolean) as typeof boards;
+
+                    const result: BoardWithCounts[] = orderedBoards.map((b) => ({
+                         id: b.id,
+                         title: b.title,
+                         user_id: b.user_id,
+                         created_at: b.created_at,
+                         updated_at: b.updated_at,
+                         columns: [],
+                         statuses: [],
+                         _count: { tasks: 0, teamMembers: 0 },
+                    }));
+                    return { data: result };
+               } catch (err) {
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.getFavoriteBoards] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
+               }
+          },
+          providesTags: [{ type: 'Board', id: 'FAVORITES' }],
+     }),
+
+     reorderFavoriteBoards: builder.mutation<{ success: boolean }, { userId: string; boardIds: string[] }>({
+          async queryFn({ userId, boardIds }) {
+               try {
+                    // Update created_at to enforce order (earliest = first)
+                    for (let i = 0; i < boardIds.length; i++) {
+                         const date = new Date(2020, 0, 1, 0, 0, i).toISOString();
+                         await getSupabase()
+                              .from('board_favorites')
+                              .update({ created_at: date })
+                              .eq('user_id', userId)
+                              .eq('board_id', boardIds[i]);
+                    }
+                    return { data: { success: true } };
+               } catch (err) {
+                    const errorMessage = getErrorMessage(err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
+               }
+          },
+          invalidatesTags: [{ type: 'Board', id: 'FAVORITES' }],
+     }),
+
+     toggleBoardFavorite: builder.mutation<{ isFavorite: boolean }, { boardId: string; userId: string }>({
+          async queryFn({ boardId, userId }) {
+               try {
+                    const { data: existing } = await getSupabase()
+                         .from('board_favorites')
+                         .select('id')
+                         .eq('board_id', boardId)
+                         .eq('user_id', userId)
+                         .maybeSingle();
+
+                    if (existing) {
+                         const { error } = await getSupabase()
+                              .from('board_favorites')
+                              .delete()
+                              .eq('board_id', boardId)
+                              .eq('user_id', userId);
+                         if (error) throw error;
+                         return { data: { isFavorite: false } };
+                    } else {
+                         const { error } = await getSupabase()
+                              .from('board_favorites')
+                              .insert({ board_id: boardId, user_id: userId });
+                         if (error) throw error;
+                         return { data: { isFavorite: true } };
+                    }
+               } catch (err) {
+                    const errorMessage = getErrorMessage(err);
+                    console.error('[apiSlice.toggleBoardFavorite] error:', errorMessage, err);
+                    return { error: { status: 'CUSTOM_ERROR', error: errorMessage } };
+               }
+          },
+          invalidatesTags: [{ type: 'Board', id: 'FAVORITES' }],
+     }),
+
+     getBoardAvatars: builder.query<Record<string, string>, string[]>({
+          async queryFn(boardIds) {
+               try {
+                    const result: Record<string, string> = {};
+                    if (boardIds.length === 0) return { data: result };
+
+                    const res = await fetch('/api/board-avatars', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ boardIds }),
+                    });
+                    if (res.ok) {
+                         const data = await res.json();
+                         return { data: data.avatars || {} };
+                    }
+                    return { data: result };
+               } catch (err) {
+                    return { error: { status: 'CUSTOM_ERROR', error: getErrorMessage(err) } };
+               }
+          },
+          providesTags: [{ type: 'Board', id: 'AVATARS' }],
      }),
 
      getBoardNotes: builder.query<{ id: string; board_id: string; content: { html: string }; created_at: string; updated_at: string } | null, string>({

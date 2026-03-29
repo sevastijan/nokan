@@ -18,7 +18,7 @@ function getResend() {
 }
 
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@example.com';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const APP_URL = 'https://nokan.nkdlab.space';
 
 function getTaskUrl(boardId: string, taskId: string): string {
      return `${APP_URL}/board/${boardId}?task=${taskId}`;

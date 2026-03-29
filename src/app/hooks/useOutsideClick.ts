@@ -5,9 +5,12 @@ export function useOutsideClick(refs: RefObject<HTMLElement | null> | RefObject<
           if (!enabled) return;
 
           const listener = (event: MouseEvent | TouchEvent) => {
-               const target = event.target as Node | null;
+               const target = event.target as HTMLElement | null;
 
                if (!target) return;
+
+               // Ignore clicks on elements marked to be excluded (dropdowns, mentions, etc.)
+               if (target.closest?.('[data-ignore-outside-click]')) return;
 
                const refArray = Array.isArray(refs) ? refs : [refs];
 

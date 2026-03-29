@@ -11,7 +11,7 @@ interface MarkdownContentProps {
 
 // Mention component - highlighted @username
 const Mention = ({ name }: { name: string }) => (
-     <span className="inline-flex items-center rounded-md bg-brand-100 px-2 py-1 text-xs font-semibold text-brand-800 ring-1 ring-inset ring-brand-700/10">@{name}</span>
+     <span className="inline-flex items-center rounded-md bg-brand-500/15 px-1.5 py-0.5 text-xs font-medium text-brand-300">@{name}</span>
 );
 
 const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {

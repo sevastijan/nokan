@@ -164,7 +164,7 @@ export function ToolbarPlugin({ taskId, uploading, onUploadStart, onUploadEnd }:
      };
 
      return (
-          <div className="border-b border-slate-700 bg-slate-800/50">
+          <div className="bg-slate-800/60 rounded-t-lg">
                <div className="flex items-center gap-1 p-2 flex-wrap">
                     <select
                          value={blockType}

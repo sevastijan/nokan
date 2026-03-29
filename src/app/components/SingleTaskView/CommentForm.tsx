@@ -62,7 +62,7 @@ const CommentForm = ({
           const cursor = textarea.selectionStart;
 
           const displayName = getDisplayData(user).name;
-          const mentionText = `@{${displayName}}`;
+          const mentionText = `@${displayName}`;
 
           const textBefore = newComment.substring(0, cursor - mentionQuery.length - 1);
           const textAfter = newComment.substring(cursor);
@@ -159,65 +159,75 @@ const CommentForm = ({
           e.preventDefault();
           if (!newComment.trim()) return;
 
-          onAddComment(newComment.trim());
+          // Convert @Name to @{Name} for the parser
+          let content = newComment.trim();
+          for (const member of teamMembers) {
+               const name = getDisplayData(member).name;
+               content = content.replace(new RegExp(`@${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'), `@{${name}}`);
+          }
+
+          onAddComment(content);
 
           setNewComment('');
           onCancelReply?.();
      };
 
      return (
-          <div className="border border-gray-600 rounded-lg p-4 mb-4">
-               <div className="flex items-start gap-3">
-                    <Avatar src={currentUserDisplay.image} alt={currentUserDisplay.name} size={32} />
-                    <div className="flex-1 relative">
-                         {replyingTo && (
-                              <div className="text-xs text-brand-400 mb-2 flex items-center justify-between">
-                                   <span>{t('comments.replyTo', { name: replyingTo.authorName })}</span>
-                                   <button onClick={onCancelReply} className="text-gray-400 hover:text-gray-200">
-                                        <FaTimes />
-                                   </button>
+          <div className="flex gap-3">
+               <div className="shrink-0 w-7" />
+               <div className="flex-1 relative">
+                    {replyingTo && (
+                         <div className="text-[11px] text-brand-400 mb-1.5 flex items-center gap-2">
+                              <span>{t('comments.replyTo', { name: replyingTo.authorName })}</span>
+                              <button onClick={onCancelReply} className="text-slate-500 hover:text-slate-300">
+                                   <FaTimes size={10} />
+                              </button>
+                         </div>
+                    )}
+                    <form onSubmit={handleSubmit}>
+                         <textarea
+                              ref={textareaRef}
+                              value={newComment}
+                              onChange={handleChange}
+                              onKeyDown={handleKeyDown}
+                              onPaste={handlePaste}
+                              placeholder={replyingTo ? t('comments.replyPlaceholder') : t('comments.addPlaceholder')}
+                              className="w-full min-h-[60px] px-3 py-2 bg-slate-800 rounded-lg resize-none text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:bg-slate-750 transition"
+                              disabled={uploading}
+                              rows={2}
+                         />
+                         {showSuggestions && filteredSuggestions.length > 0 && (
+                              <div className="absolute z-10 bg-slate-800 border border-slate-700 rounded-lg mt-1 max-h-48 overflow-y-auto shadow-xl w-full" data-ignore-outside-click>
+                                   {filteredSuggestions.map((user, i) => {
+                                        const userDisplay = getDisplayData(user);
+                                        return (
+                                             <div
+                                                  key={user.id}
+                                                  className={`px-3 py-2 hover:bg-slate-700 cursor-pointer flex items-center gap-2 text-sm ${i === suggestionIndex ? 'bg-slate-700' : ''}`}
+                                                  onMouseDown={(e) => {
+                                                       e.preventDefault();
+                                                       e.stopPropagation();
+                                                       insertMention(user);
+                                                  }}
+                                             >
+                                                  <Avatar src={userDisplay.image} alt={userDisplay.name} size={20} />
+                                                  <span className="text-slate-200">{userDisplay.name}</span>
+                                             </div>
+                                        );
+                                   })}
                               </div>
                          )}
-                         <form onSubmit={handleSubmit}>
-                              <textarea
-                                   ref={textareaRef}
-                                   value={newComment}
-                                   onChange={handleChange}
-                                   onKeyDown={handleKeyDown}
-                                   onPaste={handlePaste}
-                                   placeholder={replyingTo ? t('comments.replyPlaceholder') : t('comments.addPlaceholder')}
-                                   className="w-full min-h-20 p-3 bg-gray-700 border border-gray-600 rounded resize-vertical text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                                   disabled={uploading}
-                              />
-                              {showSuggestions && filteredSuggestions.length > 0 && (
-                                   <div className="absolute z-10 bg-gray-800 border border-gray-600 rounded mt-1 max-h-48 overflow-y-auto shadow-lg w-full">
-                                        {filteredSuggestions.map((user, i) => {
-                                             const userDisplay = getDisplayData(user);
-                                             return (
-                                                  <div
-                                                       key={user.id}
-                                                       className={`px-3 py-2 hover:bg-gray-700 cursor-pointer flex items-center gap-2 ${i === suggestionIndex ? 'bg-gray-700' : ''}`}
-                                                       onMouseDown={(e) => {
-                                                            e.preventDefault();
-                                                            insertMention(user);
-                                                       }}
-                                                  >
-                                                       <Avatar src={userDisplay.image} alt={userDisplay.name} size={20} />
-                                                       <span>{userDisplay.name}</span>
-                                                  </div>
-                                             );
-                                        })}
-                                   </div>
-                              )}
-                              {uploading && <div className="text-sm text-brand-400 mt-2">{t('comments.uploadingImage')}</div>}
-                              <div className="flex justify-between items-center mt-3">
-                                   <span className="text-xs text-gray-400">{t('comments.pasteAndMention')}</span>
-                                   <Button type="submit" variant="primary" disabled={!newComment.trim() || uploading}>
-                                        {replyingTo ? t('comments.reply') : t('comments.comment')}
-                                   </Button>
-                              </div>
-                         </form>
-                    </div>
+                         {uploading && <div className="text-[11px] text-brand-400 mt-1">{t('comments.uploadingImage')}</div>}
+                         <div className="flex items-center justify-end mt-1.5 gap-2">
+                              <button
+                                   type="submit"
+                                   disabled={!newComment.trim() || uploading}
+                                   className="text-xs font-medium text-brand-400 hover:text-brand-300 disabled:text-slate-600 disabled:cursor-not-allowed transition cursor-pointer"
+                              >
+                                   {replyingTo ? t('comments.reply') : t('comments.comment')} ↵
+                              </button>
+                         </div>
+                    </form>
                </div>
           </div>
      );

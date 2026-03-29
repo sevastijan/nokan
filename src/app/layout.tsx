@@ -25,7 +25,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
      return (
           <html lang="en" suppressHydrationWarning={true}>
-               <body className="bg-slate-900 text-slate-100" suppressHydrationWarning={true}>
+               <body className="bg-slate-900 text-slate-100 overflow-x-hidden" suppressHydrationWarning={true}>
                     <Providers>
                          <ClientLayout>{children}</ClientLayout>
                     </Providers>

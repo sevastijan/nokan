@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo, useLayoutEffect, KeyboardEvent, MouseEvent } from 'react';
-import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus, FiCheckSquare, FiCornerDownRight, FiCheck, FiTrash2, FiEdit3 } from 'react-icons/fi';
-import { FaLayerGroup } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
+import { FiMoreVertical, FiFlag, FiCalendar, FiUserPlus, FiCornerDownRight, FiCheck, FiTrash2, FiEdit3, FiCircle, FiBookOpen, FiMessageCircle, FiRepeat } from 'react-icons/fi';
+import { FaFire } from 'react-icons/fa';
 import Avatar from './Avatar/Avatar';
 import { Task as TaskType } from '@/app/types/globalTypes';
 import { getPriorityStyleConfig, truncateText } from '@/app/utils/helpers';
@@ -19,7 +20,11 @@ interface TaskProps {
      activeFilterAssigneeId?: string | null;
 }
 
+const PRIORITY_LABELS: Record<string, string> = { Low: 'Niski', Normal: 'Normalny', Medium: 'Średni', High: 'Wysoki', Urgent: 'Pilny' };
+const TYPE_LABELS: Record<string, string> = { task: 'Zadanie', story: 'Story', bug: 'Błąd', subtask: 'Subtask' };
+
 const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [], onFilterByAssignee, activeFilterAssigneeId }: TaskProps) => {
+     const { t } = useTranslation();
      const [menuOpen, setMenuOpen] = useState(false);
      const [focusedIndex, setFocusedIndex] = useState(0);
      const [isHovered, setIsHovered] = useState(false);
@@ -40,7 +45,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
           const customPriority = priorities.find((p) => p.id === task.priority);
           if (customPriority) {
                return {
-                    label: customPriority.label,
+                    label: PRIORITY_LABELS[customPriority.label] || customPriority.label,
                     dotColor: customPriority.color,
                     cfg: { bgColor: 'bg-slate-700/80', textColor: 'text-white' },
                };
@@ -61,6 +66,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
      const assignees = task.collaborators || [];
      const hasAssignees = assignees.length > 0;
      const isStory = task.type === 'story';
+     const isBug = task.type === 'bug';
      const isSubtask = Boolean(task.parent_id);
      const isCompleted = task.completed === true;
      const isFilteredByAnyAssignee = assignees.some((a) => a.id === activeFilterAssigneeId);
@@ -197,70 +203,61 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                     </div>
                ) : (
                     <div className="p-3 flex flex-col gap-2">
-                         <div className="flex items-start gap-2 pr-6">
+                         {/* Type + Priority pills */}
+                         <div className="flex items-center gap-1.5 flex-wrap">
                               {isSubtask ? (
-                                   <FiCornerDownRight className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase text-orange-300 bg-orange-500/15">
+                                        <FiCornerDownRight className="w-2.5 h-2.5" /> {TYPE_LABELS.subtask}
+                                   </span>
+                              ) : isBug ? (
+                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase text-red-300 bg-red-500/15">
+                                        <FaFire className="w-2.5 h-2.5" /> {TYPE_LABELS.bug}
+                                   </span>
                               ) : isStory ? (
-                                   <FaLayerGroup className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
+                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase text-brand-300 bg-brand-500/15">
+                                        <FiBookOpen className="w-2.5 h-2.5" /> {TYPE_LABELS.story}
+                                   </span>
                               ) : (
-                                   <FiCheckSquare className={`w-4 h-4 shrink-0 mt-0.5 ${isCompleted ? 'text-green-500' : 'text-slate-500'}`} />
+                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase text-slate-400 bg-slate-700/50">
+                                        <FiCircle className="w-2.5 h-2.5" /> {TYPE_LABELS.task}
+                                   </span>
                               )}
+                              {priorityConfig && (
+                                   <span
+                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                        style={{ color: priorityConfig.dotColor, backgroundColor: `${priorityConfig.dotColor}18` }}
+                                   >
+                                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: priorityConfig.dotColor }} />
+                                        {priorityConfig.label}
+                                   </span>
+                              )}
+                         </div>
 
-                              <h4
-                                   className={`
-                                        font-medium text-slate-100 text-sm leading-snug
-                                        ${isCompleted ? 'line-through text-slate-400' : ''}
-                                   `}
-                              >
+                         {/* Title */}
+                         <div className="flex items-start gap-1.5 pr-6">
+                              {task.is_recurring && <FiRepeat className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isCompleted ? 'text-slate-400' : 'text-brand-400'}`} />}
+                              <h4 className={`font-medium text-sm leading-snug ${isCompleted ? 'line-through text-slate-400' : 'text-slate-100'}`}>
                                    {hasTitle ? task.title : <span className="text-slate-500 italic font-normal">Bez tytułu</span>}
                               </h4>
                          </div>
 
-                         {hasDesc && (
-                              <p className={`text-slate-400 text-xs leading-relaxed line-clamp-2 pl-6 ${isCompleted ? 'text-slate-500' : ''}`}>
-                                   {truncateText(plainDescription, 100)}
-                              </p>
-                         )}
-
-                         {showMeta && (
-                              <div className="flex items-center justify-between mt-1 gap-2 pl-6">
-                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                        {priorityConfig && (
-                                             <span
-                                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
-                                                  style={{
-                                                       color: priorityConfig.dotColor,
-                                                       backgroundColor: `${priorityConfig.dotColor}20`,
-                                                  }}
-                                             >
-                                                  <FiFlag size={10} />
-                                                  {priorityConfig.label}
-                                             </span>
-                                        )}
-
-                                        {isSubtask && (
-                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-500/15 text-orange-400">
-                                                  <FiCornerDownRight size={10} />
-                                                  Subtask
-                                             </span>
-                                        )}
-
-                                        {isCompleted && (
-                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-500/15 text-green-400">
-                                                  <FiCheck size={10} />
-                                                  Gotowe
-                                             </span>
-                                        )}
-
-                                        {task.due_date && (
-                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs text-slate-400 bg-slate-700/40">
-                                                  <FiCalendar size={10} />
-                                                  {new Date(task.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}
-                                             </span>
-                                        )}
-                                   </div>
-
-                                   {hasAssignees ? (
+                         {/* Bottom row: due date, comments, assignees */}
+                         <div className="flex items-center justify-between gap-2 mt-0.5">
+                              <div className="flex items-center gap-2">
+                                   {(task.end_date || task.due_date) && (
+                                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                                             <FiCalendar size={10} />
+                                             {new Date(task.end_date || task.due_date!).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}
+                                        </span>
+                                   )}
+                                   {(task.comment_count ?? 0) > 0 && (
+                                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                                             <FiMessageCircle size={12} />
+                                             {task.comment_count}
+                                        </span>
+                                   )}
+                              </div>
+                              {hasAssignees ? (
                                         <div className="flex items-center -space-x-1.5 shrink-0">
                                              {assignees.slice(0, 3).map((assignee, idx) => (
                                                   <button
@@ -315,8 +312,7 @@ const Task = ({ task, columnId, onRemoveTask, onOpenTaskDetail, priorities = [],
                                              <FiUserPlus size={12} className="text-slate-500" />
                                         </button>
                                    )}
-                              </div>
-                         )}
+                         </div>
                     </div>
                )}
 

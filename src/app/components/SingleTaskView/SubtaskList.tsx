@@ -117,24 +117,20 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
      };
 
      return (
-          <div className="mt-6">
-               {/* Header with progress */}
+          <div>
+               {/* Header */}
                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                         <FaLayerGroup className="w-4 h-4 text-brand-400" />
-                         <span className="text-sm font-medium text-slate-200">{t('subtasks.title')}</span>
-                         <span className="text-xs text-slate-400">
-                              ({completedCount}/{totalCount})
-                         </span>
-                    </div>
-                    {totalCount > 0 && <span className="text-xs text-slate-400">{progressPercent}%</span>}
+                    <p className="text-xs text-slate-400">{t('subtasks.title')}</p>
+                    {totalCount > 0 && (
+                         <span className="text-xs text-slate-500">{completedCount}/{totalCount}</span>
+                    )}
                </div>
 
                {/* Progress bar */}
                {totalCount > 0 && (
-                    <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mb-3">
+                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden mb-3">
                          <motion.div
-                              className="h-full bg-linear-to-r from-brand-500 to-green-500 rounded-full"
+                              className="h-full bg-brand-500 rounded-full"
                               initial={{ width: 0 }}
                               animate={{ width: `${progressPercent}%` }}
                               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -171,55 +167,48 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                     </Droppable>
                </DragDropContext>
 
-               {/* Empty state */}
-               {subtasks.length === 0 && !isAddingNew && <div className="text-center py-4 text-slate-400 text-sm">{t('subtasks.noSubtasks')}</div>}
-
-               {/* Add subtask form */}
-               <AnimatePresence>
-                    {isAddingNew ? (
-                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-2">
-                              <div className="flex items-center gap-2">
-                                   <input
-                                        type="text"
-                                        value={newSubtaskTitle}
-                                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                        placeholder={t('subtasks.enterTitle')}
-                                        autoFocus
-                                        disabled={isAdding}
-                                        className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm placeholder:text-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
-                                   />
-                                   <button
-                                        onClick={handleAddSubtask}
-                                        disabled={!newSubtaskTitle.trim() || isAdding}
-                                        className="px-3 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-600/50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors duration-150"
-                                   >
-                                        {isAdding ? t('subtasks.adding') : t('common.add')}
-                                   </button>
-                                   <button
-                                        onClick={() => {
-                                             setIsAddingNew(false);
-                                             setNewSubtaskTitle('');
-                                        }}
-                                        disabled={isAdding}
-                                        className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-slate-200 text-sm font-medium rounded-lg transition-colors duration-150"
-                                   >
-                                        {t('common.cancel')}
-                                   </button>
-                              </div>
-                         </motion.div>
-                    ) : (
-                         <motion.button
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              onClick={() => setIsAddingNew(true)}
-                              className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-brand-400 hover:bg-slate-700/50 rounded-lg transition-colors duration-150"
+               {/* Add subtask */}
+               {isAddingNew ? (
+                    <div className="mt-2 flex items-center gap-2">
+                         <input
+                              type="text"
+                              value={newSubtaskTitle}
+                              onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                              onKeyDown={handleKeyDown}
+                              placeholder={t('subtasks.enterTitle')}
+                              autoFocus
+                              disabled={isAdding}
+                              className="flex-1 px-3 py-2 bg-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none disabled:opacity-50"
+                         />
+                         <button
+                              onClick={handleAddSubtask}
+                              disabled={!newSubtaskTitle.trim() || isAdding}
+                              className="text-xs font-medium text-brand-400 hover:text-brand-300 disabled:text-slate-600 disabled:cursor-not-allowed transition cursor-pointer px-2"
                          >
-                              <FaPlus className="w-3 h-3" />
-                              <span>{t('subtasks.addSubtask')}</span>
-                         </motion.button>
-                    )}
-               </AnimatePresence>
+                              {isAdding ? '...' : '↵'}
+                         </button>
+                         <button
+                              onClick={() => { setIsAddingNew(false); setNewSubtaskTitle(''); }}
+                              className="text-xs text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                         >
+                              ✕
+                         </button>
+                    </div>
+               ) : (
+                    <div
+                         onClick={() => setIsAddingNew(true)}
+                         className={`flex items-center justify-center gap-2 border border-dashed border-slate-700/50 rounded-lg cursor-pointer hover:border-slate-600 hover:bg-slate-800/20 transition ${
+                              subtasks.length === 0 ? 'py-6 mt-0' : 'py-3 mt-2'
+                         }`}
+                    >
+                         {subtasks.length === 0 && (
+                              <FaLayerGroup className="w-4 h-4 text-slate-600" />
+                         )}
+                         <p className="text-xs text-slate-500">
+                              {subtasks.length === 0 ? 'Dodaj pierwszy subtask' : '+ Dodaj subtask'}
+                         </p>
+                    </div>
+               )}
           </div>
      );
 };

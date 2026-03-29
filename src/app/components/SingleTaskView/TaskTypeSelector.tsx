@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaChevronDown, FaCheckSquare, FaLayerGroup, FaBug } from "react-icons/fa";
+import { FaChevronDown, FaCheckSquare, FaLayerGroup, FaFire } from "react-icons/fa";
 import { TaskType } from "@/app/types/globalTypes";
 import { useDropdownManager } from "@/app/hooks/useDropdownManager";
 
@@ -45,7 +45,7 @@ const TaskTypeSelector: React.FC<TaskTypeSelectorProps> = ({
     {
       value: "bug",
       label: t('taskVariant.bug'),
-      icon: <FaBug className="w-4 h-4" />,
+      icon: <FaFire className="w-4 h-4" />,
       description: t('taskVariant.bugFullDesc'),
       color: "red",
     },

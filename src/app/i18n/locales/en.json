@@ -426,6 +426,7 @@
           "newPriorityName": "New priority name",
           "addNewPriority": "Add new priority",
           "low": "Low",
+          "normal": "Normal",
           "medium": "Medium",
           "high": "High",
           "urgent": "Urgent"

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCreateSubmissionMutation, useGetPrioritiesQuery } from '@/app/store/apiSlice';
+import { useCreateSubmissionMutation, useGetPrioritiesQuery, useUploadAttachmentMutation } from '@/app/store/apiSlice';
 import { useRouter } from 'next/navigation';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { Paperclip, X } from 'lucide-react';
 
 interface SubmissionFormProps {
      boardId: string;
@@ -22,11 +23,19 @@ const MAX_TITLE_ATTEMPTS = 30;
 const MIN_TITLE_LENGTH = 3;
 const MIN_DESCRIPTION_LENGTH = 10;
 
+function formatFileSize(bytes: number): string {
+     if (bytes < 1024) return bytes + ' B';
+     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormProps) => {
      const { t } = useTranslation();
      const router = useRouter();
      const [createSubmission, { isLoading }] = useCreateSubmissionMutation();
+     const [uploadAttachment] = useUploadAttachmentMutation();
      const { data: priorities = [], isLoading: loadingPriorities } = useGetPrioritiesQuery();
+     const fileInputRef = useRef<HTMLInputElement>(null);
 
      const defaultPriorityId = useMemo(() => {
           const mediumPriority = priorities.find((p) => p.label.toLowerCase() === 'średni');
@@ -39,8 +48,10 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
           priorityId: '',
      });
 
+     const [files, setFiles] = useState<File[]>([]);
      const [errors, setErrors] = useState<Record<string, string>>({});
      const [titleAttempts, setTitleAttempts] = useState(0);
+     const [uploadingFiles, setUploadingFiles] = useState(false);
 
      useEffect(() => {
           if (defaultPriorityId && !formData.priorityId) {
@@ -77,6 +88,24 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
           return attempt === 0 ? baseTitle : `${baseTitle} (${attempt})`;
      };
 
+     const handleAddFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+          const newFiles = e.target.files;
+          if (!newFiles) return;
+          const valid = Array.from(newFiles).filter((f) => {
+               if (f.size > 10 * 1024 * 1024) {
+                    alert(`${f.name} jest za duży (max 10MB)`);
+                    return false;
+               }
+               return true;
+          });
+          setFiles((prev) => [...prev, ...valid]);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+     };
+
+     const removeFile = (index: number) => {
+          setFiles((prev) => prev.filter((_, i) => i !== index));
+     };
+
      const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
 
@@ -91,13 +120,26 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                const titleToUse = generateTitleWithAttempt(baseTitle, attempt);
 
                try {
-                    await createSubmission({
+                    const submission = await createSubmission({
                          title: titleToUse,
                          description: formData.description.trim(),
                          priority: formData.priorityId,
                          client_id: userId,
                          board_id: boardId,
                     }).unwrap();
+
+                    // Upload attachments to the created task
+                    if (files.length > 0 && submission.task_id) {
+                         setUploadingFiles(true);
+                         for (const file of files) {
+                              try {
+                                   await uploadAttachment({ file, taskId: submission.task_id }).unwrap();
+                              } catch (err) {
+                                   console.error('Attachment upload failed:', err);
+                              }
+                         }
+                         setUploadingFiles(false);
+                    }
 
                     resetForm();
 
@@ -131,6 +173,7 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                description: '',
                priorityId: defaultPriorityId,
           });
+          setFiles([]);
           setErrors({});
           setTitleAttempts(0);
      };
@@ -155,7 +198,7 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
           router.push('/submissions');
      };
 
-     const isFormDisabled = isLoading || loadingPriorities;
+     const isFormDisabled = isLoading || loadingPriorities || uploadingFiles;
      const currentPriorityValue = formData.priorityId || defaultPriorityId;
 
      return (
@@ -249,13 +292,48 @@ export const SubmissionForm = ({ boardId, userId, onSuccess }: SubmissionFormPro
                     )}
                </div>
 
+               {/* Attachments */}
+               <div>
+                    <label className="block text-sm font-medium text-slate-200 mb-2">
+                         Załączniki
+                    </label>
+                    <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleAddFiles} />
+
+                    {files.length > 0 && (
+                         <div className="space-y-2 mb-3">
+                              {files.map((file, idx) => (
+                                   <div key={idx} className="flex items-center justify-between px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                             <Paperclip className="w-4 h-4 text-slate-400 shrink-0" />
+                                             <span className="text-sm text-slate-200 truncate">{file.name}</span>
+                                             <span className="text-xs text-slate-500 shrink-0">{formatFileSize(file.size)}</span>
+                                        </div>
+                                        <button type="button" onClick={() => removeFile(idx)} className="p-1 text-slate-500 hover:text-red-400 transition shrink-0">
+                                             <X className="w-4 h-4" />
+                                        </button>
+                                   </div>
+                              ))}
+                         </div>
+                    )}
+
+                    <button
+                         type="button"
+                         onClick={() => fileInputRef.current?.click()}
+                         disabled={isFormDisabled}
+                         className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 border border-dashed border-slate-600 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:border-slate-500 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                         <Paperclip className="w-4 h-4" />
+                         Dodaj pliki (max 10MB)
+                    </button>
+               </div>
+
                <div className="flex gap-3 pt-4">
                     <button
                          type="submit"
                          disabled={isFormDisabled}
                          className="flex-1 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900"
                     >
-                         {isLoading ? t('submissions.submitting') : t('submissions.submitForm')}
+                         {uploadingFiles ? 'Wysyłanie załączników...' : isLoading ? t('submissions.submitting') : t('submissions.submitForm')}
                     </button>
                     <button
                          type="button"

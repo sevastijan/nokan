@@ -94,15 +94,14 @@ export default function TaskDescription({ value, onChange, taskId, onImageClick,
 
      return (
           <div>
-               <span className="block text-sm font-medium text-slate-300 mb-2">Opis</span>
-               <div className="w-full bg-slate-700 border border-slate-600 rounded overflow-hidden focus-within:ring-2 focus-within:ring-brand-500">
+               <div className="w-full bg-slate-800 rounded-lg overflow-hidden">
                     <LexicalComposer key={taskId || 'new'} initialConfig={editorConfig}>
                          <ToolbarPlugin taskId={taskId} uploading={uploading} onUploadStart={() => setUploading(true)} onUploadEnd={() => setUploading(false)} />
-                         <div className="relative bg-slate-700/50">
+                         <div className="relative">
                               <RichTextPlugin
-                                   contentEditable={<ContentEditable className="outline-none p-3 min-h-30" style={{ caretColor: '#a78bfa' }} data-lexical-editor />}
+                                   contentEditable={<ContentEditable className="outline-none p-3 min-h-[80px] text-sm text-slate-200" style={{ caretColor: '#a78bfa' }} data-lexical-editor />}
                                    placeholder={
-                                        <div className="absolute top-3 left-3 text-slate-400 pointer-events-none text-sm">Opisz zadanie...</div>
+                                        <div className="absolute top-3 left-3 text-slate-500 pointer-events-none text-sm">Opisz zadanie...</div>
                                    }
                                    ErrorBoundary={LexicalErrorBoundary}
                               />
@@ -116,7 +115,7 @@ export default function TaskDescription({ value, onChange, taskId, onImageClick,
                               <PasteImagePlugin taskId={taskId} onUploadStart={() => setUploading(true)} onUploadEnd={() => setUploading(false)} />
                               {teamMembers.length > 0 && <MentionPlugin teamMembers={teamMembers} />}
                          </div>
-                         {uploading && <div className="p-2 bg-slate-800/50 border-t border-slate-700 text-xs text-brand-400">Wysyłanie obrazu...</div>}
+                         {uploading && <div className="p-2 text-xs text-brand-400">Wysyłanie obrazu...</div>}
                     </LexicalComposer>
                </div>
           </div>

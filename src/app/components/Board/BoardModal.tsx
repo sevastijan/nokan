@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useDispatch } from "react-redux";
 import { useTranslation } from "react-i18next";
-import { X, Search, UserPlus, UserMinus, Users, UsersRound } from "lucide-react";
+import { X, Search, UserPlus, UserMinus, Users, UsersRound, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import TemplateSelector from "@/app/components/Board/TemplateSelector";
 import CreateTemplateModal from "@/app/components/Board/CreateTemplateModal";
 import { BoardTemplate, User, Team } from "@/app/types/globalTypes";
 import { useGetAllUsersQuery, useGetMyTeamsQuery } from "@/app/store/apiSlice";
+import { apiSlice } from "@/app/store/apiSlice";
 
 type MemberTab = "users" | "teams";
 
@@ -13,6 +15,7 @@ const BoardModal = ({
   isOpen,
   mode,
   initialTitle = "",
+  boardId,
   onClose,
   onSave,
   onDelete,
@@ -38,8 +41,11 @@ const BoardModal = ({
   currentUserId?: string;
 }) => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
   const [title, setTitle] = useState(initialTitle);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const templateSelectorRef = useRef<{ refreshTemplates: () => void }>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
@@ -156,6 +162,26 @@ const BoardModal = ({
       } catch (err) {
         console.error("BoardModal onDelete error:", err);
       }
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !boardId) return;
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('boardId', boardId);
+      const res = await fetch('/api/upload-board-avatar', { method: 'POST', body: formData });
+      if (res.ok) {
+        dispatch(apiSlice.util.invalidateTags([{ type: 'Board', id: 'AVATARS' }]));
+      }
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
     }
   };
 

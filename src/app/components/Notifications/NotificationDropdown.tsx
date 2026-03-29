@@ -71,7 +71,7 @@ const NotificationDropdown = ({ notifications, boards, onMarkRead, onMarkAllRead
                     leaveFrom="opacity-100 scale-100 translate-y-0"
                     leaveTo="opacity-0 scale-95 translate-y-1"
                >
-                    <MenuItems className="absolute left-0 z-30 mt-3 w-96 max-w-[calc(100vw-2rem)] bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden">
+                    <MenuItems className="absolute right-0 md:left-0 md:right-auto z-30 mt-3 w-96 max-w-[calc(100vw-2rem)] bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden">
                          {/* Header */}
                          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/60">
                               <span className="font-semibold text-white text-sm">{t('notifications.title')}</span>
