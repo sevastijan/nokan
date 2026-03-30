@@ -265,179 +265,131 @@ const DealDetail = ({ dealId }: DealDetailProps) => {
         </div>
       </div>
 
-      {/* Info cards grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        {/* Company card */}
-        {deal.company && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15 }}
-            className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-700/60 flex items-center justify-center">
-                <Building2 size={16} className="text-brand-400" />
-              </div>
-              <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
-                {t('crm.company')}
-              </h3>
-            </div>
-            <button
-              onClick={() => router.push(`/crm/companies/${deal.company_id}`)}
-              className="text-sm font-medium text-brand-400 hover:text-brand-300 transition-colors truncate block"
-            >
-              {deal.company.name}
-            </button>
-            {asCompany(deal.company)?.domain && (
-              <p className="text-xs text-slate-500 mt-1 truncate">
-                {asCompany(deal.company)!.domain}
-              </p>
-            )}
-          </motion.div>
-        )}
-
-        {/* Contact card */}
-        {deal.contact && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, delay: 0.05 }}
-            className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-700/60 flex items-center justify-center">
-                <User size={16} className="text-brand-400" />
-              </div>
-              <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
-                {t('crm.contact')}
-              </h3>
-            </div>
-            <p className="text-sm font-medium text-white">
-              {deal.contact.first_name} {deal.contact.last_name}
-            </p>
-            {asContact(deal.contact)?.position && (
-              <p className="text-xs text-slate-400 mt-0.5">
-                {asContact(deal.contact)!.position}
-              </p>
-            )}
-            <div className="flex flex-col gap-0.5 mt-1.5">
-              {asContact(deal.contact)?.email && (
-                <p className="text-xs text-slate-500 truncate">
-                  {asContact(deal.contact)!.email}
-                </p>
-              )}
-              {asContact(deal.contact)?.phone && (
-                <p className="text-xs text-slate-500">
-                  {asContact(deal.contact)!.phone}
-                </p>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Linked board card */}
-        {deal.board_id && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, delay: 0.1 }}
-            className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-700/60 flex items-center justify-center">
-                <LayoutDashboard size={16} className="text-brand-400" />
-              </div>
-              <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
-                {t('crm.linkedBoard')}
-              </h3>
-            </div>
-            <button
-              onClick={() => router.push(`/board/${deal.board_id}`)}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-brand-400 hover:text-white bg-brand-600/10 hover:bg-brand-600/20 rounded-lg transition-colors"
-            >
-              <ExternalLink size={14} />
-              Otwórz board
-            </button>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Partners section */}
-      <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-5 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
-            {t('crm.partners')}
-          </h3>
-          <button
-            onClick={() => {
-              setSelectedPartnerCompanyId('');
-              setPartnerModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-400 hover:text-white bg-brand-600/10 hover:bg-brand-600/20 rounded-lg transition-colors"
-          >
-            <Plus size={14} />
-            {t('crm.addPartner')}
-          </button>
+      {/* Two-column layout: Activities (left) | Sidebar (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left — Activities */}
+        <div className="lg:col-span-2">
+          <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+            <ActivityLog dealId={dealId} companyId={deal.company_id} />
+          </div>
         </div>
 
-        {partners.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Building2 size={24} className="text-slate-600 mb-2" />
-            <p className="text-xs text-slate-500">Brak partnerów</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {partners.map((partner) => (
-              <div
-                key={partner.id}
-                className="flex items-center justify-between gap-3 px-3 py-2.5 bg-slate-900/30 border border-slate-700/30 rounded-lg"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white truncate">
-                    {partner.company?.name ?? 'Unknown'}
-                  </p>
-                  {partner.contact && (
-                    <p className="text-xs text-slate-400 truncate">
-                      {partner.contact.first_name} {partner.contact.last_name}
-                      {partner.contact.email && ` — ${partner.contact.email}`}
-                    </p>
-                  )}
-                </div>
-                <div className="shrink-0">
-                  {partnerDeleteConfirmId === partner.id ? (
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => handleRemovePartner(partner.id)}
-                        className="px-2 py-1 text-xs text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
-                      >
-                        {t('common.delete')}
-                      </button>
-                      <button
-                        onClick={() => setPartnerDeleteConfirmId(null)}
-                        className="px-2 py-1 text-xs text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors"
-                      >
-                        {t('common.cancel')}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setPartnerDeleteConfirmId(partner.id)}
-                      className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-600/10 rounded-lg transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
+        {/* Right — Sidebar */}
+        <div className="space-y-4">
+          {/* Company */}
+          {deal.company && (
+            <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Building2 size={14} className="text-brand-400" />
+                <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  {t('crm.company')}
+                </h3>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <button
+                onClick={() => router.push(`/crm/companies/${deal.company_id}`)}
+                className="text-sm font-medium text-brand-400 hover:text-brand-300 transition-colors truncate block"
+              >
+                {deal.company.name}
+              </button>
+              {asCompany(deal.company)?.domain && (
+                <p className="text-xs text-slate-500 mt-0.5 truncate">{asCompany(deal.company)!.domain}</p>
+              )}
+            </div>
+          )}
 
-      {/* Activities section */}
-      <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
-        <ActivityLog dealId={dealId} companyId={deal.company_id} />
+          {/* Contact */}
+          {deal.contact && (
+            <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <User size={14} className="text-brand-400" />
+                <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  {t('crm.contact')}
+                </h3>
+              </div>
+              <p className="text-sm font-medium text-white">
+                {deal.contact.first_name} {deal.contact.last_name}
+              </p>
+              {asContact(deal.contact)?.position && (
+                <p className="text-xs text-slate-400 mt-0.5">{asContact(deal.contact)!.position}</p>
+              )}
+              {asContact(deal.contact)?.email && (
+                <p className="text-xs text-slate-500 mt-0.5 truncate">{asContact(deal.contact)!.email}</p>
+              )}
+              {asContact(deal.contact)?.phone && (
+                <p className="text-xs text-slate-500 mt-0.5">{asContact(deal.contact)!.phone}</p>
+              )}
+            </div>
+          )}
+
+          {/* Partners */}
+          <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <HandshakeIcon size={14} className="text-brand-400" />
+                <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  {t('crm.partners')}
+                </h3>
+              </div>
+              <button
+                onClick={() => { setSelectedPartnerCompanyId(''); setPartnerModalOpen(true); }}
+                className="p-1 text-slate-500 hover:text-brand-400 transition-colors"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+            {partners.length === 0 ? (
+              <p className="text-xs text-slate-600 py-2">Brak partnerów</p>
+            ) : (
+              <div className="space-y-1.5">
+                {partners.map((partner) => (
+                  <div key={partner.id} className="flex items-center justify-between gap-2 py-1.5">
+                    <div className="min-w-0">
+                      <p className="text-sm text-white truncate">{partner.company?.name ?? 'Unknown'}</p>
+                      {partner.contact && (
+                        <p className="text-xs text-slate-500 truncate">
+                          {partner.contact.first_name} {partner.contact.last_name}
+                        </p>
+                      )}
+                    </div>
+                    {partnerDeleteConfirmId === partner.id ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => handleRemovePartner(partner.id)} className="px-1.5 py-0.5 text-[10px] text-white bg-red-600 rounded">
+                          {t('common.delete')}
+                        </button>
+                        <button onClick={() => setPartnerDeleteConfirmId(null)} className="px-1.5 py-0.5 text-[10px] text-slate-300 bg-slate-700 rounded">
+                          {t('common.cancel')}
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setPartnerDeleteConfirmId(partner.id)} className="p-1 text-slate-600 hover:text-red-400 transition-colors shrink-0">
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Linked board */}
+          {deal.board_id && (
+            <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <LayoutDashboard size={14} className="text-brand-400" />
+                <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  {t('crm.linkedBoard')}
+                </h3>
+              </div>
+              <button
+                onClick={() => router.push(`/board/${deal.board_id}`)}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-brand-400 hover:text-white bg-brand-600/10 hover:bg-brand-600/20 rounded-lg transition-colors w-full justify-center"
+              >
+                <ExternalLink size={14} />
+                Otwórz board
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Edit Deal Modal */}
