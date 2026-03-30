@@ -827,4 +827,37 @@ export const boardEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, str
           },
           invalidatesTags: (_result, _error, { boardId }) => [{ type: 'BoardNotes', id: boardId }],
      }),
+
+     // ─── Board Order ──────────────────────────────────────────
+     getBoardOrder: builder.query<string[], string>({
+          async queryFn(userId) {
+               try {
+                    const { data, error } = await getSupabase()
+                         .from('board_order')
+                         .select('board_ids')
+                         .eq('user_id', userId)
+                         .single();
+                    if (error && error.code !== 'PGRST116') throw error;
+                    return { data: (data?.board_ids as string[]) ?? [] };
+               } catch (err) {
+                    return { error: { status: 'CUSTOM_ERROR', error: (err as Error).message } };
+               }
+          },
+          providesTags: (_r, _e, userId) => [{ type: 'BoardOrder' as const, id: userId }],
+     }),
+
+     saveBoardOrder: builder.mutation<void, { userId: string; boardIds: string[] }>({
+          async queryFn({ userId, boardIds }) {
+               try {
+                    const { error } = await getSupabase()
+                         .from('board_order')
+                         .upsert({ user_id: userId, board_ids: boardIds, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+                    if (error) throw error;
+                    return { data: undefined };
+               } catch (err) {
+                    return { error: { status: 'CUSTOM_ERROR', error: (err as Error).message } };
+               }
+          },
+          invalidatesTags: (_r, _e, { userId }) => [{ type: 'BoardOrder' as const, id: userId }],
+     }),
 });

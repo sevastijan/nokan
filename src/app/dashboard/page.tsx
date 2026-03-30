@@ -18,6 +18,8 @@ import {
      useGetFavoriteBoardsQuery,
      useToggleBoardFavoriteMutation,
      useGetBoardAvatarsQuery,
+     useGetBoardOrderQuery,
+     useSaveBoardOrderMutation,
 } from '@/app/store/apiSlice';
 import Loader from '@/app/components/Loader';
 import BoardModal from '@/app/components/Board/BoardModal';
@@ -74,29 +76,24 @@ export default function DashboardPage() {
      const boardIds = useMemo(() => myBoards.map((b) => b.id), [myBoards]);
      const { data: boardAvatars = {} } = useGetBoardAvatarsQuery(boardIds, { skip: boardIds.length === 0 });
 
-     // Custom board order (persisted in localStorage)
+     // Custom board order (persisted in database)
+     const { data: savedOrder } = useGetBoardOrderQuery(currentUser?.id || '', { skip: !currentUser?.id });
+     const [saveBoardOrder] = useSaveBoardOrderMutation();
      const [customOrder, setCustomOrder] = useState<string[] | null>(null);
-     const orderKey = currentUser?.id ? `board-order-${currentUser.id}` : null;
 
      useEffect(() => {
-          if (orderKey) {
-               try {
-                    const saved = localStorage.getItem(orderKey);
-                    if (saved) {
-                         setCustomOrder(JSON.parse(saved));
-                         setSortBy('custom');
-                    }
-               } catch { /* ignore */ }
+          if (savedOrder && savedOrder.length > 0) {
+               setCustomOrder(savedOrder);
+               setSortBy('custom');
           }
-     }, [orderKey]);
+     }, [savedOrder]);
 
      const saveOrder = useCallback((ids: string[]) => {
           setCustomOrder(ids);
-          if (orderKey) {
-               localStorage.setItem(orderKey, JSON.stringify(ids));
-               localStorage.setItem('board-order-last', '1');
+          if (currentUser?.id) {
+               saveBoardOrder({ userId: currentUser.id, boardIds: ids });
           }
-     }, [orderKey]);
+     }, [currentUser?.id, saveBoardOrder]);
 
      const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 

@@ -33,6 +33,7 @@ export const apiSlice = createApi({
      baseQuery: fakeBaseQuery(),
      tagTypes: [
           'Board',
+          'BoardOrder',
           'Column',
           'Task',
           'TeamMember',
@@ -153,6 +154,8 @@ export const {
      useUpdateUserMutation,
      useGetBoardNotesQuery,
      useSaveBoardNotesMutation,
+     useGetBoardOrderQuery,
+     useSaveBoardOrderMutation,
      useGetFavoriteBoardsQuery,
      useGetBoardAvatarsQuery,
      useToggleBoardFavoriteMutation,
