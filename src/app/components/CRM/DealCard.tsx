@@ -37,15 +37,8 @@ const DealCard = ({ deal, isDragOverlay }: DealCardProps) => {
       onClick={handleClick}
       className="relative bg-slate-800 rounded-lg px-3 py-2.5 cursor-pointer border border-slate-700/50 hover:shadow-lg hover:shadow-black/20 transition-shadow group"
     >
-      {/* Probability badge */}
-      <div className="absolute top-2 right-2">
-        <span className="text-[10px] font-semibold text-slate-400 bg-slate-700/60 px-1.5 py-0.5 rounded">
-          {deal.probability}%
-        </span>
-      </div>
-
       {/* Title */}
-      <p className="text-sm font-semibold text-white pr-10 leading-snug truncate">
+      <p className="text-sm font-semibold text-white leading-snug truncate">
         {deal.title}
       </p>
 

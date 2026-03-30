@@ -206,9 +206,9 @@ const ActivityLog = ({ companyId, dealId, limit }: ActivityLogProps) => {
                       </span>
                       {activity.creator && (
                         <div className="flex items-center gap-1.5">
-                          {activity.creator.image ? (
+                          {(activity.creator as Record<string, unknown>).custom_image || activity.creator.image ? (
                             <img
-                              src={activity.creator.image}
+                              src={((activity.creator as Record<string, unknown>).custom_image as string) || activity.creator.image!}
                               alt={activity.creator.name}
                               className="w-4 h-4 rounded-full object-cover"
                             />

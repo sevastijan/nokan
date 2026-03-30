@@ -624,7 +624,7 @@ export const crmEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, strin
           .select(
             `
             *,
-            creator:users!crm_activities_created_by_fkey(id, name, image)
+            creator:users!crm_activities_created_by_fkey(id, name, image, custom_image)
           `,
           )
           .order('date', { ascending: false });
