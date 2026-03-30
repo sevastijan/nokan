@@ -8,6 +8,7 @@ import { User } from '@/app/types/globalTypes';
 import { extractMentionedUserIds } from '@/app/lib/mentionUtils';
 import { useAddNotificationMutation } from '@/app/store/apiSlice';
 import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
+import { triggerSlackNotification } from '@/app/lib/slackNotification';
 
 interface CommentsSectionExtendedProps extends CommentsSectionProps {
      teamMembers: User[];
@@ -66,6 +67,18 @@ const CommentsSection = ({ taskId, comments, currentUser, task, onRefreshComment
                }
 
                await onRefreshComments();
+
+               if (boardId) {
+                    triggerSlackNotification({
+                         boardId,
+                         taskId,
+                         taskTitle: taskTitle || 'zadanie',
+                         changeType: 'comment',
+                         changedBy: currentUser.id,
+                         details: content.substring(0, 100),
+                    });
+               }
+
                toast.success(parentId ? t('comments.replyAdded') : t('comments.added'));
           } catch (error) {
                console.error('Error adding comment:', error);

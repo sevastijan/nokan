@@ -19,6 +19,7 @@ import { apiTokenEndpoints } from './endpoints/apiTokenEndpoints';
 import { taskSnapshotEndpoints } from './endpoints/taskSnapshotEndpoints';
 import { chatEndpoints } from './endpoints/chatEndpoints';
 import { crmEndpoints } from './endpoints/crmEndpoints';
+import { slackEndpoints } from './endpoints/slackEndpoints';
 
 /**
  * UserRole type in your application.
@@ -69,6 +70,8 @@ export const apiSlice = createApi({
           'CrmActivity',
           'CrmExchangeRate',
           'CrmDealSource',
+          'AppSettings',
+          'SlackIntegration',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -86,6 +89,7 @@ export const apiSlice = createApi({
           ...taskSnapshotEndpoints(builder),
           ...chatEndpoints(builder),
           ...crmEndpoints(builder),
+          ...slackEndpoints(builder),
      }),
 });
 
@@ -222,4 +226,9 @@ export const {
      useGetCrmExchangeRatesQuery,
      useGetCrmDealSourcesQuery,
      useAddCrmDealSourceMutation,
+     // Slack hooks
+     useGetAppSettingsQuery,
+     useSaveAppSettingMutation,
+     useGetSlackIntegrationQuery,
+     useDisconnectSlackMutation,
 } = apiSlice;

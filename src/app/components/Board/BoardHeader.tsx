@@ -1,18 +1,21 @@
 'use client';
 
-import { useState, useRef, useCallback, useMemo, ChangeEvent, KeyboardEvent } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight, FiMoreHorizontal, FiChevronLeft } from 'react-icons/fi';
 import { Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
+import { toast } from 'sonner';
 import { BoardHeaderProps } from '@/app/types/globalTypes';
 import { useHasManagementAccess } from '@/app/hooks/useHasManagementAccess';
-import { useGetBoardAvatarsQuery } from '@/app/store/apiSlice';
+import { useGetBoardAvatarsQuery, useGetUserRoleQuery } from '@/app/store/apiSlice';
+import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import FilterDropdown from './FilterDropdown';
 import ViewModeToggle from './ViewModeToggle';
 import MembersDropdown from './MembersDropdown';
+import SlackSection from './SlackSection';
 
 interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      boardId: string;
@@ -47,6 +50,18 @@ const BoardHeader = ({
 }: ExtendedBoardHeaderProps) => {
      const { t } = useTranslation();
      const router = useRouter();
+     const searchParams = useSearchParams();
+     const { currentUser } = useCurrentUser();
+     const userEmail = currentUser?.email || '';
+     const { data: userRole } = useGetUserRoleQuery(userEmail, { skip: !userEmail });
+     const isOwner = userRole === 'OWNER';
+
+     useEffect(() => {
+          if (searchParams.get('slack') === 'connected') {
+               toast.success(t('slack.connected'));
+               window.history.replaceState({}, '', window.location.pathname);
+          }
+     }, [searchParams, t]);
 
      const [showMobileSearch, setShowMobileSearch] = useState(false);
      const [filterOpen, setFilterOpen] = useState(false);
@@ -210,6 +225,7 @@ const BoardHeader = ({
 
                                    {hasManagementAccess && <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />}
 
+                                   {isOwner && <SlackSection boardId={boardId} />}
                               </div>
 
                               {/* Mobile overflow menu */}

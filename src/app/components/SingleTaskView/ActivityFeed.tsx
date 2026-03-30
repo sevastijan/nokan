@@ -9,6 +9,7 @@ import { getSupabase } from '@/app/lib/supabase';
 import type { Comment, TaskSnapshot, Column, User, TaskDetail } from '@/app/types/globalTypes';
 import { extractMentionedUserIds } from '@/app/lib/mentionUtils';
 import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
+import { triggerSlackNotification } from '@/app/lib/slackNotification';
 import CommentForm from './CommentForm';
 import Avatar from '../Avatar/Avatar';
 import { formatDate } from '@/app/utils/helpers';
@@ -196,6 +197,18 @@ export default function ActivityFeed({ taskId, comments, currentUser, task, colu
                     }
                }
                await onRefreshComments();
+
+               if (boardId) {
+                    triggerSlackNotification({
+                         boardId,
+                         taskId,
+                         taskTitle: taskTitle || 'zadanie',
+                         changeType: 'comment',
+                         changedBy: currentUser.id,
+                         details: content.substring(0, 100),
+                    });
+               }
+
                toast.success(parentId ? t('comments.replyAdded') : t('comments.added'));
           } catch (error) {
                console.error('Error adding comment:', error);

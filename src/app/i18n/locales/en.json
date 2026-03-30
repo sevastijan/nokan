@@ -50,7 +50,8 @@
           "newChannel": "New channel",
           "newMessage": "New message",
           "noChannels": "No channels",
-          "noMessages": "No messages"
+          "noMessages": "No messages",
+          "settings": "Settings"
      },
      "roles": {
           "OWNER": "Owner",
@@ -893,5 +894,25 @@
           "saved": "Saved",
           "deleted": "Deleted",
           "search": "Search..."
+     },
+     "slack": {
+          "title": "Slack",
+          "appSettings": "Slack App Settings",
+          "clientId": "Client ID",
+          "clientSecret": "Client Secret",
+          "signingSecret": "Signing Secret",
+          "saveCredentials": "Save",
+          "credentialsSaved": "Credentials saved",
+          "notConfigured": "Slack App not configured",
+          "configureFirst": "Configure Slack App in settings",
+          "connect": "Connect to Slack",
+          "disconnect": "Disconnect",
+          "disconnected": "Slack disconnected",
+          "connected": "Connected to Slack",
+          "connectedTo": "Connected to",
+          "channel": "Channel",
+          "workspace": "Workspace",
+          "active": "Active",
+          "inactive": "Inactive"
      }
 }

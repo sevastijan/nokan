@@ -2,6 +2,7 @@ import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { getSupabase } from '@/app/lib/supabase';
 import { Task, TaskDetail, Attachment, User } from '@/app/types/globalTypes';
 import { pickSnapshotFields, diffFields } from './taskSnapshotEndpoints';
+import { triggerSlackNotification } from '@/app/lib/slackNotification';
 
 interface RawTask {
      id: string;
@@ -251,6 +252,17 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          due_date: data.due_date,
                          status_id: data.status_id,
                     };
+                    if (mapped.board_id) {
+                         triggerSlackNotification({
+                              boardId: mapped.board_id,
+                              taskId: mapped.id,
+                              taskTitle: mapped.title,
+                              changeType: 'task_created',
+                              changedBy: (data as Record<string, unknown>).created_by as string || 'Ktoś',
+                              details: 'utworzył(a) zadanie',
+                         });
+                    }
+
                     return { data: mapped };
                } catch (err) {
                     const error = err as Error;
@@ -741,6 +753,46 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               } catch (snapshotErr) {
                                    console.error('[updateTask] snapshot creation failed:', snapshotErr);
                               }
+
+                              // Trigger Slack notification
+                              if (updated.board_id) {
+                                   const slackFieldMap: Record<string, string> = {
+                                        column_id: 'status',
+                                        user_id: 'assigned',
+                                        priority: 'priority',
+                                        description: 'description',
+                                        due_date: 'due_date',
+                                        start_date: 'start_date',
+                                        end_date: 'end_date',
+                                        is_recurring: 'recurrence',
+                                        recurrence_type: 'recurrence',
+                                   };
+
+                                   // Pick the first meaningful field for the Slack message
+                                   const relevantField = changedFields.find((f) => slackFieldMap[f]);
+                                   if (relevantField) {
+                                        const changeType = slackFieldMap[relevantField];
+                                        let details: string | undefined;
+
+                                        if (relevantField === 'column_id') details = 'zmienił(a) status';
+                                        else if (relevantField === 'priority') details = 'zmienił(a) priorytet';
+                                        else if (relevantField === 'user_id') details = updated.user_id ? 'przypisał(a) zadanie' : 'usunął/ęła przypisanie';
+                                        else if (relevantField === 'description') details = 'zaktualizował(a) opis';
+                                        else if (relevantField === 'due_date') details = updated.due_date ? `ustawił(a) termin: ${updated.due_date}` : 'usunął/ęła termin';
+                                        else if (relevantField === 'start_date') details = updated.start_date ? `ustawił(a) datę rozpoczęcia: ${updated.start_date}` : 'usunął/ęła datę rozpoczęcia';
+                                        else if (relevantField === 'end_date') details = updated.end_date ? `ustawił(a) datę zakończenia: ${updated.end_date}` : 'usunął/ęła datę zakończenia';
+                                        else if (relevantField === 'is_recurring' || relevantField === 'recurrence_type') details = (updated as Record<string, unknown>).is_recurring ? `ustawił(a) cykliczność` : 'wyłączył(a) cykliczność';
+
+                                        triggerSlackNotification({
+                                             boardId: updated.board_id,
+                                             taskId,
+                                             taskTitle: updated.title,
+                                             changeType: changeType as any,
+                                             changedBy: userId || 'Ktoś',
+                                             details,
+                                        });
+                                   }
+                              }
                          }
                     }
 
@@ -879,6 +931,21 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     } catch {
                          // Snapshot is best-effort
                     }
+
+                    // Trigger Slack notification for attachment
+                    try {
+                         const { data: taskData } = await getSupabase().from('tasks').select('board_id, title').eq('id', taskId).single();
+                         if (taskData?.board_id) {
+                              triggerSlackNotification({
+                                   boardId: taskData.board_id,
+                                   taskId,
+                                   taskTitle: taskData.title,
+                                   changeType: 'attachment',
+                                   changedBy: userId || 'Ktoś',
+                                   details: `dodał(a) załącznik: ${attachment.file_name}`,
+                              });
+                         }
+                    } catch { /* best-effort */ }
 
                     return { data: attachment };
                } catch (err) {
