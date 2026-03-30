@@ -193,7 +193,7 @@ const DealDetail = ({ dealId }: DealDetailProps) => {
                   </span>
                 )}
               </span>
-              <div className="flex items-center gap-1.5 text-sm text-slate-400">
+              <div className="flex items-center gap-1.5 text-sm text-slate-400" title="Prawdopodobieństwo wygrania deala — ustawiane automatycznie na podstawie etapu">
                 <TrendingUp size={14} />
                 <span>{deal.probability}%</span>
               </div>
