@@ -193,9 +193,15 @@ const DealDetail = ({ dealId }: DealDetailProps) => {
                   </span>
                 )}
               </span>
-              <div className="flex items-center gap-1.5 text-sm text-slate-400" title="Prawdopodobieństwo wygrania deala — ustawiane automatycznie na podstawie etapu">
+              <div className="relative flex items-center gap-1.5 text-sm text-slate-400 group/tip cursor-help">
                 <TrendingUp size={14} />
                 <span>{deal.probability}%</span>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-950 border border-slate-700 text-xs text-slate-300 rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity shadow-xl z-10">
+                  Prawdopodobieństwo wygrania deala
+                  <br />
+                  <span className="text-slate-500">Ustawiane automatycznie na podstawie etapu</span>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-950" />
+                </div>
               </div>
               {deal.expected_close_date && (
                 <div className="flex items-center gap-1.5 text-sm text-slate-400">
