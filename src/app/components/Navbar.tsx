@@ -295,6 +295,7 @@ const Navbar = () => {
                          {crmExpanded && (
                               <div className="mt-0.5 ml-4 space-y-0.5">
                                    {[
+                                        { href: '/crm/dashboard', label: t('crm.dashboard'), icon: LayoutDashboard },
                                         { href: '/crm/pipeline', label: 'Pipeline', icon: GitBranch },
                                         { href: '/crm/companies', label: t('crm.companies'), icon: Building2 },
                                    ].map(({ href, label, icon: Icon }) => {
