@@ -14,7 +14,32 @@ const Mention = ({ name }: { name: string }) => (
      <span className="inline-flex items-center rounded-md bg-brand-500/15 px-1.5 py-0.5 text-xs font-medium text-brand-300">@{name}</span>
 );
 
+const isHtml = (text: string) => /<[a-z][\s\S]*>/i.test(text);
+
+const HtmlContent = ({ content, onImageClick }: MarkdownContentProps) => {
+     // Process mention tags in HTML: <span data-mention="Name">@{Name}</span> → styled mention
+     const processedHtml = content
+          .replace(/@\{([^}]+)\}/g, '<span class="inline-flex items-center rounded-md bg-brand-500/15 px-1.5 py-0.5 text-xs font-medium text-brand-300">@$1</span>');
+
+     return (
+          <div
+               className="prose prose-sm max-w-none prose-invert prose-headings:text-gray-100 prose-p:text-gray-300 prose-a:text-brand-400 prose-a:underline hover:prose-a:text-brand-300 prose-strong:text-gray-100 prose-em:text-gray-200 prose-code:text-brand-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:p-0 prose-blockquote:border-l-brand-500 prose-blockquote:text-gray-400 prose-li:text-gray-300 [&_p]:my-0 [&_p]:leading-relaxed [&_img]:max-w-full [&_img]:rounded-lg [&_img]:cursor-pointer [&_img]:hover:opacity-90 [&_img]:transition-opacity [&_img]:mt-2 [&_img]:mb-3 [&_img]:shadow-md"
+               onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.tagName === 'IMG' && onImageClick) {
+                         onImageClick((target as HTMLImageElement).src);
+                    }
+               }}
+               dangerouslySetInnerHTML={{ __html: processedHtml }}
+          />
+     );
+};
+
 const MarkdownContent = ({ content, onImageClick }: MarkdownContentProps) => {
+     if (isHtml(content)) {
+          return <HtmlContent content={content} onImageClick={onImageClick} />;
+     }
+
      return (
           <div className="prose prose-sm max-w-none prose-invert prose-headings:text-gray-100 prose-p:text-gray-300 prose-a:text-brand-400 prose-a:underline hover:prose-a:text-brand-300 prose-strong:text-gray-100 prose-em:text-gray-200 prose-code:text-brand-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:p-0 prose-blockquote:border-l-brand-500 prose-blockquote:text-gray-400 prose-li:text-gray-300 prose-table:text-gray-300">
                <ReactMarkdown
