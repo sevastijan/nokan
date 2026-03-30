@@ -887,7 +887,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     return { error: { status: 'CUSTOM_ERROR', error: error.message } };
                }
           },
-          invalidatesTags: (_result, _error, arg) => [{ type: 'Task', id: arg.taskId }],
+          invalidatesTags: (_result, _error, arg) => [{ type: 'Task', id: arg.taskId }, { type: 'TaskSnapshot', id: arg.taskId }],
      }),
 
      getPriorities: builder.query<{ id: string; label: string; color: string }[], void>({
