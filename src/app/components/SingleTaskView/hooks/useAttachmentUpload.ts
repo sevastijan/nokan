@@ -12,6 +12,7 @@ interface LocalFilePreview {
 interface UploadAttachmentParams {
      file: File;
      taskId: string;
+     userId?: string;
 }
 
 interface UploadMutation {
@@ -23,9 +24,10 @@ interface UploadMutation {
 interface UseAttachmentUploadProps {
      uploadAttachmentMutation: UploadMutation;
      onTaskUpdate: () => Promise<void>;
+     userId?: string;
 }
 
-export const useAttachmentUpload = ({ uploadAttachmentMutation, onTaskUpdate }: UseAttachmentUploadProps) => {
+export const useAttachmentUpload = ({ uploadAttachmentMutation, onTaskUpdate, userId }: UseAttachmentUploadProps) => {
      const { t } = useTranslation();
      const [localFilePreviews, setLocalFilePreviews] = useState<LocalFilePreview[]>([]);
 
@@ -77,7 +79,7 @@ export const useAttachmentUpload = ({ uploadAttachmentMutation, onTaskUpdate }: 
 
                for (const { file, previewUrl } of files) {
                     try {
-                         await uploadAttachmentMutation({ file, taskId }).unwrap();
+                         await uploadAttachmentMutation({ file, taskId, userId }).unwrap();
                          if (previewUrl) URL.revokeObjectURL(previewUrl);
                     } catch (error) {
                          console.error('Upload failed:', error);

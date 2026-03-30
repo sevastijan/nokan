@@ -121,6 +121,7 @@ export const useTaskManagement = ({
                                    const result = await uploadAttachmentMutation({
                                         file,
                                         taskId: currentTaskId,
+                                        userId: currentUser?.id,
                                    }).unwrap();
                                    setTask((prev) => {
                                         if (!prev) return prev;
@@ -216,6 +217,7 @@ export const useTaskManagement = ({
                          const result = await uploadAttachmentMutation({
                               file,
                               taskId: currentTaskId,
+                              userId: currentUser?.id,
                          }).unwrap();
                          setTask((prev) => {
                               if (!prev) return prev;

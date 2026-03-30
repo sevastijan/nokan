@@ -127,6 +127,7 @@ const SingleTaskView = ({
      const { localFilePreviews, addFiles, removeFile, uploadAllAttachments, cleanupPreviews } = useAttachmentUpload({
           uploadAttachmentMutation,
           onTaskUpdate: fetchTaskData,
+          userId: user?.id,
      });
 
      const { handleAssigneesChange } = useTaskAssignees({

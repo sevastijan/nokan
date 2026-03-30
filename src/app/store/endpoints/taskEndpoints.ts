@@ -834,8 +834,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           ],
      }),
 
-     uploadAttachment: builder.mutation<Attachment, { file: File; taskId: string }>({
-          async queryFn({ file, taskId }) {
+     uploadAttachment: builder.mutation<Attachment, { file: File; taskId: string; userId?: string }>({
+          async queryFn({ file, taskId, userId }) {
                try {
                     const formData = new FormData();
                     formData.append('file', file);
@@ -872,7 +872,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          await getSupabase().from('task_snapshots').insert({
                               task_id: taskId,
                               version: nextVersion,
-                              changed_by: null,
+                              changed_by: userId || null,
                               snapshot: { attachment_added: attachment.file_name },
                               changed_fields: ['attachment_added'],
                          });
