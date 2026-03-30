@@ -857,6 +857,29 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                          throw new Error('No attachment returned from API');
                     }
 
+                    // Create snapshot for attachment upload
+                    try {
+                         const { data: maxVersionRow } = await getSupabase()
+                              .from('task_snapshots')
+                              .select('version')
+                              .eq('task_id', taskId)
+                              .order('version', { ascending: false })
+                              .limit(1)
+                              .single();
+
+                         const nextVersion = (maxVersionRow?.version ?? 0) + 1;
+
+                         await getSupabase().from('task_snapshots').insert({
+                              task_id: taskId,
+                              version: nextVersion,
+                              changed_by: null,
+                              snapshot: { attachment_added: attachment.file_name },
+                              changed_fields: ['attachment_added'],
+                         });
+                    } catch {
+                         // Snapshot is best-effort
+                    }
+
                     return { data: attachment };
                } catch (err) {
                     const error = err as Error;

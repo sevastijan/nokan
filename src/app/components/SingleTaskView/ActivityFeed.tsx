@@ -39,6 +39,7 @@ const FIELD_LABELS: Record<string, string> = {
      title: 'tytuł', description: 'opis', priority: 'priorytet', column_id: 'status',
      user_id: 'przypisanie', completed: 'zakończenie', status_id: 'status',
      due_date: 'termin', start_date: 'datę rozpoczęcia', end_date: 'datę zakończenia', type: 'typ',
+     attachment_added: 'załącznik',
 };
 
 function getDisplayData(user: { name?: string | null; image?: string | null; custom_name?: string | null; custom_image?: string | null; email?: string } | null) {
@@ -70,6 +71,7 @@ function HistoryItem({ snapshot, columns }: { snapshot: TaskSnapshot; columns: C
                const col = columns.find((c) => c.id === val);
                return `przeniósł(a) do "${col?.title || 'Nieznana'}"`;
           }
+          if (field === 'attachment_added') return `dodał(a) załącznik "${val || ''}"`;
           if (field === 'completed') return val ? 'oznaczył(a) jako zakończone' : 'przywrócił(a) do aktywnych';
           if (field === 'title') return 'zmienił(a) tytuł';
           if (field === 'description') return 'zaktualizował(a) opis';
