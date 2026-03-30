@@ -78,16 +78,6 @@ export interface CrmDeal {
   board_id?: string | null;
 }
 
-export const DEAL_SOURCE_PRESETS = [
-  'Polecenie',
-  'Strona www',
-  'Social media',
-  'Cold call',
-  'Email',
-  'Networking / event',
-  'Reklama',
-  'Inne',
-];
 
 export interface CrmDealPartner {
   id: string;

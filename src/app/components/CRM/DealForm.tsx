@@ -11,11 +11,13 @@ import {
   useCreateCrmDealMutation,
   useUpdateCrmDealMutation,
   useGetCrmCompaniesQuery,
+  useGetCrmDealSourcesQuery,
+  useAddCrmDealSourceMutation,
   useGetCrmContactsByCompanyQuery,
   useGetCurrentUserQuery,
 } from '@/app/store/apiSlice';
 import type { CrmDeal, CrmDealStage, CrmCurrency } from '@/app/types/crmTypes';
-import { STAGE_ORDER, STAGE_LABELS, DEAL_SOURCE_PRESETS } from '@/app/types/crmTypes';
+import { STAGE_ORDER, STAGE_LABELS } from '@/app/types/crmTypes';
 
 interface DealFormProps {
   isOpen: boolean;
@@ -33,6 +35,8 @@ const DealForm = ({ isOpen, onClose, deal, defaultCompanyId }: DealFormProps) =>
     skip: authStatus !== 'authenticated',
   });
   const { data: companies = [] } = useGetCrmCompaniesQuery();
+  const { data: dealSources = [] } = useGetCrmDealSourcesQuery();
+  const [addDealSource] = useAddCrmDealSourceMutation();
   const [createDeal, { isLoading: creating }] = useCreateCrmDealMutation();
   const [updateDeal, { isLoading: updating }] = useUpdateCrmDealMutation();
 
@@ -142,6 +146,12 @@ const DealForm = ({ isOpen, onClose, deal, defaultCompanyId }: DealFormProps) =>
         notes: notes.trim() || null,
         source: source.trim() || null,
       };
+
+      // Auto-add new source to DB if not already there
+      const trimmedSource = source.trim();
+      if (trimmedSource && !dealSources.some((s) => s.name === trimmedSource)) {
+        addDealSource(trimmedSource);
+      }
 
       if (isEdit && deal) {
         await updateDeal({ id: deal.id, data: payload }).unwrap();
@@ -403,21 +413,23 @@ const DealForm = ({ isOpen, onClose, deal, defaultCompanyId }: DealFormProps) =>
                     className={inputClasses}
                     placeholder="Wpisz lub wybierz źródło..."
                   />
-                  {showSourceDropdown && (
+                  {showSourceDropdown && dealSources.length > 0 && (
                     <div className="absolute z-20 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                      {DEAL_SOURCE_PRESETS.filter((s) => s.toLowerCase().includes(source.toLowerCase())).map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => {
-                            setSource(preset);
-                            setShowSourceDropdown(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
-                        >
-                          {preset}
-                        </button>
-                      ))}
+                      {dealSources
+                        .filter((s) => s.name.toLowerCase().includes(source.toLowerCase()))
+                        .map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setSource(s.name);
+                              setShowSourceDropdown(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+                          >
+                            {s.name}
+                          </button>
+                        ))}
                     </div>
                   )}
                 </div>

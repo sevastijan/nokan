@@ -23,3 +23,15 @@ CREATE TABLE IF NOT EXISTS crm_api_keys (
 );
 
 CREATE INDEX IF NOT EXISTS idx_crm_api_keys_hash ON crm_api_keys(key_hash);
+
+-- Deal sources (dynamic, user-managed)
+CREATE TABLE IF NOT EXISTS crm_deal_sources (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  created_at timestamptz DEFAULT now()
+);
+
+INSERT INTO crm_deal_sources (name) VALUES
+  ('Polecenie'), ('Strona www'), ('Social media'), ('Cold call'),
+  ('Email'), ('Networking / event'), ('Reklama')
+ON CONFLICT (name) DO NOTHING;

@@ -804,4 +804,43 @@ export const crmEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, strin
     },
     providesTags: () => [{ type: 'CrmExchangeRate' as const, id: 'LIST' }],
   }),
+
+  // ---------------------------------------------------------------------------
+  // Deal Sources
+  // ---------------------------------------------------------------------------
+
+  getCrmDealSources: builder.query<{ id: string; name: string }[], void>({
+    async queryFn() {
+      try {
+        const { data, error } = await getSupabase()
+          .from('crm_deal_sources')
+          .select('id, name')
+          .order('name', { ascending: true });
+        if (error) throw error;
+        return { data: (data ?? []) as { id: string; name: string }[] };
+      } catch (err) {
+        console.error('[crmEndpoints.getCrmDealSources] error:', err);
+        return { error: { status: 'CUSTOM_ERROR' as const, error: getErrorMessage(err) } };
+      }
+    },
+    providesTags: () => [{ type: 'CrmDealSource' as const, id: 'LIST' }],
+  }),
+
+  addCrmDealSource: builder.mutation<{ id: string; name: string }, string>({
+    async queryFn(name) {
+      try {
+        const { data, error } = await getSupabase()
+          .from('crm_deal_sources')
+          .upsert({ name }, { onConflict: 'name' })
+          .select('id, name')
+          .single();
+        if (error) throw error;
+        return { data: data as { id: string; name: string } };
+      } catch (err) {
+        console.error('[crmEndpoints.addCrmDealSource] error:', err);
+        return { error: { status: 'CUSTOM_ERROR' as const, error: getErrorMessage(err) } };
+      }
+    },
+    invalidatesTags: [{ type: 'CrmDealSource', id: 'LIST' }],
+  }),
 });

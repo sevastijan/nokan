@@ -67,6 +67,7 @@ export const apiSlice = createApi({
           'CrmDealPartner',
           'CrmActivity',
           'CrmExchangeRate',
+          'CrmDealSource',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -216,4 +217,6 @@ export const {
      useLinkCrmDealToBoardMutation,
      useSetCrmDealContactsMutation,
      useGetCrmExchangeRatesQuery,
+     useGetCrmDealSourcesQuery,
+     useAddCrmDealSourceMutation,
 } = apiSlice;
