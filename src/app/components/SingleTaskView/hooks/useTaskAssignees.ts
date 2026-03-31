@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { triggerEmailNotification } from '@/app/lib/email/triggerNotification';
+import { triggerSlackNotification } from '@/app/lib/slackNotification';
 import { useUpdateTaskCollaboratorsMutation } from '@/app/store/apiSlice';
 import { User, TaskDetail } from '@/app/types/globalTypes';
 
@@ -81,6 +82,30 @@ export const useTaskAssignees = ({
                                         metadata: { removerName: currentUserName || 'Ktoś' },
                                    });
                               }
+                         }
+
+                         // Slack notifications
+                         for (const addedId of addedIds) {
+                              const addedUser = teamMembers.find((u) => u.id === addedId);
+                              triggerSlackNotification({
+                                   boardId,
+                                   taskId: currentTaskId,
+                                   taskTitle: taskTitle || 'zadanie',
+                                   changeType: 'assigned',
+                                   changedBy: currentUserId || 'Ktoś',
+                                   details: `przypisano: ${addedUser?.custom_name || addedUser?.name || 'użytkownik'}`,
+                              });
+                         }
+                         for (const removedId of removedIds) {
+                              const removedUser = teamMembers.find((u) => u.id === removedId);
+                              triggerSlackNotification({
+                                   boardId,
+                                   taskId: currentTaskId,
+                                   taskTitle: taskTitle || 'zadanie',
+                                   changeType: 'unassigned',
+                                   changedBy: currentUserId || 'Ktoś',
+                                   details: `odpięto: ${removedUser?.custom_name || removedUser?.name || 'użytkownik'}`,
+                              });
                          }
 
                          toast.success(t('taskMeta.assigneesUpdated'));
