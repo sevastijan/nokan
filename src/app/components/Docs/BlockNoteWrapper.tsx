@@ -280,7 +280,7 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
         .docs-editor [data-background-color="pink"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="pink"]) { background-color: rgba(244,114,182,0.12) !important; }
         /* Remove double background on parent .bn-block — only keep it on .bn-block-content */
         .docs-editor .bn-block:has(>.bn-block-content[data-background-color]) { background-color: transparent !important; }
-        .docs-editor .bn-editor { padding: 0 !important; color: #ffffff; }
+        .docs-editor .bn-editor { padding: 0 !important; padding-inline: 0 !important; color: #ffffff; }
         .docs-editor .bn-block-outer:first-child { margin-top: 0 !important; padding-top: 0 !important; }
         .docs-editor .bn-block-outer { margin-left: 0 !important; padding-left: 0 !important; }
 

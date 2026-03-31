@@ -110,7 +110,7 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
       {/* Save indicator */}
       {saved && (
         <div className="fixed top-14 md:top-3 right-4 text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded z-40">
@@ -156,7 +156,7 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
                 updatePage({ id: page.id, data: { title: defaultTitle, updated_by: userId } });
               }
             }}
-            className="flex-1 text-2xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600 font-[inherit]"
+            className="flex-1 text-xl sm:text-2xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600 font-[inherit]"
             placeholder={t('docs.untitled')}
           />
         </div>
