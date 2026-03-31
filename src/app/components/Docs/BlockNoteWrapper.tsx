@@ -191,6 +191,11 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           text-decoration: line-through !important;
           color: #64748b !important;
         }
+        .docs-editor [data-content-type="checkListItem"] .bn-block-content {
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem !important;
+        }
 
         /* ── Tables ── */
         .docs-editor table {
