@@ -103,45 +103,47 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
       )}
 
       {/* Page icon + title */}
-      <div className="mb-6">
-        <div className="relative inline-block" ref={emojiPickerRef}>
-          <button
-            onClick={() => setEmojiOpen(!emojiOpen)}
-            className="text-4xl mb-2 hover:bg-slate-800 rounded p-1 transition-colors cursor-pointer"
-          >
-            {page.icon || '📄'}
-          </button>
-          {emojiOpen && (
-            <div className="absolute top-full left-0 mt-1 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-3 w-[280px]">
-              <div className="grid grid-cols-8 gap-1">
-                {EMOJI_OPTIONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleEmojiSelect(emoji)}
-                    className="w-8 h-8 flex items-center justify-center text-lg hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
-                  >
-                    {emoji}
-                  </button>
-                ))}
+      <div className="mb-6 pb-5 border-b border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="relative shrink-0" ref={emojiPickerRef}>
+            <button
+              onClick={() => setEmojiOpen(!emojiOpen)}
+              className="text-3xl hover:bg-slate-800 rounded-lg p-1.5 transition-colors cursor-pointer"
+            >
+              {page.icon || '📄'}
+            </button>
+            {emojiOpen && (
+              <div className="absolute top-full left-0 mt-1 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-3 w-[280px]">
+                <div className="grid grid-cols-8 gap-1">
+                  {EMOJI_OPTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleEmojiSelect(emoji)}
+                      className="w-8 h-8 flex items-center justify-center text-lg hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          <input
+            ref={titleRef}
+            type="text"
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            onBlur={() => {
+              if (!title.trim()) {
+                const defaultTitle = t('docs.untitled');
+                setTitle(defaultTitle);
+                updatePage({ id: page.id, data: { title: defaultTitle, updated_by: userId } });
+              }
+            }}
+            className="flex-1 text-2xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600"
+            placeholder={t('docs.untitled')}
+          />
         </div>
-        <input
-          ref={titleRef}
-          type="text"
-          value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          onBlur={() => {
-            if (!title.trim()) {
-              const defaultTitle = t('docs.untitled');
-              setTitle(defaultTitle);
-              updatePage({ id: page.id, data: { title: defaultTitle, updated_by: userId } });
-            }
-          }}
-          className="w-full text-3xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600"
-          placeholder={t('docs.untitled')}
-        />
       </div>
 
       {/* BlockNote Editor */}
