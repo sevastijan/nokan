@@ -400,7 +400,7 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
           border-left: 3px solid #00a68b !important; padding-left: 0.625rem !important; border-radius: 0 !important;
         }
         .docs-editor [data-content-type="heading"] .bn-inline-content {
-          font-style: normal !important; font-weight: 700 !important; color: #ffffff;
+          font-style: normal !important; font-weight: 700 !important;
           letter-spacing: -0.02em !important; line-height: 1.3 !important;
         }
         .docs-editor [data-content-type="heading"][data-level="1"] .bn-inline-content { font-size: 1.5rem !important; }
