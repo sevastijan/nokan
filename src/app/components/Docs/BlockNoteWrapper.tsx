@@ -5,6 +5,7 @@ import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
+import 'highlight.js/styles/github-dark.css';
 
 interface BlockNoteWrapperProps {
   initialContent?: unknown;
@@ -70,6 +71,14 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           padding: 0 !important;
           color: #ffffff !important;
         }
+        .docs-editor .bn-block-outer:first-child {
+          margin-top: 0 !important;
+          padding-top: 0 !important;
+        }
+        .docs-editor .bn-block-outer {
+          margin-left: 0 !important;
+          padding-left: 0 !important;
+        }
 
         /* ── Typography: match app style ── */
         .docs-editor [data-content-type="heading"] {
@@ -129,38 +138,9 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           color: #e2e8f0 !important;
           border-radius: 0 !important;
         }
-        /* Syntax colors */
-        .docs-editor [data-content-type="codeBlock"] .hljs-keyword,
-        .docs-editor [data-content-type="codeBlock"] .hljs-tag {
-          color: #c084fc !important;
-        }
-        .docs-editor [data-content-type="codeBlock"] .hljs-string,
-        .docs-editor [data-content-type="codeBlock"] .hljs-attr {
-          color: #2ad4ab !important;
-        }
-        .docs-editor [data-content-type="codeBlock"] .hljs-number,
-        .docs-editor [data-content-type="codeBlock"] .hljs-literal {
-          color: #f59e0b !important;
-        }
-        .docs-editor [data-content-type="codeBlock"] .hljs-comment {
-          color: #475569 !important;
-          font-style: italic !important;
-        }
-        .docs-editor [data-content-type="codeBlock"] .hljs-function,
-        .docs-editor [data-content-type="codeBlock"] .hljs-title {
-          color: #60a5fa !important;
-        }
-        .docs-editor [data-content-type="codeBlock"] .hljs-built_in,
-        .docs-editor [data-content-type="codeBlock"] .hljs-type {
-          color: #f472b6 !important;
-        }
-        .docs-editor [data-content-type="codeBlock"] .hljs-variable,
-        .docs-editor [data-content-type="codeBlock"] .hljs-params {
-          color: #fb923c !important;
-        }
-        .docs-editor [data-content-type="codeBlock"] .hljs-operator,
-        .docs-editor [data-content-type="codeBlock"] .hljs-punctuation {
-          color: #94a3b8 !important;
+        /* Override highlight.js theme bg to match our code block */
+        .docs-editor .hljs {
+          background: transparent !important;
         }
         /* Language selector in code block */
         .docs-editor [data-content-type="codeBlock"] select {
