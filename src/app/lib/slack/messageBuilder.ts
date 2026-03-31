@@ -69,6 +69,7 @@ export function buildSlackMessage({ taskTitle, taskUrl, changeType, changedBy, b
   const color = CHANGE_COLORS[changeType] || '#64748b';
 
   const now = new Date().toLocaleString('pl-PL', {
+    timeZone: 'Europe/Warsaw',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
