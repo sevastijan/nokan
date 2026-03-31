@@ -331,7 +331,7 @@ const SingleTaskView = ({
                }
 
                try {
-                    await updateTaskType({ taskId: task.id, type: newType }).unwrap();
+                    await updateTaskType({ taskId: task.id, type: newType, userId: user?.id }).unwrap();
                     fetchTaskData();
                     toast.success(newType === 'story' ? t('task.changedToStory') : t('task.changedToTask'));
                } catch (error) {
@@ -684,6 +684,7 @@ const SingleTaskView = ({
                                                   subtasks={subtasks}
                                                   onSubtaskOpen={setOpenedSubtaskId}
                                                   onRefresh={() => { refetchSubtasks(); fetchTaskData(); }}
+                                                  userId={user?.id}
                                              />
                                         </div>
                                    )}

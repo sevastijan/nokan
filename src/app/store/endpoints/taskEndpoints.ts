@@ -1054,8 +1054,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           providesTags: (_result, _error, { storyId }) => [{ type: 'Task', id: `subtasks-${storyId}` }],
      }),
 
-     addSubtask: builder.mutation<Task, { storyId: string; title: string; boardId: string; columnId: string }>({
-          async queryFn({ storyId, title, boardId, columnId }) {
+     addSubtask: builder.mutation<Task, { storyId: string; title: string; boardId: string; columnId: string; userId?: string }>({
+          async queryFn({ storyId, title, boardId, columnId, userId }) {
                try {
                     // Get max sort_order for subtasks
                     const { data: existingSubtasks } = await getSupabase().from('tasks').select('sort_order').eq('parent_id', storyId).order('sort_order', { ascending: false }).limit(1);
@@ -1086,7 +1086,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               taskId: storyId,
                               taskTitle: parentTask?.title || 'zadanie',
                               changeType: 'subtask',
-                              changedBy: 'Kto\u015B',
+                              changedBy: userId || 'Ktoś',
                               details: `dodano subtask: ${data.title}`,
                          });
                     }
@@ -1121,8 +1121,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           ],
      }),
 
-     updateSubtaskCompletion: builder.mutation<void, { subtaskId: string; completed: boolean; storyId: string }>({
-          async queryFn({ subtaskId, completed, storyId }) {
+     updateSubtaskCompletion: builder.mutation<void, { subtaskId: string; completed: boolean; storyId: string; userId?: string }>({
+          async queryFn({ subtaskId, completed, storyId, userId }) {
                try {
                     const { error } = await getSupabase().from('tasks').update({ completed }).eq('id', subtaskId);
 
@@ -1137,8 +1137,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               taskId: storyId,
                               taskTitle: parentTask.title || 'zadanie',
                               changeType: 'subtask',
-                              changedBy: 'Kto\u015B',
-                              details: completed ? `uko\u0144czono subtask: ${subtaskData?.title || subtaskId}` : `przywr\u00F3cono subtask: ${subtaskData?.title || subtaskId}`,
+                              changedBy: userId || 'Ktoś',
+                              details: completed ? `ukończono subtask: ${subtaskData?.title || subtaskId}` : `przywrócono subtask: ${subtaskData?.title || subtaskId}`,
                          });
                     }
 
@@ -1156,8 +1156,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           ],
      }),
 
-     removeSubtask: builder.mutation<void, { subtaskId: string; storyId: string }>({
-          async queryFn({ subtaskId, storyId }) {
+     removeSubtask: builder.mutation<void, { subtaskId: string; storyId: string; userId?: string }>({
+          async queryFn({ subtaskId, storyId, userId }) {
                try {
                     // Fetch subtask and parent info before deletion
                     const { data: subtaskData } = await getSupabase().from('tasks').select('title').eq('id', subtaskId).single();
@@ -1174,8 +1174,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               taskId: storyId,
                               taskTitle: parentTask.title || 'zadanie',
                               changeType: 'subtask',
-                              changedBy: 'Kto\u015B',
-                              details: `usuni\u0119to subtask: ${subtaskData?.title || subtaskId}`,
+                              changedBy: userId || 'Ktoś',
+                              details: `usunięto subtask: ${subtaskData?.title || subtaskId}`,
                          });
                     }
 
@@ -1209,8 +1209,8 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
           invalidatesTags: (_result, _error, { storyId }) => [{ type: 'Task', id: `subtasks-${storyId}` }],
      }),
 
-     updateTaskType: builder.mutation<Task, { taskId: string; type: 'task' | 'story' | 'bug' }>({
-          async queryFn({ taskId, type }) {
+     updateTaskType: builder.mutation<Task, { taskId: string; type: 'task' | 'story' | 'bug'; userId?: string }>({
+          async queryFn({ taskId, type, userId }) {
                try {
                     // If converting to task, check if it has subtasks
                     if (type === 'task') {
@@ -1244,7 +1244,7 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               taskId,
                               taskTitle: data.title || 'zadanie',
                               changeType: 'type_changed',
-                              changedBy: 'Kto\u015B',
+                              changedBy: userId || 'Ktoś',
                               details: `zmieniono typ na ${typeLabels[type] || type}`,
                          });
                     }

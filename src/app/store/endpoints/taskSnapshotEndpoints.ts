@@ -17,6 +17,9 @@ const SNAPSHOTABLE_FIELDS = [
      'parent_id',
      'bug_url',
      'bug_scenario',
+     'is_recurring',
+     'recurrence_type',
+     'recurrence_interval',
 ] as const;
 
 function pickSnapshotFields(task: Record<string, unknown>): Record<string, unknown> {

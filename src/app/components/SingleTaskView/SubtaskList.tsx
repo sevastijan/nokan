@@ -16,9 +16,10 @@ interface SubtaskListProps {
      subtasks: Task[];
      onSubtaskOpen?: (subtaskId: string) => void;
      onRefresh?: () => void;
+     userId?: string;
 }
 
-const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen, onRefresh }: SubtaskListProps) => {
+const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen, onRefresh, userId }: SubtaskListProps) => {
      const { t } = useTranslation();
      const [isAddingNew, setIsAddingNew] = useState(false);
      const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -41,6 +42,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                     title: newSubtaskTitle.trim(),
                     boardId,
                     columnId,
+                    userId,
                }).unwrap();
 
                setNewSubtaskTitle('');
@@ -58,6 +60,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                          subtaskId,
                          completed,
                          storyId,
+                         userId,
                     }).unwrap();
                     onRefresh?.();
                } catch (error) {
@@ -73,6 +76,7 @@ const SubtaskList = ({ storyId, boardId, columnId, subtasks = [], onSubtaskOpen,
                     await removeSubtask({
                          subtaskId,
                          storyId,
+                         userId,
                     }).unwrap();
                     onRefresh?.();
                } catch (error) {
