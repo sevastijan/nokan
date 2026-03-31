@@ -51,7 +51,8 @@
           "newMessage": "New message",
           "noChannels": "No channels",
           "noMessages": "No messages",
-          "settings": "Settings"
+          "settings": "Settings",
+          "docs": "Documents"
      },
      "roles": {
           "OWNER": "Owner",
@@ -914,5 +915,18 @@
           "workspace": "Workspace",
           "active": "Active",
           "inactive": "Inactive"
+     },
+     "docs": {
+          "title": "Documents",
+          "newPage": "New page",
+          "untitled": "New page",
+          "search": "Search pages...",
+          "addSubpage": "Add subpage",
+          "rename": "Rename",
+          "delete": "Delete",
+          "deleteConfirm": "Are you sure you want to delete this page and all subpages?",
+          "deleted": "Page deleted",
+          "noPages": "No pages yet. Create your first!",
+          "autoSaved": "Saved"
      }
 }

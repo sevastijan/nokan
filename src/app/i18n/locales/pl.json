@@ -52,7 +52,8 @@
           "newMessage": "Nowa wiadomość",
           "noChannels": "Brak kanałów",
           "noMessages": "Brak wiadomości",
-          "settings": "Ustawienia"
+          "settings": "Ustawienia",
+          "docs": "Dokumenty"
      },
      "roles": {
           "OWNER": "Owner",
@@ -919,5 +920,18 @@
           "workspace": "Workspace",
           "active": "Aktywny",
           "inactive": "Nieaktywny"
+     },
+     "docs": {
+          "title": "Dokumenty",
+          "newPage": "Nowa strona",
+          "untitled": "Nowa strona",
+          "search": "Szukaj stron...",
+          "addSubpage": "Dodaj podstronę",
+          "rename": "Zmień nazwę",
+          "delete": "Usuń",
+          "deleteConfirm": "Czy na pewno chcesz usunąć tę stronę i wszystkie podstrony?",
+          "deleted": "Strona usunięta",
+          "noPages": "Brak stron. Utwórz pierwszą!",
+          "autoSaved": "Zapisano"
      }
 }

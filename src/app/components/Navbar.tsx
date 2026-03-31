@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Dialog, Transition, TransitionChild, DialogPanel } from '@headlessui/react';
 import { useSession, signOut } from 'next-auth/react';
-import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle, Star, GripVertical, Briefcase, ChevronDown, GitBranch, Building2, Settings } from 'lucide-react';
+import { Home, LayoutDashboard, Calendar, FileText, UserCog, Users, Menu, LogOut, X, Plus, Hash, MessageCircle, Star, GripVertical, Briefcase, ChevronDown, GitBranch, Building2, Settings, BookOpen } from 'lucide-react';
 import Avatar from '../components/Avatar/Avatar';
 import NotificationDropdown from './Notifications/NotificationDropdown';
 import { useGetUserRoleQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useDeleteNotificationMutation, useGetMyBoardsQuery, useGetUserChannelsQuery, useGetFavoriteBoardsQuery, useReorderFavoriteBoardsMutation, useGetBoardAvatarsQuery } from '@/app/store/apiSlice';
@@ -328,6 +328,21 @@ const Navbar = () => {
                                    {isActive('/settings') && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-brand-500" />}
                                    <Settings className={`w-[18px] h-[18px] ${isActive('/settings') ? 'text-brand-400' : 'text-slate-500'}`} />
                                    <span>{t('nav.settings')}</span>
+                              </div>
+                         </Link>
+                    </div>
+               )}
+
+               {/* ─── Docs (OWNER only) ─── */}
+               {userRole === 'OWNER' && (
+                    <div className="px-3 mt-1 shrink-0">
+                         <Link href="/docs" onClick={() => setSidebarOpen(false)}>
+                              <div className={`relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                                   isActive('/docs') ? 'bg-brand-600/10 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                              }`}>
+                                   {isActive('/docs') && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-brand-500" />}
+                                   <BookOpen className={`w-[18px] h-[18px] ${isActive('/docs') ? 'text-brand-400' : 'text-slate-500'}`} />
+                                   <span>{t('nav.docs')}</span>
                               </div>
                          </Link>
                     </div>

@@ -20,6 +20,7 @@ import { taskSnapshotEndpoints } from './endpoints/taskSnapshotEndpoints';
 import { chatEndpoints } from './endpoints/chatEndpoints';
 import { crmEndpoints } from './endpoints/crmEndpoints';
 import { slackEndpoints } from './endpoints/slackEndpoints';
+import { wikiEndpoints } from './endpoints/wikiEndpoints';
 
 /**
  * UserRole type in your application.
@@ -72,6 +73,7 @@ export const apiSlice = createApi({
           'CrmDealSource',
           'AppSettings',
           'SlackIntegration',
+          'WikiPage',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -90,6 +92,7 @@ export const apiSlice = createApi({
           ...chatEndpoints(builder),
           ...crmEndpoints(builder),
           ...slackEndpoints(builder),
+          ...wikiEndpoints(builder),
      }),
 });
 
@@ -231,4 +234,11 @@ export const {
      useSaveAppSettingMutation,
      useGetSlackIntegrationQuery,
      useDisconnectSlackMutation,
+     // Wiki hooks
+     useGetWikiPagesQuery,
+     useGetWikiPageByIdQuery,
+     useCreateWikiPageMutation,
+     useUpdateWikiPageMutation,
+     useDeleteWikiPageMutation,
+     useReorderWikiPagesMutation,
 } = apiSlice;
