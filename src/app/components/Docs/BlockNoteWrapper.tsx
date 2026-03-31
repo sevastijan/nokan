@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuItems } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
 import { BlockNoteEditor, filterSuggestionItems } from '@blocknote/core';
@@ -137,96 +137,63 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
     };
   }, []);
 
-  // Track code block positions for React-rendered language selectors
-  const [codeBlocks, setCodeBlocks] = useState<CodeBlockInfo[]>([]);
-
-  const scanCodeBlocks = useCallback(() => {
-    const container = document.querySelector('.docs-editor');
-    if (!container) return;
-
-    const blocks: CodeBlockInfo[] = [];
-    const containerRect = container.getBoundingClientRect();
-
-    container.querySelectorAll('.bn-block-content[data-content-type="codeBlock"]').forEach((el) => {
-      const outer = el.closest('.bn-block-outer');
-      const blockId = outer?.getAttribute('data-id');
-      if (!blockId) return;
-
-      const rect = el.getBoundingClientRect();
-      blocks.push({
-        id: blockId,
-        language: el.getAttribute('data-language') || 'plaintext',
-        top: rect.top - containerRect.top,
-      });
-    });
-
-    setCodeBlocks((prev) => {
-      if (JSON.stringify(prev) === JSON.stringify(blocks)) return prev;
-      return blocks;
-    });
-  }, []);
+  // Inject language selectors directly into code block DOM
+  const editorRef = useRef(editor);
+  editorRef.current = editor;
 
   useEffect(() => {
     if (!editor) return;
-    // Scan after render
-    const t1 = setTimeout(scanCodeBlocks, 1000);
-    const t2 = setTimeout(scanCodeBlocks, 3000);
-    // Scan on content change
-    editor.onEditorContentChange(() => {
-      setTimeout(scanCodeBlocks, 200);
-    });
-    // Scan on scroll
-    const editorEl = document.querySelector('.docs-editor');
-    const handleScroll = () => scanCodeBlocks();
-    editorEl?.closest('[class*="overflow"]')?.addEventListener('scroll', handleScroll);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      editorEl?.closest('[class*="overflow"]')?.removeEventListener('scroll', handleScroll);
-    };
-  }, [editor, scanCodeBlocks]);
 
-  const handleLanguageChange = useCallback((blockId: string, newLang: string) => {
-    if (!editor) return;
-    editor.updateBlock(blockId, { props: { language: newLang } } as Parameters<typeof editor.updateBlock>[1]);
-    // Rescan after update
-    setTimeout(scanCodeBlocks, 300);
-  }, [editor, scanCodeBlocks]);
+    const inject = () => {
+      document.querySelectorAll('.docs-editor .bn-block-content[data-content-type="codeBlock"]').forEach((block) => {
+        if (block.querySelector('.code-lang-sel')) return;
+        const outer = block.closest('.bn-block-outer');
+        const blockId = outer?.getAttribute('data-id');
+        if (!blockId) return;
+
+        const lang = block.getAttribute('data-language') || 'plaintext';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-lang-wrapper';
+
+        const sel = document.createElement('select');
+        sel.className = 'code-lang-sel';
+        LANGUAGES.forEach((l) => {
+          const o = document.createElement('option');
+          o.value = l; o.textContent = l;
+          if (l === lang) o.selected = true;
+          sel.appendChild(o);
+        });
+        const chevron = document.createElement('span');
+        chevron.className = 'code-lang-chevron';
+        chevron.textContent = '▾';
+
+        sel.onmousedown = (e) => e.stopPropagation();
+        sel.onclick = (e) => e.stopPropagation();
+        sel.onchange = () => {
+          try { editorRef.current?.updateBlock(blockId, { props: { language: sel.value } } as any); } catch {}
+          setTimeout(inject, 200);
+        };
+
+        wrapper.appendChild(sel);
+        wrapper.appendChild(chevron);
+        block.appendChild(wrapper);
+      });
+    };
+
+    const t1 = setTimeout(inject, 1000);
+    const t2 = setTimeout(inject, 3000);
+    editor.onEditorContentChange(() => setTimeout(inject, 300));
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [editor]);
 
   return (
-    <div className="docs-editor" style={{ position: 'relative' }}>
+    <div className="docs-editor">
       <BlockNoteView editor={editor} theme="dark" slashMenu={false}>
         <SuggestionMenuController
           triggerCharacter="/"
           getItems={async (query) => filterSuggestionItems(getSlashMenuItems(editor) as any, query)}
         />
       </BlockNoteView>
-
-      {/* React-rendered language selectors */}
-      {codeBlocks.map((block) => (
-        <div
-          key={block.id}
-          style={{
-            position: 'absolute',
-            top: block.top + 8,
-            left: 12,
-            zIndex: 10,
-          }}
-        >
-          <select
-            value={block.language}
-            onChange={(e) => handleLanguageChange(block.id, e.target.value)}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            className="code-lang-sel"
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
-          <span className="code-lang-chevron">▾</span>
-        </div>
-      ))}
 
       <style>{`
         /* ── Base ── */
@@ -289,7 +256,8 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
           background: #141820 !important;
           border: none !important;
           border-radius: 0.75rem !important;
-          overflow: hidden !important;
+          overflow: visible !important;
+          position: relative !important;
         }
         .docs-editor .bn-block-content[data-content-type="codeBlock"] pre {
           background: transparent !important;
@@ -305,7 +273,16 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
           display: none !important;
         }
 
-        /* Language selector */
+        /* Language selector wrapper — inside code block */
+        .code-lang-wrapper {
+          position: absolute;
+          top: 8px;
+          left: 12px;
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          gap: 2px;
+        }
         .code-lang-sel {
           background: transparent;
           border: none;
