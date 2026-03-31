@@ -68,7 +68,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         }
         .docs-editor .bn-editor {
           padding: 0 !important;
-          color: #cbd5e1 !important;
+          color: #ffffff !important;
         }
 
         /* ── Typography: match app style ── */
@@ -82,7 +82,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         .docs-editor [data-content-type="heading"] .bn-inline-content {
           font-style: normal !important;
           font-weight: 700 !important;
-          color: #e2e8f0 !important;
+          color: #ffffff !important;
           letter-spacing: -0.02em !important;
           line-height: 1.3 !important;
         }
@@ -97,7 +97,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         }
         .docs-editor [data-content-type="paragraph"] .bn-inline-content {
           font-size: 0.9375rem !important;
-          color: #cbd5e1 !important;
+          color: #ffffff !important;
           line-height: 1.65 !important;
         }
 
@@ -118,7 +118,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           border-radius: 0.5rem !important;
           padding: 1rem !important;
           font-size: 0.8125rem !important;
-          color: #e2e8f0 !important;
+          color: #ffffff !important;
         }
         .docs-editor code {
           background: #1e293b !important;
@@ -142,7 +142,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         .docs-editor [data-content-type="numberedListItem"] .bn-inline-content,
         .docs-editor [data-content-type="checkListItem"] .bn-inline-content {
           font-size: 0.9375rem !important;
-          color: #cbd5e1 !important;
+          color: #ffffff !important;
         }
         .docs-editor [data-content-type="checkListItem"] input[type="checkbox"] {
           accent-color: #00a68b !important;
@@ -157,11 +157,11 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           border: 1px solid #334155 !important;
           padding: 0.5rem 0.75rem !important;
           font-size: 0.875rem !important;
-          color: #cbd5e1 !important;
+          color: #ffffff !important;
         }
         .docs-editor th {
           background: #1e293b !important;
-          color: #e2e8f0 !important;
+          color: #ffffff !important;
           font-weight: 600 !important;
         }
         .docs-editor td {
@@ -192,7 +192,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         .docs-editor [class*="suggestionMenu"] [class*="item"],
         .docs-editor [role="option"],
         .docs-editor .mantine-Menu-item {
-          color: #cbd5e1 !important;
+          color: #ffffff !important;
           background: transparent !important;
           border-radius: 0.375rem !important;
           padding: 0.5rem 0.75rem !important;
@@ -210,7 +210,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         }
         .docs-editor [class*="suggestionMenu"] [class*="title"],
         .docs-editor [class*="suggestionMenu"] [class*="name"] {
-          color: #e2e8f0 !important;
+          color: #ffffff !important;
           font-weight: 500 !important;
         }
         .docs-editor [class*="suggestionMenu"] [class*="subtitle"],
@@ -256,7 +256,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         .docs-editor [class*="Toolbar"] input {
           background: #1e293b !important;
           border: 1px solid #334155 !important;
-          color: #e2e8f0 !important;
+          color: #ffffff !important;
           border-radius: 0.25rem !important;
         }
 
@@ -320,7 +320,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         .docs-editor [class*="filePanel"] input {
           background: #1e293b !important;
           border: 1px solid #334155 !important;
-          color: #e2e8f0 !important;
+          color: #ffffff !important;
           border-radius: 0.375rem !important;
         }
         .docs-editor [class*="linkToolbar"] button,
@@ -330,7 +330,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         .docs-editor [class*="filePanel"] [class*="tab"][data-active="true"],
         .docs-editor [class*="filePanel"] [class*="tab"]:hover {
           background: #1e293b !important;
-          color: #e2e8f0 !important;
+          color: #ffffff !important;
         }
 
         /* ── Mantine overrides (global for BlockNote) ── */
@@ -339,13 +339,13 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         .docs-editor .mantine-Tooltip-tooltip {
           background: #0f172a !important;
           border: 1px solid #1e293b !important;
-          color: #cbd5e1 !important;
+          color: #ffffff !important;
         }
         .docs-editor .mantine-TextInput-input,
         .docs-editor .mantine-Select-input {
           background: #1e293b !important;
           border-color: #334155 !important;
-          color: #e2e8f0 !important;
+          color: #ffffff !important;
         }
       `}</style>
     </div>
