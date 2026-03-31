@@ -19,39 +19,39 @@ const CHANGE_COLORS: Record<SlackChangeType, string> = {
 };
 
 const CHANGE_EMOJI: Record<SlackChangeType, string> = {
-  comment: '\u{1F4AC}',
-  assigned: '\u{1F464}',
-  unassigned: '\u{1F464}',
-  status: '\u{1F4CB}',
-  priority: '\u{1F525}',
-  due_date: '\u{1F4C5}',
-  start_date: '\u{1F4C5}',
-  end_date: '\u{1F4C5}',
-  recurrence: '\u{1F504}',
-  attachment: '\u{1F4CE}',
-  task_created: '\u{2728}',
-  description: '\u{1F4DD}',
-  type_changed: '\u{1F3F7}\uFE0F',
-  subtask: '\u{1F4CC}',
-  bug_fields: '\u{1F41B}',
+  comment: '💬',
+  assigned: '👤',
+  unassigned: '👤',
+  status: '📋',
+  priority: '🔥',
+  due_date: '📅',
+  start_date: '📅',
+  end_date: '📅',
+  recurrence: '🔄',
+  attachment: '📎',
+  task_created: '✨',
+  description: '📝',
+  type_changed: '🏷️',
+  subtask: '📌',
+  bug_fields: '🐛',
 };
 
 const CHANGE_LABELS: Record<SlackChangeType, string> = {
-  comment: 'Komentarz',
-  assigned: 'Przypisanie',
-  unassigned: 'Usuni\u0119cie przypisania',
-  status: 'Zmiana statusu',
-  priority: 'Zmiana priorytetu',
-  due_date: 'Termin',
-  start_date: 'Data rozpocz\u0119cia',
-  end_date: 'Data zako\u0144czenia',
-  recurrence: 'Cykliczno\u015B\u0107',
-  attachment: 'Za\u0142\u0105cznik',
-  task_created: 'Nowe zadanie',
-  description: 'Aktualizacja opisu',
-  type_changed: 'Zmiana typu',
-  subtask: 'Subtask',
-  bug_fields: 'Pola b\u0142\u0119du',
+  comment: 'Comment added',
+  assigned: 'Assignee added',
+  unassigned: 'Assignee removed',
+  status: 'Status changed',
+  priority: 'Priority changed',
+  due_date: 'Due date changed',
+  start_date: 'Start date changed',
+  end_date: 'End date changed',
+  recurrence: 'Recurrence changed',
+  attachment: 'Attachment added',
+  task_created: 'Task created',
+  description: 'Description updated',
+  type_changed: 'Type changed',
+  subtask: 'Subtask updated',
+  bug_fields: 'Bug fields updated',
 };
 
 interface BuildMessageParams {
@@ -64,63 +64,74 @@ interface BuildMessageParams {
 }
 
 export function buildSlackMessage({ taskTitle, taskUrl, changeType, changedBy, boardName, details }: BuildMessageParams) {
-  const emoji = CHANGE_EMOJI[changeType] || '\u{1F4CB}';
+  const emoji = CHANGE_EMOJI[changeType] || '📋';
   const label = CHANGE_LABELS[changeType] || changeType;
   const color = CHANGE_COLORS[changeType] || '#64748b';
 
-  const now = new Date().toLocaleString('pl-PL', {
-    timeZone: 'Europe/Warsaw',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  const blocks: Record<string, unknown>[] = [];
+
+  // Header: "Action label by Author"
+  blocks.push({
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `*${label}* by ${changedBy}`,
+    },
   });
 
-  const blocks: Record<string, unknown>[] = [
-    {
+  // Task link + details
+  if (changeType === 'comment' && details) {
+    // Comment: emoji + link, then quoted content
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `${emoji} ${changedBy}'s Comment on *<${taskUrl}|${taskTitle}>*\n\n${details}`,
+      },
+    });
+  } else if (details) {
+    // Other changes with details
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `${emoji} ${details} on *<${taskUrl}|${taskTitle}>*`,
+      },
+    });
+  } else {
+    // No details — just task link
+    blocks.push({
       type: 'section',
       text: {
         type: 'mrkdwn',
         text: `${emoji} *<${taskUrl}|${taskTitle}>*`,
       },
-    },
-  ];
-
-  // Content section — different layout for comments vs other changes
-  if (changeType === 'comment' && details) {
-    blocks.push({
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `*${changedBy}* skomentował(a):\n> ${details.replace(/\n/g, '\n> ')}`,
-      },
-    });
-  } else if (details) {
-    blocks.push({
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `*${changedBy}* · ${details}`,
-      },
-    });
-  } else {
-    blocks.push({
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `*${changedBy}* · ${label}`,
-      },
     });
   }
 
-  // Context
+  // Context: board name
   blocks.push({
     type: 'context',
     elements: [
       {
         type: 'mrkdwn',
-        text: `\u{1F4CB} *${boardName}* \u00B7 ${now}`,
+        text: `in *${boardName}*`,
+      },
+    ],
+  });
+
+  // Action button
+  blocks.push({
+    type: 'actions',
+    elements: [
+      {
+        type: 'button',
+        text: {
+          type: 'plain_text',
+          text: changeType === 'comment' ? 'View comment' : 'View task',
+        },
+        url: taskUrl,
+        style: 'primary',
       },
     ],
   });
