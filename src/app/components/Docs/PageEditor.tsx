@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useRef, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useUpdateWikiPageMutation } from '@/app/store/apiSlice';
+import { useUpdateWikiPageMutation, useCreateWikiPageMutation } from '@/app/store/apiSlice';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import type { WikiPage } from '@/app/types/wikiTypes';
 import dynamic from 'next/dynamic';
@@ -32,7 +33,9 @@ interface PageEditorProps {
 
 const PageEditor = ({ page, userId }: PageEditorProps) => {
   const { t } = useTranslation();
+  const router = useRouter();
   const [updatePage] = useUpdateWikiPageMutation();
+  const [createPage] = useCreateWikiPageMutation();
   const [title, setTitle] = useState(page.title);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -42,6 +45,19 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
   const isNewPage = page.title === 'Nowa strona' || page.title === 'New page';
 
   useOutsideClick(emojiPickerRef, () => setEmojiOpen(false));
+
+  const handleCreateSubpage = useCallback(async () => {
+    try {
+      const result = await createPage({
+        title: 'Nowa strona',
+        parent_id: page.id,
+        created_by: userId,
+      }).unwrap();
+      return { id: result.id, title: result.title };
+    } catch {
+      return null;
+    }
+  }, [createPage, page.id, userId]);
 
   const handleEmojiSelect = useCallback((emoji: string) => {
     setEmojiOpen(false);
@@ -151,6 +167,10 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
         key={page.id}
         initialContent={page.content}
         onChange={handleContentChange}
+        onSaveImmediate={async (content: unknown) => {
+          await updatePage({ id: page.id, data: { content, updated_by: userId } });
+        }}
+        onCreateSubpage={handleCreateSubpage}
       />
     </div>
   );

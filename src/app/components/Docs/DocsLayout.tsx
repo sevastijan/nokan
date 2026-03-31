@@ -41,7 +41,7 @@ const DocsLayout = ({ children, activePageId }: DocsLayoutProps) => {
         <PageTree activePageId={activePageId} userId={currentUser?.id} />
       </div>
       {/* Content */}
-      <div className="flex-1 min-w-0 overflow-y-auto">{children}</div>
+      <div className="flex-1 min-w-0 overflow-y-auto bg-[#0a0f1a]">{children}</div>
     </div>
   );
 };
