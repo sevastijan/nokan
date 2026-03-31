@@ -41,6 +41,7 @@
     "debounce": "^2.2.0",
     "dompurify": "^3.2.6",
     "framer-motion": "^12.15.0",
+    "highlight.js": "^11.11.1",
     "i18next": "^25.8.11",
     "i18next-browser-languagedetector": "^8.2.1",
     "lexical": "^0.39.0",
