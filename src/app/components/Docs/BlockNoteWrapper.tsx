@@ -228,10 +228,13 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
       });
     };
 
-    const t1 = setTimeout(() => { inject(); injectQuoteIcons(); }, 1000);
-    const t2 = setTimeout(() => { inject(); injectQuoteIcons(); }, 3000);
-    editor.onEditorContentChange(() => setTimeout(() => { inject(); injectQuoteIcons(); }, 300));
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const injectAll = () => { inject(); injectQuoteIcons(); };
+    const t1 = setTimeout(injectAll, 500);
+    const t2 = setTimeout(injectAll, 1500);
+    const t3 = setTimeout(injectAll, 3000);
+    const interval = setInterval(injectAll, 2000);
+    editor.onEditorContentChange(() => setTimeout(injectAll, 300));
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearInterval(interval); };
   }, [editor]);
 
   return (
