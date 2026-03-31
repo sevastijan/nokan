@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { useUpdateWikiPageMutation, useCreateWikiPageMutation } from '@/app/store/apiSlice';
+import { ChevronRight } from 'lucide-react';
+import { useUpdateWikiPageMutation, useCreateWikiPageMutation, useGetWikiPagesQuery } from '@/app/store/apiSlice';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import type { WikiPage } from '@/app/types/wikiTypes';
 import dynamic from 'next/dynamic';
@@ -43,6 +45,20 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
   const [saved, setSaved] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const isNewPage = page.title === 'Nowa strona' || page.title === 'New page';
+
+  const { data: allPages = [] } = useGetWikiPagesQuery();
+
+  const breadcrumbs = useMemo(() => {
+    const crumbs: { id: string; title: string; icon?: string | null }[] = [];
+    let current = page;
+    while (current.parent_id) {
+      const parent = allPages.find((p) => p.id === current.parent_id);
+      if (!parent) break;
+      crumbs.unshift({ id: parent.id, title: parent.title, icon: parent.icon });
+      current = parent as typeof page;
+    }
+    return crumbs;
+  }, [page, allPages]);
 
   useOutsideClick(emojiPickerRef, () => setEmojiOpen(false));
 
@@ -115,6 +131,32 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
       {saved && (
         <div className="fixed top-14 md:top-3 right-4 text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded z-40">
           {t('docs.autoSaved')}
+        </div>
+      )}
+
+      {/* Breadcrumbs */}
+      {breadcrumbs.length > 0 && (
+        <div className="flex items-center gap-1 mb-3 flex-wrap">
+          <Link href="/docs" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            Dokumenty
+          </Link>
+          {breadcrumbs.map((crumb) => (
+            <span key={crumb.id} className="flex items-center gap-1">
+              <ChevronRight size={12} className="text-slate-600" />
+              <Link
+                href={`/docs/${crumb.id}`}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {crumb.icon && <span className="mr-0.5">{crumb.icon}</span>}
+                {crumb.title}
+              </Link>
+            </span>
+          ))}
+          <ChevronRight size={12} className="text-slate-600" />
+          <span className="text-xs text-slate-400">
+            {page.icon && <span className="mr-0.5">{page.icon}</span>}
+            {page.title}
+          </span>
         </div>
       )}
 
