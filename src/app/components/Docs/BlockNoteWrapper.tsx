@@ -180,60 +180,11 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
       });
     };
 
-    const QUOTE_ICONS = ['💡', '💬', '⚠️', 'ℹ️', '✅', '❌', '🔥', '📌', '💎', '🎯', '⭐', '🚀'];
-
-    const injectQuoteIcons = () => {
-      document.querySelectorAll('.docs-editor .bn-block-content[data-content-type="quote"]').forEach((block) => {
-        if (block.querySelector('.quote-icon-btn')) return;
-
-        const currentIcon = (block as HTMLElement).dataset.quoteIcon || '💡';
-
-        const btn = document.createElement('button');
-        btn.className = 'quote-icon-btn';
-        btn.textContent = currentIcon;
-        btn.onmousedown = (e) => e.stopPropagation();
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          // Toggle picker
-          const existing = block.querySelector('.quote-icon-picker');
-          if (existing) { existing.remove(); return; }
-
-          const picker = document.createElement('div');
-          picker.className = 'quote-icon-picker';
-          QUOTE_ICONS.forEach((icon) => {
-            const b = document.createElement('button');
-            b.textContent = icon;
-            b.onmousedown = (ev) => ev.stopPropagation();
-            b.onclick = (ev) => {
-              ev.stopPropagation();
-              btn.textContent = icon;
-              (block as HTMLElement).dataset.quoteIcon = icon;
-              picker.remove();
-            };
-            picker.appendChild(b);
-          });
-          block.appendChild(picker);
-
-          // Close picker on outside click
-          const close = (ev: Event) => {
-            if (!picker.contains(ev.target as Node) && ev.target !== btn) {
-              picker.remove();
-              document.removeEventListener('mousedown', close);
-            }
-          };
-          setTimeout(() => document.addEventListener('mousedown', close), 0);
-        };
-
-        block.appendChild(btn);
-      });
-    };
-
-    const injectAll = () => { inject(); injectQuoteIcons(); };
-    const t1 = setTimeout(injectAll, 500);
-    const t2 = setTimeout(injectAll, 1500);
-    const t3 = setTimeout(injectAll, 3000);
-    const interval = setInterval(injectAll, 2000);
-    editor.onEditorContentChange(() => setTimeout(injectAll, 300));
+    const t1 = setTimeout(inject, 500);
+    const t2 = setTimeout(inject, 1500);
+    const t3 = setTimeout(inject, 3000);
+    const interval = setInterval(inject, 2000);
+    editor.onEditorContentChange(() => setTimeout(inject, 300));
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearInterval(interval); };
   }, [editor]);
 
@@ -462,53 +413,19 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
           font-style: normal !important;
           position: relative !important;
         }
-        .docs-editor [data-content-type="quote"] .quote-icon-btn {
+        .docs-editor [data-content-type="quote"]::before {
+          content: '💡' !important;
           position: absolute !important;
           left: 0.75rem !important;
-          top: 1rem !important;
-          font-size: 1.25rem !important;
+          top: 0.9rem !important;
+          font-size: 1.15rem !important;
           line-height: 1 !important;
-          cursor: pointer !important;
-          background: none !important;
-          border: none !important;
-          padding: 0 !important;
-          transition: transform 0.15s !important;
-        }
-        .docs-editor [data-content-type="quote"] .quote-icon-btn:hover {
-          transform: scale(1.2) !important;
-        }
-        .docs-editor [data-content-type="quote"] .quote-icon-picker {
-          position: absolute !important;
-          left: 0.5rem !important;
-          top: 2.5rem !important;
-          z-index: 50 !important;
-          background: #0f172a !important;
-          border: 1px solid #1e293b !important;
-          border-radius: 0.5rem !important;
-          padding: 0.375rem !important;
-          display: grid !important;
-          grid-template-columns: repeat(6, 1fr) !important;
-          gap: 2px !important;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-        }
-        .docs-editor [data-content-type="quote"] .quote-icon-picker button {
-          width: 28px !important;
-          height: 28px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          font-size: 0.875rem !important;
-          border-radius: 0.25rem !important;
-          border: none !important;
-          background: transparent !important;
-          cursor: pointer !important;
-        }
-        .docs-editor [data-content-type="quote"] .quote-icon-picker button:hover {
-          background: #1e293b !important;
+          pointer-events: none !important;
         }
         .docs-editor [data-content-type="quote"] blockquote {
           background: transparent !important;
           border-left: none !important;
+          border: none !important;
           padding: 0 !important;
           margin: 0 !important;
           color: inherit !important;
