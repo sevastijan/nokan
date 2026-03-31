@@ -49,13 +49,13 @@ const DocsLayout = ({ children, activePageId }: DocsLayoutProps) => {
         {hasActivePage ? (
           <>
             {/* Back button to page list */}
-            <div className="sticky top-11 z-20 bg-slate-900 border-b border-slate-800/50 px-3 py-2">
+            <div className="sticky top-11 z-20 bg-slate-900 border-b border-slate-800/50 px-3 py-2 mt-11">
               <button
                 onClick={() => router.push('/docs')}
                 className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft size={16} />
-                Strony
+                Dokumenty
               </button>
             </div>
             <div className="bg-[#0a0f1a]">{children}</div>
