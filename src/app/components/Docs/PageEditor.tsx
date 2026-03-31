@@ -134,30 +134,6 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
         </div>
       )}
 
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-1 mb-3 flex-wrap">
-        <Link href="/docs" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-          Dokumenty
-        </Link>
-        {breadcrumbs.map((crumb) => (
-          <span key={crumb.id} className="flex items-center gap-1">
-            <ChevronRight size={12} className="text-slate-600" />
-            <Link
-              href={`/docs/${crumb.id}`}
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              {crumb.icon && <span className="mr-0.5">{crumb.icon}</span>}
-              {crumb.title}
-            </Link>
-          </span>
-        ))}
-        <ChevronRight size={12} className="text-slate-600" />
-        <span className="text-xs text-slate-400">
-          {page.icon && <span className="mr-0.5">{page.icon}</span>}
-          {page.title}
-        </span>
-      </div>
-
       {/* Page icon + title */}
       <div className="mb-6 pb-5 border-b border-slate-800">
         <div className="flex items-center gap-3">
@@ -199,6 +175,30 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
             className="flex-1 text-xl sm:text-2xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600 font-[inherit]"
             placeholder={t('docs.untitled')}
           />
+        </div>
+
+        {/* Breadcrumbs */}
+        <div className="flex items-center gap-1 mt-2 flex-wrap">
+          <Link href="/docs" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            Dokumenty
+          </Link>
+          {breadcrumbs.map((crumb) => (
+            <span key={crumb.id} className="flex items-center gap-1">
+              <ChevronRight size={10} className="text-slate-600" />
+              <Link
+                href={`/docs/${crumb.id}`}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {crumb.icon && <span className="mr-0.5">{crumb.icon}</span>}
+                {crumb.title}
+              </Link>
+            </span>
+          ))}
+          <ChevronRight size={10} className="text-slate-600" />
+          <span className="text-xs text-slate-400">
+            {page.icon && <span className="mr-0.5">{page.icon}</span>}
+            {page.title}
+          </span>
         </div>
       </div>
 
