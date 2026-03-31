@@ -87,34 +87,30 @@ export function buildSlackMessage({ taskTitle, taskUrl, changeType, changedBy, b
     },
   ];
 
-  // Details section
-  if (details) {
+  // Content section — different layout for comments vs other changes
+  if (changeType === 'comment' && details) {
     blocks.push({
       type: 'section',
-      fields: [
-        {
-          type: 'mrkdwn',
-          text: `*${label}*\n${details}`,
-        },
-        {
-          type: 'mrkdwn',
-          text: `*Autor*\n${changedBy}`,
-        },
-      ],
+      text: {
+        type: 'mrkdwn',
+        text: `*${changedBy}* skomentował(a):\n> ${details.replace(/\n/g, '\n> ')}`,
+      },
+    });
+  } else if (details) {
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*${changedBy}* · ${details}`,
+      },
     });
   } else {
     blocks.push({
       type: 'section',
-      fields: [
-        {
-          type: 'mrkdwn',
-          text: `*Akcja*\n${label}`,
-        },
-        {
-          type: 'mrkdwn',
-          text: `*Autor*\n${changedBy}`,
-        },
-      ],
+      text: {
+        type: 'mrkdwn',
+        text: `*${changedBy}* · ${label}`,
+      },
     });
   }
 
