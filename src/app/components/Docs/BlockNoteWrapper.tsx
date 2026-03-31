@@ -72,58 +72,43 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         }
 
         /* ── Typography: match app style ── */
-        .docs-editor [data-content-type="heading"] .bn-inline-content {
-          font-style: normal !important;
-          letter-spacing: -0.02em !important;
-        }
-        .docs-editor [data-content-type="heading"][data-level="1"] {
-          margin-top: 2rem !important;
-          padding-bottom: 0.5rem !important;
-          border-bottom: 1px solid #1e293b !important;
-          margin-bottom: 0.75rem !important;
-        }
-        .docs-editor [data-content-type="heading"][data-level="1"] .bn-inline-content {
-          font-size: 1.875rem !important;
-          font-weight: 800 !important;
-          color: #f8fafc !important;
-          line-height: 1.2 !important;
-          background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-          background-clip: text !important;
-        }
-        .docs-editor [data-content-type="heading"][data-level="2"] {
+        .docs-editor [data-content-type="heading"] {
           margin-top: 1.5rem !important;
           margin-bottom: 0.5rem !important;
         }
-        .docs-editor [data-content-type="heading"][data-level="2"] .bn-inline-content {
-          font-size: 1.25rem !important;
+        .docs-editor [data-content-type="heading"] .bn-inline-content {
+          font-style: normal !important;
           font-weight: 700 !important;
           color: #e2e8f0 !important;
+          letter-spacing: -0.02em !important;
           line-height: 1.3 !important;
-          text-transform: none !important;
         }
-        .docs-editor [data-content-type="heading"][data-level="2"]::before {
+        .docs-editor [data-content-type="heading"]::before {
           content: '' !important;
           display: inline-block !important;
           width: 3px !important;
-          height: 1.25rem !important;
           background: #00a68b !important;
           border-radius: 2px !important;
           margin-right: 0.625rem !important;
           vertical-align: middle !important;
         }
-        .docs-editor [data-content-type="heading"][data-level="3"] {
-          margin-top: 1.25rem !important;
-          margin-bottom: 0.375rem !important;
+        .docs-editor [data-content-type="heading"][data-level="1"]::before {
+          height: 1.5rem !important;
+        }
+        .docs-editor [data-content-type="heading"][data-level="1"] .bn-inline-content {
+          font-size: 1.5rem !important;
+        }
+        .docs-editor [data-content-type="heading"][data-level="2"]::before {
+          height: 1.25rem !important;
+        }
+        .docs-editor [data-content-type="heading"][data-level="2"] .bn-inline-content {
+          font-size: 1.25rem !important;
+        }
+        .docs-editor [data-content-type="heading"][data-level="3"]::before {
+          height: 1rem !important;
         }
         .docs-editor [data-content-type="heading"][data-level="3"] .bn-inline-content {
-          font-size: 0.9375rem !important;
-          font-weight: 600 !important;
-          color: #94a3b8 !important;
-          line-height: 1.4 !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.05em !important;
+          font-size: 1.0625rem !important;
         }
         .docs-editor [data-content-type="paragraph"] .bn-inline-content {
           font-size: 0.9375rem !important;
