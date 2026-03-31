@@ -9,6 +9,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { getSupabase } from '@/app/lib/supabase';
+import { triggerSlackNotification } from '@/app/lib/slackNotification';
 import { useBoard } from '@/app/hooks/useBoard';
 import Column from '@/app/components/Column';
 import Loader from '@/app/components/Loader';
@@ -389,6 +390,18 @@ export default function Page() {
                               const matchingStatus = statuses.find((s) => s.label.toLowerCase() === dstCol.title?.toLowerCase());
                               if (matchingStatus) {
                                    await getSupabase().from('tasks').update({ status_id: matchingStatus.id }).eq('id', movedTask.id);
+                              }
+
+                              // Slack notification for column change
+                              if (currentUser?.id && boardId) {
+                                   triggerSlackNotification({
+                                        boardId,
+                                        taskId: movedTask.id,
+                                        taskTitle: movedTask.title || 'zadanie',
+                                        changeType: 'status',
+                                        changedBy: currentUser.id,
+                                        details: `${srcCol.title} → ${dstCol.title}`,
+                                   });
                               }
 
                               if (isDoneColumn && isTaskNotCompleted) {
