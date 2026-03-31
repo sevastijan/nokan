@@ -402,10 +402,20 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
         .docs-editor a { color: #2ad4ab !important; text-decoration: underline !important; }
 
         /* ── Blockquote ── */
-        .docs-editor [data-content-type="quote"], .docs-editor blockquote {
-          background: rgba(99,102,241,0.05) !important; border-left: 3px solid #6366f1 !important;
-          border-radius: 0 0.5rem 0.5rem 0 !important; padding: 0.75rem 1rem !important;
-          color: #c7d2fe !important; font-style: normal !important;
+        .docs-editor [data-content-type="quote"] {
+          background: rgba(99,102,241,0.05) !important;
+          border-left: 3px solid #6366f1 !important;
+          border-radius: 0 0.5rem 0.5rem 0 !important;
+          padding: 0.75rem 1rem !important;
+          color: #c7d2fe !important;
+          font-style: normal !important;
+        }
+        .docs-editor [data-content-type="quote"] blockquote {
+          background: transparent !important;
+          border-left: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          color: inherit !important;
         }
 
         /* ── Lists ── */
