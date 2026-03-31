@@ -157,7 +157,39 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           color: #00a68b !important;
         }
         .docs-editor [data-content-type="checkListItem"] input[type="checkbox"] {
-          accent-color: #00a68b !important;
+          appearance: none !important;
+          -webkit-appearance: none !important;
+          width: 18px !important;
+          height: 18px !important;
+          border: 2px solid #334155 !important;
+          border-radius: 4px !important;
+          background: transparent !important;
+          cursor: pointer !important;
+          position: relative !important;
+          transition: all 0.15s ease !important;
+          flex-shrink: 0 !important;
+        }
+        .docs-editor [data-content-type="checkListItem"] input[type="checkbox"]:hover {
+          border-color: #00a68b !important;
+        }
+        .docs-editor [data-content-type="checkListItem"] input[type="checkbox"]:checked {
+          background: #00a68b !important;
+          border-color: #00a68b !important;
+        }
+        .docs-editor [data-content-type="checkListItem"] input[type="checkbox"]:checked::after {
+          content: '' !important;
+          position: absolute !important;
+          left: 5px !important;
+          top: 1px !important;
+          width: 5px !important;
+          height: 10px !important;
+          border: solid white !important;
+          border-width: 0 2px 2px 0 !important;
+          transform: rotate(45deg) !important;
+        }
+        .docs-editor [data-content-type="checkListItem"]:has(input:checked) .bn-inline-content {
+          text-decoration: line-through !important;
+          color: #64748b !important;
         }
 
         /* ── Tables ── */
