@@ -264,17 +264,7 @@ export default function ActivityFeed({ taskId, comments, currentUser, task, colu
                          exit={{ opacity: 0 }}
                          transition={{ duration: 0.15 }}
                     >
-                         {timeline.length === 0 ? (
-                              <p className="text-xs text-slate-600 py-4 text-center">Brak aktywności</p>
-                         ) : (
-                              timeline.map((item) =>
-                                   item.type === 'history'
-                                        ? <HistoryItem key={`h-${item.data.id}`} snapshot={item.data as TaskSnapshot} columns={columns} />
-                                        : <CommentItem key={`c-${(item.data as Comment).id}`} comment={item.data as Comment} onImagePreview={onImagePreview} />
-                              )
-                         )}
-
-                         {/* Created entry - last in timeline */}
+                         {/* Created entry - first in timeline */}
                          {task?.created_at && (
                               <div className="flex gap-3 py-2.5">
                                    <div className="shrink-0 mt-0.5">
@@ -294,6 +284,16 @@ export default function ActivityFeed({ taskId, comments, currentUser, task, colu
                                         <p className="text-sm text-slate-400 mt-0.5">utworzył(a) zadanie</p>
                                    </div>
                               </div>
+                         )}
+
+                         {timeline.length === 0 ? (
+                              <p className="text-xs text-slate-600 py-4 text-center">Brak aktywności</p>
+                         ) : (
+                              timeline.map((item) =>
+                                   item.type === 'history'
+                                        ? <HistoryItem key={`h-${item.data.id}`} snapshot={item.data as TaskSnapshot} columns={columns} />
+                                        : <CommentItem key={`c-${(item.data as Comment).id}`} comment={item.data as Comment} onImagePreview={onImagePreview} />
+                              )
                          )}
 
                          {/* Comment form - after all entries */}
