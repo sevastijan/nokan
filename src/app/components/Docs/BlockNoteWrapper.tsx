@@ -72,6 +72,9 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         }
 
         /* ── Typography: match app style ── */
+        .docs-editor [data-content-type="heading"] .bn-inline-content {
+          font-style: normal !important;
+        }
         .docs-editor [data-content-type="heading"][data-level="1"] .bn-inline-content {
           font-size: 1.75rem !important;
           font-weight: 700 !important;
