@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useGetCurrentUserQuery } from '@/app/store/apiSlice';
 import { DM_Sans } from 'next/font/google';
-import { Menu, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Loader from '@/app/components/Loader';
 import PageTree from './PageTree';
 
@@ -27,12 +27,6 @@ const DocsLayout = ({ children, activePageId }: DocsLayoutProps) => {
     skip: authStatus !== 'authenticated',
   });
   const role = currentUser?.role ?? null;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Close sidebar on page navigation (mobile)
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [activePageId]);
 
   useEffect(() => {
     if (!isLoading && role !== 'OWNER') router.replace('/dashboard');
@@ -41,40 +35,43 @@ const DocsLayout = ({ children, activePageId }: DocsLayoutProps) => {
   if (isLoading || authStatus === 'loading') return <Loader />;
   if (role !== 'OWNER') return null;
 
+  const hasActivePage = !!activePageId;
+
   return (
     <div className={`min-h-screen bg-slate-900 flex ${dmSans.className}`}>
-      {/* Mobile sidebar toggle — small icon, not conflicting with Navbar */}
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed bottom-4 right-4 z-50 md:hidden p-3 bg-brand-600 rounded-full text-white shadow-lg shadow-brand-600/30 hover:bg-brand-700 transition-colors"
-        >
-          <Menu size={20} />
-        </button>
-      )}
-
-      {/* Sidebar — hidden on mobile, toggle with button */}
-      <div className={`
-        fixed md:relative z-40
-        w-64 shrink-0 border-r border-slate-800/80 bg-slate-900
-        overflow-y-auto h-[calc(100vh-2.75rem)] md:h-screen
-        top-11 md:top-0 left-0
-        transition-transform duration-200
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+      {/* Desktop: sidebar always visible */}
+      <div className="hidden md:block w-64 shrink-0 border-r border-slate-800/80 bg-slate-900 overflow-y-auto h-screen sticky top-0">
         <PageTree activePageId={activePageId} userId={currentUser?.id} />
       </div>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Mobile: show page tree OR content, not both */}
+      <div className="md:hidden flex-1 min-w-0">
+        {hasActivePage ? (
+          <>
+            {/* Back button to page list */}
+            <div className="sticky top-11 z-20 bg-slate-900 border-b border-slate-800/50 px-3 py-2">
+              <button
+                onClick={() => router.push('/docs')}
+                className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                <ArrowLeft size={16} />
+                Strony
+              </button>
+            </div>
+            <div className="bg-[#0a0f1a]">{children}</div>
+          </>
+        ) : (
+          /* Full screen page tree on mobile */
+          <div className="bg-slate-900 min-h-[calc(100vh-2.75rem)]">
+            <PageTree activePageId={activePageId} userId={currentUser?.id} />
+          </div>
+        )}
+      </div>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0 overflow-y-auto bg-[#0a0f1a]">{children}</div>
+      {/* Desktop: content */}
+      <div className="hidden md:block flex-1 min-w-0 overflow-y-auto bg-[#0a0f1a]">
+        {children}
+      </div>
     </div>
   );
 };
