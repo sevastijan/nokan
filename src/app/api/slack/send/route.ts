@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 import { createClient } from '@supabase/supabase-js';
 import { buildSlackMessage } from '@/app/lib/slack/messageBuilder';
 import type { SlackChangeType } from '@/app/types/slackTypes';
@@ -12,11 +11,6 @@ function getServiceSupabase() {
 
 export async function POST(req: NextRequest) {
   try {
-    const token = await getToken({ req });
-    if (!token?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await req.json();
     const { boardId, taskId, taskTitle, changeType, changedBy, details } = body as {
       boardId: string;
@@ -89,6 +83,10 @@ export async function POST(req: NextRequest) {
     });
 
     const slackResult = await slackResponse.json();
+
+    if (!slackResult.ok) {
+      console.error('[slack/send] Slack API error:', slackResult.error, slackResult);
+    }
 
     // Handle token revocation
     if (!slackResult.ok && (slackResult.error === 'token_revoked' || slackResult.error === 'invalid_auth' || slackResult.error === 'account_inactive')) {
