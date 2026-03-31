@@ -290,8 +290,13 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         /* ── Placeholder text ── */
         .docs-editor .bn-block-content::before,
         .docs-editor [data-placeholder]::before,
-        .docs-editor .is-empty::before {
+        .docs-editor .is-empty::before,
+        .docs-editor .bn-inline-content::before,
+        .docs-editor [class*="isEmpty"]::before,
+        .docs-editor .bn-block-content[data-is-empty-and-focused]::before,
+        .docs-editor .bn-inline-content[data-is-empty-and-focused]::before {
           color: #475569 !important;
+          font-style: normal !important;
         }
 
         /* ── Image blocks ── */
