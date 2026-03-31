@@ -249,24 +249,24 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
 
         /* ── Override BlockNote color CSS variables for dark theme ── */
         .docs-editor .bn-container[data-color-scheme=dark] {
-          --bn-colors-highlights-gray-text: #9ca3af;
-          --bn-colors-highlights-brown-text: #d4a574;
-          --bn-colors-highlights-red-text: #f87171;
+          --bn-colors-highlights-gray-text: #94a3b8;
+          --bn-colors-highlights-brown-text: #c4a882;
+          --bn-colors-highlights-red-text: #fb7185;
           --bn-colors-highlights-orange-text: #fb923c;
-          --bn-colors-highlights-yellow-text: #fbbf24;
-          --bn-colors-highlights-green-text: #4ade80;
-          --bn-colors-highlights-blue-text: #60a5fa;
-          --bn-colors-highlights-purple-text: #c084fc;
+          --bn-colors-highlights-yellow-text: #facc15;
+          --bn-colors-highlights-green-text: #2ad4ab;
+          --bn-colors-highlights-blue-text: #38bdf8;
+          --bn-colors-highlights-purple-text: #a78bfa;
           --bn-colors-highlights-pink-text: #f472b6;
-          --bn-colors-highlights-gray-background: rgba(156,163,175,0.15);
-          --bn-colors-highlights-brown-background: rgba(212,165,116,0.15);
-          --bn-colors-highlights-red-background: rgba(248,113,113,0.15);
-          --bn-colors-highlights-orange-background: rgba(251,146,60,0.15);
-          --bn-colors-highlights-yellow-background: rgba(251,191,36,0.15);
-          --bn-colors-highlights-green-background: rgba(74,222,128,0.15);
-          --bn-colors-highlights-blue-background: rgba(96,165,250,0.15);
-          --bn-colors-highlights-purple-background: rgba(192,132,252,0.15);
-          --bn-colors-highlights-pink-background: rgba(244,114,182,0.15);
+          --bn-colors-highlights-gray-background: rgba(148,163,184,0.12);
+          --bn-colors-highlights-brown-background: rgba(196,168,130,0.12);
+          --bn-colors-highlights-red-background: rgba(251,113,133,0.12);
+          --bn-colors-highlights-orange-background: rgba(251,146,60,0.12);
+          --bn-colors-highlights-yellow-background: rgba(250,204,21,0.12);
+          --bn-colors-highlights-green-background: rgba(42,212,171,0.12);
+          --bn-colors-highlights-blue-background: rgba(56,189,248,0.12);
+          --bn-colors-highlights-purple-background: rgba(167,139,250,0.12);
+          --bn-colors-highlights-pink-background: rgba(244,114,182,0.12);
         }
         .docs-editor .bn-editor { padding: 0 !important; color: #ffffff; }
         .docs-editor .bn-block-outer:first-child { margin-top: 0 !important; padding-top: 0 !important; }
@@ -397,7 +397,6 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
         /* ── Headings ── */
         .docs-editor [data-content-type="heading"] {
           margin-top: 1.5rem !important; margin-bottom: 0.5rem !important;
-          border-left: 3px solid #00a68b !important; padding-left: 0.625rem !important; border-radius: 0 !important;
         }
         .docs-editor [data-content-type="heading"] .bn-inline-content {
           font-style: normal !important; font-weight: 700 !important;
