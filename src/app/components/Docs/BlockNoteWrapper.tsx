@@ -111,29 +111,86 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         }
 
         /* ── Code blocks ── */
-        .docs-editor [data-content-type="codeBlock"],
-        .docs-editor pre {
-          background: #0f172a !important;
-          border: 1px solid #1e293b !important;
-          border-radius: 0.5rem !important;
-          padding: 1rem !important;
-          font-size: 0.8125rem !important;
-          color: #ffffff !important;
+        .docs-editor [data-content-type="codeBlock"] {
+          background: #0c0e14 !important;
+          border: none !important;
+          border-radius: 0.75rem !important;
+          padding: 0 !important;
+          overflow: hidden !important;
         }
-        .docs-editor code {
-          background: #1e293b !important;
+        .docs-editor [data-content-type="codeBlock"] pre,
+        .docs-editor [data-content-type="codeBlock"] code {
+          background: transparent !important;
+          border: none !important;
+          padding: 1.25rem !important;
+          font-size: 0.8125rem !important;
+          font-family: 'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace !important;
+          line-height: 1.7 !important;
+          color: #e2e8f0 !important;
+          border-radius: 0 !important;
+        }
+        /* Syntax colors */
+        .docs-editor [data-content-type="codeBlock"] .hljs-keyword,
+        .docs-editor [data-content-type="codeBlock"] .hljs-tag {
+          color: #c084fc !important;
+        }
+        .docs-editor [data-content-type="codeBlock"] .hljs-string,
+        .docs-editor [data-content-type="codeBlock"] .hljs-attr {
           color: #2ad4ab !important;
-          padding: 0.125rem 0.375rem !important;
-          border-radius: 0.25rem !important;
+        }
+        .docs-editor [data-content-type="codeBlock"] .hljs-number,
+        .docs-editor [data-content-type="codeBlock"] .hljs-literal {
+          color: #f59e0b !important;
+        }
+        .docs-editor [data-content-type="codeBlock"] .hljs-comment {
+          color: #475569 !important;
+          font-style: italic !important;
+        }
+        .docs-editor [data-content-type="codeBlock"] .hljs-function,
+        .docs-editor [data-content-type="codeBlock"] .hljs-title {
+          color: #60a5fa !important;
+        }
+        .docs-editor [data-content-type="codeBlock"] .hljs-built_in,
+        .docs-editor [data-content-type="codeBlock"] .hljs-type {
+          color: #f472b6 !important;
+        }
+        .docs-editor [data-content-type="codeBlock"] .hljs-variable,
+        .docs-editor [data-content-type="codeBlock"] .hljs-params {
+          color: #fb923c !important;
+        }
+        .docs-editor [data-content-type="codeBlock"] .hljs-operator,
+        .docs-editor [data-content-type="codeBlock"] .hljs-punctuation {
+          color: #94a3b8 !important;
+        }
+        /* Language selector in code block */
+        .docs-editor [data-content-type="codeBlock"] select {
+          background: #1e293b !important;
+          border: 1px solid #334155 !important;
+          color: #94a3b8 !important;
+          border-radius: 0.375rem !important;
+          font-size: 0.75rem !important;
+          padding: 0.25rem 0.5rem !important;
+        }
+        /* Inline code */
+        .docs-editor code:not(pre code) {
+          background: rgba(0, 166, 139, 0.1) !important;
+          color: #2ad4ab !important;
+          padding: 0.125rem 0.5rem !important;
+          border-radius: 0.375rem !important;
           font-size: 0.85em !important;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+          border: 1px solid rgba(0, 166, 139, 0.15) !important;
         }
 
         /* ── Blockquote ── */
         .docs-editor [data-content-type="quote"],
         .docs-editor blockquote {
-          border-left: 3px solid #334155 !important;
-          padding-left: 1rem !important;
-          color: #94a3b8 !important;
+          background: rgba(99, 102, 241, 0.05) !important;
+          border-left: 3px solid #6366f1 !important;
+          border-radius: 0 0.5rem 0.5rem 0 !important;
+          padding: 0.75rem 1rem !important;
+          margin: 0.5rem 0 !important;
+          color: #c7d2fe !important;
           font-style: normal !important;
         }
 
