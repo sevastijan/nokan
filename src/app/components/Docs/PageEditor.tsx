@@ -23,12 +23,22 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
   const [updatePage] = useUpdateWikiPageMutation();
   const [title, setTitle] = useState(page.title);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
   const [saved, setSaved] = useState(false);
+  const isNewPage = page.title === 'Nowa strona' || page.title === 'New page';
 
   // Sync title when page changes
   useEffect(() => {
     setTitle(page.title);
   }, [page.id, page.title]);
+
+  // Auto-focus title on new pages
+  useEffect(() => {
+    if (isNewPage && titleRef.current) {
+      titleRef.current.focus();
+      titleRef.current.select();
+    }
+  }, [page.id, isNewPage]);
 
   const handleContentChange = useCallback(
     (content: unknown) => {
@@ -77,9 +87,17 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
           {page.icon || '\ud83d\udcc4'}
         </button>
         <input
+          ref={titleRef}
           type="text"
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
+          onBlur={() => {
+            if (!title.trim()) {
+              const defaultTitle = t('docs.untitled');
+              setTitle(defaultTitle);
+              updatePage({ id: page.id, data: { title: defaultTitle, updated_by: userId } });
+            }
+          }}
           className="w-full text-3xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600"
           placeholder={t('docs.untitled')}
         />
