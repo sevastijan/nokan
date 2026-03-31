@@ -64,7 +64,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           background-color: transparent !important;
         }
         .docs-editor .bn-container {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+          font-family: inherit !important;
         }
         .docs-editor .bn-editor {
           padding: 0 !important;

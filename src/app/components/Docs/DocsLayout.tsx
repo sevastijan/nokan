@@ -4,8 +4,15 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useGetCurrentUserQuery } from '@/app/store/apiSlice';
+import { DM_Sans } from 'next/font/google';
 import Loader from '@/app/components/Loader';
 import PageTree from './PageTree';
+
+const dmSans = DM_Sans({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
 
 interface DocsLayoutProps {
   children: React.ReactNode;
@@ -28,7 +35,7 @@ const DocsLayout = ({ children, activePageId }: DocsLayoutProps) => {
   if (role !== 'OWNER') return null;
 
   return (
-    <div className="min-h-screen bg-slate-900 flex">
+    <div className={`min-h-screen bg-slate-900 flex ${dmSans.className}`}>
       {/* Sidebar */}
       <div className="w-64 shrink-0 border-r border-slate-800/80 bg-slate-900 overflow-y-auto h-[calc(100vh-2.75rem)] md:h-screen sticky top-11 md:top-0">
         <PageTree activePageId={activePageId} userId={currentUser?.id} />
