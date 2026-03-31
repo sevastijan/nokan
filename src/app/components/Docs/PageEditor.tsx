@@ -3,8 +3,20 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUpdateWikiPageMutation } from '@/app/store/apiSlice';
+import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import type { WikiPage } from '@/app/types/wikiTypes';
 import dynamic from 'next/dynamic';
+
+const EMOJI_OPTIONS = [
+  '📄', '📝', '📋', '📌', '📎', '📂', '📁', '🗂️',
+  '📚', '📖', '📕', '📗', '📘', '📙', '📓', '📒',
+  '💡', '⭐', '🎯', '🚀', '🔥', '✨', '💎', '🏆',
+  '🔧', '⚙️', '🛠️', '🔑', '🔒', '🔓', '📊', '📈',
+  '💰', '💳', '🏦', '📱', '💻', '🖥️', '🌐', '📡',
+  '👥', '👤', '🏢', '🏠', '📞', '✉️', '📮', '📦',
+  '✅', '❌', '⚠️', 'ℹ️', '❓', '❗', '🔴', '🟢',
+  '🎨', '🎬', '🎵', '📸', '🗓️', '⏰', '🔔', '💬',
+];
 
 const BlockNoteEditor = dynamic(() => import('./BlockNoteWrapper'), {
   ssr: false,
@@ -24,8 +36,17 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
   const [title, setTitle] = useState(page.title);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const [saved, setSaved] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const isNewPage = page.title === 'Nowa strona' || page.title === 'New page';
+
+  useOutsideClick(emojiPickerRef, () => setEmojiOpen(false));
+
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    setEmojiOpen(false);
+    updatePage({ id: page.id, data: { icon: emoji, updated_by: userId } });
+  }, [page.id, updatePage, userId]);
 
   // Sync title when page changes
   useEffect(() => {
@@ -83,9 +104,29 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
 
       {/* Page icon + title */}
       <div className="mb-6">
-        <button className="text-4xl mb-2 hover:bg-slate-800 rounded p-1 transition-colors">
-          {page.icon || '\ud83d\udcc4'}
-        </button>
+        <div className="relative inline-block" ref={emojiPickerRef}>
+          <button
+            onClick={() => setEmojiOpen(!emojiOpen)}
+            className="text-4xl mb-2 hover:bg-slate-800 rounded p-1 transition-colors cursor-pointer"
+          >
+            {page.icon || '📄'}
+          </button>
+          {emojiOpen && (
+            <div className="absolute top-full left-0 mt-1 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-3 w-[280px]">
+              <div className="grid grid-cols-8 gap-1">
+                {EMOJI_OPTIONS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleEmojiSelect(emoji)}
+                    className="w-8 h-8 flex items-center justify-center text-lg hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <input
           ref={titleRef}
           type="text"
