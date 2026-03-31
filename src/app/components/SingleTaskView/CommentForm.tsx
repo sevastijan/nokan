@@ -25,8 +25,7 @@ const CommentForm = ({
      }, [onAddComment, onCancelReply]);
 
      return (
-          <div className="flex gap-3">
-               <div className="shrink-0 w-7" />
+          <div>
                <div className="flex-1">
                     {replyingTo && (
                          <div className="text-[11px] text-brand-400 mb-1.5 flex items-center gap-2">
