@@ -194,6 +194,7 @@ export default function Page() {
                          image: data.image || undefined,
                          custom_name: data.custom_name || undefined,
                          custom_image: data.custom_image || undefined,
+                         role: data.role || undefined,
                          created_at: data.created_at!,
                     });
                } else {
@@ -205,6 +206,7 @@ export default function Page() {
                          image: newUser.image || undefined,
                          custom_name: newUser.custom_name || undefined,
                          custom_image: newUser.custom_image || undefined,
+                         role: newUser.role || undefined,
                          created_at: newUser.created_at!,
                     });
                }
