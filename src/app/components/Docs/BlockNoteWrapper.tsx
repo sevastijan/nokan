@@ -161,8 +161,17 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
       const calloutItem = {
         title: 'Callout',
         onItemClick: () => {
-          const cursor = editor.getTextCursorPosition().block;
-          editor.updateBlock(cursor, { type: 'callout' as any, props: { icon: '💡' } });
+          try {
+            const cursor = editor.getTextCursorPosition().block;
+            editor.insertBlocks(
+              [{ type: 'callout' as any, props: { icon: '💡' } }],
+              cursor,
+              'after',
+            );
+            editor.removeBlocks([cursor.id]);
+          } catch (e) {
+            console.error('Callout insert failed:', e);
+          }
         },
         aliases: ['callout', 'info', 'uwaga', 'notatka', 'alert'],
         group: 'Inne',
