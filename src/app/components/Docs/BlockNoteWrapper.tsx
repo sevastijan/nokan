@@ -49,12 +49,40 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
     <div className="docs-editor">
       <BlockNoteView editor={editor} theme="dark" />
       <style>{`
-        .docs-editor .bn-container {
+        .docs-editor .bn-container,
+        .docs-editor .bn-editor,
+        .docs-editor .bn-block-group,
+        .docs-editor .bn-block-outer,
+        .docs-editor .bn-block,
+        .docs-editor .bn-block-content,
+        .docs-editor [class*="BlockContent"],
+        .docs-editor [class*="blockContent"],
+        .docs-editor .mantine-Paper-root {
           background: transparent !important;
+          background-color: transparent !important;
           font-family: inherit;
         }
         .docs-editor .bn-editor {
           padding: 0 !important;
+          color: #e2e8f0 !important;
+        }
+        .docs-editor .bn-side-menu,
+        .docs-editor .bn-drag-handle-menu {
+          background: #1e293b !important;
+          border-color: #334155 !important;
+        }
+        .docs-editor .bn-toolbar,
+        .docs-editor .bn-formatting-toolbar {
+          background: #1e293b !important;
+          border-color: #334155 !important;
+        }
+        .docs-editor .bn-slash-menu,
+        .docs-editor .bn-suggestion-menu {
+          background: #1e293b !important;
+          border-color: #334155 !important;
+        }
+        .docs-editor [data-content-type="table"] {
+          background: transparent !important;
         }
       `}</style>
     </div>
