@@ -132,7 +132,7 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           border-left: 3px solid #334155 !important;
           padding-left: 1rem !important;
           color: #94a3b8 !important;
-          font-style: italic !important;
+          font-style: normal !important;
         }
 
         /* ── Lists ── */
