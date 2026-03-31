@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiX, FiCopy, FiTrash2, FiPlus, FiCheck, FiAlertTriangle } from 'react-icons/fi';
+import { Code, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     useGetApiTokensQuery,
@@ -10,11 +11,15 @@ import {
     useRevokeApiTokenMutation,
 } from '@/app/store/apiSlice';
 import type { BoardApiTokenListItem, ApiTokenPermissions } from '@/app/lib/public-api/types';
+import SlackSection from './SlackSection';
+
+type ModalTab = 'api' | 'slack';
 
 interface ApiTokensModalProps {
     isOpen: boolean;
     onClose: () => void;
     boardId: string;
+    isOwner?: boolean;
 }
 
 interface NewTokenState {
@@ -29,12 +34,13 @@ const defaultNewToken: NewTokenState = {
     expiresAt: '',
 };
 
-export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensModalProps) {
+export default function ApiTokensModal({ isOpen, onClose, boardId, isOwner }: ApiTokensModalProps) {
     const { t } = useTranslation();
     const { data: tokens = [], isLoading, refetch } = useGetApiTokensQuery(boardId, { skip: !isOpen });
     const [createToken] = useCreateApiTokenMutation();
     const [revokeToken] = useRevokeApiTokenMutation();
 
+    const [activeTab, setActiveTab] = useState<ModalTab>('api');
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [newToken, setNewToken] = useState<NewTokenState>(defaultNewToken);
     const [createdToken, setCreatedToken] = useState<string | null>(null);
@@ -130,18 +136,55 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-                            <h2 className="text-xl font-semibold">{t('apiTokens.title')}</h2>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-                            >
-                                <FiX size={20} />
-                            </button>
+                        <div className="border-b border-slate-700">
+                            <div className="flex items-center justify-between px-6 pt-5 pb-0">
+                                <h2 className="text-xl font-semibold">{t('board.integrations') || 'Integracje'}</h2>
+                                <button
+                                    onClick={onClose}
+                                    className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                                >
+                                    <FiX size={20} />
+                                </button>
+                            </div>
+                            {/* Tabs */}
+                            <div className="flex gap-1 px-6 mt-4">
+                                <button
+                                    onClick={() => setActiveTab('api')}
+                                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+                                        activeTab === 'api'
+                                            ? 'border-brand-500 text-white bg-slate-700/30'
+                                            : 'border-transparent text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    <Code size={14} />
+                                    API Tokens
+                                </button>
+                                {isOwner && (
+                                    <button
+                                        onClick={() => setActiveTab('slack')}
+                                        className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+                                            activeTab === 'slack'
+                                                ? 'border-brand-500 text-white bg-slate-700/30'
+                                                : 'border-transparent text-slate-400 hover:text-white'
+                                        }`}
+                                    >
+                                        <MessageSquare size={14} />
+                                        Slack
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto p-6">
+
+                        {/* Slack Tab */}
+                        {activeTab === 'slack' && isOwner && (
+                            <SlackSection boardId={boardId} />
+                        )}
+
+                        {/* API Tab */}
+                        {activeTab === 'api' && (<>
                             {/* Created token alert */}
                             {createdToken && (
                                 <div className="mb-6 p-4 bg-amber-500/20 border border-amber-500 rounded-lg">
@@ -346,6 +389,7 @@ export default function ApiTokensModal({ isOpen, onClose, boardId }: ApiTokensMo
                                     <li>{t('apiTokens.endpointAddAttachment')}</li>
                                 </ul>
                             </div>
+                        </>)}
                         </div>
                     </motion.div>
                 </motion.div>

@@ -15,7 +15,6 @@ import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import FilterDropdown from './FilterDropdown';
 import ViewModeToggle from './ViewModeToggle';
 import MembersDropdown from './MembersDropdown';
-import SlackSection from './SlackSection';
 
 interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      boardId: string;
@@ -224,8 +223,6 @@ const BoardHeader = ({
                                    )}
 
                                    {hasManagementAccess && <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />}
-
-                                   {isOwner && <SlackSection boardId={boardId} />}
                               </div>
 
                               {/* Mobile overflow menu */}

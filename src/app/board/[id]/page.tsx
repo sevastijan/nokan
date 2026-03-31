@@ -718,7 +718,7 @@ export default function Page() {
                )}
                <TaskCompletionModal isOpen={completionModalOpen} onClose={handleCancelCompletion} onConfirm={handleConfirmCompletion} taskTitle={pendingCompletionTask?.title || ''} />
                <BoardNotesModal isOpen={notesOpen} onClose={handleCloseNotes} boardId={boardId} />
-               <ApiTokensModal isOpen={apiTokensOpen} onClose={handleCloseApiTokens} boardId={boardId} />
+               <ApiTokensModal isOpen={apiTokensOpen} onClose={handleCloseApiTokens} boardId={boardId} isOwner={currentUser?.role === 'OWNER'} />
           </div>
      );
 }
