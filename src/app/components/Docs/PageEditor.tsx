@@ -140,7 +140,7 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
                 updatePage({ id: page.id, data: { title: defaultTitle, updated_by: userId } });
               }
             }}
-            className="flex-1 text-2xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600"
+            className="flex-1 text-2xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600 font-[inherit]"
             placeholder={t('docs.untitled')}
           />
         </div>
