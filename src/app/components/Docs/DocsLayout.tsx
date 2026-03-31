@@ -43,13 +43,15 @@ const DocsLayout = ({ children, activePageId }: DocsLayoutProps) => {
 
   return (
     <div className={`min-h-screen bg-slate-900 flex ${dmSans.className}`}>
-      {/* Mobile sidebar toggle */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed top-14 left-16 z-50 md:hidden p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
-      >
-        {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
-      </button>
+      {/* Mobile sidebar toggle — small icon, not conflicting with Navbar */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed bottom-4 right-4 z-50 md:hidden p-3 bg-brand-600 rounded-full text-white shadow-lg shadow-brand-600/30 hover:bg-brand-700 transition-colors"
+        >
+          <Menu size={20} />
+        </button>
+      )}
 
       {/* Sidebar — hidden on mobile, toggle with button */}
       <div className={`
