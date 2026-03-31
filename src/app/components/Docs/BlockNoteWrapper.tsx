@@ -144,6 +144,18 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           font-size: 0.9375rem !important;
           color: #ffffff !important;
         }
+        .docs-editor [data-content-type="bulletListItem"]::marker,
+        .docs-editor [data-content-type="bulletListItem"] .bn-block-content::before,
+        .docs-editor [data-content-type="bulletListItem"] li::marker,
+        .docs-editor .bn-block-content[data-content-type="bulletListItem"]::before {
+          color: #00a68b !important;
+        }
+        .docs-editor [data-content-type="numberedListItem"]::marker,
+        .docs-editor [data-content-type="numberedListItem"] .bn-block-content::before,
+        .docs-editor [data-content-type="numberedListItem"] li::marker,
+        .docs-editor .bn-block-content[data-content-type="numberedListItem"]::before {
+          color: #00a68b !important;
+        }
         .docs-editor [data-content-type="checkListItem"] input[type="checkbox"] {
           accent-color: #00a68b !important;
         }
