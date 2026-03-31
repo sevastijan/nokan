@@ -75,6 +75,9 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
         .docs-editor [data-content-type="heading"] {
           margin-top: 1.5rem !important;
           margin-bottom: 0.5rem !important;
+          border-left: 3px solid #00a68b !important;
+          padding-left: 0.625rem !important;
+          border-radius: 0 !important;
         }
         .docs-editor [data-content-type="heading"] .bn-inline-content {
           font-style: normal !important;
@@ -83,29 +86,11 @@ const BlockNoteWrapper = ({ initialContent, onChange }: BlockNoteWrapperProps) =
           letter-spacing: -0.02em !important;
           line-height: 1.3 !important;
         }
-        .docs-editor [data-content-type="heading"]::before {
-          content: '' !important;
-          display: inline-block !important;
-          width: 3px !important;
-          background: #00a68b !important;
-          border-radius: 2px !important;
-          margin-right: 0.625rem !important;
-          vertical-align: middle !important;
-        }
-        .docs-editor [data-content-type="heading"][data-level="1"]::before {
-          height: 1.5rem !important;
-        }
         .docs-editor [data-content-type="heading"][data-level="1"] .bn-inline-content {
           font-size: 1.5rem !important;
         }
-        .docs-editor [data-content-type="heading"][data-level="2"]::before {
-          height: 1.25rem !important;
-        }
         .docs-editor [data-content-type="heading"][data-level="2"] .bn-inline-content {
           font-size: 1.25rem !important;
-        }
-        .docs-editor [data-content-type="heading"][data-level="3"]::before {
-          height: 1rem !important;
         }
         .docs-editor [data-content-type="heading"][data-level="3"] .bn-inline-content {
           font-size: 1.0625rem !important;
