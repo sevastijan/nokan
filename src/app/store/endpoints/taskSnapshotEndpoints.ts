@@ -15,6 +15,8 @@ const SNAPSHOTABLE_FIELDS = [
      'completed',
      'type',
      'parent_id',
+     'bug_url',
+     'bug_scenario',
 ] as const;
 
 function pickSnapshotFields(task: Record<string, unknown>): Record<string, unknown> {

@@ -23,7 +23,10 @@ export type SlackChangeType =
   | 'end_date'
   | 'recurrence'
   | 'attachment'
-  | 'task_created';
+  | 'task_created'
+  | 'type_changed'
+  | 'subtask'
+  | 'bug_fields';
 
 export interface SlackNotificationPayload {
   boardId: string;

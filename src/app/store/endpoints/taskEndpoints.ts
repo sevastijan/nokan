@@ -715,7 +715,10 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                               recurrence_type,
                               recurrence_interval,
                               recurrence_column_id,
-                              next_occurrence_date
+                              next_occurrence_date,
+                              type,
+                              bug_url,
+                              bug_scenario
                          `,
                          )
                          .single();
@@ -766,6 +769,9 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                         end_date: 'end_date',
                                         is_recurring: 'recurrence',
                                         recurrence_type: 'recurrence',
+                                        type: 'type_changed',
+                                        bug_url: 'bug_fields',
+                                        bug_scenario: 'bug_fields',
                                    };
 
                                    // Pick the first meaningful field for the Slack message
@@ -782,6 +788,12 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                                         else if (relevantField === 'start_date') details = updated.start_date ? `ustawił(a) datę rozpoczęcia: ${updated.start_date}` : 'usunął/ęła datę rozpoczęcia';
                                         else if (relevantField === 'end_date') details = updated.end_date ? `ustawił(a) datę zakończenia: ${updated.end_date}` : 'usunął/ęła datę zakończenia';
                                         else if (relevantField === 'is_recurring' || relevantField === 'recurrence_type') details = (updated as Record<string, unknown>).is_recurring ? `ustawił(a) cykliczność` : 'wyłączył(a) cykliczność';
+                                        else if (relevantField === 'type') {
+                                             const typeLabels: Record<string, string> = { task: 'Zadanie', story: 'Story', bug: 'Błąd' };
+                                             details = `zmienił(a) typ na ${typeLabels[(updated as Record<string, unknown>).type as string] || (updated as Record<string, unknown>).type}`;
+                                        }
+                                        else if (relevantField === 'bug_url') details = 'zaktualizował(a) URL błędu';
+                                        else if (relevantField === 'bug_scenario') details = 'zaktualizował(a) scenariusz błędu';
 
                                         triggerSlackNotification({
                                              boardId: updated.board_id,
@@ -1065,6 +1077,20 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
 
                     if (error || !data) throw error || new Error('Failed to add subtask');
 
+                    // Slack notification for subtask creation
+                    if (data.board_id) {
+                         // Fetch parent task title
+                         const { data: parentTask } = await getSupabase().from('tasks').select('title').eq('id', storyId).single();
+                         triggerSlackNotification({
+                              boardId: data.board_id,
+                              taskId: storyId,
+                              taskTitle: parentTask?.title || 'zadanie',
+                              changeType: 'subtask',
+                              changedBy: 'Kto\u015B',
+                              details: `dodano subtask: ${data.title}`,
+                         });
+                    }
+
                     const subtask: Task = {
                          id: data.id,
                          title: data.title,
@@ -1096,11 +1122,26 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      }),
 
      updateSubtaskCompletion: builder.mutation<void, { subtaskId: string; completed: boolean; storyId: string }>({
-          async queryFn({ subtaskId, completed }) {
+          async queryFn({ subtaskId, completed, storyId }) {
                try {
                     const { error } = await getSupabase().from('tasks').update({ completed }).eq('id', subtaskId);
 
                     if (error) throw error;
+
+                    // Slack notification for subtask completion toggle
+                    const { data: parentTask } = await getSupabase().from('tasks').select('board_id, title').eq('id', storyId).single();
+                    const { data: subtaskData } = await getSupabase().from('tasks').select('title').eq('id', subtaskId).single();
+                    if (parentTask?.board_id) {
+                         triggerSlackNotification({
+                              boardId: parentTask.board_id,
+                              taskId: storyId,
+                              taskTitle: parentTask.title || 'zadanie',
+                              changeType: 'subtask',
+                              changedBy: 'Kto\u015B',
+                              details: completed ? `uko\u0144czono subtask: ${subtaskData?.title || subtaskId}` : `przywr\u00F3cono subtask: ${subtaskData?.title || subtaskId}`,
+                         });
+                    }
+
                     return { data: undefined };
                } catch (err) {
                     const error = err as Error;
@@ -1116,11 +1157,28 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
      }),
 
      removeSubtask: builder.mutation<void, { subtaskId: string; storyId: string }>({
-          async queryFn({ subtaskId }) {
+          async queryFn({ subtaskId, storyId }) {
                try {
+                    // Fetch subtask and parent info before deletion
+                    const { data: subtaskData } = await getSupabase().from('tasks').select('title').eq('id', subtaskId).single();
+                    const { data: parentTask } = await getSupabase().from('tasks').select('board_id, title').eq('id', storyId).single();
+
                     const { error } = await getSupabase().from('tasks').delete().eq('id', subtaskId);
 
                     if (error) throw error;
+
+                    // Slack notification for subtask removal
+                    if (parentTask?.board_id) {
+                         triggerSlackNotification({
+                              boardId: parentTask.board_id,
+                              taskId: storyId,
+                              taskTitle: parentTask.title || 'zadanie',
+                              changeType: 'subtask',
+                              changedBy: 'Kto\u015B',
+                              details: `usuni\u0119to subtask: ${subtaskData?.title || subtaskId}`,
+                         });
+                    }
+
                     return { data: undefined };
                } catch (err) {
                     const error = err as Error;
@@ -1177,6 +1235,19 @@ export const taskEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
                     const { data, error } = await getSupabase().from('tasks').update(updatePayload).eq('id', taskId).select('*').single();
 
                     if (error || !data) throw error || new Error('Failed to update task type');
+
+                    // Slack notification for type change
+                    if (data.board_id) {
+                         const typeLabels: Record<string, string> = { task: 'Zadanie', story: 'Story', bug: 'B\u0142\u0105d' };
+                         triggerSlackNotification({
+                              boardId: data.board_id,
+                              taskId,
+                              taskTitle: data.title || 'zadanie',
+                              changeType: 'type_changed',
+                              changedBy: 'Kto\u015B',
+                              details: `zmieniono typ na ${typeLabels[type] || type}`,
+                         });
+                    }
 
                     const task: Task = {
                          id: data.id,

@@ -13,36 +13,45 @@ const CHANGE_COLORS: Record<SlackChangeType, string> = {
   attachment: '#64748b',
   task_created: '#10b981',
   description: '#6366f1',
+  type_changed: '#f97316',
+  subtask: '#14b8a6',
+  bug_fields: '#ef4444',
 };
 
 const CHANGE_EMOJI: Record<SlackChangeType, string> = {
-  comment: '💬',
-  assigned: '👤',
-  unassigned: '👤',
-  status: '📋',
-  priority: '🔥',
-  due_date: '📅',
-  start_date: '📅',
-  end_date: '📅',
-  recurrence: '🔄',
-  attachment: '📎',
-  task_created: '✨',
-  description: '📝',
+  comment: '\u{1F4AC}',
+  assigned: '\u{1F464}',
+  unassigned: '\u{1F464}',
+  status: '\u{1F4CB}',
+  priority: '\u{1F525}',
+  due_date: '\u{1F4C5}',
+  start_date: '\u{1F4C5}',
+  end_date: '\u{1F4C5}',
+  recurrence: '\u{1F504}',
+  attachment: '\u{1F4CE}',
+  task_created: '\u{2728}',
+  description: '\u{1F4DD}',
+  type_changed: '\u{1F3F7}\uFE0F',
+  subtask: '\u{1F4CC}',
+  bug_fields: '\u{1F41B}',
 };
 
 const CHANGE_LABELS: Record<SlackChangeType, string> = {
   comment: 'Komentarz',
   assigned: 'Przypisanie',
-  unassigned: 'Usunięcie przypisania',
-  status: 'Status',
-  priority: 'Priorytet',
+  unassigned: 'Usuni\u0119cie przypisania',
+  status: 'Zmiana statusu',
+  priority: 'Zmiana priorytetu',
   due_date: 'Termin',
-  start_date: 'Data rozpoczęcia',
-  end_date: 'Data zakończenia',
-  recurrence: 'Cykliczność',
-  attachment: 'Załącznik',
+  start_date: 'Data rozpocz\u0119cia',
+  end_date: 'Data zako\u0144czenia',
+  recurrence: 'Cykliczno\u015B\u0107',
+  attachment: 'Za\u0142\u0105cznik',
   task_created: 'Nowe zadanie',
-  description: 'Opis',
+  description: 'Aktualizacja opisu',
+  type_changed: 'Zmiana typu',
+  subtask: 'Subtask',
+  bug_fields: 'Pola b\u0142\u0119du',
 };
 
 interface BuildMessageParams {
@@ -55,13 +64,9 @@ interface BuildMessageParams {
 }
 
 export function buildSlackMessage({ taskTitle, taskUrl, changeType, changedBy, boardName, details }: BuildMessageParams) {
-  const emoji = CHANGE_EMOJI[changeType];
-  const label = CHANGE_LABELS[changeType];
-  const color = CHANGE_COLORS[changeType];
-
-  const mainText = details
-    ? `*<${taskUrl}|${taskTitle}>*\n${changedBy} · ${details}`
-    : `*<${taskUrl}|${taskTitle}>*\n${changedBy}`;
+  const emoji = CHANGE_EMOJI[changeType] || '\u{1F4CB}';
+  const label = CHANGE_LABELS[changeType] || changeType;
+  const color = CHANGE_COLORS[changeType] || '#64748b';
 
   const now = new Date().toLocaleString('pl-PL', {
     day: 'numeric',
@@ -71,29 +76,60 @@ export function buildSlackMessage({ taskTitle, taskUrl, changeType, changedBy, b
     minute: '2-digit',
   });
 
-  return {
-    blocks: [
-      {
-        type: 'section' as const,
-        text: {
-          type: 'mrkdwn' as const,
-          text: mainText,
+  const blocks: Record<string, unknown>[] = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `${emoji} *<${taskUrl}|${taskTitle}>*`,
+      },
+    },
+  ];
+
+  // Details section
+  if (details) {
+    blocks.push({
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: `*${label}*\n${details}`,
         },
-      },
+        {
+          type: 'mrkdwn',
+          text: `*Autor*\n${changedBy}`,
+        },
+      ],
+    });
+  } else {
+    blocks.push({
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: `*Akcja*\n${label}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Autor*\n${changedBy}`,
+        },
+      ],
+    });
+  }
+
+  // Context
+  blocks.push({
+    type: 'context',
+    elements: [
       {
-        type: 'context' as const,
-        elements: [
-          {
-            type: 'mrkdwn' as const,
-            text: `${emoji} *${boardName}* · ${label} · ${now}`,
-          },
-        ],
+        type: 'mrkdwn',
+        text: `\u{1F4CB} *${boardName}* \u00B7 ${now}`,
       },
     ],
-    attachments: [
-      {
-        color,
-      },
-    ],
+  });
+
+  return {
+    blocks,
+    attachments: [{ color }],
   };
 }
