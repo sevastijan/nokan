@@ -268,6 +268,16 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
           --bn-colors-highlights-purple-background: rgba(167,139,250,0.12);
           --bn-colors-highlights-pink-background: rgba(244,114,182,0.12);
         }
+        /* Force background colors with higher specificity */
+        .docs-editor [data-background-color="gray"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="gray"]) { background-color: rgba(148,163,184,0.12) !important; }
+        .docs-editor [data-background-color="brown"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="brown"]) { background-color: rgba(196,168,130,0.12) !important; }
+        .docs-editor [data-background-color="red"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="red"]) { background-color: rgba(251,113,133,0.12) !important; }
+        .docs-editor [data-background-color="orange"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="orange"]) { background-color: rgba(251,146,60,0.12) !important; }
+        .docs-editor [data-background-color="yellow"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="yellow"]) { background-color: rgba(250,204,21,0.12) !important; }
+        .docs-editor [data-background-color="green"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="green"]) { background-color: rgba(42,212,171,0.12) !important; }
+        .docs-editor [data-background-color="blue"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="blue"]) { background-color: rgba(56,189,248,0.12) !important; }
+        .docs-editor [data-background-color="purple"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="purple"]) { background-color: rgba(167,139,250,0.12) !important; }
+        .docs-editor [data-background-color="pink"], .docs-editor .bn-block:has(>.bn-block-content[data-background-color="pink"]) { background-color: rgba(244,114,182,0.12) !important; }
         .docs-editor .bn-editor { padding: 0 !important; color: #ffffff; }
         .docs-editor .bn-block-outer:first-child { margin-top: 0 !important; padding-top: 0 !important; }
         .docs-editor .bn-block-outer { margin-left: 0 !important; padding-left: 0 !important; }
