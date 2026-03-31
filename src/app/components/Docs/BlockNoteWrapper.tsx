@@ -403,12 +403,21 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
 
         /* ── Blockquote ── */
         .docs-editor [data-content-type="quote"] {
-          background: rgba(99,102,241,0.05) !important;
-          border-left: 3px solid #6366f1 !important;
-          border-radius: 0 0.5rem 0.5rem 0 !important;
-          padding: 0.75rem 1rem !important;
-          color: #c7d2fe !important;
+          background: rgba(42,212,171,0.06) !important;
+          border: 1px solid rgba(42,212,171,0.12) !important;
+          border-radius: 0.625rem !important;
+          padding: 0.875rem 1rem 0.875rem 2.75rem !important;
+          color: #cbd5e1 !important;
           font-style: normal !important;
+          position: relative !important;
+        }
+        .docs-editor [data-content-type="quote"]::before {
+          content: '💬' !important;
+          position: absolute !important;
+          left: 0.75rem !important;
+          top: 0.875rem !important;
+          font-size: 1rem !important;
+          line-height: 1 !important;
         }
         .docs-editor [data-content-type="quote"] blockquote {
           background: transparent !important;
