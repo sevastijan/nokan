@@ -6,7 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Search } from 'lucide-react';
 import {
   useGetWikiPagesQuery,
+  useGetWikiBoardPagesQuery,
   useCreateWikiPageMutation,
+  useCreateWikiBoardPageMutation,
 } from '@/app/store/apiSlice';
 import type { WikiPage } from '@/app/types/wikiTypes';
 import PageTreeItem from './PageTreeItem';
@@ -14,6 +16,7 @@ import PageTreeItem from './PageTreeItem';
 interface PageTreeProps {
   activePageId?: string;
   userId?: string;
+  boardId?: string;
 }
 
 function buildTree(pages: WikiPage[]): WikiPage[] {
@@ -57,11 +60,14 @@ function filterTree(nodes: WikiPage[], query: string): WikiPage[] {
   }, []);
 }
 
-const PageTree = ({ activePageId, userId }: PageTreeProps) => {
+const PageTree = ({ activePageId, userId, boardId }: PageTreeProps) => {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data: pages = [] } = useGetWikiPagesQuery();
+  const { data: globalPages = [] } = useGetWikiPagesQuery(undefined, { skip: !!boardId });
+  const { data: boardPages = [] } = useGetWikiBoardPagesQuery(boardId!, { skip: !boardId });
+  const pages = boardId ? boardPages : globalPages;
   const [createPage] = useCreateWikiPageMutation();
+  const [createBoardPage] = useCreateWikiBoardPageMutation();
   const [search, setSearch] = useState('');
 
   const tree = useMemo(() => buildTree(pages), [pages]);
@@ -73,15 +79,25 @@ const PageTree = ({ activePageId, userId }: PageTreeProps) => {
 
   const handleNewPage = useCallback(async () => {
     try {
-      const result = await createPage({
-        title: t('docs.newPage'),
-        created_by: userId,
-      }).unwrap();
-      router.push(`/docs/${result.id}`);
+      let result;
+      if (boardId) {
+        result = await createBoardPage({
+          title: t('docs.newPage'),
+          created_by: userId,
+          board_id: boardId,
+        }).unwrap();
+        router.push(`/board/${boardId}/docs/${result.id}`);
+      } else {
+        result = await createPage({
+          title: t('docs.newPage'),
+          created_by: userId,
+        }).unwrap();
+        router.push(`/docs/${result.id}`);
+      }
     } catch {
       // silently fail – toast is handled at API level
     }
-  }, [createPage, userId, router, t]);
+  }, [createPage, createBoardPage, userId, boardId, router, t]);
 
   return (
     <div className="flex flex-col h-full">
@@ -130,6 +146,7 @@ const PageTree = ({ activePageId, userId }: PageTreeProps) => {
             level={0}
             activePageId={activePageId}
             userId={userId}
+            boardId={boardId}
           />
         ))}
       </div>

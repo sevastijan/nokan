@@ -8,6 +8,7 @@ export interface WikiPage {
   created_by?: string | null;
   updated_by?: string | null;
   created_at?: string;
+  board_id?: string | null;
   updated_at?: string;
   children?: WikiPage[];
 }

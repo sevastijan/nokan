@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
-import { useUpdateWikiPageMutation, useCreateWikiPageMutation, useGetWikiPagesQuery } from '@/app/store/apiSlice';
+import { useUpdateWikiPageMutation, useCreateWikiPageMutation, useCreateWikiBoardPageMutation, useGetWikiPagesQuery } from '@/app/store/apiSlice';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
 import type { WikiPage } from '@/app/types/wikiTypes';
 import dynamic from 'next/dynamic';
@@ -31,13 +31,15 @@ const BlockNoteEditor = dynamic(() => import('./BlockNoteWrapper'), {
 interface PageEditorProps {
   page: WikiPage;
   userId?: string;
+  boardId?: string;
 }
 
-const PageEditor = ({ page, userId }: PageEditorProps) => {
+const PageEditor = ({ page, userId, boardId }: PageEditorProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const [updatePage] = useUpdateWikiPageMutation();
   const [createPage] = useCreateWikiPageMutation();
+  const [createBoardPage] = useCreateWikiBoardPageMutation();
   const [title, setTitle] = useState(page.title);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -47,6 +49,7 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
   const isNewPage = page.title === 'Nowa strona' || page.title === 'New page';
 
   const { data: allPages = [] } = useGetWikiPagesQuery();
+  const docsBasePath = boardId ? `/board/${boardId}/docs` : '/docs';
 
   const breadcrumbs = useMemo(() => {
     const crumbs: { id: string; title: string; icon?: string | null }[] = [];
@@ -64,16 +67,26 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
 
   const handleCreateSubpage = useCallback(async () => {
     try {
-      const result = await createPage({
-        title: 'Nowa strona',
-        parent_id: page.id,
-        created_by: userId,
-      }).unwrap();
+      let result;
+      if (boardId) {
+        result = await createBoardPage({
+          title: 'Nowa strona',
+          parent_id: page.id,
+          created_by: userId,
+          board_id: boardId,
+        }).unwrap();
+      } else {
+        result = await createPage({
+          title: 'Nowa strona',
+          parent_id: page.id,
+          created_by: userId,
+        }).unwrap();
+      }
       return { id: result.id, title: result.title };
     } catch {
       return null;
     }
-  }, [createPage, page.id, userId]);
+  }, [createPage, createBoardPage, page.id, userId, boardId]);
 
   const handleEmojiSelect = useCallback((emoji: string) => {
     setEmojiOpen(false);
@@ -179,14 +192,14 @@ const PageEditor = ({ page, userId }: PageEditorProps) => {
 
         {/* Breadcrumbs */}
         <div className="flex items-center gap-1 mt-2 flex-wrap">
-          <Link href="/docs" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+          <Link href={docsBasePath} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
             Dokumenty
           </Link>
           {breadcrumbs.map((crumb) => (
             <span key={crumb.id} className="flex items-center gap-1">
               <ChevronRight size={10} className="text-slate-600" />
               <Link
-                href={`/docs/${crumb.id}`}
+                href={`${docsBasePath}/${crumb.id}`}
                 className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
               >
                 {crumb.icon && <span className="mr-0.5">{crumb.icon}</span>}

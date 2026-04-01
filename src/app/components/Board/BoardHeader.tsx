@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight, FiMoreHorizontal, FiChevronLeft } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight, FiMoreHorizontal, FiChevronLeft, FiBookOpen } from 'react-icons/fi';
 import { Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
@@ -216,6 +216,14 @@ const BoardHeader = ({
                                         <FiFileText className="w-4 h-4" />
                                    </button>
 
+                                   <button
+                                        onClick={() => router.push(`/board/${boardId}/docs`)}
+                                        className="p-1.5 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
+                                        title={t('docs.title', 'Docs')}
+                                   >
+                                        <FiBookOpen className="w-4 h-4" />
+                                   </button>
+
                                    {hasManagementAccess && onOpenApiTokens && (
                                         <button onClick={onOpenApiTokens} className="p-1.5 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors" title={t('board.api')}>
                                              <FiCode className="w-4 h-4" />
@@ -260,6 +268,17 @@ const BoardHeader = ({
                                                        >
                                                             <FiFileText className="w-4 h-4" />
                                                             {t('board.notes')}
+                                                       </button>
+                                                  )}
+                                             </Menu.Item>
+                                             <Menu.Item>
+                                                  {({ active }) => (
+                                                       <button
+                                                            onClick={() => router.push(`/board/${boardId}/docs`)}
+                                                            className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${active ? 'bg-slate-700/50 text-white' : 'text-slate-300'}`}
+                                                       >
+                                                            <FiBookOpen className="w-4 h-4" />
+                                                            {t('docs.title', 'Docs')}
                                                        </button>
                                                   )}
                                              </Menu.Item>

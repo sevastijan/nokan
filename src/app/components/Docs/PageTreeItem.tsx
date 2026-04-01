@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner';
 import {
   useCreateWikiPageMutation,
+  useCreateWikiBoardPageMutation,
   useDeleteWikiPageMutation,
 } from '@/app/store/apiSlice';
 import { useOutsideClick } from '@/app/hooks/useOutsideClick';
@@ -23,15 +24,17 @@ interface PageTreeItemProps {
   level: number;
   activePageId?: string;
   userId?: string;
+  boardId?: string;
 }
 
-const PageTreeItem = ({ page, level, activePageId, userId }: PageTreeItemProps) => {
+const PageTreeItem = ({ page, level, activePageId, userId, boardId }: PageTreeItemProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   const [expanded, setExpanded] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [createPage] = useCreateWikiPageMutation();
+  const [createBoardPage] = useCreateWikiBoardPageMutation();
   const [deletePage] = useDeleteWikiPageMutation();
 
   const hasChildren = (page.children?.length ?? 0) > 0;
@@ -39,9 +42,11 @@ const PageTreeItem = ({ page, level, activePageId, userId }: PageTreeItemProps) 
 
   useOutsideClick(menuRef, () => setMenuOpen(false), menuOpen);
 
+  const basePath = boardId ? `/board/${boardId}/docs` : '/docs';
+
   const handleClick = useCallback(() => {
-    router.push(`/docs/${page.id}`);
-  }, [router, page.id]);
+    router.push(`${basePath}/${page.id}`);
+  }, [router, page.id, basePath]);
 
   const handleToggle = useCallback(
     (e: React.MouseEvent) => {
@@ -56,18 +61,28 @@ const PageTreeItem = ({ page, level, activePageId, userId }: PageTreeItemProps) 
       e.stopPropagation();
       setMenuOpen(false);
       try {
-        const result = await createPage({
-          title: t('docs.newPage'),
-          parent_id: page.id,
-          created_by: userId,
-        }).unwrap();
+        let result;
+        if (boardId) {
+          result = await createBoardPage({
+            title: t('docs.newPage'),
+            parent_id: page.id,
+            created_by: userId,
+            board_id: boardId,
+          }).unwrap();
+        } else {
+          result = await createPage({
+            title: t('docs.newPage'),
+            parent_id: page.id,
+            created_by: userId,
+          }).unwrap();
+        }
         setExpanded(true);
-        router.push(`/docs/${result.id}`);
+        router.push(`${basePath}/${result.id}`);
       } catch {
         // handled by API layer
       }
     },
-    [createPage, page.id, userId, router, t],
+    [createPage, createBoardPage, page.id, userId, boardId, basePath, router, t],
   );
 
   const handleDelete = useCallback(
@@ -78,12 +93,12 @@ const PageTreeItem = ({ page, level, activePageId, userId }: PageTreeItemProps) 
       try {
         await deletePage(page.id).unwrap();
         toast.success(t('docs.deleted'));
-        if (isActive) router.push('/docs');
+        if (isActive) router.push(basePath);
       } catch {
         // handled by API layer
       }
     },
-    [deletePage, page.id, isActive, router, t],
+    [deletePage, page.id, isActive, basePath, router, t],
   );
 
   return (
@@ -160,6 +175,7 @@ const PageTreeItem = ({ page, level, activePageId, userId }: PageTreeItemProps) 
               level={level + 1}
               activePageId={activePageId}
               userId={userId}
+              boardId={boardId}
             />
           ))}
         </div>

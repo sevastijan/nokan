@@ -236,8 +236,10 @@ export const {
      useDisconnectSlackMutation,
      // Wiki hooks
      useGetWikiPagesQuery,
+     useGetWikiBoardPagesQuery,
      useGetWikiPageByIdQuery,
      useCreateWikiPageMutation,
+     useCreateWikiBoardPageMutation,
      useUpdateWikiPageMutation,
      useDeleteWikiPageMutation,
      useReorderWikiPagesMutation,

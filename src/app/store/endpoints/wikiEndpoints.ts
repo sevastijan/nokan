@@ -10,6 +10,7 @@ export const wikiEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
         const { data, error } = await getSupabase()
           .from('wiki_pages')
           .select('id, title, icon, parent_id, sort_order, created_by, updated_by, created_at, updated_at')
+          .is('board_id', null)
           .order('sort_order', { ascending: true });
         if (error) throw error;
         return { data: (data || []) as WikiPage[] };
@@ -21,6 +22,23 @@ export const wikiEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
       result
         ? [...result.map((p) => ({ type: 'WikiPage' as const, id: p.id })), { type: 'WikiPage' as const, id: 'LIST' }]
         : [{ type: 'WikiPage' as const, id: 'LIST' }],
+  }),
+
+  getWikiBoardPages: builder.query<WikiPage[], string>({
+    async queryFn(boardId) {
+      try {
+        const { data, error } = await getSupabase()
+          .from('wiki_pages')
+          .select('id, title, icon, parent_id, sort_order, created_by, updated_by, created_at, updated_at, board_id')
+          .eq('board_id', boardId)
+          .order('sort_order', { ascending: true });
+        if (error) throw error;
+        return { data: (data || []) as WikiPage[] };
+      } catch (err) {
+        return { error: { status: 'CUSTOM_ERROR' as const, error: (err as Error).message } };
+      }
+    },
+    providesTags: (_result, _error, boardId) => [{ type: 'WikiPage' as const, id: 'BOARD_' + boardId }],
   }),
 
   getWikiPageById: builder.query<WikiPage, string>({
@@ -62,6 +80,32 @@ export const wikiEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, stri
       }
     },
     invalidatesTags: [{ type: 'WikiPage', id: 'LIST' }],
+  }),
+
+  createWikiBoardPage: builder.mutation<WikiPage, { title?: string; parent_id?: string | null; icon?: string; created_by?: string; board_id: string }>({
+    async queryFn(payload) {
+      try {
+        const siblingQuery = payload.parent_id
+          ? getSupabase().from('wiki_pages').select('sort_order').eq('parent_id', payload.parent_id)
+          : getSupabase().from('wiki_pages').select('sort_order').is('parent_id', null).eq('board_id', payload.board_id);
+        const { data: siblings } = await siblingQuery.order('sort_order', { ascending: false }).limit(1);
+        const nextOrder = ((siblings?.[0]?.sort_order as number) ?? -1) + 1;
+
+        const { data, error } = await getSupabase()
+          .from('wiki_pages')
+          .insert({ ...payload, sort_order: nextOrder })
+          .select('*')
+          .single();
+        if (error) throw error;
+        return { data: data as WikiPage };
+      } catch (err) {
+        return { error: { status: 'CUSTOM_ERROR' as const, error: (err as Error).message } };
+      }
+    },
+    invalidatesTags: (_r, _e, { board_id }) => [
+      { type: 'WikiPage', id: 'BOARD_' + board_id },
+      { type: 'WikiPage', id: 'LIST' },
+    ],
   }),
 
   updateWikiPage: builder.mutation<WikiPage, { id: string; data: Partial<WikiPage> }>({
