@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuItems, createReactBlockSpec } from '@blocknote/react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
+import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuItems } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
-import { BlockNoteEditor, defaultBlockSpecs, filterSuggestionItems } from '@blocknote/core';
+import { BlockNoteEditor, filterSuggestionItems } from '@blocknote/core';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 
@@ -26,70 +26,6 @@ const LANGUAGES = [
   'json', 'bash', 'sql', 'yaml', 'go', 'rust', 'java', 'php',
 ];
 
-const CALLOUT_ICONS = ['💡', '💬', '⚠️', 'ℹ️', '✅', '❌', '🔥', '📌', '💎', '🎯', '⭐', '🚀', '📝', '🔔', '🛑', '💰', '🔧', '📣'];
-
-const CalloutBlock = createReactBlockSpec(
-  {
-    type: 'callout' as const,
-    propSchema: {
-      icon: { default: '💡' },
-    },
-    content: 'inline',
-  },
-  {
-    render: (props) => {
-      const [pickerOpen, setPickerOpen] = useState(false);
-      const pickerRef = useRef<HTMLDivElement>(null);
-
-      useEffect(() => {
-        if (!pickerOpen) return;
-        const handler = (e: MouseEvent) => {
-          if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-            setPickerOpen(false);
-          }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-      }, [pickerOpen]);
-
-      return (
-        <div className="callout-block">
-          <div className="callout-icon-area" ref={pickerRef}>
-            <button
-              className="callout-icon-btn"
-              onClick={() => setPickerOpen(!pickerOpen)}
-              contentEditable={false}
-            >
-              {props.block.props.icon}
-            </button>
-            {pickerOpen && (
-              <div className="callout-icon-picker" contentEditable={false}>
-                {CALLOUT_ICONS.map((icon) => (
-                  <button
-                    key={icon}
-                    onClick={() => {
-                      (props.editor as BlockNoteEditor<any>).updateBlock(props.block.id, { props: { icon } } as any);
-                      setPickerOpen(false);
-                    }}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="callout-content" ref={props.contentRef} />
-        </div>
-      );
-    },
-  },
-);
-
-const customBlockSpecs = {
-  ...defaultBlockSpecs,
-  callout: CalloutBlock,
-};
-
 interface BlockNoteWrapperProps {
   initialContent?: unknown;
   onChange: (content: unknown) => void;
@@ -111,7 +47,6 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
 
   const editor = useCreateBlockNote({
     initialContent: parsedContent,
-    blockSpecs: customBlockSpecs as any,
     uploadFile: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
@@ -158,23 +93,7 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
         icon: <span style={{ fontSize: 14 }}>📄</span>,
         subtext: 'Utwórz podstronę i wstaw link',
       };
-      const calloutItem = {
-        title: 'Callout',
-        onItemClick: () => {
-          const cursor = editor.getTextCursorPosition().block;
-          editor.insertBlocks(
-            [{ type: 'callout' as any, props: { icon: '💡' }, content: [{ type: 'text' as any, text: 'Wpisz treść...', styles: {} }] }],
-            cursor,
-            'before',
-          );
-          editor.removeBlocks([cursor.id]);
-        },
-        aliases: ['callout', 'info', 'uwaga', 'notatka', 'alert'],
-        group: 'Inne',
-        icon: <span style={{ fontSize: 14 }}>💡</span>,
-        subtext: 'Blok informacyjny z ikoną',
-      };
-      return [...defaults, pageItem, calloutItem];
+      return [...defaults, pageItem];
     },
     [onCreateSubpage],
   );
@@ -484,14 +403,16 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
         .docs-editor a { color: #2ad4ab !important; text-decoration: underline !important; }
 
         /* ── Blockquote ── */
-        /* ── Quote (default) ── */
+        /* ── Quote ── */
         .docs-editor [data-content-type="quote"] {
-          border-left: 3px solid #334155 !important;
-          padding-left: 1rem !important;
-          color: #94a3b8 !important;
+          background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(42,212,171,0.04)) !important;
+          border: none !important;
+          border-left: 3px solid #6366f1 !important;
+          border-radius: 0 0.75rem 0.75rem 0 !important;
+          padding: 1rem 1.25rem !important;
+          color: #c7d2fe !important;
           font-style: normal !important;
-          border-radius: 0 !important;
-          background: transparent !important;
+          position: relative !important;
         }
         .docs-editor [data-content-type="quote"] blockquote {
           background: transparent !important;
@@ -499,69 +420,6 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
           padding: 0 !important;
           margin: 0 !important;
           color: inherit !important;
-        }
-
-        /* ── Callout (custom block) ── */
-        .callout-block {
-          display: flex !important;
-          align-items: flex-start !important;
-          gap: 0.75rem !important;
-          background: rgba(250,204,21,0.06) !important;
-          border-radius: 0.75rem !important;
-          padding: 1rem !important;
-          position: relative !important;
-          width: 100% !important;
-        }
-        .callout-icon-area {
-          position: relative !important;
-          flex-shrink: 0 !important;
-        }
-        .callout-icon-btn {
-          font-size: 1.25rem !important;
-          line-height: 1 !important;
-          cursor: pointer !important;
-          background: none !important;
-          border: none !important;
-          padding: 2px !important;
-          border-radius: 4px !important;
-          transition: background 0.15s !important;
-        }
-        .callout-icon-btn:hover {
-          background: rgba(255,255,255,0.08) !important;
-        }
-        .callout-icon-picker {
-          position: absolute !important;
-          left: 0 !important;
-          top: 100% !important;
-          margin-top: 4px !important;
-          z-index: 50 !important;
-          background: #0f172a !important;
-          border: 1px solid #1e293b !important;
-          border-radius: 0.5rem !important;
-          padding: 0.375rem !important;
-          display: grid !important;
-          grid-template-columns: repeat(6, 1fr) !important;
-          gap: 2px !important;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-        }
-        .callout-icon-picker button {
-          width: 28px !important;
-          height: 28px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          font-size: 0.875rem !important;
-          border-radius: 0.25rem !important;
-          border: none !important;
-          background: transparent !important;
-          cursor: pointer !important;
-        }
-        .callout-icon-picker button:hover {
-          background: #1e293b !important;
-        }
-        .callout-content {
-          flex: 1 !important;
-          min-width: 0 !important;
         }
 
         /* ── Lists ── */
