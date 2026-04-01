@@ -162,10 +162,12 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
         title: 'Callout',
         onItemClick: () => {
           const cursor = editor.getTextCursorPosition().block;
-          editor.replaceBlocks(
-            [cursor.id],
-            [{ type: 'callout' as any, props: { icon: '💡' }, content: [] }],
+          editor.insertBlocks(
+            [{ type: 'callout' as any, props: { icon: '💡' }, content: [{ type: 'text' as any, text: 'Wpisz treść...', styles: {} }] }],
+            cursor,
+            'before',
           );
+          editor.removeBlocks([cursor.id]);
         },
         aliases: ['callout', 'info', 'uwaga', 'notatka', 'alert'],
         group: 'Inne',
