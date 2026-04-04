@@ -21,15 +21,42 @@ export async function POST(
 
 		const supabase = getSupabaseAdmin();
 
-		// Resolve caller's Supabase user ID from session email
-		const { data: callerUser, error: callerError } = await supabase
+		// Resolve caller's Supabase user ID from session email (or create if new)
+		let { data: callerUser } = await supabase
 			.from('users')
 			.select('id')
 			.eq('email', session.user.email)
-			.single();
+			.maybeSingle();
 
-		if (callerError || !callerUser) {
-			return NextResponse.json({ error: 'User not found' }, { status: 401 });
+		if (!callerUser) {
+			// User just registered - create their Supabase record
+			const { data: newUser, error: createErr } = await supabase
+				.from('users')
+				.insert({
+					email: session.user.email,
+					name: session.user.name || '',
+					image: session.user.image || '',
+					google_id: session.user.id || null,
+				})
+				.select('id')
+				.single();
+
+			if (createErr) {
+				// Maybe created in parallel by signIn callback - retry lookup
+				const { data: retryUser } = await supabase
+					.from('users')
+					.select('id')
+					.eq('email', session.user.email)
+					.single();
+
+				if (!retryUser) {
+					console.error('Failed to create/find user:', createErr);
+					return NextResponse.json({ error: 'Could not create user account' }, { status: 500 });
+				}
+				callerUser = retryUser;
+			} else {
+				callerUser = newUser;
+			}
 		}
 
 		// Fetch invitation
