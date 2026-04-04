@@ -9,7 +9,7 @@ export async function POST(
 ) {
 	try {
 		const session = await getServerSession(authOptions);
-		if (!session?.user?.id) {
+		if (!session?.user?.email) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
@@ -20,6 +20,17 @@ export async function POST(
 		}
 
 		const supabase = getSupabaseAdmin();
+
+		// Resolve caller's Supabase user ID from session email
+		const { data: callerUser, error: callerError } = await supabase
+			.from('users')
+			.select('id')
+			.eq('email', session.user.email)
+			.single();
+
+		if (callerError || !callerUser) {
+			return NextResponse.json({ error: 'User not found' }, { status: 401 });
+		}
 
 		// Fetch invitation
 		const { data: invitation, error } = await supabase
@@ -85,7 +96,7 @@ export async function POST(
 		// Insert team member (handle duplicate gracefully)
 		const { error: insertError } = await supabase
 			.from('team_members')
-			.insert({ team_id: teamId, user_id: session.user.id });
+			.insert({ team_id: teamId, user_id: callerUser.id });
 
 		if (insertError && insertError.code !== '23505') {
 			throw insertError;

@@ -11,7 +11,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nokan.nkdlab.space';
 export async function POST(request: Request) {
 	try {
 		const session = await getServerSession(authOptions);
-		if (!session?.user?.id) {
+		if (!session?.user?.email) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
@@ -30,7 +30,25 @@ export async function POST(request: Request) {
 
 		const supabase = getSupabaseAdmin();
 
-		// Verify board exists and caller has access
+		// Resolve caller's Supabase user ID from session email
+		const { data: callerUser, error: callerError } = await supabase
+			.from('users')
+			.select('id, email, name, custom_name')
+			.eq('email', session.user.email)
+			.single();
+
+		if (callerError || !callerUser) {
+			return NextResponse.json({ error: 'User not found' }, { status: 401 });
+		}
+
+		const callerId = callerUser.id;
+
+		// Self-invite check
+		if (callerUser.email.toLowerCase() === email) {
+			return NextResponse.json({ error: 'Nie możesz zaprosić samego siebie' }, { status: 400 });
+		}
+
+		// Verify board exists
 		const { data: board, error: boardError } = await supabase
 			.from('boards')
 			.select('id, title, user_id')
@@ -42,7 +60,7 @@ export async function POST(request: Request) {
 		}
 
 		// Check caller is owner or team member
-		const isOwner = board.user_id === session.user.id;
+		const isOwner = board.user_id === callerId;
 		if (!isOwner) {
 			const { data: team } = await supabase
 				.from('teams')
@@ -55,7 +73,7 @@ export async function POST(request: Request) {
 					.from('team_members')
 					.select('id')
 					.eq('team_id', team.id)
-					.eq('user_id', session.user.id)
+					.eq('user_id', callerId)
 					.maybeSingle();
 
 				if (!membership) {
@@ -64,17 +82,6 @@ export async function POST(request: Request) {
 			} else {
 				return NextResponse.json({ error: 'No permission to invite to this board' }, { status: 403 });
 			}
-		}
-
-		// Check self-invite
-		const { data: callerUser } = await supabase
-			.from('users')
-			.select('email')
-			.eq('id', session.user.id)
-			.single();
-
-		if (callerUser?.email?.toLowerCase() === email) {
-			return NextResponse.json({ error: 'Nie możesz zaprosić samego siebie' }, { status: 400 });
 		}
 
 		// Check if user with this email is already a board member
@@ -111,7 +118,7 @@ export async function POST(request: Request) {
 			.insert({
 				board_id: boardId,
 				email,
-				invited_by: session.user.id,
+				invited_by: callerId,
 				role: role || 'MEMBER',
 			})
 			.select('id, token')
@@ -125,14 +132,7 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Failed to create invitation' }, { status: 500 });
 		}
 
-		// Get inviter name
-		const { data: inviter } = await supabase
-			.from('users')
-			.select('name, custom_name')
-			.eq('id', session.user.id)
-			.single();
-
-		const inviterName = inviter?.custom_name || inviter?.name || 'Użytkownik';
+		const inviterName = callerUser.custom_name || callerUser.name || 'Użytkownik';
 		const inviteUrl = `${APP_URL}/invite/${invitation.token}`;
 
 		// Send email
@@ -146,7 +146,6 @@ export async function POST(request: Request) {
 
 		if (emailError) {
 			console.error('Invitation email error:', emailError);
-			// Invitation created but email failed - don't rollback, user can resend
 		}
 
 		return NextResponse.json({ success: true, invitation: { id: invitation.id, token: invitation.token } });
