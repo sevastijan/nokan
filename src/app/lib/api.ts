@@ -322,28 +322,40 @@ export async function fetchOrCreateUserFromSession(session: Session): Promise<Us
      if (!email) return null;
 
      try {
-          const { data: existingUser, error } = await getSupabase().from('users').select('*').eq('email', email).single();
+          // 1. Try by email
+          const { data: byEmail } = await getSupabase().from('users').select('*').eq('email', email).maybeSingle();
+          if (byEmail) return byEmail;
 
-          if (existingUser) return existingUser;
+          // 2. Try by google_id / github_id (user may exist with different email)
+          if (session.user.id) {
+               const { data: byGoogle } = await getSupabase().from('users').select('*').eq('google_id', session.user.id).maybeSingle();
+               if (byGoogle) {
+                    // Update email to current one
+                    await getSupabase().from('users').update({ email }).eq('id', byGoogle.id);
+                    return { ...byGoogle, email };
+               }
 
-          if (error?.code === 'PGRST116' || error?.message?.includes('No rows')) {
-               const { data: newUser, error: insertError } = await getSupabase()
-                    .from('users')
-                    .insert({
-                         email,
-                         google_id: session.user.id || null,
-                         name: session.user.name || 'Unknown User',
-                         image: session.user.image || null,
-                    })
-                    .select()
-                    .single();
-
-               if (insertError) throw insertError;
-
-               return newUser;
+               const { data: byGithub } = await getSupabase().from('users').select('*').eq('github_id', session.user.id).maybeSingle();
+               if (byGithub) {
+                    await getSupabase().from('users').update({ email }).eq('id', byGithub.id);
+                    return { ...byGithub, email };
+               }
           }
 
-          throw error;
+          // 3. Create new user (without google_id to avoid conflicts)
+          const { data: newUser, error: insertError } = await getSupabase()
+               .from('users')
+               .insert({
+                    email,
+                    name: session.user.name || 'Unknown User',
+                    image: session.user.image || null,
+               })
+               .select()
+               .single();
+
+          if (insertError) throw insertError;
+
+          return newUser;
      } catch (err) {
           console.error('fetchOrCreateUserFromSession error:', err);
           return null;
