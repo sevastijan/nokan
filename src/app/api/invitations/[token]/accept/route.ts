@@ -21,42 +21,51 @@ export async function POST(
 
 		const supabase = getSupabaseAdmin();
 
-		// Resolve caller's Supabase user ID from session email (or create if new)
+		// Resolve caller's Supabase user ID - try email first, then provider ID
 		let { data: callerUser } = await supabase
 			.from('users')
 			.select('id')
 			.eq('email', session.user.email)
 			.maybeSingle();
 
+		// Fallback: search by google_id or github_id (signIn callback may have stored user with provider ID)
+		if (!callerUser && session.user.id) {
+			const { data: byGoogle } = await supabase
+				.from('users')
+				.select('id')
+				.eq('google_id', session.user.id)
+				.maybeSingle();
+
+			if (byGoogle) {
+				callerUser = byGoogle;
+			} else {
+				const { data: byGithub } = await supabase
+					.from('users')
+					.select('id')
+					.eq('github_id', session.user.id)
+					.maybeSingle();
+
+				if (byGithub) callerUser = byGithub;
+			}
+		}
+
+		// Still not found - create the user
 		if (!callerUser) {
-			// User just registered - create their Supabase record
 			const { data: newUser, error: createErr } = await supabase
 				.from('users')
-				.insert({
+				.upsert({
 					email: session.user.email,
 					name: session.user.name || '',
 					image: session.user.image || '',
-					google_id: session.user.id || null,
-				})
+				}, { onConflict: 'email' })
 				.select('id')
 				.single();
 
-			if (createErr) {
-				// Maybe created in parallel by signIn callback - retry lookup
-				const { data: retryUser } = await supabase
-					.from('users')
-					.select('id')
-					.eq('email', session.user.email)
-					.single();
-
-				if (!retryUser) {
-					console.error('Failed to create/find user:', createErr);
-					return NextResponse.json({ error: 'Could not create user account' }, { status: 500 });
-				}
-				callerUser = retryUser;
-			} else {
-				callerUser = newUser;
+			if (createErr || !newUser) {
+				console.error('Failed to create/find user:', createErr, 'session:', session.user);
+				return NextResponse.json({ error: 'Could not create user account' }, { status: 500 });
 			}
+			callerUser = newUser;
 		}
 
 		// Fetch invitation
