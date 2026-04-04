@@ -1,4 +1,4 @@
-const LOGO_BASE64 = 'data:image/webp;base64,UklGRh4EAABXRUJQVlA4WAoAAAAQAAAAgwAAgwAAQUxQSCwDAAANkAQAjCFJtT7btm3btu27n23btm3btm3bdmO6kkry3YsIB27bRpIrLzLneq7mDyq0u5G1UNpEn+6c3PuGm1KXyJTo1/3zO+6bUM3BznERkuUsuL7fE07KPzaSUiowceZS1ztewiraIncEJ2fTTm328tHw/B4RSo1cPfAvSonW+6Zw7b5h0RwuWu4dwr9vhuqoeqU2yOxjM3lohTZH1bKtEOoHSDL98AIG8lsBiNLy6iGwElaB5J53iEG5GPZedgWrhR0GUp6aSV0vhaXJ9/Im+L+A2aefnUor8DtUdylUaaBxppylLAMWgQNlgE5OEeEXMOPkTDovgyeK/9hDmmlIITg3hexsiEQxXyrgG4e5hsnnZtLU2mlOM0H+QVwGaiPJVmwTp4HEHCEwT4ybK4bNF6PmjEGLJ9DuQby5MMmEVynuY+L1SUYsAQOWAdpSQFoOKEsCYVmALQ2g5cHTf/0Mc3+UTkxqP9MxR/p39FTk9dZj5fFjnA4lO1z1VY1uSuooM+bOnuP3HqdIVqiccylMFiiili+WO0l89V+V8dePQJ9PH7/7NHGyfDn4iMBvxkxxznT/zpH7A5sFCX1el6p5RHjZ+8LG6CJ1qK13ilNtlyUXqCO9dDnuNlyYVJ576JM8q7o4mThDsjyvukgWR7tbaaBIcjcrDxxRFs+xrlYmHDLcxUqFRYixzE3NXgd7WsnQVJ+dmntj6GMi26sqFrzd20onnsN2bzIHX9tHmISxzcK2PZqGo+32aB6WpoBhe6SBl+32KISvYeHaZ5+NiKrT0sMvEqq3EYKgOtCP7rm9rDkdXD4GJ72dHFr3db88VBunZYBeI1g7SsG0v7/1BpNSbSpw4zaw1lWB3ZAh5j4j8JtVeQqo/HIYrL1/igO0fSz9t/ymCqjEvNntRutPsmaGM6GQl5UmZ9Lq3E6Ebgydq9PCddasxoJq4zPpgjRGpVx+cJK3Bt1wT60MNlbq4/2ZPWmKTDl58bBCHp9te0bz+8ca2bpG8dG3hRMNNKQXzRvEUS/vnNh9iVejGzajWLFMSSKoE7PXGkl5bfaiZ0o3mJxizZ4L9z6pUGuGAlZQOCDMAAAAsAoAnQEqhACEAD6dTqNNJaSjIiJ6qACwE4lpbt0B6BOeaOz1m3INnl4vZBs8vF6M0oyBETGWDDOFUEL8FuMl3MhJpu1vJOl2C3wr/2f4MdbJS0g2eYYeyDZ5eL2EAAD++2UACCiCERuOZb5nDyv/6/kHmy7x2rvIVPxEg+NF5tPnT5aurxXyrHrUifAV8omzoNSyTLJNNMvIwXRk2vjUxf+VKb6CbUYrS2DLizHEMvXcAkrtgQa3VM9MoCInYlAY5BTu0+QHguAAAAAA';
+const LOGO_URL = 'https://nokan.nkdlab.space/email-logo.png';
 
 const baseStyles = `
   body {
@@ -124,7 +124,7 @@ const wrapHtml = (accentColor: string, content: string, footerText?: string) => 
   <div class="wrapper">
     <div class="container">
       <div class="logo-area">
-        <img src="${LOGO_BASE64}" alt="Nokan" width="28" height="28" style="display: block;" />
+        <img src="${LOGO_URL}" alt="Nokan" width="28" height="28" style="display: block;" />
       </div>
       <div class="body" data-accent="${accentColor}">
         ${content}
