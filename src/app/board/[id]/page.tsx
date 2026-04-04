@@ -224,6 +224,42 @@ export default function Page() {
           if (status === 'unauthenticated') router.push('/auth/signin');
      }, [status, router]);
 
+     // Board access check - verify user is owner or team member
+     const [accessDenied, setAccessDenied] = useState(false);
+     useEffect(() => {
+          if (!currentUser?.id || !board?.id) return;
+
+          const checkAccess = async () => {
+               // Owner always has access
+               if (board.user_id === currentUser.id) return;
+
+               // Check team membership
+               const { data: team } = await getSupabase()
+                    .from('teams')
+                    .select('id')
+                    .eq('board_id', board.id)
+                    .maybeSingle();
+
+               if (!team) {
+                    setAccessDenied(true);
+                    return;
+               }
+
+               const { data: membership } = await getSupabase()
+                    .from('team_members')
+                    .select('id')
+                    .eq('team_id', team.id)
+                    .eq('user_id', currentUser.id)
+                    .maybeSingle();
+
+               if (!membership) {
+                    setAccessDenied(true);
+               }
+          };
+
+          checkAccess();
+     }, [currentUser?.id, board?.id, board?.user_id]);
+
      useEffect(() => {
           if (typeof window === 'undefined') return;
 
@@ -587,6 +623,20 @@ export default function Page() {
                <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
                     <div className="text-center">
                          <h2 className="text-2xl font-bold text-red-400 mb-4">{t('board.noBoardId')}</h2>
+                         <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition">
+                              {t('board.backToDashboard')}
+                         </button>
+                    </div>
+               </div>
+          );
+     }
+
+     if (accessDenied) {
+          return (
+               <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+                    <div className="text-center">
+                         <h2 className="text-2xl font-bold text-red-400 mb-2">{t('board.accessDenied', 'Brak dostępu')}</h2>
+                         <p className="text-slate-400 mb-6">{t('board.accessDeniedDesc', 'Nie masz uprawnień do tej tablicy.')}</p>
                          <button onClick={() => router.push('/dashboard')} className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition">
                               {t('board.backToDashboard')}
                          </button>
