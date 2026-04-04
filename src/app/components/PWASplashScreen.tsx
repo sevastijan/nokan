@@ -29,15 +29,6 @@ export default function PWASplashScreen() {
                                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                               />
 
-                              {/* Text */}
-                              <motion.span
-                                   className="text-sm font-medium tracking-[0.3em] text-slate-500 uppercase"
-                                   initial={{ opacity: 0 }}
-                                   animate={{ opacity: 1 }}
-                                   transition={{ delay: 0.3, duration: 0.4 }}
-                              >
-                                   Nokan
-                              </motion.span>
                          </div>
 
                          {/* Auto-dismiss */}
