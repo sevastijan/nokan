@@ -21,6 +21,7 @@ import { chatEndpoints } from './endpoints/chatEndpoints';
 import { crmEndpoints } from './endpoints/crmEndpoints';
 import { slackEndpoints } from './endpoints/slackEndpoints';
 import { wikiEndpoints } from './endpoints/wikiEndpoints';
+import { invitationEndpoints } from './endpoints/invitationEndpoints';
 
 /**
  * UserRole type in your application.
@@ -74,6 +75,7 @@ export const apiSlice = createApi({
           'AppSettings',
           'SlackIntegration',
           'WikiPage',
+          'BoardInvitation',
      ],
      endpoints: (builder) => ({
           ...boardEndpoints(builder),
@@ -93,6 +95,7 @@ export const apiSlice = createApi({
           ...crmEndpoints(builder),
           ...slackEndpoints(builder),
           ...wikiEndpoints(builder),
+          ...invitationEndpoints(builder),
      }),
 });
 
@@ -243,4 +246,8 @@ export const {
      useUpdateWikiPageMutation,
      useDeleteWikiPageMutation,
      useReorderWikiPagesMutation,
+     // Invitation hooks
+     useSendBoardInvitationMutation,
+     useGetBoardInvitationsQuery,
+     useCancelBoardInvitationMutation,
 } = apiSlice;

@@ -16,6 +16,23 @@ export interface Status {
 // === User & Role Types ===
 export type UserRole = 'OWNER' | 'PROJECT_MANAGER' | 'MEMBER' | 'CLIENT';
 
+// === Invitation Types ===
+export type InvitationStatus = 'pending' | 'accepted' | 'expired';
+
+export interface BoardInvitation {
+     id: string;
+     board_id: string;
+     email: string;
+     invited_by: string;
+     token: string;
+     role: string;
+     status: InvitationStatus;
+     created_at: string;
+     expires_at: string;
+     board_title?: string;
+     inviter_name?: string;
+}
+
 export interface User {
      id: string;
      email: string;

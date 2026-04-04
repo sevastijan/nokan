@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight, FiMoreHorizontal, FiChevronLeft, FiBookOpen } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight, FiMoreHorizontal, FiChevronLeft, FiBookOpen, FiUserPlus } from 'react-icons/fi';
 import { Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
@@ -15,6 +15,7 @@ import { useCurrentUser } from '@/app/hooks/useCurrentUser';
 import FilterDropdown from './FilterDropdown';
 import ViewModeToggle from './ViewModeToggle';
 import MembersDropdown from './MembersDropdown';
+import InviteMemberModal from './InviteMemberModal';
 
 interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      boardId: string;
@@ -65,6 +66,7 @@ const BoardHeader = ({
      const [showMobileSearch, setShowMobileSearch] = useState(false);
      const [filterOpen, setFilterOpen] = useState(false);
      const [membersOpen, setMembersOpen] = useState(false);
+     const [inviteOpen, setInviteOpen] = useState(false);
 
      const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -230,6 +232,16 @@ const BoardHeader = ({
                                         </button>
                                    )}
 
+                                   {hasManagementAccess && (
+                                        <button
+                                             onClick={() => setInviteOpen(true)}
+                                             className="p-1.5 rounded-md text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                                             title="Zaproś do tablicy"
+                                        >
+                                             <FiUserPlus className="w-4 h-4" />
+                                        </button>
+                                   )}
+
                                    {hasManagementAccess && <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />}
                               </div>
 
@@ -346,6 +358,8 @@ const BoardHeader = ({
                </AnimatePresence>
 
                {hasActiveFilters && <div className="absolute bottom-0 left-0 right-0 h-px bg-brand-500/50" />}
+
+               <InviteMemberModal boardId={boardId} isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
           </header>
      );
 };

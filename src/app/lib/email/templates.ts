@@ -112,7 +112,7 @@ const baseStyles = `
   }
 `;
 
-const wrapHtml = (accentColor: string, content: string) => `
+const wrapHtml = (accentColor: string, content: string, footerText?: string) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -130,7 +130,7 @@ const wrapHtml = (accentColor: string, content: string) => `
         ${content}
       </div>
       <div class="footer">
-        <p>Otrzymujesz tę wiadomość, ponieważ jesteś uczestnikiem tego zadania. <a href="#">Zarządzaj powiadomieniami</a></p>
+        <p>${footerText || 'Otrzymujesz tę wiadomość, ponieważ jesteś uczestnikiem tego zadania. <a href="#">Zarządzaj powiadomieniami</a>'}</p>
         <p style="margin-top: 12px; font-size: 10px; color: #d4d4d8; line-height: 1.5;">Ta wiadomość jest poufna i przeznaczona wyłącznie dla adresata. Jeśli otrzymałeś/aś ją omyłkowo, prosimy o niezwłoczne usunięcie. Zabronione jest kopiowanie lub ujawnianie treści osobom trzecim. Prosimy o niedrukowanie &mdash; dbajmy o środowisko.</p>
       </div>
     </div>
@@ -353,4 +353,18 @@ export function mentionTemplate(
     ${context ? `<div class="quote">${context}</div>` : ''}
     ${colorBtn(taskUrl, 'Zobacz zadanie')}
   `);
+}
+
+export function boardInvitationTemplate(
+     boardName: string,
+     inviterName: string,
+     inviteUrl: string
+): string {
+     const c = '#6366f1';
+     return wrapHtml(c, `
+    <p class="action-text"><strong>${inviterName}</strong> zaprasza Cię do tablicy</p>
+    <p class="task-link">${taskDot(c)}${boardName}</p>
+    <p class="context">Kliknij poniższy przycisk, aby dołączyć do tablicy i rozpocząć współpracę.</p>
+    ${colorBtn(inviteUrl, 'Dołącz do tablicy')}
+  `, 'Otrzymujesz tę wiadomość, ponieważ ktoś zaprosił Cię do współpracy w Nokan.');
 }
