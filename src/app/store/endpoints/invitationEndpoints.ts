@@ -3,7 +3,6 @@
  */
 
 import { EndpointBuilder, BaseQueryFn } from '@reduxjs/toolkit/query';
-import { getSupabase } from '@/app/lib/supabase';
 import type { BoardInvitation } from '@/app/types/globalTypes';
 
 export const invitationEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
@@ -37,20 +36,19 @@ export const invitationEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
 	getBoardInvitations: builder.query<BoardInvitation[], string>({
 		async queryFn(boardId) {
 			try {
-				const { data, error } = await getSupabase()
-					.from('board_invitations')
-					.select('*')
-					.eq('board_id', boardId)
-					.eq('status', 'pending')
-					.order('created_at', { ascending: false });
+				const response = await fetch(`/api/invitations/board?boardId=${boardId}`, {
+					credentials: 'include',
+				});
 
-				if (error) {
-					return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+				const data = await response.json();
+
+				if (!response.ok) {
+					return { error: { status: response.status, data: data.error } };
 				}
 
-				return { data: (data ?? []) as BoardInvitation[] };
+				return { data: data as BoardInvitation[] };
 			} catch (err) {
-				return { error: { status: 'CUSTOM_ERROR', error: String(err) } };
+				return { error: { status: 'FETCH_ERROR', data: String(err) } };
 			}
 		},
 		providesTags: (_result, _error, boardId) => [{ type: 'BoardInvitation', id: boardId }],
@@ -59,18 +57,20 @@ export const invitationEndpoints = (builder: EndpointBuilder<BaseQueryFn, string
 	cancelBoardInvitation: builder.mutation<{ success: boolean }, { invitationId: string; boardId: string }>({
 		async queryFn({ invitationId }) {
 			try {
-				const { error } = await getSupabase()
-					.from('board_invitations')
-					.update({ status: 'expired' })
-					.eq('id', invitationId);
+				const response = await fetch(`/api/invitations/board?invitationId=${invitationId}`, {
+					method: 'DELETE',
+					credentials: 'include',
+				});
 
-				if (error) {
-					return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+				const data = await response.json();
+
+				if (!response.ok) {
+					return { error: { status: response.status, data: data.error } };
 				}
 
-				return { data: { success: true } };
+				return { data };
 			} catch (err) {
-				return { error: { status: 'CUSTOM_ERROR', error: String(err) } };
+				return { error: { status: 'FETCH_ERROR', data: String(err) } };
 			}
 		},
 		invalidatesTags: (_result, _error, { boardId }) => [{ type: 'BoardInvitation', id: boardId }],
