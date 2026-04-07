@@ -224,6 +224,7 @@ const PageEditor = ({ page, userId, boardId }: PageEditorProps) => {
           await updatePage({ id: page.id, data: { content, updated_by: userId } });
         }}
         onCreateSubpage={handleCreateSubpage}
+        docsBasePath={docsBasePath}
       />
     </div>
   );

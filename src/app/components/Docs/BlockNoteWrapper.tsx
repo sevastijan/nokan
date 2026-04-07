@@ -31,6 +31,7 @@ interface BlockNoteWrapperProps {
   onChange: (content: unknown) => void;
   onSaveImmediate?: (content: unknown) => Promise<void>;
   onCreateSubpage?: () => Promise<{ id: string; title: string } | null>;
+  docsBasePath?: string;
 }
 
 interface CodeBlockInfo {
@@ -39,7 +40,7 @@ interface CodeBlockInfo {
   top: number;
 }
 
-const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateSubpage }: BlockNoteWrapperProps) => {
+const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateSubpage, docsBasePath = '/docs' }: BlockNoteWrapperProps) => {
   const parsedContent = useMemo(() => {
     if (!initialContent) return undefined;
     try { return JSON.parse(JSON.stringify(initialContent)); } catch { return undefined; }
@@ -75,7 +76,7 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
                 { type: 'text', text: '📄 ', styles: {} },
                 {
                   type: 'link',
-                  href: `/docs/${subpage.id}`,
+                  href: `${docsBasePath}/${subpage.id}`,
                   content: [{ type: 'text', text: subpage.title, styles: {} }],
                 },
               ],
@@ -85,7 +86,7 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
               await onSaveImmediate(editor.document);
             }
             // Redirect to subpage
-            window.location.href = `/docs/${subpage.id}`;
+            window.location.href = `${docsBasePath}/${subpage.id}`;
           }
         },
         aliases: ['page', 'subpage', 'strona', 'podstrona', 'link'],
@@ -95,7 +96,7 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
       };
       return [...defaults, pageItem];
     },
-    [onCreateSubpage],
+    [onCreateSubpage, docsBasePath],
   );
 
   // Register highlight plugin
@@ -123,10 +124,11 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest('a');
-      if (target && target.getAttribute('href')?.startsWith('/docs/')) {
+      const href = target?.getAttribute('href');
+      if (target && href && (href.startsWith('/docs/') || href.startsWith('/board/'))) {
         e.preventDefault();
         e.stopPropagation();
-        window.location.href = target.getAttribute('href')!;
+        window.location.href = href;
       }
     };
     const el = document.querySelector('.docs-editor');
@@ -346,7 +348,8 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
         }
 
         /* ── Page link tiles (paragraphs starting with 📄) ── */
-        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]) {
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]),
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href*="/docs/"]) {
           background: #111520 !important;
           border: 1px solid #1e293b !important;
           border-radius: 0.5rem !important;
@@ -358,29 +361,35 @@ const BlockNoteWrapper = ({ initialContent, onChange, onSaveImmediate, onCreateS
           align-items: center !important;
           margin: 0.5rem 0 !important;
         }
-        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]):hover {
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]):hover,
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href*="/docs/"]):hover {
           background: #1a2030 !important;
           border-color: #00a68b !important;
         }
         .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]) a,
-        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]) .bn-inline-content {
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]) .bn-inline-content,
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href*="/docs/"]) a,
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href*="/docs/"]) .bn-inline-content {
           color: #e2e8f0 !important;
           text-decoration: none !important;
           font-weight: 500 !important;
           transition: color 0.15s !important;
           cursor: pointer !important;
         }
-        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]):hover a {
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]):hover a,
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href*="/docs/"]):hover a {
           color: #00a68b !important;
         }
-        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"])::after {
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"])::after,
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href*="/docs/"])::after {
           content: '→' !important;
           color: #475569 !important;
           font-size: 0.875rem !important;
           margin-left: auto !important;
           padding-left: 0.5rem !important;
         }
-        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]):hover::after {
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href^="/docs/"]):hover::after,
+        .docs-editor .bn-block-content[data-content-type="paragraph"]:has(.bn-inline-content > a[href*="/docs/"]):hover::after {
           color: #00a68b !important;
         }
 
