@@ -62,24 +62,36 @@ export const authOptions: NextAuthOptions = {
 
 			try {
 				const supabase = getSupabaseAdmin();
-				const { data: existingUser, error: selectError } = await supabase.from('users').select('*').eq(idColumn, user.id).single();
+				const providerAccountId = user.id;
+				const { data: existingUser, error: selectError } = await supabase.from('users').select('*').eq(idColumn, providerAccountId).single();
 
 				if (selectError && selectError.code !== 'PGRST116') {
 					console.error('Error checking existing Supabase user:', selectError.message);
 					throw selectError;
 				}
 
-				if (!existingUser) {
-					const { error: insertError } = await supabase.from('users').insert({
-						[idColumn]: user.id,
-						name: user.name ?? '',
-						email: user.email ?? '',
-						image: user.image ?? '',
-					});
+				if (existingUser) {
+					// Replace provider ID with Supabase UUID so JWT stores the correct ID
+					user.id = String(existingUser.id);
+				} else {
+					const { data: newUser, error: insertError } = await supabase
+						.from('users')
+						.insert({
+							[idColumn]: providerAccountId,
+							name: user.name ?? '',
+							email: user.email ?? '',
+							image: user.image ?? '',
+						})
+						.select('id')
+						.single();
 
 					if (insertError) {
 						console.error('Error inserting user into Supabase:', insertError.message);
 						throw insertError;
+					}
+
+					if (newUser) {
+						user.id = String(newUser.id);
 					}
 				}
 
