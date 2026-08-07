@@ -683,6 +683,7 @@ export default function Page() {
                     onFilterTypeChange={setFilterType}
                     boardId={boardId}
                     currentUserId={currentUser?.id}
+                    boardOwnerId={board?.user_id}
                     onOpenNotes={handleOpenNotes}
                     onOpenApiTokens={handleOpenApiTokens}
                     showSubtasks={showSubtasks}

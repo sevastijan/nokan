@@ -19,6 +19,8 @@ import MembersDropdown from './MembersDropdown';
 interface ExtendedBoardHeaderProps extends BoardHeaderProps {
      boardId: string;
      currentUserId?: string;
+     /** Owner (creator) of this board — grants member management regardless of global role */
+     boardOwnerId?: string;
      onOpenNotes: () => void;
      onOpenApiTokens?: () => void;
 }
@@ -40,6 +42,7 @@ const BoardHeader = ({
      onFilterAssigneeChange,
      boardId,
      currentUserId,
+     boardOwnerId,
      onOpenNotes,
      onOpenApiTokens,
      filterType,
@@ -70,6 +73,10 @@ const BoardHeader = ({
      const searchInputRef = useRef<HTMLInputElement>(null);
 
      const hasManagementAccess = useHasManagementAccess();
+
+     // Board creator manages members of their own board even without a global management role.
+     // Mirrors the server-side rule in POST /api/invitations/send.
+     const canManageMembers = hasManagementAccess || (!!boardOwnerId && boardOwnerId === currentUserId);
      const avatarInputRef = useRef<HTMLInputElement>(null);
      const [avatarUploading, setAvatarUploading] = useState(false);
      const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
@@ -201,6 +208,9 @@ const BoardHeader = ({
                               {/* View Mode - always visible */}
                               <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
 
+                              {/* Members - always visible; the dropdown panel is mobile-sized on small screens */}
+                              {canManageMembers && <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />}
+
                               {/* Desktop-only actions */}
                               <div className="hidden md:flex items-center gap-0.5">
                                    <button
@@ -230,8 +240,6 @@ const BoardHeader = ({
                                              <FiCode className="w-4 h-4" />
                                         </button>
                                    )}
-
-                                   {hasManagementAccess && <MembersDropdown boardId={boardId} currentUserId={currentUserId} isOpen={membersOpen} onToggle={handleMembersToggle} onClose={handleMembersClose} />}
                               </div>
 
                               {/* Mobile overflow menu */}
