@@ -3,15 +3,14 @@
 import { useState, useRef, useCallback, useMemo, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight, FiMoreHorizontal, FiChevronLeft, FiBookOpen } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiFileText, FiCode, FiX, FiCornerDownRight, FiMoreHorizontal, FiBookOpen } from 'react-icons/fi';
 import { Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
 import { toast } from 'sonner';
 import { BoardHeaderProps } from '@/app/types/globalTypes';
 import { useHasManagementAccess } from '@/app/hooks/useHasManagementAccess';
-import { useGetBoardAvatarsQuery, useGetUserRoleQuery } from '@/app/store/apiSlice';
-import { useCurrentUser } from '@/app/hooks/useCurrentUser';
+import { useGetBoardAvatarsQuery } from '@/app/store/apiSlice';
 import FilterDropdown from './FilterDropdown';
 import ViewModeToggle from './ViewModeToggle';
 import MembersDropdown from './MembersDropdown';
@@ -53,11 +52,6 @@ const BoardHeader = ({
      const { t } = useTranslation();
      const router = useRouter();
      const searchParams = useSearchParams();
-     const { currentUser } = useCurrentUser();
-     const userEmail = currentUser?.email || '';
-     const { data: userRole } = useGetUserRoleQuery(userEmail, { skip: !userEmail });
-     const isOwner = userRole === 'OWNER';
-
      useEffect(() => {
           if (searchParams.get('slack') === 'connected') {
                toast.success(t('slack.connected'));
@@ -69,8 +63,6 @@ const BoardHeader = ({
      const [filterOpen, setFilterOpen] = useState(false);
      const [membersOpen, setMembersOpen] = useState(false);
 
-
-     const searchInputRef = useRef<HTMLInputElement>(null);
 
      const hasManagementAccess = useHasManagementAccess();
 
