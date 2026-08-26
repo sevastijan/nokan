@@ -76,7 +76,11 @@ const BoardHeader = ({
 
      // Board creator manages members of their own board even without a global management role.
      // Mirrors the server-side rule in POST /api/invitations/send.
-     const canManageMembers = hasManagementAccess || (!!boardOwnerId && boardOwnerId === currentUserId);
+     const isBoardOwner = !!boardOwnerId && boardOwnerId === currentUserId;
+     const canManageMembers = hasManagementAccess || isBoardOwner;
+     // API tokens follow the same rule - gating them on the global role alone hid
+     // the panel from board creators holding the default MEMBER role.
+     const canManageApiTokens = hasManagementAccess || isBoardOwner;
      const avatarInputRef = useRef<HTMLInputElement>(null);
      const [avatarUploading, setAvatarUploading] = useState(false);
      const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
@@ -235,7 +239,7 @@ const BoardHeader = ({
                                         <FiBookOpen className="w-4 h-4" />
                                    </button>
 
-                                   {hasManagementAccess && onOpenApiTokens && (
+                                   {canManageApiTokens && onOpenApiTokens && (
                                         <button onClick={onOpenApiTokens} className="p-1.5 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors" title={t('board.api')}>
                                              <FiCode className="w-4 h-4" />
                                         </button>
@@ -291,7 +295,7 @@ const BoardHeader = ({
                                                        </button>
                                                   )}
                                              </Menu.Item>
-                                             {hasManagementAccess && onOpenApiTokens && (
+                                             {canManageApiTokens && onOpenApiTokens && (
                                                   <Menu.Item>
                                                        {({ active }) => (
                                                             <button

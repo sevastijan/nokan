@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
 import { generateApiToken } from '@/app/lib/public-api/token-utils';
+import { resolveTokenAccess } from '@/app/lib/public-api/token-access';
 import type {
     BoardApiTokenListItem,
     CreateTokenInput,
@@ -32,30 +33,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { boardId } = await params;
     const supabase = getSupabaseAdmin();
 
-    // Get user's internal ID from email from email
-    const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', session.user.email)
-        .single();
-
-    if (!userData) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Check if user has access to this board (owner)
-    const { data: board } = await supabase
-        .from('boards')
-        .select('id, user_id')
-        .eq('id', boardId)
-        .single();
-
-    if (!board) {
-        return NextResponse.json({ error: 'Board not found' }, { status: 404 });
-    }
-
-    if (board.user_id !== userData.id) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    const access = await resolveTokenAccess(supabase, boardId, session.user.email);
+    if (!access.ok) {
+        return NextResponse.json({ error: access.error }, { status: access.status });
     }
 
     // Fetch tokens
@@ -87,30 +67,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { boardId } = await params;
     const supabase = getSupabaseAdmin();
 
-    // Get user's internal ID from email
-    const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', session.user.email)
-        .single();
-
-    if (!userData) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Check board ownership
-    const { data: board } = await supabase
-        .from('boards')
-        .select('id, user_id')
-        .eq('id', boardId)
-        .single();
-
-    if (!board) {
-        return NextResponse.json({ error: 'Board not found' }, { status: 404 });
-    }
-
-    if (board.user_id !== userData.id) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    const access = await resolveTokenAccess(supabase, boardId, session.user.email);
+    if (!access.ok) {
+        return NextResponse.json({ error: access.error }, { status: access.status });
     }
 
     // Parse request body
@@ -142,7 +101,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             token_prefix: prefix,
             name: name || 'API Token',
             permissions: tokenPermissions,
-            created_by: userData.id,
+            created_by: access.userId,
             expires_at: expires_at || null,
         })
         .select('id, token_prefix, name, permissions, created_at, expires_at')
@@ -193,25 +152,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const supabase = getSupabaseAdmin();
 
-    // Verify ownership
-    const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', session.user.email)
-        .single();
-
-    if (!userData) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const { data: board } = await supabase
-        .from('boards')
-        .select('id, user_id')
-        .eq('id', boardId)
-        .single();
-
-    if (!board || board.user_id !== userData.id) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    const access = await resolveTokenAccess(supabase, boardId, session.user.email);
+    if (!access.ok) {
+        return NextResponse.json({ error: access.error }, { status: access.status });
     }
 
     // Parse updates
@@ -263,25 +206,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const supabase = getSupabaseAdmin();
 
-    // Verify ownership
-    const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', session.user.email)
-        .single();
-
-    if (!userData) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const { data: board } = await supabase
-        .from('boards')
-        .select('id, user_id')
-        .eq('id', boardId)
-        .single();
-
-    if (!board || board.user_id !== userData.id) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    const access = await resolveTokenAccess(supabase, boardId, session.user.email);
+    if (!access.ok) {
+        return NextResponse.json({ error: access.error }, { status: access.status });
     }
 
     // Soft delete - deactivate the token

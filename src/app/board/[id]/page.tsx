@@ -260,6 +260,12 @@ export default function Page() {
           checkAccess();
      }, [currentUser?.id, board?.id, board?.user_id]);
 
+     // Same rule the API route enforces: board creator, or a global management role.
+     const canManageApiTokens =
+          (!!board?.user_id && board.user_id === currentUser?.id) ||
+          currentUser?.role === 'OWNER' ||
+          currentUser?.role === 'PROJECT_MANAGER';
+
      useEffect(() => {
           if (typeof window === 'undefined') return;
 
@@ -784,7 +790,7 @@ export default function Page() {
                )}
                <TaskCompletionModal isOpen={completionModalOpen} onClose={handleCancelCompletion} onConfirm={handleConfirmCompletion} taskTitle={pendingCompletionTask?.title || ''} />
                <BoardNotesModal isOpen={notesOpen} onClose={handleCloseNotes} boardId={boardId} />
-               <ApiTokensModal isOpen={apiTokensOpen} onClose={handleCloseApiTokens} boardId={boardId} isOwner={currentUser?.role === 'OWNER'} />
+               <ApiTokensModal isOpen={apiTokensOpen} onClose={handleCloseApiTokens} boardId={boardId} isOwner={canManageApiTokens} />
           </div>
      );
 }
