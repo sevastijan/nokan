@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { FiX, FiMail, FiTrash2, FiSend } from 'react-icons/fi';
+import { FiX, FiMail, FiTrash2, FiSend, FiCopy } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -9,6 +9,16 @@ import {
 	useGetBoardInvitationsQuery,
 	useCancelBoardInvitationMutation,
 } from '@/app/store/apiSlice';
+
+/** Copies an invitation link so it can be shared outside email (spam filters, wrong address). */
+async function copyInviteLink(url: string) {
+	try {
+		await navigator.clipboard.writeText(url);
+		toast.success('Link skopiowany do schowka');
+	} catch {
+		toast.error('Nie udało się skopiować linku');
+	}
+}
 
 interface InviteMemberModalProps {
 	boardId: string;
@@ -45,7 +55,19 @@ export default function InviteMemberModal({ boardId, isOpen, onClose }: InviteMe
 		try {
 			const result = await sendInvitation({ boardId, email: trimmed }).unwrap();
 			if (result.success) {
-				toast.success(`Zaproszenie wysłane do ${trimmed}`);
+				if (result.emailSent) {
+					toast.success(`Zaproszenie wysłane do ${trimmed}`);
+				} else {
+					// The invitation exists but the email bounced - hand over the link
+					// so the board owner can pass it on manually.
+					toast.warning(`Nie udało się wysłać maila do ${trimmed}. Skopiuj link i przekaż go ręcznie.`, {
+						duration: 10000,
+						action: {
+							label: 'Kopiuj link',
+							onClick: () => copyInviteLink(result.inviteUrl),
+						},
+					});
+				}
 				setEmail('');
 				inputRef.current?.focus();
 			}
@@ -157,13 +179,22 @@ export default function InviteMemberModal({ boardId, isOpen, onClose }: InviteMe
 														</div>
 														<span className="text-sm text-slate-300 truncate">{inv.email}</span>
 													</div>
+													<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+													<button
+														onClick={() => copyInviteLink(`${window.location.origin}/invite/${inv.token}`)}
+														className="p-1 rounded text-slate-600 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+														title="Kopiuj link zaproszenia"
+													>
+														<FiCopy className="w-3.5 h-3.5" />
+													</button>
 													<button
 														onClick={() => handleCancel(inv.id, inv.email)}
-														className="p-1 rounded text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+														className="p-1 rounded text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
 														title="Anuluj zaproszenie"
 													>
 														<FiTrash2 className="w-3.5 h-3.5" />
 													</button>
+													</div>
 												</div>
 											))}
 										</div>

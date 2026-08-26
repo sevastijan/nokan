@@ -3,10 +3,15 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
 import { Resend } from 'resend';
-import { boardInvitationTemplate } from '@/app/lib/email/templates';
+import { boardInvitationTemplate, htmlToPlainText } from '@/app/lib/email/templates';
 
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@example.com';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nokan.nkdlab.space';
+const PRODUCTION_URL = 'https://nokan.nkdlab.space';
+
+// Invitation links are opened by someone else, so a localhost URL from a dev
+// environment would be dead on arrival - only accept a public app URL here.
+const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+const APP_URL = configuredAppUrl && !configuredAppUrl.includes('localhost') ? configuredAppUrl : PRODUCTION_URL;
 
 export async function POST(request: Request) {
 	try {
@@ -135,20 +140,34 @@ export async function POST(request: Request) {
 		const inviterName = callerUser.custom_name || callerUser.name || 'Użytkownik';
 		const inviteUrl = `${APP_URL}/invite/${invitation.token}`;
 
-		// Send email
+		// Send email. A text part and a Reply-To pointing at a real person both
+		// lower the spam score - invitations go to recipients who have never
+		// received mail from this domain before.
+		const html = boardInvitationTemplate(board.title, inviterName, inviteUrl);
 		const resend = new Resend(process.env.RESEND_API_KEY);
 		const { error: emailError } = await resend.emails.send({
 			from: EMAIL_FROM,
 			to: email,
+			replyTo: callerUser.email,
 			subject: `${inviterName} zaprasza Cię do tablicy "${board.title}"`,
-			html: boardInvitationTemplate(board.title, inviterName, inviteUrl),
+			html,
+			text: htmlToPlainText(html),
 		});
 
 		if (emailError) {
 			console.error('Invitation email error:', emailError);
 		}
 
-		return NextResponse.json({ success: true, invitation: { id: invitation.id, token: invitation.token } });
+		// The invitation exists either way, so this is not a failure - but the caller
+		// must know the email did not go out, otherwise a silent "sent" toast hides
+		// every delivery problem. The link is returned so it can be shared manually.
+		return NextResponse.json({
+			success: true,
+			emailSent: !emailError,
+			emailError: emailError ? emailError.message : undefined,
+			inviteUrl,
+			invitation: { id: invitation.id, token: invitation.token },
+		});
 	} catch (error) {
 		console.error('Send invitation error:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

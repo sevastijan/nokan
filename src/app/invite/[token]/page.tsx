@@ -5,6 +5,7 @@ import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiCheck, FiAlertCircle, FiClock } from 'react-icons/fi';
+import EmailPasswordForm from '@/app/components/Auth/EmailPasswordForm';
 
 interface InvitationData {
 	status: 'pending' | 'already_used' | 'expired';
@@ -16,7 +17,7 @@ interface InvitationData {
 
 export default function InvitePage({ params }: { params: Promise<{ token: string }> }) {
 	const { token } = use(params);
-	const { data: session, status: sessionStatus } = useSession();
+	const { status: sessionStatus } = useSession();
 	const router = useRouter();
 
 	const [invitation, setInvitation] = useState<InvitationData | null>(null);
@@ -217,6 +218,20 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
 					</p>
 				</div>
 
+				{/* Email + password */}
+				<EmailPasswordForm
+					callbackUrl={`/invite/${token}`}
+					defaultEmail={invitation?.email ?? ''}
+					accent="indigo"
+				/>
+
+				{/* Divider */}
+				<div className="flex items-center gap-3 my-6">
+					<div className="flex-1 h-px bg-slate-800" />
+					<span className="text-xs text-slate-600">lub</span>
+					<div className="flex-1 h-px bg-slate-800" />
+				</div>
+
 				{/* Auth buttons */}
 				<div className="space-y-3">
 					<button
@@ -243,15 +258,8 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
 					</button>
 				</div>
 
-				{/* Divider */}
-				<div className="flex items-center gap-3 my-6">
-					<div className="flex-1 h-px bg-slate-800" />
-					<span className="text-xs text-slate-600">lub</span>
-					<div className="flex-1 h-px bg-slate-800" />
-				</div>
-
 				{/* Email info */}
-				<p className="text-xs text-slate-500 text-center">
+				<p className="text-xs text-slate-500 text-center mt-6">
 					Zaproszenie wysłano na <strong className="text-slate-400">{invitation?.email}</strong>. Zaloguj się lub utwórz konto, aby dołączyć.
 				</p>
 			</motion.div>

@@ -10,6 +10,7 @@ import {
      collaboratorRemovedTemplate,
      mentionTemplate,
      newSubmissionTemplate,
+     htmlToPlainText,
 } from './templates';
 import type { EmailNotificationPayload } from '@/app/types/emailTypes';
 
@@ -158,6 +159,8 @@ export async function sendEmailNotification(
                to: payload.recipientEmail,
                subject,
                html,
+               // HTML-only mail scores worse in spam filters - always ship a text part.
+               text: htmlToPlainText(html),
           });
 
           if (error) {

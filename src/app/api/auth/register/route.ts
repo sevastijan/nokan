@@ -5,10 +5,19 @@ import { getSupabaseAdmin } from '@/app/lib/supabase';
 export async function POST(request: Request) {
 	try {
 		const body = await request.json();
-		const { name, email, password, confirmPassword } = body;
+		const { name: rawName, email: rawEmail, password, confirmPassword } = body;
 
-		if (!name || !email || !password || !confirmPassword) {
+		if (!rawName || !rawEmail || !password || !confirmPassword) {
 			return NextResponse.json({ error: 'All fields are required', code: 'validation' }, { status: 400 });
+		}
+
+		// Emails are stored lowercase so the same address can never register twice
+		const name = String(rawName).trim();
+		const email = String(rawEmail).trim().toLowerCase();
+
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			return NextResponse.json({ error: 'Invalid email address', code: 'invalid_email' }, { status: 400 });
 		}
 
 		if (password.length < 8) {
@@ -21,9 +30,19 @@ export async function POST(request: Request) {
 
 		const supabase = getSupabaseAdmin();
 
-		const { data: existingUser } = await supabase.from('users').select('id').eq('email', email).single();
+		const { data: existingUser } = await supabase
+			.from('users')
+			.select('id, password_hash, google_id, github_id')
+			.eq('email', email)
+			.maybeSingle();
 
 		if (existingUser) {
+			// An OAuth-only account exists for this address - tell the user which door to use
+			// instead of the generic "email taken", which would look like a dead end.
+			if (!existingUser.password_hash && (existingUser.google_id || existingUser.github_id)) {
+				return NextResponse.json({ error: 'Account uses social sign-in', code: 'oauth_account' }, { status: 409 });
+			}
+
 			return NextResponse.json({ error: 'Email already exists', code: 'duplicate_email' }, { status: 409 });
 		}
 

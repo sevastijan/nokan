@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import Loader from '../components/Loader';
+import EmailPasswordForm from '../components/Auth/EmailPasswordForm';
 
 const container = {
 	hidden: { opacity: 0 },
@@ -59,6 +60,18 @@ const AuthButton = () => {
 			animate="show"
 			className="space-y-5"
 		>
+			{/* Email + password */}
+			<motion.div variants={fadeUp}>
+				<EmailPasswordForm callbackUrl="/dashboard" accent="brand" />
+			</motion.div>
+
+			{/* Divider */}
+			<motion.div variants={fadeUp} className="flex items-center gap-3">
+				<div className="flex-1 h-px bg-slate-800" />
+				<span className="text-xs text-slate-600">{t('auth.or')}</span>
+				<div className="flex-1 h-px bg-slate-800" />
+			</motion.div>
+
 			{/* Google */}
 			<motion.div variants={fadeUp}>
 				<motion.button

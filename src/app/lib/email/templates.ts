@@ -368,3 +368,37 @@ export function boardInvitationTemplate(
     ${colorBtn(inviteUrl, 'Dołącz do tablicy')}
   `, 'Otrzymujesz tę wiadomość, ponieważ ktoś zaprosił Cię do współpracy w Nokan.');
 }
+
+/**
+ * Plain-text alternative for a rendered email.
+ *
+ * HTML-only messages score badly in spam filters, so every send should carry a
+ * text part alongside the HTML. Links are flattened to "label: url" so the
+ * recipient can still act on the message in a text-only client.
+ */
+export function htmlToPlainText(html: string): string {
+     return html
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<head[\s\S]*?<\/head>/gi, '')
+          .replace(
+               /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi,
+               (_match, href: string, label: string) => `${label.replace(/<[^>]+>/g, '').trim()}: ${href}`
+          )
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/(p|div|tr|h1|h2|h3|li|td)>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&mdash;/g, '—')
+          .replace(/&ndash;/g, '–')
+          .replace(/&hellip;/g, '…')
+          .replace(/&#(\d+);/g, (_match, code: string) => String.fromCharCode(Number(code)))
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, '&')
+          .split('\n')
+          .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+          .join('\n')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+}

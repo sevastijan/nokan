@@ -32,12 +32,13 @@ export const authOptions: NextAuthOptions = {
 
 				const bcrypt = (await import('bcryptjs')).default;
 				const supabase = getSupabaseAdmin();
+				const email = credentials.email.trim().toLowerCase();
 				const { data: user, error } = await supabase
 					.from('users')
 					.select('id, email, name, image, password_hash')
-					.eq('email', credentials.email)
+					.eq('email', email)
 					.not('password_hash', 'is', null)
-					.single();
+					.maybeSingle();
 
 				if (error || !user?.password_hash) return null;
 
@@ -74,31 +75,57 @@ export const authOptions: NextAuthOptions = {
 					// Replace provider ID with Supabase UUID so JWT stores the correct ID
 					user.id = String(existingUser.id);
 				} else {
-					const { data: newUser, error: insertError } = await supabase
-						.from('users')
-						.insert({
-							[idColumn]: providerAccountId,
-							name: user.name ?? '',
-							email: user.email ?? '',
-							image: user.image ?? '',
-						})
-						.select('id')
-						.single();
+					const email = (user.email ?? '').trim().toLowerCase();
 
-					if (insertError) {
-						console.error('Error inserting user into Supabase:', insertError.message);
-						throw insertError;
-					}
+					// The address may already belong to a password account (or one created by
+					// accepting an invitation). Link the provider to it instead of inserting a
+					// duplicate - the insert would violate the unique email constraint and leave
+					// the provider ID in the JWT, which breaks every board permission check.
+					const { data: userByEmail } = email
+						? await supabase.from('users').select('id').eq('email', email).maybeSingle()
+						: { data: null };
 
-					if (newUser) {
-						user.id = String(newUser.id);
+					if (userByEmail) {
+						const { error: linkError } = await supabase
+							.from('users')
+							.update({ [idColumn]: providerAccountId })
+							.eq('id', userByEmail.id);
+
+						if (linkError) {
+							console.error(`Error linking ${provider} account to existing user:`, linkError.message);
+							return false;
+						}
+
+						user.id = String(userByEmail.id);
+					} else {
+						const { data: newUser, error: insertError } = await supabase
+							.from('users')
+							.insert({
+								[idColumn]: providerAccountId,
+								name: user.name ?? '',
+								email,
+								image: user.image ?? '',
+							})
+							.select('id')
+							.single();
+
+						if (insertError) {
+							console.error('Error inserting user into Supabase:', insertError.message);
+							throw insertError;
+						}
+
+						if (newUser) {
+							user.id = String(newUser.id);
+						}
 					}
 				}
 
 				return true;
 			} catch (error) {
+				// Fail closed: without a resolved Supabase UUID the session would carry the
+				// provider ID, and every board/team lookup keyed on user_id would deny access.
 				console.error('Error in signIn callback:', error);
-				return true;
+				return false;
 			}
 		},
 

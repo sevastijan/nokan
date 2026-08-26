@@ -7,7 +7,14 @@ import type { BoardInvitation } from '@/app/types/globalTypes';
 
 export const invitationEndpoints = (builder: EndpointBuilder<BaseQueryFn, string, string>) => ({
 	sendBoardInvitation: builder.mutation<
-		{ success: boolean; invitation: { id: string; token: string } },
+		{
+			success: boolean;
+			/** False when the invitation was created but the email could not be delivered. */
+			emailSent: boolean;
+			emailError?: string;
+			inviteUrl: string;
+			invitation: { id: string; token: string };
+		},
 		{ boardId: string; email: string; role?: string }
 	>({
 		async queryFn({ boardId, email, role }) {

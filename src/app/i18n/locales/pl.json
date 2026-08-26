@@ -79,6 +79,8 @@
      "auth": {
           "signInWithGoogle": "Zaloguj się przez Google",
           "signInWithGitHub": "Zaloguj się przez GitHub",
+          "continueWithGoogle": "Kontynuuj przez Google",
+          "continueWithGithub": "Kontynuuj przez GitHub",
           "welcomeBack": "Witaj ponownie, {{name}}!",
           "goToDashboard": "Przejdź do dashboardu",
           "signInRequired": "Zaloguj się, aby zobaczyć profil.",
@@ -99,6 +101,8 @@
           "signInLink": "Zaloguj się",
           "invalidCredentials": "Nieprawidłowy email lub hasło",
           "emailAlreadyExists": "Konto z tym adresem email już istnieje",
+          "oauthAccountExists": "To konto zostało założone przez Google lub GitHub — zaloguj się tym sposobem",
+          "invalidEmail": "Podaj poprawny adres email",
           "passwordsDoNotMatch": "Hasła nie są identyczne",
           "passwordTooShort": "Hasło musi mieć co najmniej 8 znaków",
           "registrationFailed": "Rejestracja nie powiodła się. Spróbuj ponownie.",
